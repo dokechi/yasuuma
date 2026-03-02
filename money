@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>資金を作る（固定費：スマホ/保険）</title>
+  <meta name="description" content="株主優待の原資が足りない人向けに、固定費（スマホ/保険）を見直して資金を作る導線。資金シミュレータで、買える優待も表示。" />
+  <style>
+    :root{
+      --bg:#f6f7f9; --card:#fff; --line:#e5e7eb; --text:#111; --muted:#6b7280;
+      --shadow: 0 1px 0 rgba(0,0,0,.03); --r:16px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans JP",sans-serif}
+    header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+    .wrap{max-width:1100px;margin:0 auto;padding:14px 16px}
+    .toprow{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .nav a{text-decoration:none;padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:#fff}
+    .nav a.active{background:#111;color:#fff;border-color:#111}
+    .muted{color:var(--muted);font-size:12px}
+    .grid{max-width:1100px;margin:0 auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;box-shadow:var(--shadow)}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:#eef2ff;font-size:12px}
+    .cta{display:inline-block;margin-top:10px;padding:11px 14px;border-radius:14px;background:#111;color:#fff;text-decoration:none;font-weight:800}
+    .cta.ghost{background:#fff;color:#111;border:1px solid #111}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    input,select{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;min-width:160px}
+    .hr{height:1px;background:var(--line);margin:12px 0}
+    .kpi{font-size:18px;font-weight:900}
+    .small{font-size:12px;color:var(--muted)}
+    .err{
+      max-width:1100px;margin:16px auto;padding:12px 16px;
+      border:1px solid #fecaca;background:#fff1f2;border-radius:14px;color:#7f1d1d
+    }
+    .list{margin:8px 0 0 18px;color:var(--muted);font-size:12px;line-height:1.6}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="toprow">
+      <b>資金を作る（固定費：スマホ/保険）</b>
+      <div class="nav">
+        <a href="./index.html">優待を探す</a>
+        <a class="active" href="./money.html">資金を作る</a>
+      </div>
+    </div>
+    <div class="muted">※当ページはプロモーション（広告）を含みます。節約額・比較例はダミー。必ず各サービスの条件を確認してください。</div>
+  </div>
+</header>
+
+<div id="errorBox" class="err" style="display:none;"></div>
+
+<div class="wrap">
+  <div class="card" id="targetBox" style="margin:16px 16px 0 16px;display:none;">
+    <div class="pill">目標</div>
+    <div style="margin-top:8px;"><b id="targetName"></b></div>
+    <div class="small">必要資金（目安）：<b id="targetNeed"></b></div>
+    <div class="small">→ 下のシミュレータで「何ヶ月で届くか」を見れる</div>
+  </div>
+</div>
+
+<div class="grid" id="offers"></div>
+
+<div class="wrap">
+  <div class="card" style="margin:0 16px 16px 16px;">
+    <div class="pill">資金シミュレータ</div>
+    <div class="hr"></div>
+
+    <div class="row">
+      <div>
+        <div class="small">月いくら節約できそう？（例）</div>
+        <input id="savePerMonth" type="number" value="3000" min="0" step="500" />
+      </div>
+      <div>
+        <div class="small">何ヶ月で貯める？</div>
+        <input id="months" type="number" value="6" min="1" step="1" />
+      </div>
+      <div>
+        <div class="small">買いたいタイプ</div>
+        <select id="mode">
+          <option value="one">1株優待（必要株数=1）</option>
+          <option value="under100k">10万円未満（<=100,000円）</option>
+          <option value="all">すべて</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="row">
+      <div>
+        <div class="small">この計画で作れる資金（目安）</div>
+        <div class="kpi" id="budget">—</div>
+      </div>
+      <div id="progressBox" style="display:none;">
+        <div class="small">目標まで</div>
+        <div class="kpi" id="remain">—</div>
+        <div class="small" id="needMonthsText">—</div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+    <div class="pill">この資金で狙える優待（ダミー表示）</div>
+    <div id="yutaiList" style="margin-top:10px;"></div>
+
+    <div style="margin-top:12px;">
+      <a class="cta" id="rakutenBtn" href="https://YOUR-RAKUTEN-AFF-LINK" target="_blank" rel="noopener">楽天証券で口座開設</a>
+      <a class="cta ghost" href="./index.html" style="margin-left:6px;">優待一覧へ戻る</a>
+      <div class="small" style="margin-top:6px;">※口座開設リンクはあなたのアフィに差し替え。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ====== ここだけ本物に差し替え ======
+  const RAKUTEN_AFF = "https://YOUR-RAKUTEN-AFF-LINK";
+  // ====================================
+
+  const elErr = document.getElementById("errorBox");
+  const elOffers = document.getElementById("offers");
+  const elBudget = document.getElementById("budget");
+  const elYutaiList = document.getElementById("yutaiList");
+  const elRakutenBtn = document.getElementById("rakutenBtn");
+  elRakutenBtn.href = RAKUTEN_AFF;
+
+  const params = new URLSearchParams(location.search);
+  const needParam = Number(params.get("need") || 0);
+  const nameParam = params.get("name") || "";
+  const codeParam = params.get("code") || "";
+
+  const targetBox = document.getElementById("targetBox");
+  const targetName = document.getElementById("targetName");
+  const targetNeed = document.getElementById("targetNeed");
+  const progressBox = document.getElementById("progressBox");
+  const remain = document.getElementById("remain");
+  const needMonthsText = document.getElementById("needMonthsText");
+
+  const yen = (n) => (Number(n||0)).toLocaleString("ja-JP") + "円";
+  const escapeHTML = (s) => String(s ?? "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+
+  if (needParam > 0) {
+    targetBox.style.display = "block";
+    targetName.textContent = `${nameParam}${codeParam ? " ("+codeParam+")" : ""}`;
+    targetNeed.textContent = yen(needParam);
+    progressBox.style.display = "block";
+  }
+
+  let OFFERS = [];
+  let YUTAI = [];
+
+  const renderOffers = () => {
+    elOffers.innerHTML = OFFERS.map(o => `
+      <div class="card">
+        <div class="row">
+          <span class="pill">${escapeHTML(o.category)}</span>
+          <span class="pill">${escapeHTML(o.kind)}</span>
+        </div>
+        <h3 style="margin:10px 0 6px 0;">${escapeHTML(o.title)}</h3>
+        <div class="small">${escapeHTML(o.desc)}</div>
+        <div class="hr"></div>
+        <div class="small">節約目安：<b>月 ${yen(o.monthlySaveMin)}〜${yen(o.monthlySaveMax)}</b></div>
+        <ul class="list">
+          ${o.steps.map(s=>`<li>${escapeHTML(s)}</li>`).join("")}
+        </ul>
+        <a class="cta" href="${escapeHTML(o.affUrl)}" target="_blank" rel="noopener">${escapeHTML(o.ctaLabel)}</a>
+        <div class="small" style="margin-top:8px;">${escapeHTML(o.note || "")}</div>
+      </div>
+    `).join("");
+  };
+
+  const filterByMode = (arr, mode) => {
+    if (mode === "one") return arr.filter(x => x.minSharesForPerk === 1);
+    if (mode === "under100k") return arr.filter(x => x.minSharesForPerk >= 100 && x.needMoneyPerkYen <= 100000);
+    return arr;
+  };
+
+  const calc = () => {
+    const savePerMonth = Number(document.getElementById("savePerMonth").value || 0);
+    const months = Number(document.getElementById("months").value || 1);
+    const mode = document.getElementById("mode").value;
+
+    const budget = Math.max(0, savePerMonth * months);
+    elBudget.textContent = yen(budget);
+
+    if (needParam > 0) {
+      const rem = Math.max(0, needParam - budget);
+      remain.textContent = yen(rem);
+      const needMoreMonths = savePerMonth > 0 ? Math.ceil(needParam / savePerMonth) : 0;
+      needMonthsText.textContent = savePerMonth > 0
+        ? `月${yen(savePerMonth)}なら、目標到達は約 ${needMoreMonths}ヶ月（目安）`
+        : `月の節約額を入れると、到達月数を出せる`;
+    }
+
+    const candidates = filterByMode(YUTAI, mode)
+      .filter(x => x.needMoneyPerkYen <= budget)
+      .sort((a,b)=>a.needMoneyPerkYen - b.needMoneyPerkYen)
+      .slice(0, 10);
+
+    if (!candidates.length) {
+      elYutaiList.innerHTML = `<div class="small">この予算だと候補がまだ少ない。月の節約額 or 期間を増やすか、1株優待に切り替えてみて。</div>`;
+      return;
+    }
+
+    elYutaiList.innerHTML = `
+      <div class="row" style="gap:10px;align-items:stretch;">
+        ${candidates.map(x => `
+          <div class="card" style="min-width:240px;flex:1;">
+            <div class="small">${escapeHTML(x.category)} / 権利月:${escapeHTML(x.recordMonth)}</div>
+            <b style="display:block;margin-top:6px;">${escapeHTML(x.name)} (${escapeHTML(x.code)})</b>
+            <div class="small" style="margin-top:6px;">優待：${escapeHTML(x.perk)}</div>
+            <div style="margin-top:10px;font-weight:900;font-size:18px;">${yen(x.needMoneyPerkYen)}</div>
+            <div class="small">必要株数：${escapeHTML(x.minSharesForPerk)}株</div>
+            <a class="cta ghost" href="./index.html" style="margin-top:10px;">一覧で詳細を見る</a>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  };
+
+  ["savePerMonth","months","mode"].forEach(id => {
+    document.getElementById(id).addEventListener("input", calc);
+  });
+
+  Promise.all([
+    fetch("./money.json").then(r => { if(!r.ok) throw new Error("money.json が読めません"); return r.json(); }),
+    fetch("./data.json").then(r => { if(!r.ok) throw new Error("data.json が読めません"); return r.json(); })
+  ])
+  .then(([offers, yutai]) => {
+    OFFERS = Array.isArray(offers) ? offers : [];
+    YUTAI = Array.isArray(yutai) ? yutai : [];
+    renderOffers();
+    calc();
+  })
+  .catch(err => {
+    elErr.style.display="block";
+    elErr.textContent = "エラー: " + (err?.message || err);
+  });
+})();
+</script>
+</body>
+</html>
