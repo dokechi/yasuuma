@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ミニ株×優待まとめ</title>
+  <style>
+    body{font-family:system-ui;margin:0;background:#f6f7f9}
+    header{background:#fff;padding:14px 16px;border-bottom:1px solid #e5e7eb;position:sticky;top:0}
+    .wrap{max-width:1000px;margin:0 auto}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;padding:16px}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:12px;cursor:pointer}
+    .muted{color:#6b7280;font-size:12px}
+    .cta{display:inline-block;margin-top:10px;padding:10px 12px;border-radius:12px;background:#111;color:#fff;text-decoration:none}
+    .ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:18px}
+    .modal{background:#fff;max-width:720px;width:100%;border-radius:18px;padding:16px}
+    .x{float:right;border:none;background:transparent;font-size:22px;cursor:pointer}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="muted">※当ページはプロモーション（広告）を含みます。</div>
+    <b>ミニ株で狙える株主優待（楽天証券導線）</b>
+  </div>
+</header>
+
+<div class="wrap"><div id="list" class="grid"></div></div>
+
+<div id="ov" class="ov">
+  <div class="modal">
+    <button class="x" id="close">×</button>
+    <div id="mb"></div>
+  </div>
+</div>
+
+<script>
+const RAKUTEN_AFF = "https://YOUR-RAKUTEN-AFF-LINK"; // ここ差し替え
+let DATA=[];
+
+fetch("./data.json").then(r=>r.json()).then(d=>{DATA=d; render();});
+
+function yen(n){ return (n??0).toLocaleString("ja-JP")+"円"; }
+
+function render(){
+  const el=document.getElementById("list");
+  el.innerHTML = DATA.map(x=>`
+    <div class="card" onclick="openModal('${x.code}')">
+      <div class="muted">${x.category} / 権利月:${x.recordMonth}</div>
+      <div style="margin-top:6px;font-weight:800">${x.name} (${x.code})</div>
+      <div class="muted" style="margin-top:6px">優待：${x.perk}</div>
+      <div style="margin-top:10px">
+        <div class="muted">ミニ必要資金(目安)</div>
+        <div style="font-size:18px;font-weight:900">${yen(x.needMoneyMini)}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+window.openModal = (code)=>{
+  const x=DATA.find(v=>String(v.code)===String(code));
+  document.getElementById("mb").innerHTML=`
+    <h2 style="margin:0 0 6px 0">${x.name} (${x.code})</h2>
+    <div class="muted">${x.category} / 権利月:${x.recordMonth}</div>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:12px 0">
+    <div><b>優待</b><br>${x.perk}</div>
+    <div style="margin-top:10px"><b>必要資金（目安）</b><br>ミニ：${yen(x.needMoneyMini)} / 100株：${yen(x.needMoney100)}</div>
+    <div style="margin-top:10px" class="muted">※価格・条件は変動。必ず公式/IRで最終確認。</div>
+    <a class="cta" href="${RAKUTEN_AFF}" target="_blank" rel="noopener">楽天証券で口座開設</a>
+    <div class="muted" style="margin-top:10px">出典：<a href="${x.sourceUrl}" target="_blank" rel="noopener">IR/公式</a></div>
+  `;
+  document.getElementById("ov").style.display="flex";
+};
+document.getElementById("close").onclick=()=>document.getElementById("ov").style.display="none";
+document.getElementById("ov").onclick=(e)=>{ if(e.target.id==="ov") document.getElementById("ov").style.display="none"; };
+</script>
+</body>
+</html>
