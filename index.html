@@ -3,76 +3,387 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ミニ株×優待まとめ</title>
+  <title>ミニ株で狙える株主優待（楽天証券導線）</title>
+  <meta name="description" content="1株優待・10万円未満の株主優待を、必要資金で探せる一覧。資金が足りない人は固定費（スマホ/保険）で作る導線も。" />
   <style>
-    body{font-family:system-ui;margin:0;background:#f6f7f9}
-    header{background:#fff;padding:14px 16px;border-bottom:1px solid #e5e7eb;position:sticky;top:0}
-    .wrap{max-width:1000px;margin:0 auto}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;padding:16px}
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:12px;cursor:pointer}
-    .muted{color:#6b7280;font-size:12px}
-    .cta{display:inline-block;margin-top:10px;padding:10px 12px;border-radius:12px;background:#111;color:#fff;text-decoration:none}
-    .ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:18px}
-    .modal{background:#fff;max-width:720px;width:100%;border-radius:18px;padding:16px}
-    .x{float:right;border:none;background:transparent;font-size:22px;cursor:pointer}
+    :root{
+      --bg:#f6f7f9;
+      --card:#fff;
+      --line:#e5e7eb;
+      --text:#111;
+      --muted:#6b7280;
+      --pill:#eef2ff;
+      --pill2:#ecfeff;
+      --ok:#111;
+      --shadow: 0 1px 0 rgba(0,0,0,.03);
+      --r:16px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans JP",sans-serif}
+    a{color:inherit}
+    header{
+      background:var(--card);
+      border-bottom:1px solid var(--line);
+      position:sticky;top:0;z-index:10;
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:14px 16px}
+    .toprow{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand b{font-size:15px}
+    .muted{color:var(--muted);font-size:12px}
+    .nav{
+      display:flex;gap:8px;align-items:center;flex-wrap:wrap
+    }
+    .nav a{
+      text-decoration:none;
+      padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:#fff
+    }
+    .nav a.active{background:#111;color:#fff;border-color:#111}
+    .controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    input,select{
+      padding:10px 12px;border:1px solid var(--line);
+      border-radius:12px;background:#fff;min-width:160px
+    }
+    .stats{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--pill);font-size:12px}
+    .pill.alt{background:var(--pill2)}
+    .grid{
+      max-width:1100px;margin:0 auto;padding:16px;
+      display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px
+    }
+    .card{
+      background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+      padding:14px;cursor:pointer;box-shadow:var(--shadow);
+      transition:transform .06s ease;
+    }
+    .card:hover{transform:translateY(-1px)}
+    .card .title{font-weight:800;font-size:16px;margin-top:8px;line-height:1.25}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .label{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--line);background:#fff
+    }
+    .money{
+      font-size:22px;font-weight:900;margin-top:10px;
+    }
+    .sub{margin-top:6px}
+    .kv{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .kv .box{border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:#fff}
+    .kv .box b{display:block}
+    .footer{
+      max-width:1100px;margin:0 auto;padding:10px 16px 24px 16px;color:var(--muted);font-size:12px
+    }
+    /* modal */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:20}
+    .modal{
+      background:#fff;border:1px solid var(--line);border-radius:18px;
+      width:100%;max-width:820px;padding:16px;box-shadow:0 10px 40px rgba(0,0,0,.25)
+    }
+    .modal .x{float:right;border:none;background:transparent;font-size:22px;cursor:pointer}
+    .hr{height:1px;background:var(--line);margin:12px 0}
+    .ctaRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .cta{
+      display:inline-block;padding:11px 14px;border-radius:14px;background:#111;color:#fff;text-decoration:none;font-weight:800
+    }
+    .cta.ghost{background:#fff;color:#111;border:1px solid #111}
+    .warn{
+      border:1px dashed var(--line);
+      border-radius:14px;padding:10px;background:#fff;margin-top:10px
+    }
+    .small{font-size:12px;color:var(--muted)}
+    .err{
+      max-width:1100px;margin:16px auto;padding:12px 16px;
+      border:1px solid #fecaca;background:#fff1f2;border-radius:14px;color:#7f1d1d
+    }
   </style>
 </head>
+
 <body>
 <header>
   <div class="wrap">
-    <div class="muted">※当ページはプロモーション（広告）を含みます。</div>
-    <b>ミニ株で狙える株主優待（楽天証券導線）</b>
+    <div class="toprow">
+      <div class="brand">
+        <b>ミニ株で狙える株主優待（楽天証券導線）</b>
+      </div>
+      <div class="nav">
+        <a class="active" href="./index.html">優待を探す</a>
+        <a href="./money.html">資金を作る（スマホ/保険）</a>
+      </div>
+    </div>
+
+    <div class="muted">※当ページはプロモーション（広告）を含みます。表示の金額・優待価値はダミー例（実運用では必ず出典で確認）。</div>
+
+    <div class="controls">
+      <input id="q" placeholder="銘柄名 / コードで検索" />
+      <select id="type">
+        <option value="all">タイプ：すべて</option>
+        <option value="one">1株優待（必要株数=1）</option>
+        <option value="under100k">10万円未満（必要資金<=100,000円）</option>
+      </select>
+      <select id="month">
+        <option value="">権利月：すべて</option>
+        <option>1月</option><option>2月</option><option>3月</option><option>4月</option><option>5月</option><option>6月</option>
+        <option>7月</option><option>8月</option><option>9月</option><option>10月</option><option>11月</option><option>12月</option>
+      </select>
+      <select id="cat">
+        <option value="">カテゴリ：すべて</option>
+      </select>
+      <select id="sort">
+        <option value="needAsc">並び：必要資金が少ない順</option>
+        <option value="yieldDesc">並び：優待利回り（目安）高い順</option>
+        <option value="monthAsc">並び：権利月順</option>
+      </select>
+    </div>
+
+    <div class="stats" id="stats"></div>
   </div>
 </header>
 
-<div class="wrap"><div id="list" class="grid"></div></div>
+<div id="errorBox" class="err" style="display:none;"></div>
+<div id="grid" class="grid"></div>
 
-<div id="ov" class="ov">
+<div class="footer">
+  <div>免責：本サイトは情報提供のみ（投資助言ではありません）。優待内容・必要株数・条件・売買単位・価格は変動します。必ず出典（IR/TDnet等）で最終確認してください。</div>
+</div>
+
+<!-- modal -->
+<div id="overlay" class="overlay" role="dialog" aria-modal="true">
   <div class="modal">
     <button class="x" id="close">×</button>
-    <div id="mb"></div>
+    <div id="modalBody"></div>
   </div>
 </div>
 
 <script>
-const RAKUTEN_AFF = "https://YOUR-RAKUTEN-AFF-LINK"; // ここ差し替え
-let DATA=[];
+(() => {
+  // ====== ここだけ本物に差し替え ======
+  const RAKUTEN_AFF = "https://YOUR-RAKUTEN-AFF-LINK"; // ←あなたの楽天証券アフィリンクにする
+  // ====================================
 
-fetch("./data.json").then(r=>r.json()).then(d=>{DATA=d; render();});
+  const elGrid = document.getElementById("grid");
+  const elStats = document.getElementById("stats");
+  const elErr = document.getElementById("errorBox");
+  const overlay = document.getElementById("overlay");
+  const modalBody = document.getElementById("modalBody");
 
-function yen(n){ return (n??0).toLocaleString("ja-JP")+"円"; }
+  const monthOrder = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
 
-function render(){
-  const el=document.getElementById("list");
-  el.innerHTML = DATA.map(x=>`
-    <div class="card" onclick="openModal('${x.code}')">
-      <div class="muted">${x.category} / 権利月:${x.recordMonth}</div>
-      <div style="margin-top:6px;font-weight:800">${x.name} (${x.code})</div>
-      <div class="muted" style="margin-top:6px">優待：${x.perk}</div>
-      <div style="margin-top:10px">
-        <div class="muted">ミニ必要資金(目安)</div>
-        <div style="font-size:18px;font-weight:900">${yen(x.needMoneyMini)}</div>
+  const state = { q:"", type:"all", month:"", cat:"", sort:"needAsc" };
+  let DATA = [];
+
+  const escapeHTML = (s) => String(s ?? "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+
+  const yen = (n) => (Number(n||0)).toLocaleString("ja-JP") + "円";
+
+  const calcYieldPct = (perkValueYen, needMoneyYen) => {
+    const v = Number(perkValueYen||0);
+    const n = Number(needMoneyYen||0);
+    if(!v || !n) return 0;
+    return (v / n) * 100;
+  };
+
+  const tagText = (x) => {
+    if (x.minSharesForPerk === 1) return "1株優待";
+    if (x.needMoneyPerkYen <= 100000) return "10万円未満";
+    return "優待";
+  };
+
+  const buildCatOptions = () => {
+    const sel = document.getElementById("cat");
+    const cats = [...new Set(DATA.map(d => d.category))].sort();
+    sel.innerHTML = `<option value="">カテゴリ：すべて</option>` + cats.map(c=>`<option>${escapeHTML(c)}</option>`).join("");
+  };
+
+  const filtered = () => {
+    const q = state.q.trim().toLowerCase();
+    return DATA
+      .filter(x => {
+        const hitQ = !q || (String(x.code).includes(q) || String(x.name).toLowerCase().includes(q));
+        const hitM = !state.month || x.recordMonth === state.month;
+        const hitC = !state.cat || x.category === state.cat;
+
+        let hitT = true;
+        if (state.type === "one") hitT = (x.minSharesForPerk === 1);
+        if (state.type === "under100k") hitT = (x.needMoneyPerkYen <= 100000 && x.minSharesForPerk >= 100);
+
+        return hitQ && hitM && hitC && hitT;
+      })
+      .sort((a,b) => {
+        if (state.sort === "needAsc") return a.needMoneyPerkYen - b.needMoneyPerkYen;
+        if (state.sort === "yieldDesc") return calcYieldPct(b.perkValueYen,b.needMoneyPerkYen) - calcYieldPct(a.perkValueYen,a.needMoneyPerkYen);
+        if (state.sort === "monthAsc") return monthOrder.indexOf(a.recordMonth) - monthOrder.indexOf(b.recordMonth);
+        return 0;
+      });
+  };
+
+  const renderStats = (arr) => {
+    const total = DATA.length;
+    const shown = arr.length;
+    const maxChecked = DATA.map(d => d.lastChecked).filter(Boolean).sort().slice(-1)[0] || "—";
+
+    const one = DATA.filter(d => d.minSharesForPerk === 1).length;
+    const under = DATA.filter(d => d.minSharesForPerk >= 100 && d.needMoneyPerkYen <= 100000).length;
+
+    elStats.innerHTML = `
+      <span class="pill">表示：<b>${shown}</b> / ${total}件</span>
+      <span class="pill alt">1株優待：<b>${one}</b>件</span>
+      <span class="pill alt">10万円未満：<b>${under}</b>件</span>
+      <span class="pill">最終確認日（ダミー）：<b>${escapeHTML(maxChecked)}</b></span>
+    `;
+  };
+
+  const cardHTML = (x) => {
+    const y = calcYieldPct(x.perkValueYen, x.needMoneyPerkYen);
+    const needLabel = `${x.minSharesForPerk}株`;
+    return `
+      <div class="card" data-code="${escapeHTML(x.code)}">
+        <div class="row">
+          <span class="label">${escapeHTML(x.category)}</span>
+          <span class="label">権利月：${escapeHTML(x.recordMonth)}</span>
+          <span class="label">${escapeHTML(tagText(x))}</span>
+        </div>
+
+        <div class="title">${escapeHTML(x.name)} (${escapeHTML(x.code)})</div>
+
+        <div class="sub muted">優待：${escapeHTML(x.perk)}</div>
+
+        <div class="money">${yen(x.needMoneyPerkYen)}</div>
+        <div class="muted">必要株数：${needLabel} / 1株目安：${yen(x.pricePerShareYen)}</div>
+
+        <div class="kv">
+          <div class="box">
+            <span class="muted">優待価値（目安）</span>
+            <b>${yen(x.perkValueYen)}</b>
+          </div>
+          <div class="box">
+            <span class="muted">利回り（目安）</span>
+            <b>${y ? (y.toFixed(1) + "%") : "—"}</b>
+          </div>
+        </div>
+
+        <div class="muted" style="margin-top:10px;">クリックで詳細（出典/注意点/導線）</div>
       </div>
-    </div>
-  `).join("");
-}
+    `;
+  };
 
-window.openModal = (code)=>{
-  const x=DATA.find(v=>String(v.code)===String(code));
-  document.getElementById("mb").innerHTML=`
-    <h2 style="margin:0 0 6px 0">${x.name} (${x.code})</h2>
-    <div class="muted">${x.category} / 権利月:${x.recordMonth}</div>
-    <hr style="border:none;border-top:1px solid #e5e7eb;margin:12px 0">
-    <div><b>優待</b><br>${x.perk}</div>
-    <div style="margin-top:10px"><b>必要資金（目安）</b><br>ミニ：${yen(x.needMoneyMini)} / 100株：${yen(x.needMoney100)}</div>
-    <div style="margin-top:10px" class="muted">※価格・条件は変動。必ず公式/IRで最終確認。</div>
-    <a class="cta" href="${RAKUTEN_AFF}" target="_blank" rel="noopener">楽天証券で口座開設</a>
-    <div class="muted" style="margin-top:10px">出典：<a href="${x.sourceUrl}" target="_blank" rel="noopener">IR/公式</a></div>
-  `;
-  document.getElementById("ov").style.display="flex";
-};
-document.getElementById("close").onclick=()=>document.getElementById("ov").style.display="none";
-document.getElementById("ov").onclick=(e)=>{ if(e.target.id==="ov") document.getElementById("ov").style.display="none"; };
+  const render = () => {
+    const arr = filtered();
+    renderStats(arr);
+
+    elGrid.innerHTML = arr.map(cardHTML).join("");
+
+    [...document.querySelectorAll(".card")].forEach(el => {
+      el.addEventListener("click", () => openModal(el.dataset.code));
+    });
+  };
+
+  const openModal = (code) => {
+    const x = DATA.find(d => String(d.code) === String(code));
+    if (!x) return;
+
+    const need = Number(x.needMoneyPerkYen||0);
+    const defaultSave = 3000;
+    const months = defaultSave ? Math.ceil(need / defaultSave) : 0;
+
+    const y = calcYieldPct(x.perkValueYen, x.needMoneyPerkYen);
+
+    const toMoney = `./money.html?need=${encodeURIComponent(String(need))}&name=${encodeURIComponent(x.name)}&code=${encodeURIComponent(x.code)}`;
+
+    modalBody.innerHTML = `
+      <div class="row" style="justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div class="muted">${escapeHTML(x.category)} / 権利月：${escapeHTML(x.recordMonth)} / ${escapeHTML(tagText(x))}</div>
+          <h2 style="margin:4px 0 0 0;">${escapeHTML(x.name)} (${escapeHTML(x.code)})</h2>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row" style="gap:16px;align-items:flex-start;">
+        <div style="flex:1;min-width:260px;">
+          <div><b>優待</b><br>${escapeHTML(x.perk)}</div>
+          <div class="warn">
+            <div><b>必要株数</b>：${escapeHTML(x.minSharesForPerk)}株</div>
+            <div><b>必要資金（目安）</b>：${yen(x.needMoneyPerkYen)}</div>
+            <div class="small">※株価は変動。ダミー例。</div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <div><b>優待価値（目安）</b>：${yen(x.perkValueYen)}</div>
+            <div><b>利回り（目安）</b>：${y ? (y.toFixed(1) + "%") : "—"}</div>
+            <div class="small">${escapeHTML(x.perkNotes || "")}</div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <div class="small">出典（ダミー）：<a href="${escapeHTML(x.sourceUrl)}" target="_blank" rel="noopener">IR/TDnet/公式</a></div>
+            <div class="small">最終確認日（ダミー）：${escapeHTML(x.lastChecked || "—")}</div>
+          </div>
+        </div>
+
+        <div style="flex:1;min-width:260px;">
+          <div class="warn">
+            <b>資金が足りない人向け</b>
+            <div class="small" style="margin-top:6px;">
+              例：月${yen(defaultSave)}節約できたら、<b>${months}ヶ月</b>でこの必要資金に到達（目安）
+            </div>
+            <div class="small">→ スマホ/保険の見直しで“原資”を作る導線を用意。</div>
+          </div>
+
+          <div class="ctaRow">
+            <a class="cta" href="${escapeHTML(RAKUTEN_AFF)}" target="_blank" rel="noopener">楽天証券で口座開設</a>
+            <a class="cta ghost" href="${toMoney}">固定費で資金を作る</a>
+          </div>
+
+          <div class="warn" style="margin-top:12px;">
+            <b>注意（運用の型）</b>
+            <ul class="small" style="margin:8px 0 0 18px;line-height:1.6;">
+              <li>優待は変更/廃止があります（出典必須）</li>
+              <li>必要株数（1株/100株/長期条件）を必ず明記</li>
+              <li>数字は「目安」として扱う（最終確認日も置く）</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    `;
+
+    overlay.style.display = "flex";
+  };
+
+  const closeModal = () => overlay.style.display = "none";
+
+  document.getElementById("close").addEventListener("click", closeModal);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
+
+  // state bindings
+  const bind = (id, key) => {
+    const el = document.getElementById(id);
+    el.addEventListener("input", () => { state[key] = el.value; render(); });
+  };
+  bind("q","q");
+  bind("type","type");
+  bind("month","month");
+  bind("cat","cat");
+  bind("sort","sort");
+
+  // load data
+  fetch("./data.json")
+    .then(r => {
+      if(!r.ok) throw new Error("data.json が読み込めませんでした（パス/ファイル名を確認）");
+      return r.json();
+    })
+    .then(d => {
+      DATA = Array.isArray(d) ? d : [];
+      buildCatOptions();
+      render();
+    })
+    .catch(err => {
+      elErr.style.display = "block";
+      elErr.textContent = "エラー: " + (err?.message || err);
+    });
+
+})();
 </script>
 </body>
 </html>
