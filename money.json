@@ -1,0 +1,71 @@
+[
+  {
+    "id": "sim",
+    "category": "スマホ",
+    "kind": "格安SIM",
+    "title": "スマホ代を下げる（乗り換え）",
+    "desc": "大手→格安SIMで月2,000〜5,000円下がるケースがある（ダミー例）。",
+    "monthlySaveMin": 2000,
+    "monthlySaveMax": 5000,
+    "steps": [
+      "いまの料金プランと月額をメモ",
+      "通信量（GB）をざっくり把握",
+      "比較サイトで候補を2〜3社に絞る",
+      "MNPで乗り換え（条件は必ず確認）"
+    ],
+    "ctaLabel": "格安SIMを比較する（広告）",
+    "affUrl": "https://YOUR-SIM-AFF-LINK",
+    "note": "※割引条件/最低利用期間/端末代の有無は要確認"
+  },
+  {
+    "id": "phone",
+    "category": "スマホ",
+    "kind": "プラン見直し",
+    "title": "同じキャリアでもプラン変更で安くする",
+    "desc": "大容量→中容量に落とすだけで月1,000〜3,000円変わることがある（ダミー例）。",
+    "monthlySaveMin": 1000,
+    "monthlySaveMax": 3000,
+    "steps": [
+      "直近3ヶ月の通信量を確認",
+      "不要なオプション（月数百円）を外す",
+      "家族割/セット割があるか確認"
+    ],
+    "ctaLabel": "プラン診断へ（広告）",
+    "affUrl": "https://YOUR-PHONE-AFF-LINK",
+    "note": "※セット割の条件が絡む場合あり"
+  },
+  {
+    "id": "insurance",
+    "category": "保険",
+    "kind": "見直し",
+    "title": "保険を見直す（無料相談/比較）",
+    "desc": "過不足を整理して月2,000〜8,000円の改善余地が出ることも（ダミー例）。",
+    "monthlySaveMin": 2000,
+    "monthlySaveMax": 8000,
+    "steps": [
+      "加入中の保険を写真でOK（証券/アプリ）",
+      "家計の固定費の中で保険割合を確認",
+      "必要保障だけ残して整理（例）"
+    ],
+    "ctaLabel": "保険の無料相談へ（広告）",
+    "affUrl": "https://YOUR-INSURANCE-AFF-LINK",
+    "note": "※契約/保障内容は個別。無理に解約しない"
+  },
+  {
+    "id": "ins-compare",
+    "category": "保険",
+    "kind": "比較",
+    "title": "保険料を比較して“高すぎ”を発見する",
+    "desc": "同等条件で保険料が変わることがある（ダミー例）。",
+    "monthlySaveMin": 1000,
+    "monthlySaveMax": 6000,
+    "steps": [
+      "年齢/家族構成/必要保障をメモ",
+      "比較で相場感を掴む",
+      "結論は“必要保障に合うか”で決める"
+    ],
+    "ctaLabel": "保険を比較する（広告）",
+    "affUrl": "https://YOUR-INSURANCE-COMPARE-AFF-LINK",
+    "note": "※商品ごとに条件が違うため必ず確認"
+  }
+]
