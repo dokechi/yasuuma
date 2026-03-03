@@ -4,29 +4,50 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>ミニ株で狙える株主優待（楽天証券導線）</title>
-  <meta name="description" content="10万円未満の少額優待 / 1株（端株）優待。探す→詳細→楽天証券導線。絞り込みは収納。" />
+  <meta name="description" content="今月の優待 / 10万円未満 / 1株優待。縦リスト+アコーディオン。絞り込みは収納。" />
   <style>
     :root{
-      --bg:#f6f7f9; --card:#fff; --line:#e5e7eb; --text:#111; --muted:#6b7280;
-      --shadow:0 1px 0 rgba(0,0,0,.03); --r:16px;
+      --bg:#f6f7f9;
+      --card:#fff;
+      --line:#e5e7eb;
+      --text:#111;
+      --muted:#6b7280;
+      --shadow:0 1px 0 rgba(0,0,0,.03);
+      --r:16px;
     }
     *{box-sizing:border-box}
     body{
-      margin:0;background:var(--bg);color:var(--text);
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
       font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans JP",sans-serif;
-      padding-bottom:58px; /* 下固定バー分 */
+      padding-bottom:56px; /* 下固定バー分（薄め） */
     }
     a{color:inherit}
-    .wrap{max-width:980px;margin:0 auto;padding:14px 14px}
     header{
       background:var(--card);
       border-bottom:1px solid var(--line);
       position:sticky;top:0;z-index:10;
     }
+    .wrap{max-width:980px;margin:0 auto;padding:14px 14px}
     .topRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
     .titleBox b{display:block;font-size:16px}
     .titleBox .sub{font-size:12px;color:var(--muted);margin-top:2px}
     .note{font-size:12px;color:var(--muted);margin-top:6px}
+
+    .btn{
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#fff;
+      cursor:pointer;
+      white-space:nowrap;
+      font-weight:900;
+      font-size:13px;
+    }
+    .btn.primary{background:#111;color:#fff;border-color:#111}
+
+    /* tabs */
     .tabs{display:flex;gap:10px;margin-top:12px}
     .tab{
       flex:1;
@@ -34,29 +55,18 @@
       background:#fff;
       border-radius:14px;
       padding:12px 10px;
-      font-weight:900;
+      font-weight:950;
       cursor:pointer;
+      font-size:13px;
     }
     .tab.active{background:#111;color:#fff;border-color:#111}
-    .searchRow{display:flex;gap:10px;align-items:center;margin-top:12px}
-    input{
-      width:100%;
-      padding:12px 12px;
-      border:1px solid var(--line);
-      border-radius:14px;
-      background:#fff;
-    }
-    .btn{
-      padding:12px 12px;border-radius:14px;border:1px solid var(--line);
-      background:#fff;cursor:pointer;white-space:nowrap;
-      font-weight:800;
-    }
-    .btn.primary{background:#111;color:#fff;border-color:#111}
+
+    /* meta */
     .metaRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--muted)}
     .pill{display:inline-flex;gap:6px;align-items:center;background:#eef2ff;border-radius:999px;padding:3px 10px}
     .pill b{color:#111}
 
-    /* 絞り込み（収納） */
+    /* filters (収納) */
     details.filters{
       margin-top:10px;
       border:1px solid var(--line);
@@ -65,19 +75,25 @@
       padding:10px;
     }
     .sr-only{
-      position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+      position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+      clip:rect(0,0,0,0);white-space:nowrap;border:0;
     }
     .filterGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     @media (max-width:620px){ .filterGrid{grid-template-columns:1fr} }
     select{
       width:100%;
-      padding:12px 12px;border:1px solid var(--line);border-radius:14px;background:#fff;
+      padding:12px 12px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
     }
     .filterActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
 
-    /* リスト（サイゼ式：縦、情報3行固定） */
+    /* list (サイゼ式縦リスト) */
     .listBox{
-      background:#fff;border:1px solid var(--line);border-radius:16px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:16px;
       box-shadow:var(--shadow);
       overflow:hidden;
     }
@@ -94,12 +110,15 @@
     }
     summary::-webkit-details-marker{display:none}
     .lines{min-width:0}
-    .l1{font-weight:900}
+    .l1{font-weight:950}
     .l2{margin-top:6px;font-size:12px;color:var(--muted)}
     .need{font-size:20px;font-weight:950;color:#111}
-    .l3{margin-top:6px;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .l3{
+      margin-top:6px;font-size:12px;color:var(--muted);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+    }
     .arrow{
-      font-weight:900;color:#111;
+      font-weight:950;color:#111;
       border:1px solid var(--line);
       width:34px;height:34px;border-radius:999px;
       display:flex;align-items:center;justify-content:center;
@@ -107,41 +126,42 @@
       user-select:none;
     }
     details[open] .arrow{transform:rotate(90deg)}
-    .detail{
-      padding:0 14px 14px 14px;
-    }
+    .detail{padding:0 14px 14px 14px}
     .detail .row{display:flex;gap:10px;flex-wrap:wrap}
     .chip{
       display:inline-flex;align-items:center;gap:6px;
-      border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;background:#fff;color:#111
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:3px 10px;
+      font-size:12px;background:#fff;color:#111
     }
     .detail .small{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6}
     .ctaRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
     .cta{
       display:inline-block;
-      padding:12px 14px;border-radius:14px;
-      background:#111;color:#fff;text-decoration:none;font-weight:900;
+      padding:12px 14px;
+      border-radius:14px;
+      background:#111;color:#fff;
+      text-decoration:none;font-weight:950;
     }
     .cta.ghost{background:#fff;color:#111;border:1px solid #111}
-    .empty{
-      padding:14px;color:var(--muted);font-size:12px;
-    }
+    .empty{padding:14px;color:var(--muted);font-size:12px}
     .err{
       margin:12px 0;
       border:1px solid #fecaca;background:#fff1f2;color:#7f1d1d;
       border-radius:14px;padding:12px 12px;font-size:12px;
     }
 
-    /* 免責など折りたたみ */
+    /* legal fold */
     details.legal{
       margin-top:14px;
       border:1px solid var(--line);
       border-radius:14px;background:#fff;padding:10px;
       color:var(--muted);font-size:12px;line-height:1.7;
     }
-    details.legal summary{padding:6px 6px;font-weight:900;color:#111}
+    details.legal summary{padding:6px 6px;font-weight:950;color:#111}
 
-    /* 下固定バー（資金導線はここに移動） */
+    /* bottom bar (薄め) */
     .bottomBar{
       position:fixed;left:0;right:0;bottom:0;z-index:30;
       background:#fff;border-top:1px solid var(--line);
@@ -150,8 +170,12 @@
     .bottomInner{max-width:980px;margin:0 auto;display:flex;gap:10px}
     .bottomInner a{
       flex:1;text-align:center;text-decoration:none;
-      padding:10px 10px;border-radius:14px;font-weight:950;
-      border:1px solid var(--line);background:#fff;
+      padding:10px 10px;
+      border-radius:12px;
+      font-weight:950;
+      font-size:13px;
+      border:1px solid var(--line);
+      background:#fff;
     }
     .bottomInner a.primary{background:#111;color:#fff;border-color:#111}
   </style>
@@ -163,17 +187,17 @@
     <div class="topRow">
       <div class="titleBox">
         <b>ミニ株で狙える株主優待</b>
-        <div class="sub">まずは「10万円未満」か「1株」から選ぶだけ</div>
+        <div class="sub">まずは「今月 / 10万円未満 / 1株」から選ぶだけ</div>
       </div>
       <button id="filterBtn" class="btn">絞り込み</button>
     </div>
+
     <div class="note">※プロモーション（広告）を含みます</div>
 
     <div class="tabs">
-  <button id="tabMonth" class="tab active">今月の優待</button>
-  <button id="tabUnder" class="tab">10万円未満</button>
-  <button id="tabOne" class="tab">1株優待</button>
-</div>
+      <button id="tabMonth" class="tab active">今月の優待</button>
+      <button id="tabUnder" class="tab">10万円未満</button>
+      <button id="tabOne" class="tab">1株優待</button>
     </div>
 
     <details id="filters" class="filters" style="display:none;">
@@ -199,8 +223,7 @@
         <div style="grid-column:1/-1;">
           <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">並び替え</div>
           <select id="sort">
-            <option value="needAsc">必要資金が少ない順（おすすめ）</option>
-            <option value="yieldDesc">優待利回り（目安）が高い順</option>
+            <option value="priceAsc">株価が安い順（おすすめ）</option>
             <option value="monthAsc">権利月順</option>
           </select>
         </div>
@@ -255,14 +278,31 @@
 
   const monthOrder = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
 
+  // “今月”を日本時間で固定
+  const currentMonthLabel =
+    new Intl.DateTimeFormat("ja-JP", { month: "numeric", timeZone: "Asia/Tokyo" }).format(new Date()) + "月";
+  document.getElementById("tabMonth").textContent = `今月（${currentMonthLabel}）の優待`;
+
+  // recordMonthが「3月」「3月/9月」「3月・9月」みたいでも対応
+  const extractMonths = (s) => {
+    const m = String(s || "").match(/(?:1[0-2]|[1-9])月/g);
+    return m ? [...new Set(m)] : [];
+  };
+  const hasMonth = (recordMonth, monthLabel) => extractMonths(recordMonth).includes(monthLabel);
+  const firstMonthIndex = (recordMonth) => {
+    const ms = extractMonths(recordMonth);
+    if (!ms.length) return 999;
+    const idxs = ms.map(x => monthOrder.indexOf(x)).filter(i => i >= 0);
+    return idxs.length ? Math.min(...idxs) : 999;
+  };
+
   let DATA = [];
-  let tab = "under"; // "under" or "one"
+  let tab = "month"; // "month" / "under" / "one"
 
   const state = {
-    q: "",
     month: "",
     cat: "",
-    sort: "needAsc"
+    sort: "priceAsc"
   };
 
   const yen = (n) => (Number(n || 0)).toLocaleString("ja-JP") + "円";
@@ -271,25 +311,45 @@
     .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
     .replaceAll('"',"&quot;").replaceAll("'","&#039;");
 
-  const yieldPct = (perkValueYen, needMoneyYen) => {
-    const v = Number(perkValueYen || 0);
-    const n = Number(needMoneyYen || 0);
-    if (!v || !n) return 0;
-    return (v / n) * 100;
+  const isOneOrUnder = (x) =>
+    Number(x.minSharesForPerk) === 1 ||
+    (Number(x.minSharesForPerk) >= 100 && Number(x.needMoneyPerkYen) <= 100000);
+
+  const monthEl = document.getElementById("month");
+
+  const syncMonthUI = () => {
+    if (tab === "month") {
+      // 今月タブでは月選択は固定（混乱防止）
+      state.month = "";
+      monthEl.value = currentMonthLabel;
+      monthEl.disabled = true;
+    } else {
+      monthEl.disabled = false;
+      monthEl.value = state.month;
+    }
   };
 
   const baseSet = () => {
     if (tab === "one") {
       return DATA.filter(x => Number(x.minSharesForPerk) === 1);
     }
-    // under10万円（※1株は除外して “少額＝単元優待” を見せる想定）
-    return DATA.filter(x => Number(x.minSharesForPerk) >= 100 && Number(x.needMoneyPerkYen) <= 100000);
+    if (tab === "under") {
+      return DATA.filter(x => Number(x.minSharesForPerk) >= 100 && Number(x.needMoneyPerkYen) <= 100000);
+    }
+    // tab === "month"：今月の優待（1株＋10万円未満の両方）
+    return DATA
+      .filter(x => hasMonth(x.recordMonth, currentMonthLabel))
+      .filter(isOneOrUnder);
   };
 
   const rebuildCatOptions = () => {
     const cats = [...new Set(baseSet().map(x => x.category).filter(Boolean))].sort();
     const current = state.cat;
-    elCat.innerHTML = `<option value="">すべて</option>` + cats.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join("");
+
+    elCat.innerHTML = `<option value="">すべて</option>` + cats
+      .map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`)
+      .join("");
+
     if (current && cats.includes(current)) {
       elCat.value = current;
     } else {
@@ -299,33 +359,50 @@
   };
 
   const filtered = () => {
-    const q = state.q.trim().toLowerCase();
     return baseSet()
       .filter(x => {
-        const hitQ = !q || String(x.code).includes(q) || String(x.name || "").toLowerCase().includes(q);
-        const hitM = !state.month || x.recordMonth === state.month;
+        const hitM = !state.month || hasMonth(x.recordMonth, state.month);
         const hitC = !state.cat || x.category === state.cat;
-        return hitQ && hitM && hitC;
+        return hitM && hitC;
       })
       .sort((a,b) => {
-        if (state.sort === "needAsc") return Number(a.needMoneyPerkYen) - Number(b.needMoneyPerkYen);
-        if (state.sort === "yieldDesc") return yieldPct(b.perkValueYen,b.needMoneyPerkYen) - yieldPct(a.perkValueYen,a.needMoneyPerkYen);
-        if (state.sort === "monthAsc") return monthOrder.indexOf(a.recordMonth) - monthOrder.indexOf(b.recordMonth);
+        if (state.sort === "priceAsc") {
+          const ap = Number(a.pricePerShareYen ?? Infinity);
+          const bp = Number(b.pricePerShareYen ?? Infinity);
+          if (ap !== bp) return ap - bp;
+          // tie-break: 月→必要資金
+          return firstMonthIndex(a.recordMonth) - firstMonthIndex(b.recordMonth) ||
+                 Number(a.needMoneyPerkYen ?? Infinity) - Number(b.needMoneyPerkYen ?? Infinity);
+        }
+        if (state.sort === "monthAsc") {
+          const am = firstMonthIndex(a.recordMonth);
+          const bm = firstMonthIndex(b.recordMonth);
+          if (am !== bm) return am - bm;
+          // tie-break: 株価→必要資金
+          return Number(a.pricePerShareYen ?? Infinity) - Number(b.pricePerShareYen ?? Infinity) ||
+                 Number(a.needMoneyPerkYen ?? Infinity) - Number(b.needMoneyPerkYen ?? Infinity);
+        }
         return 0;
       });
+  };
+
+  const tabLabel = () => {
+    if (tab === "month") return `今月（${currentMonthLabel}）`;
+    if (tab === "under") return "10万円未満";
+    return "1株優待";
   };
 
   const renderMeta = (arr) => {
     const total = baseSet().length;
     elMeta.innerHTML = `
       <span class="pill">表示 <b>${arr.length}</b> / ${total}件</span>
-      <span class="pill"><b>${tab === "under" ? "10万円未満" : "1株"}</b> を表示中</span>
+      <span class="pill"><b>${escapeHTML(tabLabel())}</b> を表示中</span>
+      <span class="pill">並び <b>${state.sort === "priceAsc" ? "株価安い順" : "権利月順"}</b></span>
     `;
   };
 
   const itemHTML = (x) => {
     const need = Number(x.needMoneyPerkYen || 0);
-    const y = yieldPct(x.perkValueYen, x.needMoneyPerkYen);
     const toMoney = `./money.html?need=${encodeURIComponent(String(need))}&name=${encodeURIComponent(x.name || "")}&code=${encodeURIComponent(String(x.code || ""))}`;
 
     return `
@@ -347,9 +424,8 @@
           </div>
 
           <div class="small">
-            1株目安：${yen(x.pricePerShareYen || 0)} /
-            優待価値（目安）：${yen(x.perkValueYen || 0)} /
-            利回り（目安）：${y ? y.toFixed(1) + "%" : "—"}
+            株価（1株目安）：${yen(x.pricePerShareYen || 0)} /
+            優待価値（目安）：${yen(x.perkValueYen || 0)}
           </div>
 
           <div class="small">
@@ -373,46 +449,56 @@
     renderMeta(arr);
 
     if (!arr.length) {
-      elList.innerHTML = `<div class="empty">該当なし。検索を消すか、絞り込み（権利月/カテゴリ）をリセットしてみて。</div>`;
+      elList.innerHTML = `<div class="empty">該当なし。絞り込みをリセットしてみて。</div>`;
       return;
     }
     elList.innerHTML = arr.map(itemHTML).join("");
   };
 
-  // UI events
-  document.getElementById("q").addEventListener("input", (e) => { state.q = e.target.value; render(); });
-  document.getElementById("month").addEventListener("input", (e) => { state.month = e.target.value; render(); });
-  document.getElementById("cat").addEventListener("input", (e) => { state.cat = e.target.value; render(); });
-  document.getElementById("sort").addEventListener("input", (e) => { state.sort = e.target.value; render(); });
-
   const setTab = (next) => {
     tab = next;
+
+    document.getElementById("tabMonth").classList.toggle("active", tab === "month");
     document.getElementById("tabUnder").classList.toggle("active", tab === "under");
     document.getElementById("tabOne").classList.toggle("active", tab === "one");
+
+    syncMonthUI();
     rebuildCatOptions();
     render();
     window.scrollTo({top:0, behavior:"smooth"});
   };
+
+  // tab events
+  document.getElementById("tabMonth").addEventListener("click", () => setTab("month"));
   document.getElementById("tabUnder").addEventListener("click", () => setTab("under"));
   document.getElementById("tabOne").addEventListener("click", () => setTab("one"));
 
-  // filters toggle (button controls details)
+  // filter UI events
+  monthEl.addEventListener("input", (e) => { state.month = e.target.value; render(); });
+  document.getElementById("cat").addEventListener("input", (e) => { state.cat = e.target.value; render(); });
+  document.getElementById("sort").addEventListener("input", (e) => { state.sort = e.target.value; render(); });
+
+  // filters toggle
   const filters = document.getElementById("filters");
-  const filterBtn = document.getElementById("filterBtn");
-  const closeFilters = document.getElementById("closeFilters");
-  filterBtn.addEventListener("click", () => {
+  document.getElementById("filterBtn").addEventListener("click", () => {
     filters.style.display = "block";
     filters.open = !filters.open;
   });
-  closeFilters.addEventListener("click", () => { filters.open = false; });
+  document.getElementById("closeFilters").addEventListener("click", () => { filters.open = false; });
 
   document.getElementById("reset").addEventListener("click", () => {
-    state.month = ""; state.cat = ""; state.sort = "needAsc";
-    document.getElementById("month").value = "";
-    document.getElementById("sort").value = "needAsc";
+    state.month = "";
+    state.cat = "";
+    state.sort = "priceAsc";
+
+    document.getElementById("sort").value = "priceAsc";
+    syncMonthUI();
     rebuildCatOptions();
     render();
   });
+
+  // initial sync for month tab
+  syncMonthUI();
 
   // Load data
   fetch(DATA_URL, { cache: "no-store" })
@@ -430,7 +516,7 @@
       elErr.innerHTML = `
         <b>エラー</b><br>
         ${escapeHTML(err?.message || err)}<br>
-        <span style="color:var(--muted)">確認: ブラウザで <a href="${escapeHTML(DATA_URL)}" target="_blank" rel="noopener">${escapeHTML(DATA_URL)}</a> を開いてJSONが表示されるか</span>
+        <span style="color:var(--muted)">確認: <a href="${escapeHTML(DATA_URL)}" target="_blank" rel="noopener">${escapeHTML(DATA_URL)}</a> を開いてJSONが表示されるか</span>
       `;
     });
 
