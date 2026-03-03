@@ -176,10 +176,6 @@
 </div>
     </div>
 
-    <div class="searchRow">
-      <input id="q" placeholder="会社名・銘柄コードで検索（任意）" />
-    </div>
-
     <details id="filters" class="filters" style="display:none;">
       <summary class="sr-only">絞り込み</summary>
 
