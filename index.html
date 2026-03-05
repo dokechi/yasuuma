@@ -435,7 +435,7 @@ const recordMonthShort = (s) => {
           <div class="lines">
             <div class="l1">${escapeHTML(x.name)} (${escapeHTML(x.code)})</div>
             <div class="l2">必要資金： <span class="need">${needText}</span></div>
-            <div class="l3">優待：${escapeHTML(x.perk || "")}</div>
+            <div class="l3">権利月：${escapeHTML(recordMonthShort(x.recordMonth))} / 優待：${escapeHTML(x.perk || "")}</div>
           </div>
           <div class="arrow">▶</div>
         </summary>
