@@ -307,10 +307,17 @@
   document.getElementById("tabMonth").textContent = `今月の優待`;
 
   // recordMonthが「3月」「3月/9月」「3月・9月」みたいでも対応
-  const extractMonths = (s) => {
-    const m = String(s || "").match(/(?:1[0-2]|[1-9])月/g);
-    return m ? [...new Set(m)] : [];
-  };
+  const toHalfWidthDigits = (s) =>
+  String(s || "").replace(/[０-９]/g, (d) => String.fromCharCode(d.charCodeAt(0) - 0xFEE0));
+
+const extractMonths = (s) => {
+  const t = toHalfWidthDigits(s);
+  const m = t.match(/0?(?:1[0-2]|[1-9])月/g); // 3月 / 03月 どっちも拾う
+  if (!m) return [];
+  // 03月 → 3月 に正規化してユニーク化
+  const normalized = m.map(x => x.replace(/^0/, ""));
+  return [...new Set(normalized)];
+};
 
   // 表示用：mini=true なら "3・9" / false なら "3月・9月"
   const formatRecordMonths = (s, mini = false) => {
