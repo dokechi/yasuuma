@@ -304,7 +304,7 @@
   // “今月”を日本時間で固定
   const currentMonthLabel =
     new Intl.DateTimeFormat("ja-JP", { month: "numeric", timeZone: "Asia/Tokyo" }).format(new Date()) + "月";
-  document.getElementById("tabMonth").textContent = `今月（${currentMonthLabel}）の優待`;
+  document.getElementById("tabMonth").textContent = `今月の優待`;
 
   // recordMonthが「3月」「3月/9月」「3月・9月」みたいでも対応
   const extractMonths = (s) => {
@@ -423,7 +423,7 @@
   };
 
   const tabLabel = () => {
-    if (tab === "month") return `今月（${currentMonthLabel}）`;
+    if (tab === "month") return `今月の優待`;
     if (tab === "under") return "10万円未満";
     return "1株優待";
   };
