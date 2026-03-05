@@ -288,6 +288,12 @@
     const m = String(s || "").match(/(?:1[0-2]|[1-9])月/g);
     return m ? [...new Set(m)] : [];
   };
+  // 権利月を短く表示（"3月末/9月末" みたいでも "3月・9月" にする）
+const recordMonthShort = (s) => {
+  const ms = extractMonths(s);
+  if (ms.length) return ms.join("・");
+  return (s ? String(s).trim() : "—");
+};
   const hasMonth = (recordMonth, monthLabel) => extractMonths(recordMonth).includes(monthLabel);
   const firstMonthIndex = (recordMonth) => {
     const ms = extractMonths(recordMonth);
