@@ -402,15 +402,33 @@
   };
 
   const itemHTML = (x) => {
-    const need = Number(x.needMoneyPerkYen || 0);
-    const toMoney = `./money.html?need=${encodeURIComponent(String(need))}&name=${encodeURIComponent(x.name || "")}&code=${encodeURIComponent(String(x.code || ""))}`;
+    const minShares = Number(x.minSharesForPerk) || 1;
+
+    const priceRaw = Number(x.pricePerShareYen);
+    const priceOk = Number.isFinite(priceRaw) && priceRaw > 0;
+
+    let needRaw = Number(x.needMoneyPerkYen);
+    const needOk = Number.isFinite(needRaw) && needRaw > 0;
+
+    if (!needOk && priceOk) {
+      needRaw = priceRaw * Math.max(1, minShares);
+    }
+
+    const needText = (Number.isFinite(needRaw) && needRaw > 0) ? yen(needRaw) : "—";
+    const priceText = priceOk ? yen(priceRaw) : "—";
+
+    const perkValueRaw = Number(x.perkValueYen);
+    const perkValueText = (Number.isFinite(perkValueRaw) && perkValueRaw > 0) ? yen(perkValueRaw) : "—";
+
+    const needForLink = (Number.isFinite(needRaw) && needRaw > 0) ? needRaw : 0;
+    const toMoney = `./money.html?need=${encodeURIComponent(String(needForLink))}&name=${encodeURIComponent(x.name || "")}&code=${encodeURIComponent(String(x.code || ""))}`;
 
     return `
       <details class="item">
         <summary>
           <div class="lines">
             <div class="l1">${escapeHTML(x.name)} (${escapeHTML(x.code)})</div>
-            <div class="l2">必要資金： <span class="need">${yen(need)}</span></div>
+            <div class="l2">必要資金： <span class="need">${needText}</span></div>
             <div class="l3">優待：${escapeHTML(x.perk || "")}</div>
           </div>
           <div class="arrow">▶</div>
@@ -424,8 +442,8 @@
           </div>
 
           <div class="small">
-            株価（1株目安）：${yen(x.pricePerShareYen || 0)} /
-            優待価値（目安）：${yen(x.perkValueYen || 0)}
+            株価（1株目安）：${priceText} /
+            優待価値（目安）：${perkValueText}
           </div>
 
           <div class="small">
@@ -443,6 +461,7 @@
       </details>
     `;
   };
+
 
   const render = () => {
     const arr = filtered();
