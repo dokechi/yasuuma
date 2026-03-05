@@ -110,27 +110,30 @@
     }
     summary::-webkit-details-marker{display:none}
     .lines{min-width:0}
+
+    /* 銘柄名行：右端に権利月ミニ(3・9) */
     .l1{
-  font-weight:950;
-  display:flex;
-  align-items:baseline;
-  justify-content:space-between;
-  gap:10px;
-  min-width:0;
-}
-.l1 .name{
-  min-width:0;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-.l1 .monthTag{
-  flex:0 0 auto;
-  font-size:12px;
-  font-weight:900;
-  color:var(--muted);
-  letter-spacing:.02em;
-}
+      font-weight:950;
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:10px;
+      min-width:0;
+    }
+    .l1 .name{
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .l1 .monthTag{
+      flex:0 0 auto;
+      font-size:12px;
+      font-weight:900;
+      color:var(--muted);
+      letter-spacing:.02em;
+    }
+
     .l2{margin-top:6px;font-size:12px;color:var(--muted)}
     .need{font-size:20px;font-weight:950;color:#111}
     .l3{
@@ -308,18 +311,20 @@
     const m = String(s || "").match(/(?:1[0-2]|[1-9])月/g);
     return m ? [...new Set(m)] : [];
   };
-  // 権利月を短く表示（"3月末/9月末" みたいでも "3月・9月" にする）
-// 表示用：mini=true なら "3・9" / false なら "3月・9月"
-const formatRecordMonths = (s, mini = false) => {
-  const ms = extractMonths(s);
-  if (ms.length) {
-    return mini
-      ? ms.map(m => m.replace("月", "")).join("・")  // 3・9
-      : ms.join("・");                              // 3月・9月
-  }
-  return s ? String(s).trim() : "—";
-};
+
+  // 表示用：mini=true なら "3・9" / false なら "3月・9月"
+  const formatRecordMonths = (s, mini = false) => {
+    const ms = extractMonths(s);
+    if (ms.length) {
+      return mini
+        ? ms.map(m => m.replace("月", "")).join("・")  // 3・9
+        : ms.join("・");                              // 3月・9月
+    }
+    return s ? String(s).trim() : "—";
+  };
+
   const hasMonth = (recordMonth, monthLabel) => extractMonths(recordMonth).includes(monthLabel);
+
   const firstMonthIndex = (recordMonth) => {
     const ms = extractMonths(recordMonth);
     if (!ms.length) return 999;
@@ -458,16 +463,20 @@ const formatRecordMonths = (s, mini = false) => {
       <details class="item">
         <summary>
           <div class="lines">
-            <div class="l1">${escapeHTML(x.name)} (${escapeHTML(x.code)})</div>
+            <div class="l1">
+              <span class="name">${escapeHTML(x.name)} (${escapeHTML(x.code)})</span>
+              <span class="monthTag">${escapeHTML(formatRecordMonths(x.recordMonth, true))}</span>
+            </div>
             <div class="l2">必要資金： <span class="need">${needText}</span></div>
-            <div class="l3">権利月：${escapeHTML(recordMonthShort(x.recordMonth))} / 優待：${escapeHTML(x.perk || "")}</div>
+            <div class="l3">優待：${escapeHTML(x.perk || "")}</div>
           </div>
           <div class="arrow">▶</div>
         </summary>
 
         <div class="detail">
           <div class="row">
-            <span class="chip">権利月：${escapeHTML(x.recordMonth || "—")}</span>
+            <span class="chip">コード：${escapeHTML(x.code || "—")}</span>
+            <span class="chip">権利月：${escapeHTML(formatRecordMonths(x.recordMonth, true))}</span>
             <span class="chip">カテゴリ：${escapeHTML(x.category || "—")}</span>
             <span class="chip">必要株数：${escapeHTML(x.minSharesForPerk ?? "—")}株</span>
           </div>
@@ -492,7 +501,6 @@ const formatRecordMonths = (s, mini = false) => {
       </details>
     `;
   };
-
 
   const render = () => {
     const arr = filtered();
