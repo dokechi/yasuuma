@@ -1,0 +1,287 @@
+--- /dev/fd/63	2026-03-06 00:49:13.554764629 +0000
++++ yasuuma-main/money.html	2026-03-06 00:48:39.392851559 +0000
+@@ -67,6 +67,23 @@
+     }
+     details.fold summary{padding:6px 6px;font-weight:950;color:#111}
+ 
++    .choiceGrid{display:grid;gap:10px;margin-top:12px}
++    .qBox{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}
++    .qTitle{font-weight:950;font-size:14px}
++    .qBtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
++    .qBtn{
++      appearance:none;border:1px solid var(--line);background:#fff;color:#111;border-radius:999px;
++      padding:10px 12px;font-weight:950;cursor:pointer;
++    }
++    .qBtn.active{background:#111;color:#fff;border-color:#111}
++    .strip{margin-top:12px;border:1px dashed var(--line);background:#fafafa;border-radius:14px;padding:12px}
++    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
++    .chip{
++      display:inline-flex;align-items:center;border:1px solid var(--line);background:#fff;border-radius:999px;
++      padding:5px 10px;font-size:12px;font-weight:700;
++    }
++    .goalBox{margin-top:10px;padding:10px 12px;border-radius:14px;background:#f9fafb;border:1px solid var(--line)}
++
+     .bottomBar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);padding:10px 12px}
+     .bottomInner{max-width:980px;margin:0 auto;display:flex;gap:10px}
+     .bottomInner a{
+@@ -107,6 +124,7 @@
+ </header>
+ 
+ <div class="wrap">
++  <div class="card" id="decision"></div>
+   <div class="card" id="recommend"></div>
+ 
+   <div class="muted" style="margin-top:12px;font-weight:900;color:#111;">比較（他の候補）</div>
+@@ -114,12 +132,7 @@
+ 
+   <details class="fold">
+     <summary>筆者の設定（公開）</summary>
+-    <div style="padding:6px 6px 10px 6px;">
+-      <div>・固定費の見直し方針（例）</div>
+-      <div>　- スマホ：使うGBに合わせる / 不要オプションを切る</div>
+-      <div>　- 保険：保障の過不足を整理して、必要なものだけ残す</div>
+-      <div class="muted">※ここはあなたの実体験・方針を書く場所（普段は閉じて邪魔しない）</div>
+-    </div>
++    <div id="authorContent" style="padding:6px 6px 10px 6px;"></div>
+   </details>
+ 
+   <details class="fold">
+@@ -132,7 +145,6 @@
+   </details>
+ </div>
+ 
+-<!-- 下固定バー -->
+ <div class="bottomBar">
+   <div class="bottomInner">
+     <a href="./index.html">優待を探す</a>
+@@ -145,8 +157,10 @@
+   const MONEY_URL = new URL("money.json", location.href).toString();
+ 
+   const elErr = document.getElementById("err");
++  const elDecision = document.getElementById("decision");
+   const elRecommend = document.getElementById("recommend");
+   const elOthers = document.getElementById("others");
++  const elAuthorContent = document.getElementById("authorContent");
+ 
+   const params = new URLSearchParams(location.search);
+   const need = Number(params.get("need") || 0);
+@@ -161,7 +175,8 @@
+   }
+ 
+   let OFFERS = [];
+-  let tab = "phone"; // phone or ins
++  let tab = "phone";
++  const phoneState = { data: "over20", fps: "no", priority: "budget" };
+ 
+   const escapeHTML = (s) => String(s ?? "")
+     .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+@@ -169,12 +184,113 @@
+ 
+   const yen = (n) => (Number(n||0)).toLocaleString("ja-JP") + "円";
+ 
++  const monthText = (min, max) => {
++    if (!(need > 0) || !(min > 0) || !(max > 0)) return "";
++    const fast = Math.max(1, Math.ceil(need / Math.max(min, max)));
++    const slow = Math.max(1, Math.ceil(need / Math.min(min, max)));
++    return `この節約を続けると、目標 ${need.toLocaleString("ja-JP")}円 まで約 ${fast}〜${slow}か月`;
++  };
++
++  const phoneReasons = () => {
++    const arr = [];
++    arr.push(phoneState.data === "over20" ? "20GB以上" : "20GB未満");
++    arr.push(phoneState.fps === "yes" ? "反応速度重視" : "動画中心");
++    arr.push(phoneState.priority === "stable" ? "安定優先" : "安さ優先");
++    return arr;
++  };
++
++  const phoneOrder = () => {
++    if (phoneState.fps === "yes") return ["ahamo", "linemo", "rakuten", "povo"];
++    if (phoneState.priority === "stable") return ["ahamo", "linemo", "rakuten", "povo"];
++    if (phoneState.data === "over20") return ["rakuten", "ahamo", "linemo", "povo"];
++    return ["linemo", "povo", "ahamo", "rakuten"];
++  };
++
+   const pick = () => {
+     const cat = (tab === "phone") ? "スマホ" : "保険";
+     const arr = OFFERS.filter(o => o.category === cat);
+-    const rec = arr[0] || null;              // おすすめ1本（先頭）
+-    const others = arr.slice(1, 4);          // 比較2〜3本
+-    return { cat, rec, others };
++
++    if (tab !== "phone") {
++      const rec = arr[0] || null;
++      const others = arr.slice(1, 4);
++      return { cat, rec, others };
++    }
++
++    const byId = new Map(arr.map(o => [o.id, o]));
++    const ordered = [];
++    for (const id of phoneOrder()) {
++      if (byId.has(id)) ordered.push(byId.get(id));
++    }
++    for (const item of arr) {
++      if (!ordered.find(o => o.id === item.id)) ordered.push(item);
++    }
++
++    return {
++      cat,
++      rec: ordered[0] || null,
++      others: ordered.slice(1, 4)
++    };
++  };
++
++  const renderDecision = () => {
++    if (tab !== "phone") {
++      elDecision.style.display = "none";
++      return;
++    }
++
++    elDecision.style.display = "block";
++    const q = (key, title, a, b) => `
++      <div class="qBox">
++        <div class="qTitle">${title}</div>
++        <div class="qBtns">
++          <button class="qBtn ${phoneState[key] === a.value ? "active" : ""}" data-q="${key}" data-v="${a.value}">${a.label}</button>
++          <button class="qBtn ${phoneState[key] === b.value ? "active" : ""}" data-q="${key}" data-v="${b.value}">${b.label}</button>
++        </div>
++      </div>
++    `;
++
++    elDecision.innerHTML = `
++      <span class="pill">3問で決める</span>
++      <h3>スマホは、まずここだけ</h3>
++      <div class="muted">※初期値はサンプルです。3つだけ変えると、おすすめが切り替わります。</div>
++
++      <div class="choiceGrid">
++        ${q("data", "1. 月20GB以上使う？", { value: "over20", label: "20GB以上" }, { value: "under20", label: "20GB未満" })}
++        ${q("fps", "2. FPSなど“反応速度が命”の使い方をする？", { value: "yes", label: "する" }, { value: "no", label: "しない" })}
++        ${q("priority", "3. 最優先はどっち？", { value: "stable", label: "安定" }, { value: "budget", label: "安さ" })}
++      </div>
++
++      <div class="strip">
++        <div style="font-weight:950;">いまの判定軸</div>
++        <div class="chips">
++          ${phoneReasons().map(r => `<span class="chip">${escapeHTML(r)}</span>`).join("")}
++        </div>
++      </div>
++    `;
++  };
++
++  const renderAuthor = () => {
++    if (tab === "phone") {
++      elAuthorContent.innerHTML = `
++        <div>・スマホは <b>分類 → 3問 → おすすめ1つ</b> で決める。</div>
++        <div>　- まず「安定を強く求めるか / 安さを優先するか」を分ける。</div>
++        <div>　- 次に「月のGB」と「FPSのような低遅延用途があるか」を見る。</div>
++        <div style="margin-top:8px;">・私の基準（例）</div>
++        <div>　- 20GB超 / テザリング多め / FPSしない → 楽天モバイルを第一候補にする。</div>
++        <div>　- 反応速度や安定を優先 → ahamo のようなキャリア直営寄りを先に見る。</div>
++        <div>　- 20GB未満で安さ重視 → LINEMO や格安SIM比較を先に見る。</div>
++        <div style="margin-top:8px;">・用語メモ</div>
++        <div>　- MVNO = 大手回線を借りる会社。安くなりやすいが、時間帯で速度差が出ることがある。</div>
++        <div>　- ahamo / povo / LINEMO は「安いけどMVNOではない」オンライン系として別で見る。</div>
++      `;
++      return;
++    }
++
++    elAuthorContent.innerHTML = `
++      <div>・固定費の見直し方針（例）</div>
++      <div>　- 保険：保障の過不足を整理して、必要なものだけ残す</div>
++      <div class="muted">※ここはあなたの実体験・方針を書く場所（普段は閉じて邪魔しない）</div>
++    `;
+   };
+ 
+   const render = () => {
+@@ -183,21 +299,36 @@
+     document.getElementById("tabPhone").classList.toggle("active", tab === "phone");
+     document.getElementById("tabIns").classList.toggle("active", tab === "ins");
+ 
++    renderDecision();
++    renderAuthor();
++
+     if (!rec) {
+       elRecommend.innerHTML = `<div class="muted">このカテゴリのデータがまだありません（money.jsonを確認）。</div>`;
+       elOthers.innerHTML = `<div class="muted" style="padding:14px;">—</div>`;
+       return;
+     }
+ 
++    const goalHtml = monthText(rec.monthlySaveMin, rec.monthlySaveMax)
++      ? `<div class="goalBox"><div class="muted">${escapeHTML(monthText(rec.monthlySaveMin, rec.monthlySaveMax))}</div></div>`
++      : "";
++
++    const reasonHtml = (tab === "phone")
++      ? `<div class="chips">${phoneReasons().map(r => `<span class="chip">${escapeHTML(r)}</span>`).join("")}</div>`
++      : "";
++
+     elRecommend.innerHTML = `
+       <span class="pill">${escapeHTML(cat)}</span>
+-      <h3>結論：${escapeHTML(rec.title)}</h3>
+-      <div class="muted">${escapeHTML(rec.desc || "")}</div>
++      <h3>結論：${escapeHTML(rec.title)} が合いやすい</h3>
++      ${reasonHtml}
++      ${rec.fitLabel ? `<div class="muted" style="margin-top:10px;">向く人：${escapeHTML(rec.fitLabel)}</div>` : ""}
++      <div class="muted" style="margin-top:8px;">${escapeHTML(rec.desc || "")}</div>
+ 
+       <div class="muted" style="margin-top:10px;">
+-        節約目安（ダミー）：<b>月 ${yen(rec.monthlySaveMin)}〜${yen(rec.monthlySaveMax)}</b>
++        節約目安：<b>月 ${yen(rec.monthlySaveMin)}〜${yen(rec.monthlySaveMax)}</b>
+       </div>
+ 
++      ${goalHtml}
++
+       <details class="fold" style="margin-top:10px;">
+         <summary>やること（手順）</summary>
+         <div style="padding:6px 6px 10px 18px;">
+@@ -208,7 +339,7 @@
+       </details>
+ 
+       <div class="ctaRow">
+-        <a class="cta" href="${escapeHTML(rec.affUrl)}" target="_blank" rel="noopener">${escapeHTML(rec.ctaLabel || "比較/申込へ（広告）")}</a>
++        <a class="cta" href="${escapeHTML(rec.affUrl)}" target="_blank" rel="noopener">${escapeHTML(rec.ctaLabel || "比較/申込へ")}</a>
+         <a class="cta ghost" href="./index.html">優待に戻る</a>
+       </div>
+ 
+@@ -225,14 +356,14 @@
+         <summary>
+           <div>
+             <div style="font-weight:950;">${escapeHTML(o.title)}</div>
+-            <div class="muted">節約目安（ダミー）：月 ${yen(o.monthlySaveMin)}〜${yen(o.monthlySaveMax)}</div>
++            <div class="muted">${o.fitLabel ? `向く人：${escapeHTML(o.fitLabel)} / ` : ""}節約目安：月 ${yen(o.monthlySaveMin)}〜${yen(o.monthlySaveMax)}</div>
+           </div>
+           <div class="arrow">▶</div>
+         </summary>
+         <div class="detail">
+           <div class="muted">${escapeHTML(o.desc || "")}</div>
+           <div class="ctaRow" style="margin-top:10px;">
+-            <a class="cta" href="${escapeHTML(o.affUrl)}" target="_blank" rel="noopener">${escapeHTML(o.ctaLabel || "比較/申込へ（広告）")}</a>
++            <a class="cta" href="${escapeHTML(o.affUrl)}" target="_blank" rel="noopener">${escapeHTML(o.ctaLabel || "比較/申込へ")}</a>
+           </div>
+           ${o.note ? `<div class="muted" style="margin-top:8px;">${escapeHTML(o.note)}</div>` : ""}
+         </div>
+@@ -240,8 +371,24 @@
+     `).join("");
+   };
+ 
+-  document.getElementById("tabPhone").addEventListener("click", () => { tab = "phone"; render(); window.scrollTo({top:0, behavior:"smooth"}); });
+-  document.getElementById("tabIns").addEventListener("click", () => { tab = "ins"; render(); window.scrollTo({top:0, behavior:"smooth"}); });
++  elDecision.addEventListener("click", (e) => {
++    const btn = e.target.closest("[data-q][data-v]");
++    if (!btn) return;
++    phoneState[btn.dataset.q] = btn.dataset.v;
++    render();
++  });
++
++  document.getElementById("tabPhone").addEventListener("click", () => {
++    tab = "phone";
++    render();
++    window.scrollTo({top:0, behavior:"smooth"});
++  });
++
++  document.getElementById("tabIns").addEventListener("click", () => {
++    tab = "ins";
++    render();
++    window.scrollTo({top:0, behavior:"smooth"});
++  });
+ 
+   fetch(MONEY_URL, { cache: "no-store" })
+     .then(r => {
