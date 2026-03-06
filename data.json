@@ -12,7 +12,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=1518.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=1518.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "2001",
@@ -27,7 +28,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=2001.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=2001.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "2168",
@@ -42,7 +44,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=2168.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=2168.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "2337",
@@ -57,7 +60,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:応募権(抽選) / 確度:抽選 / 1株条件:端株でも可（外部一覧） / 注意:抽選（当選者のみ） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=2337.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=2337.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "2602",
@@ -72,7 +76,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=2602.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=2602.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "3405",
@@ -87,7 +92,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:送付物 / 確度:概ね確実 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=3405.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=3405.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "4061",
@@ -102,7 +108,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=4061.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=4061.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "4539",
@@ -117,7 +124,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=4539.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=4539.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "5019",
@@ -132,7 +140,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:チケット/招待券 / 確度:概ね確実 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=5019.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=5019.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "5711",
@@ -147,7 +156,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=5711.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=5711.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "6504",
@@ -162,7 +172,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:送付物 / 確度:概ね確実 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=6504.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=6504.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "6971",
@@ -177,7 +188,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=6971.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=6971.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "7638",
@@ -192,7 +204,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=7638.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=7638.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "7752",
@@ -207,7 +220,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=7752.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=7752.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "7911",
@@ -222,7 +236,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:施設利用 / 確度:概ね確実 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=7911.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=7911.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "7912",
@@ -237,7 +252,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:送付物 / 確度:概ね確実 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=7912.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=7912.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "8698",
@@ -252,7 +268,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:ポイント付与 / 確度:条件あり / 1株条件:1〜99株（口座預入が条件） / 注意:マネックス証券口座に預け入れが条件（1株以上） / 根拠:公式（株主優待/株主還元）",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=8698.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=8698.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "8473",
@@ -267,7 +284,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:全株主（単元未満含むと記載） / 注意:単元未満株も対象との記載あり / 根拠:株主優待ガイド（大和IR系）",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=8473.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=8473.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "9409",
@@ -282,7 +300,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:1株以上 / 根拠:公式（株主向け優待制度）",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=9409.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=9409.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "2590",
@@ -297,7 +316,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:すべての株主（優待価格販売） / 注意:現物（6,000円相当など）は別条件と注記あり / 根拠:公式（株主還元/株主優待）",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=2590.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=2590.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "7979",
@@ -312,7 +332,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:全ての株主（優待価格販売） / 根拠:公式（株主優待ページ）",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=7979.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=7979.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "8043",
@@ -327,7 +348,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:全株主（案内型） / 注意:案内型（購入は任意） / 根拠:公式（株主優待ページ）",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=8043.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=8043.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "7203",
@@ -342,7 +364,8 @@
     "perkValueYen": null,
     "perkNotes": "受取:応募権(抽選) / 確度:抽選 / 1株条件:応募は株数・保有期間不問（抽選） / 注意:抽選（当選者のみ） / 根拠:公式（株主優待について）",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=7203.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=7203.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   },
   {
     "code": "6594",
@@ -357,6 +380,7 @@
     "perkValueYen": null,
     "perkNotes": "受取:施設利用 / 確度:概ね確実 / 1株条件:1株以上 / 根拠:公式（株主優待ページ）",
     "lastChecked": "2026-03-06",
-    "priceSource": "https://stooq.com/q/l/?s=6594.jp&f=sd2t2ohlcv&h&e=csv"
+    "priceSource": "https://stooq.com/q/l/?s=6594.jp&f=sd2t2ohlcv&h&e=csv",
+    "priceDate": "2026-02-20"
   }
 ]
