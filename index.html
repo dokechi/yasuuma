@@ -302,8 +302,12 @@
   const monthOrder = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
 
   // “今月”を日本時間で固定
-  const currentMonthLabel =
-    new Intl.DateTimeFormat("ja-JP", { month: "numeric", timeZone: "Asia/Tokyo" }).format(new Date()) + "月";
+  const currentMonthNum =
+  new Intl.DateTimeFormat("ja-JP", { month: "numeric", timeZone: "Asia/Tokyo" })
+    .formatToParts(new Date())
+    .find(p => p.type === "month")?.value;
+
+const currentMonthLabel = `${currentMonthNum}月`;
   document.getElementById("tabMonth").textContent = `今月の優待`;
 
   // recordMonthが「3月」「3月/9月」「3月・9月」みたいでも対応
