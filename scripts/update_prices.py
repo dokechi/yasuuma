@@ -19,7 +19,21 @@ def _fetch(url: str) -> str | None:
     except Exception as e:
         return None
 
-def _parse_latest_close_from_csv(raw: str) -> float | None:
+def _parse_latest_daily_from_csv(raw: str) -> tuple[str | None, float | None]:
+    # Expect: Date,Open,High,Low,Close,Volume
+    rows = list(csv.DictReader(raw.splitlines()))
+    if not rows:
+        return None, None
+
+    for r in reversed(rows):
+        d = (r.get("Date") or "").strip()
+        c = (r.get("Close") or "").strip()
+        if d and c and c.lower() != "nan":
+            try:
+                return d, float(c)
+            except ValueError:
+                continue
+    return None, None
     # Expect: Date,Open,High,Low,Close,Volume
     rows = list(csv.DictReader(raw.splitlines()))
     if not rows:
@@ -33,7 +47,36 @@ def _parse_latest_close_from_csv(raw: str) -> float | None:
                 continue
     return None
 
-def fetch_latest_close(code: str) -> tuple[float | None, str]:
+def fetch_latest_close(code: str) -> tuple[str | None, float | None, str]:
+    """
+    Returns (price_date, close, used_url)
+    """
+    tickers = [f"{code}.jp", f"{code}.t"]
+    bases = ["https://stooq.com", "https://stooq.pl"]
+
+    # 1) single quote endpoint
+    for base in bases:
+        for tkr in tickers:
+            url = f"{base}/q/l/?s={tkr}&f=sd2t2ohlcv&h&e=csv"
+            raw = _fetch(url)
+            if not raw:
+                continue
+            price_date, close = _parse_latest_daily_from_csv(raw)
+            if close is not None:
+                return price_date, close, url
+
+    # 2) daily quotes endpoint
+    for base in bases:
+        for tkr in tickers:
+            url = f"{base}/q/d/l/?s={tkr}&i=d"
+            raw = _fetch(url)
+            if not raw:
+                continue
+            price_date, close = _parse_latest_daily_from_csv(raw)
+            if close is not None:
+                return price_date, close, url
+
+    return None, None, ""
     """
     Try multiple endpoints/domains.
     Returns (close, used_url)
@@ -84,8 +127,13 @@ def main():
             failed.append((code, "code_not_digit", ""))
             continue
 
-        close, used = fetch_latest_close(code)
-        if close is None:
+        price_date, close, used = fetch_latest_close(code)
+if close is None:
+    item["pricePerShareYen"] = price
+item["needMoneyPerkYen"] = price * max(1, min_shares_int)
+item["lastChecked"] = today_jst
+item["priceDate"] = price_date
+item["priceSource"] = used
             failed.append((code, "no_close", used))
             continue
 
