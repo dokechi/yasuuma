@@ -269,29 +269,34 @@
     `;
   };
 
-  const renderAuthor = () => {
-    if (tab === "phone") {
-      elAuthorContent.innerHTML = `
-        <div>・スマホは <b>分類 → 3問 → おすすめ1つ</b> で決める。</div>
-        <div>　- まず「安定を強く求めるか / 安さを優先するか」を分ける。</div>
-        <div>　- 次に「月のGB」と「FPSのような低遅延用途があるか」を見る。</div>
-        <div style="margin-top:8px;">・私の基準（例）</div>
-        <div>　- 20GB超 / テザリング多め / FPSしない → 楽天モバイルを第一候補にする。</div>
-        <div>　- 反応速度や安定を優先 → ahamo のようなキャリア直営寄りを先に見る。</div>
-        <div>　- 20GB未満で安さ重視 → LINEMO や格安SIM比較を先に見る。</div>
-        <div style="margin-top:8px;">・用語メモ</div>
-        <div>　- MVNO = 大手回線を借りる会社。安くなりやすいが、時間帯で速度差が出ることがある。</div>
-        <div>　- ahamo / povo / LINEMO は「安いけどMVNOではない」オンライン系として別で見る。</div>
-      `;
-      return;
-    }
-
+const renderAuthor = () => {
+  if (tab === "phone") {
     elAuthorContent.innerHTML = `
-      <div>・固定費の見直し方針（例）</div>
-      <div>　- 保険：保障の過不足を整理して、必要なものだけ残す</div>
-      <div class="muted">※ここはあなたの実体験・方針を書く場所（普段は閉じて邪魔しない）</div>
+      <div>・利用キャリア：楽天モバイル</div>
+      <div style="margin-top:8px;">・私の考え方</div>
+      <div>　- まず最優先なのは、高いスマホ料金を下げること。</div>
+      <div>　- その時に手続きや確認が面倒だと、人は途中で止まりやすい。</div>
+      <div>　- だから最初は「安さを極める」より、「実行しやすいこと」を重視する。</div>
+
+      <div style="margin-top:8px;">・楽天モバイルを選んでいる理由</div>
+      <div>　- 全国に窓口があるので、万が一の時に動きやすい。</div>
+      <div>　- 大手キャリア系の安心感がある。</div>
+      <div>　- テザリングが無料なので、自宅Wi-Fi込みで見ても安くしやすい。</div>
+      <div>　- Netflix、YouTube、ネットサーフィン程度なら十分使いやすい。</div>
+      <div>　- 各社の通信プランはかなり見ているが、それでも毎月200GB使って3,300円台なら安いと考えて楽天にしている。</div>
+
+      <div style="margin-top:8px;">・補足</div>
+      <div>　- もっと安い会社を突き詰めることもできるが、それは慣れてからでも遅くない。</div>
+      <div>　- まずは「高い固定費を確実に下げる」ことを優先している。</div>
     `;
-  };
+    return;
+  }
+
+  elAuthorContent.innerHTML = `
+    <div>・固定費の見直し方針（例）</div>
+    <div>　- 保険：保障の過不足を整理して、必要なものだけ残す</div>
+  `;
+};
 
   const render = () => {
     const { cat, rec, others } = pick();
