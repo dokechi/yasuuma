@@ -2,7 +2,7 @@ name: Update stock prices
 
 on:
   schedule:
-    - cron: "17 9 * * 1-5" # 09:17 UTC = 18:17 JST (平日)
+    - cron: "20 7 * * 1-5" # 07:20 UTC = 16:20 JST
   workflow_dispatch:
 
 concurrency:
