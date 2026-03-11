@@ -3,98 +3,316 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>資金を作る（固定費：スマホ/保険）</title>
+  <title>資金を作る（固定費）</title>
   <style>
-    :root{ --bg:#f6f7f9; --card:#fff; --line:#e5e7eb; --text:#111; --muted:#6b7280; --shadow:0 1px 0 rgba(0,0,0,.03); }
+    :root{
+      --bg:#f6f7f9;
+      --card:#fff;
+      --line:#e5e7eb;
+      --text:#111827;
+      --muted:#6b7280;
+      --soft:#f9fafb;
+      --soft2:#eef2ff;
+      --accent:#111827;
+      --good:#ecfdf5;
+      --goodLine:#a7f3d0;
+      --bad:#fff7ed;
+      --badLine:#fdba74;
+      --warn:#fff1f2;
+      --warnLine:#fecdd3;
+      --shadow:0 1px 0 rgba(0,0,0,.03);
+    }
     *{box-sizing:border-box}
     body{
-      margin:0;background:var(--bg);color:var(--text);
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
       font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans JP",sans-serif;
-      padding-bottom:70px;
+      padding-bottom:76px;
     }
     a{color:inherit}
-    header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
-    .wrap{max-width:980px;margin:0 auto;padding:14px 14px}
+    header{
+      background:#fff;
+      border-bottom:1px solid var(--line);
+      position:sticky;
+      top:0;
+      z-index:20;
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:14px}
     .topRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .titleBox b{display:block;font-size:16px}
-    .titleBox .sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .titleBox b{display:block;font-size:17px}
+    .titleBox .sub{font-size:12px;color:var(--muted);margin-top:3px}
     .note{font-size:12px;color:var(--muted);margin-top:6px}
 
     .tabs{display:flex;gap:10px;margin-top:12px}
     .tab{
-      flex:1;border:1px solid var(--line);background:#fff;border-radius:14px;
-      padding:12px 10px;font-weight:950;cursor:pointer;
+      flex:1;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:14px;
+      padding:12px 10px;
+      font-weight:950;
+      cursor:pointer;
     }
     .tab.active{background:#111;color:#fff;border-color:#111}
 
     .pill{
-      display:inline-flex;gap:6px;align-items:center;background:#eef2ff;border-radius:999px;padding:3px 10px;
-      font-size:12px;color:#111
+      display:inline-flex;
+      gap:6px;
+      align-items:center;
+      background:var(--soft2);
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:12px;
+      color:#111;
     }
+
     .card{
-      background:#fff;border:1px solid var(--line);border-radius:16px;
-      box-shadow:var(--shadow);padding:14px;margin-top:12px;
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+      padding:14px;
+      margin-top:12px;
     }
     .card h3{margin:8px 0 6px 0}
-    .muted{color:var(--muted);font-size:12px;line-height:1.7}
+    .muted{color:var(--muted);font-size:12px;line-height:1.75}
+    .tiny{font-size:11px;color:var(--muted);line-height:1.7}
+    .sectionTitle{
+      margin-top:16px;
+      font-size:13px;
+      font-weight:950;
+      color:#111;
+    }
+
+    .heroGrid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+    .miniCard{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      background:#fff;
+    }
+    .miniCard.before{background:var(--bad);border-color:var(--badLine)}
+    .miniCard.after{background:var(--good);border-color:var(--goodLine)}
+    .miniCard .label{
+      font-size:12px;
+      font-weight:900;
+      color:#111;
+    }
+    .miniCard .num{
+      margin-top:6px;
+      font-size:24px;
+      font-weight:950;
+      line-height:1.25;
+    }
+    .resultBar{
+      margin-top:12px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:var(--soft);
+      padding:12px;
+      font-size:13px;
+      font-weight:900;
+    }
+    .goalBox{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      background:#f9fafb;
+      border:1px solid var(--line);
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.7;
+    }
+
+    .grid2{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+      margin-top:12px;
+    }
+    .stack{display:flex;flex-direction:column;gap:12px}
+    .box{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fff;
+      padding:12px;
+    }
+    .box h4{
+      margin:0 0 6px 0;
+      font-size:15px;
+    }
+    .kicker{
+      display:inline-block;
+      font-size:11px;
+      font-weight:900;
+      background:#f3f4f6;
+      border-radius:999px;
+      padding:4px 9px;
+      margin-bottom:8px;
+    }
+    .bullet{
+      margin:8px 0 0 0;
+      padding-left:18px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.8;
+    }
+    .metricGrid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+    .metric{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fff;
+    }
+    .metric .label{
+      font-size:11px;
+      color:var(--muted);
+      font-weight:900;
+    }
+    .metric .value{
+      margin-top:4px;
+      font-size:20px;
+      font-weight:950;
+      line-height:1.25;
+    }
+
     .ctaRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
     .cta{
-      display:inline-block;padding:12px 14px;border-radius:14px;background:#111;color:#fff;text-decoration:none;font-weight:950;
+      display:inline-block;
+      padding:12px 14px;
+      border-radius:14px;
+      background:#111;
+      color:#fff;
+      text-decoration:none;
+      font-weight:950;
+      border:1px solid #111;
     }
     .cta.ghost{background:#fff;color:#111;border:1px solid #111}
+    .cta.mutedBtn{
+      background:#fff;
+      color:#111;
+      border:1px solid var(--line);
+    }
+
     .listBox{
-      background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-top:12px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:16px;
+      overflow:hidden;
+      margin-top:12px;
       box-shadow:var(--shadow);
     }
     details.item{border-bottom:1px solid var(--line)}
     details.item:last-child{border-bottom:none}
     summary{
-      list-style:none;cursor:pointer;padding:14px 14px;
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      list-style:none;
+      cursor:pointer;
+      padding:14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
     }
     summary::-webkit-details-marker{display:none}
     .arrow{
-      font-weight:900;border:1px solid var(--line);
-      width:34px;height:34px;border-radius:999px;display:flex;align-items:center;justify-content:center;
+      font-weight:900;
+      border:1px solid var(--line);
+      width:34px;
+      height:34px;
+      border-radius:999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
       background:#fff;
+      flex:0 0 auto;
     }
     details[open] .arrow{transform:rotate(90deg)}
     .detail{padding:0 14px 14px 14px}
 
     details.fold{
-      margin-top:12px;border:1px solid var(--line);border-radius:14px;background:#fff;padding:10px;
-      color:var(--muted);font-size:12px;line-height:1.7;
+      margin-top:12px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+      padding:10px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.8;
     }
-    details.fold summary{padding:6px 6px;font-weight:950;color:#111}
+    details.fold summary{
+      padding:6px 6px;
+      font-weight:950;
+      color:#111;
+    }
 
-    .choiceGrid{display:grid;gap:10px;margin-top:12px}
-    .qBox{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}
-    .qTitle{font-weight:950;font-size:14px}
-    .qBtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .qBtn{
-      appearance:none;border:1px solid var(--line);background:#fff;color:#111;border-radius:999px;
-      padding:10px 12px;font-weight:950;cursor:pointer;
+    .authorList{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
     }
-    .qBtn.active{background:#111;color:#fff;border-color:#111}
-    .strip{margin-top:12px;border:1px dashed var(--line);background:#fafafa;border-radius:14px;padding:12px}
-    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .chip{
-      display:inline-flex;align-items:center;border:1px solid var(--line);background:#fff;border-radius:999px;
-      padding:5px 10px;font-size:12px;font-weight:700;
+    .authorList div{
+      font-size:12px;
+      line-height:1.8;
+      color:var(--muted);
     }
-    .goalBox{margin-top:10px;padding:10px 12px;border-radius:14px;background:#f9fafb;border:1px solid var(--line)}
 
-    .bottomBar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);padding:10px 12px}
-    .bottomInner{max-width:980px;margin:0 auto;display:flex;gap:10px}
+    .warn{
+      margin-top:12px;
+      border:1px solid var(--warnLine);
+      background:var(--warn);
+      color:#881337;
+      border-radius:14px;
+      padding:12px;
+      font-size:12px;
+      line-height:1.7;
+    }
+
+    .bottomBar{
+      position:fixed;
+      left:0;
+      right:0;
+      bottom:0;
+      z-index:30;
+      background:#fff;
+      border-top:1px solid var(--line);
+      padding:10px 12px;
+    }
+    .bottomInner{
+      max-width:980px;
+      margin:0 auto;
+      display:flex;
+      gap:10px;
+    }
     .bottomInner a{
-      flex:1;text-align:center;text-decoration:none;padding:12px 12px;border-radius:14px;font-weight:950;
-      border:1px solid var(--line);background:#fff;
+      flex:1;
+      text-align:center;
+      text-decoration:none;
+      padding:12px 12px;
+      border-radius:14px;
+      font-weight:950;
+      border:1px solid var(--line);
+      background:#fff;
     }
     .bottomInner a.primary{background:#111;color:#fff;border-color:#111}
 
-    .err{
-      margin-top:12px;border:1px solid #fecaca;background:#fff1f2;color:#7f1d1d;
-      border-radius:14px;padding:12px 12px;font-size:12px;
+    @media (max-width: 760px){
+      .heroGrid,
+      .grid2,
+      .metricGrid{
+        grid-template-columns:1fr;
+      }
+      .miniCard .num{font-size:22px}
     }
   </style>
 </head>
@@ -104,14 +322,14 @@
     <div class="topRow">
       <div class="titleBox">
         <b>資金を作る（固定費）</b>
-        <div class="sub">まずは「スマホ」か「保険」から選ぶだけ</div>
+        <div class="sub">優待の原資は、まず固定費から</div>
       </div>
     </div>
     <div class="note">※プロモーション（広告）を含みます</div>
 
     <div class="tabs">
       <button id="tabPhone" class="tab active">① 携帯料金を下げる</button>
-      <button id="tabIns" class="tab">② 保険料を下げる</button>
+      <button id="tabIns" class="tab">② 保険を見直す</button>
     </div>
 
     <div id="target" style="margin-top:10px;display:none;">
@@ -119,19 +337,19 @@
       <span class="muted" id="targetText" style="margin-left:8px;"></span>
     </div>
 
-    <div id="err" class="err" style="display:none;"></div>
+    <div id="err" class="warn" style="display:none;"></div>
   </div>
 </header>
 
 <div class="wrap">
-  <div class="card" id="decision"></div>
-  <div class="card" id="recommend"></div>
+  <div id="hero"></div>
+  <div id="main"></div>
 
-  <div class="muted" style="margin-top:12px;font-weight:900;color:#111;">比較（他の候補）</div>
-  <div class="listBox" id="others"></div>
+  <div class="sectionTitle" id="compareTitle">比較・補足</div>
+  <div class="listBox" id="compareBox"></div>
 
   <details class="fold">
-    <summary>筆者の設定（公開）</summary>
+    <summary>筆者の思い</summary>
     <div id="authorContent" style="padding:6px 6px 10px 6px;"></div>
   </details>
 
@@ -141,6 +359,7 @@
       <div>・本ページは情報提供のみです。</div>
       <div>・料金や条件は必ず各サービスの公式で確認してください。</div>
       <div>・当ページはプロモーション（広告）を含み、リンク経由で成果が発生すると報酬を得る場合があります。</div>
+      <div>・通信品質や保険の必要性は、住んでいる場所・家族構成・年齢・使い方で変わります。</div>
     </div>
   </details>
 </div>
@@ -157,9 +376,10 @@
   const MONEY_URL = new URL("money.json", location.href).toString();
 
   const elErr = document.getElementById("err");
-  const elDecision = document.getElementById("decision");
-  const elRecommend = document.getElementById("recommend");
-  const elOthers = document.getElementById("others");
+  const elHero = document.getElementById("hero");
+  const elMain = document.getElementById("main");
+  const elCompareBox = document.getElementById("compareBox");
+  const elCompareTitle = document.getElementById("compareTitle");
   const elAuthorContent = document.getElementById("authorContent");
 
   const params = new URLSearchParams(location.search);
@@ -169,235 +389,434 @@
 
   const elTarget = document.getElementById("target");
   const elTargetText = document.getElementById("targetText");
+
   if (need > 0) {
     elTarget.style.display = "block";
-    elTargetText.textContent = `${name}${code ? " ("+code+")" : ""} / 必要資金（目安）：${need.toLocaleString("ja-JP")}円`;
+    elTargetText.textContent = `${name}${code ? " (" + code + ")" : ""} / 必要資金（目安）：${need.toLocaleString("ja-JP")}円`;
   }
 
   let OFFERS = [];
   let tab = "phone";
-  const phoneState = { data: "over20", fps: "no", priority: "budget" };
 
   const escapeHTML = (s) => String(s ?? "")
-    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
-  const yen = (n) => (Number(n||0)).toLocaleString("ja-JP") + "円";
+  const isRealUrl = (url) => /^https?:\/\//.test(String(url || "")) && !/YOUR-|example\.com/i.test(String(url || ""));
+  const yen = (n) => Number(n || 0).toLocaleString("ja-JP") + "円";
 
-  const monthText = (min, max) => {
+  const defaults = {
+    rakuten: {
+      id: "rakuten",
+      category: "スマホ",
+      title: "楽天モバイル",
+      fitLabel: "大容量 / テザリング / 家のWi-Fiも見直したい人向け",
+      desc: "筆者の主回線。たくさん使っても料金がぶれにくく、テザリング込みで固定費をまとめて下げやすい。",
+      ctaLabel: "楽天モバイルを見る",
+      affUrl: "https://network.mobile.rakuten.co.jp/fee/saikyo-plan/detail/",
+      note: "楽天モバイルのエリアは事前確認推奨。山の中・混雑した電車・大きな商業施設の中などは、筆者の体感では弱いことがあります。"
+    },
+    linemo: {
+      id: "linemo",
+      category: "スマホ",
+      title: "LINEMO",
+      fitLabel: "通話重視 / ソフトバンク系 / オンラインで進められる人向け",
+      desc: "筆者の通話用。長電話や番号通話を重視するなら、楽天とは役割を分けるのが使いやすい。",
+      ctaLabel: "LINEMOを見る",
+      affUrl: "https://www.linemo.jp/plan/",
+      note: "オンライン専用。30GBのベストプランVに、通話定額 for LINEMOベストプランV を付ける使い方が分かりやすいです。"
+    },
+    ahamo: {
+      id: "ahamo",
+      category: "スマホ",
+      title: "ahamo",
+      fitLabel: "比較候補",
+      desc: "今回は主役にしていない候補。ドコモ回線を使いたい人向け。",
+      ctaLabel: "ahamoを見る",
+      affUrl: "https://ahamo.com/plan/index.html",
+      note: "今回は筆者の回線相性の理由で主役にしていません。"
+    },
+    povo: {
+      id: "povo",
+      category: "スマホ",
+      title: "povo2.0",
+      fitLabel: "比較候補",
+      desc: "今回は主役にしていない候補。トッピング型がハマる人向け。",
+      ctaLabel: "povoを見る",
+      affUrl: "https://povo.jp/",
+      note: "悪くないが、初心者が最初の1本に選ぶと考えることが少し増えます。"
+    },
+    insurance: {
+      id: "insurance",
+      category: "保険",
+      title: "保険の相談・比較",
+      fitLabel: "払う額と受け取る額を確認したい人向け",
+      desc: "保険は『何となく入る』ではなく、『いくら払って、いくら返るか』を見るのが先。",
+      ctaLabel: "保険を確認する",
+      affUrl: "",
+      note: "保険はまだアフィ導線より、考え方を先に置いています。"
+    }
+  };
+
+  const getOffer = (id) => {
+    const found = OFFERS.find(o => o.id === id);
+    if (found) return { ...defaults[id], ...found };
+    return defaults[id] || null;
+  };
+
+  const getOffersByCategory = (cat) => OFFERS.filter(o => o.category === cat);
+
+  const goalText = (min, max) => {
     if (!(need > 0) || !(min > 0) || !(max > 0)) return "";
     const fast = Math.max(1, Math.ceil(need / Math.max(min, max)));
     const slow = Math.max(1, Math.ceil(need / Math.min(min, max)));
-    return `この節約を続けると、目標 ${need.toLocaleString("ja-JP")}円 まで約 ${fast}〜${slow}か月`;
+    return `この差額を続けると、目標 ${need.toLocaleString("ja-JP")}円 まで約 ${fast}〜${slow}か月。`;
   };
 
-  const phoneReasons = () => {
-    const arr = [];
-    arr.push(phoneState.data === "over20" ? "20GB以上" : "20GB未満");
-    arr.push(phoneState.fps === "yes" ? "反応速度重視" : "動画中心");
-    arr.push(phoneState.priority === "stable" ? "安定優先" : "安さ優先");
-    return arr;
-  };
-
-  const phoneOrder = () => {
-    if (phoneState.fps === "yes") return ["ahamo", "linemo", "rakuten", "povo"];
-    if (phoneState.priority === "stable") return ["ahamo", "linemo", "rakuten", "povo"];
-    if (phoneState.data === "over20") return ["rakuten", "ahamo", "linemo", "povo"];
-    return ["linemo", "povo", "ahamo", "rakuten"];
-  };
-
-  const pick = () => {
-    const cat = (tab === "phone") ? "スマホ" : "保険";
-    const arr = OFFERS.filter(o => o.category === cat);
-
-    if (tab !== "phone") {
-      const rec = arr[0] || null;
-      const others = arr.slice(1, 4);
-      return { cat, rec, others };
-    }
-
-    const byId = new Map(arr.map(o => [o.id, o]));
-    const ordered = [];
-    for (const id of phoneOrder()) {
-      if (byId.has(id)) ordered.push(byId.get(id));
-    }
-    for (const item of arr) {
-      if (!ordered.find(o => o.id === item.id)) ordered.push(item);
-    }
-
-    return {
-      cat,
-      rec: ordered[0] || null,
-      others: ordered.slice(1, 4)
-    };
-  };
-
-  const renderDecision = () => {
-    if (tab !== "phone") {
-      elDecision.style.display = "none";
-      return;
-    }
-
-    elDecision.style.display = "block";
-    const q = (key, title, a, b) => `
-      <div class="qBox">
-        <div class="qTitle">${title}</div>
-        <div class="qBtns">
-          <button class="qBtn ${phoneState[key] === a.value ? "active" : ""}" data-q="${key}" data-v="${a.value}">${a.label}</button>
-          <button class="qBtn ${phoneState[key] === b.value ? "active" : ""}" data-q="${key}" data-v="${b.value}">${b.label}</button>
-        </div>
-      </div>
-    `;
-
-    elDecision.innerHTML = `
-      <span class="pill">3問で決める</span>
-      <h3>スマホは、まずここだけ</h3>
-      <div class="muted">※初期値はサンプルです。3つだけ変えると、おすすめが切り替わります。</div>
-
-      <div class="choiceGrid">
-        ${q("data", "1. 月20GB以上使う？", { value: "over20", label: "20GB以上" }, { value: "under20", label: "20GB未満" })}
-        ${q("fps", "2. FPSなど“反応速度が命”の使い方をする？", { value: "yes", label: "する" }, { value: "no", label: "しない" })}
-        ${q("priority", "3. 最優先はどっち？", { value: "stable", label: "安定" }, { value: "budget", label: "安さ" })}
-      </div>
-
-      <div class="strip">
-        <div style="font-weight:950;">いまの判定軸</div>
-        <div class="chips">
-          ${phoneReasons().map(r => `<span class="chip">${escapeHTML(r)}</span>`).join("")}
-        </div>
-      </div>
-    `;
-  };
-
-const renderAuthor = () => {
-  if (tab === "phone") {
-    elAuthorContent.innerHTML = `
-      <div>・利用キャリア：楽天モバイル</div>
-      <div style="margin-top:8px;">・私の考え方</div>
-      <div>　- まず最優先なのは、高いスマホ料金を下げること。</div>
-      <div>　- その時に手続きや確認が面倒だと、人は途中で止まりやすい。</div>
-      <div>　- だから最初は「安さを極める」より、「実行しやすいこと」を重視する。</div>
-
-      <div style="margin-top:8px;">・楽天モバイルを選んでいる理由</div>
-      <div>　- 全国に窓口があるので、万が一の時に動きやすい。</div>
-      <div>　- 店舗があるので、万が一のときに相談しやすい。</div>
-      <div>　- テザリングが無料なので、自宅Wi-Fi込みで見ても安くしやすい。</div>
-      <div>　- Netflix、YouTube、ネットサーフィン程度なら十分使いやすい。</div>
-      <div>　- 各社の通信プランはかなり見ているが、それでも毎月200GB使って3,300円台なら安いと考えて楽天にしている。</div>
-
-      <div style="margin-top:8px;">・補足</div>
-      <div>　- もっと安い会社を突き詰めることもできるが、それは慣れてからでも遅くない。</div>
-      <div>　- まずは「高い固定費を確実に下げる」ことを優先している。</div>
-    `;
-    return;
-  }
-
-  elAuthorContent.innerHTML = `
-    <div>・固定費の見直し方針（例）</div>
-    <div>　- 保険：保障の過不足を整理して、必要なものだけ残す</div>
-  `;
-};
-
-  const render = () => {
-    const { cat, rec, others } = pick();
-
-    document.getElementById("tabPhone").classList.toggle("active", tab === "phone");
-    document.getElementById("tabIns").classList.toggle("active", tab === "ins");
-
-    renderDecision();
-    renderAuthor();
-
-    if (!rec) {
-      elRecommend.innerHTML = `<div class="muted">このカテゴリのデータがまだありません（money.jsonを確認）。</div>`;
-      elOthers.innerHTML = `<div class="muted" style="padding:14px;">—</div>`;
-      return;
-    }
-
-    const goalHtml = monthText(rec.monthlySaveMin, rec.monthlySaveMax)
-      ? `<div class="goalBox"><div class="muted">${escapeHTML(monthText(rec.monthlySaveMin, rec.monthlySaveMax))}</div></div>`
-      : "";
-
-    const reasonHtml = (tab === "phone")
-      ? `<div class="chips">${phoneReasons().map(r => `<span class="chip">${escapeHTML(r)}</span>`).join("")}</div>`
-      : "";
-
-    elRecommend.innerHTML = `
-      <span class="pill">${escapeHTML(cat)}</span>
-      <h3>結論：${escapeHTML(rec.title)} が合いやすい</h3>
-      ${reasonHtml}
-      ${rec.fitLabel ? `<div class="muted" style="margin-top:10px;">向く人：${escapeHTML(rec.fitLabel)}</div>` : ""}
-      <div class="muted" style="margin-top:8px;">${escapeHTML(rec.desc || "")}</div>
-
-      <div class="muted" style="margin-top:10px;">
-        節約目安：<b>月 ${yen(rec.monthlySaveMin)}〜${yen(rec.monthlySaveMax)}</b>
-      </div>
-
-      ${goalHtml}
-
-      <details class="fold" style="margin-top:10px;">
-        <summary>やること（手順）</summary>
-        <div style="padding:6px 6px 10px 18px;">
-          <ol class="muted" style="margin:8px 0 0 0;padding-left:18px;">
-            ${(rec.steps || []).map(s => `<li>${escapeHTML(s)}</li>`).join("")}
-          </ol>
-        </div>
-      </details>
-
-      <div class="ctaRow">
-        <a class="cta" href="${escapeHTML(rec.affUrl)}" target="_blank" rel="noopener">${escapeHTML(rec.ctaLabel || "比較/申込へ")}</a>
-        <a class="cta ghost" href="./index.html">優待に戻る</a>
-      </div>
-
-      ${rec.note ? `<div class="muted" style="margin-top:8px;">${escapeHTML(rec.note)}</div>` : ""}
-    `;
-
-    if (!others.length) {
-      elOthers.innerHTML = `<div class="muted" style="padding:14px;">比較候補はまだ少ない（追加すると強くなる）</div>`;
-      return;
-    }
-
-    elOthers.innerHTML = others.map(o => `
+  const renderCompareItem = (offer, subLabel = "") => {
+    const url = isRealUrl(offer?.affUrl) ? offer.affUrl : "";
+    return `
       <details class="item">
         <summary>
           <div>
-            <div style="font-weight:950;">${escapeHTML(o.title)}</div>
-            <div class="muted">${o.fitLabel ? `向く人：${escapeHTML(o.fitLabel)} / ` : ""}節約目安：月 ${yen(o.monthlySaveMin)}〜${yen(o.monthlySaveMax)}</div>
+            <div style="font-weight:950;">${escapeHTML(offer?.title || "候補")}</div>
+            <div class="muted">
+              ${subLabel ? escapeHTML(subLabel) + " / " : ""}
+              ${offer?.fitLabel ? `向く人：${escapeHTML(offer.fitLabel)}` : ""}
+            </div>
           </div>
           <div class="arrow">▶</div>
         </summary>
         <div class="detail">
-          <div class="muted">${escapeHTML(o.desc || "")}</div>
-          <div class="ctaRow" style="margin-top:10px;">
-            <a class="cta" href="${escapeHTML(o.affUrl)}" target="_blank" rel="noopener">${escapeHTML(o.ctaLabel || "比較/申込へ")}</a>
-          </div>
-          ${o.note ? `<div class="muted" style="margin-top:8px;">${escapeHTML(o.note)}</div>` : ""}
+          <div class="muted">${escapeHTML(offer?.desc || "")}</div>
+          ${offer?.note ? `<div class="muted" style="margin-top:8px;">${escapeHTML(offer.note)}</div>` : ""}
+          ${url ? `
+            <div class="ctaRow" style="margin-top:10px;">
+              <a class="cta" href="${escapeHTML(url)}" target="_blank" rel="noopener">${escapeHTML(offer?.ctaLabel || "詳細を見る")}</a>
+            </div>
+          ` : ``}
         </div>
       </details>
-    `).join("");
+    `;
   };
 
-  elDecision.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-q][data-v]");
-    if (!btn) return;
-    phoneState[btn.dataset.q] = btn.dataset.v;
-    render();
-  });
+  const renderPhone = () => {
+    const rakuten = getOffer("rakuten");
+    const linemo = getOffer("linemo");
+    const ahamo = getOffer("ahamo");
+    const povo = getOffer("povo");
+
+    const rakutenUrl = isRealUrl(rakuten?.affUrl) ? rakuten.affUrl : defaults.rakuten.affUrl;
+    const linemoUrl = isRealUrl(linemo?.affUrl) ? linemo.affUrl : defaults.linemo.affUrl;
+
+    const phoneGoal = goalText(4000, 11000);
+
+    elHero.innerHTML = `
+      <div class="card">
+        <span class="pill">ビフォー / アフター</span>
+        <h3>固定費は、一回変えるだけで長く効く。</h3>
+        <div class="muted">
+          収入を増やすより、毎月必ず出ていくお金を下げる方が早い。まずは携帯料金から。
+        </div>
+
+        <div class="heroGrid">
+          <div class="miniCard before">
+            <div class="label">いまの例</div>
+            <div class="num">月 8,000〜15,000円</div>
+            <div class="muted">大手キャリア + 家Wi-Fi + オプション多め、のような状態</div>
+          </div>
+
+          <div class="miniCard after">
+            <div class="label">見直し後の例</div>
+            <div class="num">月 3,278〜4,070円</div>
+            <div class="muted">楽天モバイル 3,278円 / LINEMOベストプランV + 通話定額 4,070円</div>
+          </div>
+        </div>
+
+        <div class="resultBar">
+          月 4,000〜11,000円くらい差が出ることも。優待の原資を作るなら、ここはかなり効く。
+        </div>
+
+        ${phoneGoal ? `<div class="goalBox">${escapeHTML(phoneGoal)}</div>` : ``}
+      </div>
+    `;
+
+    elMain.innerHTML = `
+      <div class="card">
+        <span class="pill">筆者はこうしてる</span>
+        <h3>主役はこの2つ</h3>
+        <div class="grid2">
+          <div class="box">
+            <div class="kicker">主回線</div>
+            <h4>${escapeHTML(rakuten.title)}</h4>
+            <div class="muted">
+              テザリング込みで固定費をまとめて下げたい時の主役。家のWi-Fiまで見直せるなら強い。
+            </div>
+            <ul class="bullet">
+              <li>月100GB、200GBと使っても料金が変わりにくい</li>
+              <li>テザリングでテレビ・PC・iPadまでつなげる</li>
+              <li>ネットゲームを本気でやる人には向かないことがある</li>
+              <li>エリアが合うなら、まずこれを試す価値が高い</li>
+            </ul>
+            <div class="ctaRow">
+              <a class="cta" href="${escapeHTML(rakutenUrl)}" target="_blank" rel="noopener">${escapeHTML(rakuten.ctaLabel || "楽天モバイルを見る")}</a>
+            </div>
+            ${rakuten.note ? `<div class="tiny" style="margin-top:8px;">${escapeHTML(rakuten.note)}</div>` : ``}
+          </div>
+
+          <div class="box">
+            <div class="kicker">通話用</div>
+            <h4>${escapeHTML(linemo.title)}</h4>
+            <div class="muted">
+              通話し放題を安く・分かりやすく持ちたい時に使いやすい。楽天と役割を分けるとハマりやすい。
+            </div>
+            <ul class="bullet">
+              <li>番号通話の安定感を重視したい人向け</li>
+              <li>ベストプランV + 通話定額で考えると整理しやすい</li>
+              <li>オンライン専用なので、自分で進められる人向け</li>
+              <li>山の中の仕事やサブ回線用途にも相性が良い</li>
+            </ul>
+            <div class="ctaRow">
+              <a class="cta" href="${escapeHTML(linemoUrl)}" target="_blank" rel="noopener">${escapeHTML(linemo.ctaLabel || "LINEMOを見る")}</a>
+            </div>
+            ${linemo.note ? `<div class="tiny" style="margin-top:8px;">${escapeHTML(linemo.note)}</div>` : ``}
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="pill">選び方</span>
+        <h3>まずはこの2つだけ見ればいい</h3>
+        <div class="grid2">
+          <div class="box">
+            <div class="kicker">楽天モバイル向き</div>
+            <ul class="bullet" style="margin-top:0;">
+              <li>たくさん使う</li>
+              <li>家のWi-Fi代も見直したい</li>
+              <li>Netflix、YouTube、ネット中心</li>
+              <li>エリア確認して問題なさそう</li>
+            </ul>
+          </div>
+          <div class="box">
+            <div class="kicker">LINEMO向き</div>
+            <ul class="bullet" style="margin-top:0;">
+              <li>通話し放題を重視したい</li>
+              <li>楽天と役割を分けたい</li>
+              <li>ソフトバンク系で使いたい</li>
+              <li>オンライン手続きでも大丈夫</li>
+            </ul>
+          </div>
+        </div>
+        <div class="resultBar">
+          一番大事なのは、まず変えること。今の金額がここより高いなら、最初の一歩として十分です。
+        </div>
+      </div>
+    `;
+
+    elCompareTitle.textContent = "比較・補足";
+    elCompareBox.innerHTML = `
+      ${renderCompareItem(ahamo, "今回は主役にしていない候補")}
+      ${renderCompareItem(povo, "今回は主役にしていない候補")}
+    `;
+
+    elAuthorContent.innerHTML = `
+      <div class="authorList">
+        <div>・固定費は、収入を増やすより先に手を付けやすい。しかも一回見直すと長く効きます。</div>
+        <div>・携帯料金は、内容が複雑で面倒だからこそ、まずは大きめの会社から選ぶ方がラクです。</div>
+        <div>・筆者は楽天モバイルとLINEMOを使っています。楽天はテザリング込みで固定費をまとめて下げやすく、LINEMOは通話用途で使い分けています。</div>
+        <div>・楽天モバイルは、山の中・混雑した電車・大きな百貨店の中などで弱いと感じることがあるので、事前にエリア確認して、合わなければ変える進め方が合っています。</div>
+        <div>・ネットゲームを本気でやる人は、スマホテザリングより固定回線の方が向いていることがあります。</div>
+        <div>・逆に、動画視聴やブラウジングが中心なら、家のWi-Fiをやめてスマホ側に寄せる選択もアリです。</div>
+      </div>
+    `;
+  };
+
+  const renderInsurance = () => {
+    const insMain = getOffer("insurance");
+    const insuranceOffers = getOffersByCategory("保険");
+    const validInsuranceOffers = insuranceOffers.length ? insuranceOffers : [insMain];
+
+    const insGoal = goalText(3000, 7000);
+
+    elHero.innerHTML = `
+      <div class="card">
+        <span class="pill">ビフォー / アフター</span>
+        <h3>保険は「入る / 入らない」より、まず計算。</h3>
+        <div class="muted">
+          何となく不安だから入る、ではなく、払う額と受け取る額を先に見る。
+        </div>
+
+        <div class="heroGrid">
+          <div class="miniCard before">
+            <div class="label">いまの例</div>
+            <div class="num">月 7,000円</div>
+            <div class="muted">年間 84,000円。何となく入り続けている状態</div>
+          </div>
+
+          <div class="miniCard after">
+            <div class="label">見直し後の考え方</div>
+            <div class="num">損益分岐 約11年</div>
+            <div class="muted">1回の入院で約90万円入る設計なら、どこで逆転するか計算できる</div>
+          </div>
+        </div>
+
+        <div class="resultBar">
+          保険は「月いくら払うか」だけで見ない。「合計いくら払って、何が起きた時に、いくら戻るか」を見る。
+        </div>
+
+        ${insGoal ? `<div class="goalBox">${escapeHTML(insGoal)}</div>` : ``}
+      </div>
+    `;
+
+    const hasInsuranceAff = validInsuranceOffers.some(o => isRealUrl(o?.affUrl));
+
+    elMain.innerHTML = `
+      <div class="card">
+        <span class="pill">筆者の考え方</span>
+        <h3>見るポイントはこの3つ</h3>
+        <div class="grid2">
+          <div class="box">
+            <div class="kicker">病気・ケガ</div>
+            <div class="muted">
+              医療保険は「不要」と言い切るより、受け取れる額と支払う額を比べて判断する。
+            </div>
+            <ul class="bullet">
+              <li>1回の入院でいくら入るか</li>
+              <li>年間・10年・20年でいくら払うか</li>
+              <li>その逆転点が自分に合うか</li>
+            </ul>
+          </div>
+
+          <div class="box">
+            <div class="kicker">死亡保障</div>
+            <div class="muted">
+              子どものための保険なら、毎年少しずつ保障額が減っていくタイプの方が考え方として自然。
+            </div>
+            <ul class="bullet">
+              <li>子どもが小さい時ほど保障は厚くてよい</li>
+              <li>成長した後まで同額の保障は要らないことが多い</li>
+              <li>だから「目減り型」の方が合理的な場面がある</li>
+            </ul>
+          </div>
+
+          <div class="box">
+            <div class="kicker">県民共済</div>
+            <div class="muted">
+              一律設計は分かりやすい反面、若い人には割高になりやすいと筆者は考えています。
+            </div>
+            <ul class="bullet">
+              <li>20代と50代で入院リスクは同じではない</li>
+              <li>なのに一律料金だと、若い側が割高になりやすい</li>
+              <li>若い人は民間の生命保険も比較したい</li>
+            </ul>
+          </div>
+
+          <div class="box">
+            <div class="kicker">まず最優先</div>
+            <div class="muted">
+              保険は年齢・家族構成で答えがかなり変わる。だからこそ、まずは考え方だけ押さえて、次に比較する。
+            </div>
+            <ul class="bullet">
+              <li>払う額</li>
+              <li>受け取る額</li>
+              <li>何年で逆転するか</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="pill">筆者の例</span>
+        <h3>入院保険はこう計算しています</h3>
+        <div class="metricGrid">
+          <div class="metric">
+            <div class="label">月の保険料</div>
+            <div class="value">7,000円</div>
+          </div>
+          <div class="metric">
+            <div class="label">年間支払い</div>
+            <div class="value">84,000円</div>
+          </div>
+          <div class="metric">
+            <div class="label">1回の入院で受取</div>
+            <div class="value">約90万円</div>
+          </div>
+          <div class="metric">
+            <div class="label">損益分岐</div>
+            <div class="value">約11年</div>
+          </div>
+        </div>
+
+        <div class="resultBar">
+          この計算なら、筆者は「11年目以降はむしろ価値がある」と判断して継続しています。
+        </div>
+
+        ${
+          hasInsuranceAff
+          ? `
+          <div class="ctaRow">
+            ${validInsuranceOffers
+              .filter(o => isRealUrl(o?.affUrl))
+              .slice(0, 2)
+              .map(o => `<a class="cta" href="${escapeHTML(o.affUrl)}" target="_blank" rel="noopener">${escapeHTML(o.ctaLabel || o.title || "詳細を見る")}</a>`)
+              .join("")}
+          </div>
+          `
+          : `
+          <div class="tiny" style="margin-top:10px;">
+            保険はまだ比較導線より、考え方を先に置いています。
+          </div>
+          `
+        }
+      </div>
+    `;
+
+    elCompareTitle.textContent = "比較・補足";
+    elCompareBox.innerHTML = validInsuranceOffers.map((o, idx) =>
+      renderCompareItem(o, idx === 0 ? "考え方のメモ" : "比較候補")
+    ).join("");
+
+    elAuthorContent.innerHTML = `
+      <div class="authorList">
+        <div>・保険も固定費なので、一回見直すと長く効きます。</div>
+        <div>・ただし保険は携帯以上に人によって違うので、まずは「払う額」と「受け取る額」を計算するのが先です。</div>
+        <div>・筆者は、病気やケガの保険と、亡くなった時の保険に入っています。</div>
+        <div>・医療保険は、1回の入院で約90万円受け取れて、月7,000円払いなら約11年で損益分岐すると考えて継続しています。</div>
+        <div>・死亡保障は、子どもの成長に合わせて保障額が減るタイプの方が、必要額に沿いやすいと考えています。</div>
+        <div>・20代や30代の人には、一律型より民間保険も含めて比較した方がいい、というのが筆者の立場です。</div>
+      </div>
+    `;
+  };
+
+  const render = () => {
+    document.getElementById("tabPhone").classList.toggle("active", tab === "phone");
+    document.getElementById("tabIns").classList.toggle("active", tab === "ins");
+
+    if (tab === "phone") {
+      renderPhone();
+    } else {
+      renderInsurance();
+    }
+  };
 
   document.getElementById("tabPhone").addEventListener("click", () => {
     tab = "phone";
     render();
-    window.scrollTo({top:0, behavior:"smooth"});
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   document.getElementById("tabIns").addEventListener("click", () => {
     tab = "ins";
     render();
-    window.scrollTo({top:0, behavior:"smooth"});
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   fetch(MONEY_URL, { cache: "no-store" })
     .then(r => {
-      if (!r.ok) throw new Error(`money.json が見つかりません（${r.status}）。URL: ${MONEY_URL}`);
+      if (!r.ok) throw new Error(`money.json が見つかりません（${r.status}）`);
       return r.json();
     })
     .then(d => {
@@ -406,10 +825,10 @@ const renderAuthor = () => {
     })
     .catch(err => {
       elErr.style.display = "block";
-      elErr.innerHTML = `<b>エラー</b><br>${escapeHTML(err?.message || err)}<br>
-      <span class="muted">確認: <a href="${escapeHTML(MONEY_URL)}" target="_blank" rel="noopener">${escapeHTML(MONEY_URL)}</a></span>`;
+      elErr.innerHTML = `money.json の読み込みに失敗しました。デフォルト表示で出しています。<br>${escapeHTML(err?.message || err)}`;
+      OFFERS = [];
+      render();
     });
-
 })();
 </script>
 </body>
