@@ -7,15 +7,15 @@
     "perk": "「HANABISHI」オーダー商品に使える割引券（10%割引 など）",
     "category": "割引/優待価格",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/1518.T/incentive",
-    "pricePerShareYen": 1392,
-    "needMoneyPerkYen": 1392,
+    "pricePerShareYen": 1402,
+    "needMoneyPerkYen": 1402,
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=1518.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "2001",
@@ -25,15 +25,15 @@
     "perk": "自社グループ商品の優待割引販売など",
     "category": "割引/優待価格",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/2001.T/incentive",
-    "pricePerShareYen": 2740,
-    "needMoneyPerkYen": 2740,
+    "pricePerShareYen": 2743,
+    "needMoneyPerkYen": 2743,
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=2001.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "2168",
@@ -43,15 +43,15 @@
     "perk": "淡路島の自社レストラン等で使える食事割引券（30%割引 など）",
     "category": "割引/優待価格",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/2168.T/incentive",
-    "pricePerShareYen": 1937,
-    "needMoneyPerkYen": 1937,
+    "pricePerShareYen": 1951,
+    "needMoneyPerkYen": 1951,
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=2168.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "2337",
@@ -61,15 +61,15 @@
     "perk": "Jリーグ観戦チケット（抽選）への応募権",
     "category": "抽選応募",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/2337.T/incentive",
-    "pricePerShareYen": 484,
-    "needMoneyPerkYen": 484,
+    "pricePerShareYen": 495,
+    "needMoneyPerkYen": 495,
     "perkValueYen": null,
     "perkNotes": "受取:応募権(抽選) / 確度:抽選 / 1株条件:端株でも可（外部一覧） / 注意:抽選（当選者のみ） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=2337.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "2602",
@@ -83,11 +83,11 @@
     "needMoneyPerkYen": 5700,
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=2602.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "3405",
@@ -97,15 +97,15 @@
     "perk": "オリジナルカレンダー",
     "category": "カレンダー",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/3405.T/incentive",
-    "pricePerShareYen": 1678,
-    "needMoneyPerkYen": 1678,
+    "pricePerShareYen": 1686,
+    "needMoneyPerkYen": 1686,
     "perkValueYen": null,
     "perkNotes": "受取:送付物 / 確度:概ね確実 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=3405.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "4061",
@@ -115,15 +115,15 @@
     "perk": "デンカコスメティクス商品の特別価格販売",
     "category": "割引/優待価格",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/4061.T/incentive",
-    "pricePerShareYen": 3262,
-    "needMoneyPerkYen": 3262,
+    "pricePerShareYen": 3300,
+    "needMoneyPerkYen": 3300,
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=4061.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "4539",
@@ -137,11 +137,11 @@
     "needMoneyPerkYen": 1726,
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=4539.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "5019",
@@ -151,15 +151,15 @@
     "perk": "「Idemitsu Art Award展」招待券",
     "category": "チケット",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/5019.T/incentive",
-    "pricePerShareYen": 1442,
-    "needMoneyPerkYen": 1442,
+    "pricePerShareYen": 1478,
+    "needMoneyPerkYen": 1478,
     "perkValueYen": null,
     "perkNotes": "受取:チケット/招待券 / 確度:概ね確実 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=5019.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "5711",
@@ -169,15 +169,15 @@
     "perk": "貴金属製品の優待価格売買",
     "category": "割引/優待価格",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/5711.T/incentive",
-    "pricePerShareYen": 4930,
-    "needMoneyPerkYen": 4930,
+    "pricePerShareYen": 4903,
+    "needMoneyPerkYen": 4903,
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=5711.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "6504",
@@ -187,15 +187,15 @@
     "perk": "自社オリジナルカレンダー（1部）など",
     "category": "カレンダー",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/6504.T/incentive",
-    "pricePerShareYen": 11255,
-    "needMoneyPerkYen": 11255,
+    "pricePerShareYen": 11295,
+    "needMoneyPerkYen": 11295,
     "perkValueYen": null,
     "perkNotes": "受取:送付物 / 確度:概ね確実 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=6504.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "6971",
@@ -205,15 +205,15 @@
     "perk": "自社グループの製品・サービスを優待価格で提供",
     "category": "割引/優待価格",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/6971.T/incentive",
-    "pricePerShareYen": 2460,
-    "needMoneyPerkYen": 2460,
+    "pricePerShareYen": 2464,
+    "needMoneyPerkYen": 2464,
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=6971.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "7638",
@@ -223,15 +223,15 @@
     "perk": "「銀座ダイヤモンドシライシ」等の優待買物割引カード（15〜20%割引）",
     "category": "割引/優待価格",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/7638.T/incentive",
-    "pricePerShareYen": 1598,
-    "needMoneyPerkYen": 1598,
+    "pricePerShareYen": 1595,
+    "needMoneyPerkYen": 1595,
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=7638.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "7752",
@@ -241,15 +241,15 @@
     "perk": "カメラや時計などの優待買物割引",
     "category": "割引/優待価格",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/7752.T/incentive",
-    "pricePerShareYen": 1338,
-    "needMoneyPerkYen": 1338,
+    "pricePerShareYen": 1346,
+    "needMoneyPerkYen": 1346,
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=7752.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "7911",
@@ -259,15 +259,15 @@
     "perk": "印刷博物館の入館無料券など",
     "category": "施設",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/7911.T/incentive",
-    "pricePerShareYen": 5049,
-    "needMoneyPerkYen": 5049,
+    "pricePerShareYen": 4969,
+    "needMoneyPerkYen": 4969,
     "perkValueYen": null,
     "perkNotes": "受取:施設利用 / 確度:概ね確実 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=7911.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "7912",
@@ -277,15 +277,15 @@
     "perk": "カレンダー（1部）",
     "category": "カレンダー",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/7912.T/incentive",
-    "pricePerShareYen": 2955,
-    "needMoneyPerkYen": 2955,
+    "pricePerShareYen": 2985,
+    "needMoneyPerkYen": 2985,
     "perkValueYen": null,
     "perkNotes": "受取:送付物 / 確度:概ね確実 / 1株条件:端株でも可（外部一覧） / 根拠:単元未満株（端株）でもらえる優待一覧掲載",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=7912.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.kabuyutai.com/special/miman_list.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "8698",
@@ -295,15 +295,15 @@
     "perk": "1〜99株：50マネックスポイント（基準日にマネックス証券口座に1株以上預け入れが条件）",
     "category": "ポイント",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/8698.T/incentive",
-    "pricePerShareYen": 710,
-    "needMoneyPerkYen": 710,
+    "pricePerShareYen": 713,
+    "needMoneyPerkYen": 713,
     "perkValueYen": null,
     "perkNotes": "受取:ポイント付与 / 確度:条件あり / 1株条件:1〜99株（口座預入が条件） / 注意:マネックス証券口座に預け入れが条件（1株以上） / 根拠:公式（株主優待/株主還元）",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=8698.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.monexgroup.jp/jp/investor/stock/return.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "8473",
@@ -313,15 +313,15 @@
     "perk": "全株主：SBIアラプロモ商品を50%割引で買える「割引購入申込券」1枚（単元未満株も含む）",
     "category": "割引/優待価格",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/8473.T/incentive",
-    "pricePerShareYen": 2984,
-    "needMoneyPerkYen": 2984,
+    "pricePerShareYen": 3091,
+    "needMoneyPerkYen": 3091,
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:全株主（単元未満含むと記載） / 注意:単元未満株も対象との記載あり / 根拠:株主優待ガイド（大和IR系）",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=8473.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://yutai-guide.daiwair.co.jp/stock/detail/8473",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "9409",
@@ -331,15 +331,15 @@
     "perk": "1株以上：テレビショッピング販売商品の一部割引（年2回案内）",
     "category": "割引/優待価格",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/9409.T/incentive",
-    "pricePerShareYen": 3255,
-    "needMoneyPerkYen": 3255,
+    "pricePerShareYen": 3295,
+    "needMoneyPerkYen": 3295,
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:1株以上 / 根拠:公式（株主向け優待制度）",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=9409.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.tv-asahihd.co.jp/yuutai/",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "2590",
@@ -349,15 +349,15 @@
     "perk": "グループ商品の優待価格販売（「すべての株主」向け）",
     "category": "割引/優待価格",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/2590.T/incentive",
-    "pricePerShareYen": 2684,
-    "needMoneyPerkYen": 2684,
+    "pricePerShareYen": 2693,
+    "needMoneyPerkYen": 2693,
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:すべての株主（優待価格販売） / 注意:現物（6,000円相当など）は別条件と注記あり / 根拠:公式（株主還元/株主優待）",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=2590.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://holdings.dydo.co.jp/ir/stock/dividend.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "7979",
@@ -367,15 +367,15 @@
     "perk": "自社/グループ製品の優待価格販売（対象：株主名簿の「全ての株主」）",
     "category": "割引/優待価格",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/7979.T/incentive",
-    "pricePerShareYen": 1752,
-    "needMoneyPerkYen": 1752,
+    "pricePerShareYen": 1750,
+    "needMoneyPerkYen": 1750,
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:全ての株主（優待価格販売） / 根拠:公式（株主優待ページ）",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=7979.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.shofu.co.jp/ir/contents/hp1331/index.php?No=912",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "8043",
@@ -385,15 +385,15 @@
     "perk": "中元・歳暮ギフト/おせち等を特別斡旋価格で案内（全株主＝1株以上）",
     "category": "割引/優待価格",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/8043.T/incentive",
-    "pricePerShareYen": 1272,
-    "needMoneyPerkYen": 1272,
+    "pricePerShareYen": 1270,
+    "needMoneyPerkYen": 1270,
     "perkValueYen": null,
     "perkNotes": "受取:割引/購入権 / 確度:利用型 / 1株条件:全株主（案内型） / 注意:案内型（購入は任意） / 根拠:公式（株主優待ページ）",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=8043.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.starzen.co.jp/ir/investor_info/yutai.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "7203",
@@ -403,15 +403,15 @@
     "perk": "レースチケット等の抽選（応募権）：保有株数・保有期間に関わらず応募可",
     "category": "抽選応募",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/7203.T/incentive",
-    "pricePerShareYen": 3338,
-    "needMoneyPerkYen": 3338,
+    "pricePerShareYen": 3379,
+    "needMoneyPerkYen": 3379,
     "perkValueYen": null,
     "perkNotes": "受取:応募権(抽選) / 確度:抽選 / 1株条件:応募は株数・保有期間不問（抽選） / 注意:抽選（当選者のみ） / 根拠:公式（株主優待について）",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=7203.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://global.toyota/jp/ir/stock/yutai/index.html",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   },
   {
     "code": "6594",
@@ -421,14 +421,14 @@
     "perk": "記念館の無料入館など（公式に「1株以上」明記）",
     "category": "施設",
     "sourceUrl": "https://finance.yahoo.co.jp/quote/6594.T/incentive",
-    "pricePerShareYen": 2261,
-    "needMoneyPerkYen": 2261,
+    "pricePerShareYen": 2244,
+    "needMoneyPerkYen": 2244,
     "perkValueYen": null,
     "perkNotes": "受取:施設利用 / 確度:概ね確実 / 1株条件:1株以上 / 根拠:公式（株主優待ページ）",
-    "lastChecked": "2026-03-17",
+    "lastChecked": "2026-03-18",
     "priceSource": "https://stooq.com/q/l/?s=6594.jp&f=sd2t2ohlcv&h&e=csv",
     "officialUrl": "https://www.nidec.com/jp/ir/event/shareholder-benefit/",
     "sourceLabel": "Yahoo!ファイナンス（株主優待）",
-    "priceDate": "2026-03-16"
+    "priceDate": "2026-03-17"
   }
 ]
