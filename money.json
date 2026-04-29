@@ -1,24 +1,5 @@
 [
   {
-    "id": "rakuten",
-    "category": "スマホ",
-    "kind": "大容量向け",
-    "title": "楽天モバイル",
-    "fitLabel": "大容量 / テザリング / 動画中心",
-    "desc": "たくさん使っても月3,278円まで。テザリング込みで固定費をまとめて下げたい人向け。",
-    "monthlySaveMin": 2000,
-    "monthlySaveMax": 5000,
-    "steps": [
-      "月20GBを超える月が多いか確認する",
-      "生活圏のエリアを確認する",
-      "MNPワンストップ対応ならそのまま申し込む",
-      "開通後にテザリングを試して固定費を再計算する"
-    ],
-    "ctaLabel": "楽天モバイルを見る",
-    "affUrl": "https://r10.to/hYO9pN",
-    "note": "※混雑時など公平なサービス提供のため速度制御する場合あり。通話無料はRakuten Link利用時。"
-  },
-  {
     "id": "ahamo",
     "category": "スマホ",
     "kind": "安定寄り",
@@ -27,14 +8,38 @@
     "desc": "安定性を優先したい人向け。30GBが月2,970円（税込）、大盛りなら110GBで月4,950円（税込）。",
     "monthlySaveMin": 1000,
     "monthlySaveMax": 3500,
-    "steps": [
-      "直近3か月の通信量を見て30GBで足りるか確認する",
-      "5分無料通話で足りるか確認する",
-      "足りなければ大盛り110GBまで含めて判断する"
-    ],
+    "steps": [],
     "ctaLabel": "ahamoを見る",
     "affUrl": "https://ahamo.com/plan/index.html",
     "note": "※国内通話5分無料つき。大盛りでもテザリングOK。"
+  },
+  {
+    "id": "ins-compare",
+    "category": "保険",
+    "kind": "比較",
+    "title": "保険料を比較して“高すぎ”を発見する",
+    "fitLabel": "相場確認 / 見積もり比較",
+    "desc": "同じような保障でも保険料は変わる。まず考え方を押さえ、その後に相場感を見るための比較枠。",
+    "monthlySaveMin": 1000,
+    "monthlySaveMax": 6000,
+    "steps": [],
+    "ctaLabel": "保険を比較する",
+    "affUrl": "",
+    "note": "※商品ごとに条件が違うため必ず確認"
+  },
+  {
+    "id": "insurance",
+    "category": "保険",
+    "kind": "見直し",
+    "title": "保険を見直す（無料相談/比較）",
+    "fitLabel": "固定費の圧縮 / 保障の整理",
+    "desc": "まずは「払う額」と「受け取る額」を整理する入り口。高い固定費を見直すきっかけとして使う。",
+    "monthlySaveMin": 2000,
+    "monthlySaveMax": 8000,
+    "steps": [],
+    "ctaLabel": "保険の無料相談へ",
+    "affUrl": "https://h.accesstrade.net/sp/cc?rk=0100pedc00op03",
+    "note": "※契約/保障内容は個別。無理に解約しない"
   },
   {
     "id": "linemo",
@@ -45,11 +50,7 @@
     "desc": "番号通話や長電話を重視したい人向け。楽天と役割を分けるサブ回線としても使いやすい。",
     "monthlySaveMin": 1000,
     "monthlySaveMax": 4000,
-    "steps": [
-      "直近3か月の通信量を見て3GB・10GB・30GBのどれに近いか確認する",
-      "いま払っているオプションを整理する",
-      "回線を一本化するか、今の端末をそのまま使うか決める"
-    ],
+    "steps": [],
     "ctaLabel": "LINEMOを見る",
     "affUrl": "https://www.linemo.jp/plan/",
     "note": "※料金や特典条件は公式で最終確認。"
@@ -63,49 +64,23 @@
     "desc": "普段はWi-Fi中心で、使う月だけ足したい人向け。基本料0円で必要な分だけトッピングできる。",
     "monthlySaveMin": 500,
     "monthlySaveMax": 3000,
-    "steps": [
-      "毎月ずっと使う回線か、足りない月だけ使う回線か決める",
-      "よく使うトッピングを確認する",
-      "サブ回線ならeSIM運用も検討する"
-    ],
+    "steps": [],
     "ctaLabel": "povoを見る",
     "affUrl": "https://povo.jp/",
     "note": "※180日間以上有料トッピング購入等がない場合、利用停止・契約解除となることがあります。"
   },
   {
-    "id": "insurance",
-    "category": "保険",
-    "kind": "見直し",
-    "title": "保険を見直す（無料相談/比較）",
-    "fitLabel": "固定費の圧縮 / 保障の整理",
-    "desc": "まずは「払う額」と「受け取る額」を整理する入り口。高い固定費を見直すきっかけとして使う。",
+    "id": "rakuten",
+    "category": "スマホ",
+    "kind": "大容量向け",
+    "title": "楽天モバイル",
+    "fitLabel": "大容量 / テザリング / 動画中心",
+    "desc": "たくさん使っても月3,278円まで。テザリング込みで固定費をまとめて下げたい人向け。",
     "monthlySaveMin": 2000,
-    "monthlySaveMax": 8000,
-    "steps": [
-      "加入中の保険を写真でOK（証券/アプリ）",
-      "家計の固定費の中で保険割合を確認",
-      "必要保障だけ残して整理（例）"
-    ],
-    "ctaLabel": "保険の無料相談へ",
-    "affUrl": "https://h.accesstrade.net/sp/cc?rk=0100pedc00op03",
-    "note": "※契約/保障内容は個別。無理に解約しない"
-  },
-  {
-    "id": "ins-compare",
-    "category": "保険",
-    "kind": "比較",
-    "title": "保険料を比較して“高すぎ”を発見する",
-    "fitLabel": "相場確認 / 見積もり比較",
-    "desc": "同じような保障でも保険料は変わる。まず考え方を押さえ、その後に相場感を見るための比較枠。",
-    "monthlySaveMin": 1000,
-    "monthlySaveMax": 6000,
-    "steps": [
-      "年齢/家族構成/必要保障をメモ",
-      "比較で相場感を掴む",
-      "結論は“必要保障に合うか”で決める"
-    ],
-    "ctaLabel": "保険を比較する",
-    "affUrl": "",
-    "note": "※商品ごとに条件が違うため必ず確認"
+    "monthlySaveMax": 5000,
+    "steps": [],
+    "ctaLabel": "楽天モバイルを見る",
+    "affUrl": "https://r10.to/hYO9pN",
+    "note": "※混雑時など公平なサービス提供のため速度制御する場合あり。通話無料はRakuten Link利用時。"
   }
 ]

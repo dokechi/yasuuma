@@ -1,0 +1,257 @@
+{
+  "generatedAt": "2026-04-29T17:21:26.574175+09:00",
+  "categories": [
+    {
+      "is_active": "TRUE",
+      "category_key": "one_share",
+      "category_label": "1株優待",
+      "display_order": "1",
+      "description": "1株から対象になり得る優待。初心者導線の主役。",
+      "filter_rule": "min_shares=1",
+      "cta_type": "one_share"
+    },
+    {
+      "is_active": "TRUE",
+      "category_key": "under_10k",
+      "category_label": "〜1万円",
+      "display_order": "2",
+      "description": "必要資金目安が1万円以下。",
+      "filter_rule": "cost_band=〜1万円",
+      "cta_type": "under_10k"
+    },
+    {
+      "is_active": "TRUE",
+      "category_key": "under_50k",
+      "category_label": "〜5万円",
+      "display_order": "3",
+      "description": "必要資金目安が5万円以下。",
+      "filter_rule": "cost_band=〜5万円",
+      "cta_type": "under_50k"
+    },
+    {
+      "is_active": "TRUE",
+      "category_key": "under_100k",
+      "category_label": "〜10万円",
+      "display_order": "4",
+      "description": "必要資金目安が10万円以下。",
+      "filter_rule": "cost_band=〜10万円",
+      "cta_type": "under_100k"
+    },
+    {
+      "is_active": "TRUE",
+      "category_key": "discount",
+      "category_label": "割引/優待価格",
+      "display_order": "10",
+      "description": "優待価格・割引券・優待販売。",
+      "filter_rule": "category=割引/優待価格",
+      "cta_type": "discount"
+    },
+    {
+      "is_active": "TRUE",
+      "category_key": "point",
+      "category_label": "ポイント",
+      "display_order": "11",
+      "description": "ポイント付与型の優待。",
+      "filter_rule": "category=ポイント",
+      "cta_type": "point"
+    },
+    {
+      "is_active": "TRUE",
+      "category_key": "ticket",
+      "category_label": "チケット",
+      "display_order": "12",
+      "description": "招待券・利用券。",
+      "filter_rule": "category=チケット",
+      "cta_type": "ticket"
+    },
+    {
+      "is_active": "TRUE",
+      "category_key": "calendar",
+      "category_label": "カレンダー",
+      "display_order": "13",
+      "description": "カレンダーや送付物。",
+      "filter_rule": "category=カレンダー",
+      "cta_type": "calendar"
+    },
+    {
+      "is_active": "TRUE",
+      "category_key": "facility",
+      "category_label": "施設",
+      "display_order": "14",
+      "description": "施設利用・入館券。",
+      "filter_rule": "category=施設",
+      "cta_type": "facility"
+    },
+    {
+      "is_active": "TRUE",
+      "category_key": "lottery",
+      "category_label": "抽選応募",
+      "display_order": "15",
+      "description": "抽選応募権。確度の説明が必要。",
+      "filter_rule": "category=抽選応募",
+      "cta_type": "lottery"
+    },
+    {
+      "is_active": "TRUE",
+      "category_key": "food",
+      "category_label": "食事券",
+      "display_order": "16",
+      "description": "飲食・外食系の優待。",
+      "filter_rule": "category=食事券",
+      "cta_type": "food"
+    },
+    {
+      "is_active": "TRUE",
+      "category_key": "quo",
+      "category_label": "QUOカード",
+      "display_order": "17",
+      "description": "金額換算しやすい金券系。",
+      "filter_rule": "category=QUOカード",
+      "cta_type": "quo"
+    }
+  ],
+  "ctas": [
+    {
+      "is_active": "TRUE",
+      "cta_type": "one_share",
+      "location": "銘柄カード/マイ優待",
+      "cta_title": "1株優待を買うなら",
+      "cta_text": "1株優待は、単元未満株に対応した証券会社で買えるかが重要です。",
+      "button_text": "単元未満株対応の証券会社を見る",
+      "target_url": "./shoken.html#one-share",
+      "is_ad": "TRUE",
+      "priority": "10",
+      "memo": "1株優待から証券口座比較へ"
+    },
+    {
+      "is_active": "TRUE",
+      "cta_type": "nisa",
+      "location": "銘柄カード/10万円以下",
+      "cta_title": "NISAで優待株を持つなら",
+      "cta_text": "少額で優待株を始めるなら、NISA口座と手数料も確認しておきたいところです。",
+      "button_text": "初心者向け証券口座を比較する",
+      "target_url": "./shoken.html#nisa",
+      "is_ad": "TRUE",
+      "priority": "20",
+      "memo": "NISA導線"
+    },
+    {
+      "is_active": "TRUE",
+      "cta_type": "under_100k",
+      "location": "10万円以下一覧",
+      "cta_title": "少額で優待を始めるなら",
+      "cta_text": "10万円以下の優待は、初心者が試しやすい入口です。",
+      "button_text": "10万円以下で使いやすい証券会社を見る",
+      "target_url": "./shoken.html#beginner",
+      "is_ad": "TRUE",
+      "priority": "30",
+      "memo": "少額導線"
+    },
+    {
+      "is_active": "TRUE",
+      "cta_type": "month_right",
+      "location": "権利月ページ",
+      "cta_title": "権利月が近い人へ",
+      "cta_text": "権利付き最終日までに買付が必要です。口座開設には日数がかかる場合があります。",
+      "button_text": "今から準備する証券口座を見る",
+      "target_url": "./shoken.html#opening-days",
+      "is_ad": "TRUE",
+      "priority": "40",
+      "memo": "口座開設の日数導線"
+    },
+    {
+      "is_active": "TRUE",
+      "cta_type": "fixed_cost",
+      "location": "資金不足表示",
+      "cta_title": "優待資金を作るなら",
+      "cta_text": "固定費を下げると、優待株の原資を作りやすくなります。",
+      "button_text": "携帯料金・保険を見直す",
+      "target_url": "./money.html",
+      "is_ad": "TRUE",
+      "priority": "50",
+      "memo": "money.htmlへ"
+    },
+    {
+      "is_active": "TRUE",
+      "cta_type": "my_yutai_empty",
+      "location": "マイ優待_未登録",
+      "cta_title": "まずは気になる優待を保存",
+      "cta_text": "気になる銘柄をマイ優待に追加すると、権利月と条件をまとめて確認できます。",
+      "button_text": "1株優待を探す",
+      "target_url": "./index.html?filter=one_share",
+      "is_ad": "FALSE",
+      "priority": "60",
+      "memo": "空状態"
+    },
+    {
+      "is_active": "TRUE",
+      "cta_type": "my_yutai_registered",
+      "location": "マイ優待_登録後",
+      "cta_title": "条件を満たしているか確認",
+      "cta_text": "登録した銘柄の必要株数・長期保有条件を確認しておきましょう。",
+      "button_text": "証券口座の選び方を見る",
+      "target_url": "./shoken.html",
+      "is_ad": "TRUE",
+      "priority": "70",
+      "memo": "登録後の導線"
+    }
+  ],
+  "disclaimers": [
+    {
+      "is_active": "TRUE",
+      "key": "ad_common",
+      "page_type": "all",
+      "display_area": "page_top",
+      "text": "本ページには広告・アフィリエイトリンクが含まれます。"
+    },
+    {
+      "is_active": "TRUE",
+      "key": "investment_common",
+      "page_type": "yutai",
+      "display_area": "page_top",
+      "text": "掲載情報は株主優待・証券口座選びの参考情報であり、特定銘柄の購入を推奨するものではありません。"
+    },
+    {
+      "is_active": "TRUE",
+      "key": "price_common",
+      "page_type": "yutai",
+      "display_area": "card_bottom",
+      "text": "株価・優待内容は変更される場合があります。最新情報は公式IR・証券会社でご確認ください。"
+    },
+    {
+      "is_active": "TRUE",
+      "key": "my_yutai_storage",
+      "page_type": "my_yutai",
+      "display_area": "page_top",
+      "text": "登録した銘柄はこの端末のブラウザ内に保存されます。サーバーには送信されません。"
+    },
+    {
+      "is_active": "TRUE",
+      "key": "money_common",
+      "page_type": "money",
+      "display_area": "page_bottom",
+      "text": "料金や条件は必ず各サービスの公式で確認してください。通信品質や保険の必要性は、住んでいる場所・家族構成・年齢・使い方で変わります。"
+    },
+    {
+      "is_active": "TRUE",
+      "key": "no_advice",
+      "page_type": "all",
+      "display_area": "footer",
+      "text": "当サイトは投資助言・売買推奨を目的としたものではありません。"
+    }
+  ],
+  "settings": {
+    "site_title": "やすうま株主優待",
+    "site_description": "少額で始める株主優待メモ",
+    "last_updated": "2026-04-29",
+    "show_price": "FALSE",
+    "show_cost_band": "TRUE",
+    "show_my_yutai": "TRUE",
+    "my_yutai_storage": "localStorage",
+    "default_cta_type": "nisa",
+    "yutai_page_url": "./index.html",
+    "money_page_url": "./money.html",
+    "data_json_output": "data.json",
+    "money_json_output": "money.json"
+  }
+}
