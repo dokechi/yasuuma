@@ -1,0 +1,51 @@
+name: Sync Google Sheets to JSON
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 7 * * 1-5" # 07:30 UTC = 16:30 JST / 平日
+
+concurrency:
+  group: sync-google-sheets
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements-gsheet.txt
+
+      - name: Sync Google Sheets to JSON
+        env:
+          GSHEET_URL: ${{ secrets.GSHEET_URL }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: python scripts/sync_from_gsheet.py
+
+      - name: Update prices after sync
+        if: ${{ vars.UPDATE_PRICES_AFTER_SYNC != 'false' }}
+        run: python scripts/update_prices.py
+
+      - name: Commit & push if changed
+        run: |
+          if git diff --quiet; then
+            echo "No changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json money.json site_config.json
+          git commit -m "chore: sync Google Sheets data"
+          git pull --rebase
+          git push
