@@ -1,6 +1,7 @@
 (()=>{
  const R=window.CCReddit;if(!R)return;
  const byId=id=>document.getElementById(id),val=id=>byId(id)?.value??'';
+ const numberVal=id=>{const raw=String(val(id)).replace(/[^0-9.\-]/g,'');if(!raw)return null;const n=Number(raw);return Number.isFinite(n)?n:null};
 
  // Add Japanese review + reader reaction fields to the existing editor.
  const grid=document.querySelector('#redditEditorForm .reddit-form-grid');
@@ -13,8 +14,10 @@
  }
  const oldOpen=R.openEditor;
  R.openEditor=item=>{oldOpen(item);if(byId('reRedditTitleJa'))byId('reRedditTitleJa').value=item?.redditTitleJa||'';if(byId('reRedditBodyJa'))byId('reRedditBodyJa').value=item?.redditBodyJa||'';if(byId('reReactionSummary'))byId('reReactionSummary').value=item?.readerReactionSummary||'';if(byId('reReactionUrl'))byId('reReactionUrl').value=item?.readerReactionUrl||''};
+ const updateDerivedPrice=()=>{const overseas=numberVal('reOverseasPrice'),fx=numberVal('reFx');if(overseas!==null&&fx!==null){const jpy=Math.round(overseas*fx);if(byId('reOverseasJpy'))byId('reOverseasJpy').value=String(jpy);return jpy}return numberVal('reOverseasJpy')};
+ ['reOverseasPrice','reFx'].forEach(id=>byId(id)?.addEventListener('input',updateDerivedPrice));
  const oldPayload=R.payload;
- R.payload=()=>({...oldPayload(),redditTitleJa:val('reRedditTitleJa'),redditBodyJa:val('reRedditBodyJa'),readerReactionSummary:val('reReactionSummary'),readerReactionUrl:val('reReactionUrl')});
+ R.payload=()=>{const p={...oldPayload(),redditTitleJa:val('reRedditTitleJa'),redditBodyJa:val('reRedditBodyJa'),readerReactionSummary:val('reReactionSummary'),readerReactionUrl:val('reReactionUrl')};const jp=numberVal('reJapanPrice'),overseasJpy=updateDerivedPrice();if(overseasJpy!==null)p.overseasPriceJpy=overseasJpy;if(jp!==null&&overseasJpy!==null){p.priceGapYen=Math.round(overseasJpy-jp);p.discountPct=overseasJpy>0?Math.round(((overseasJpy-jp)/overseasJpy*100)*100)/100:null}return p};
 
  // Enrich Reddit cards with Japanese review and a one-click research prompt.
  const oldCard=R.card;
