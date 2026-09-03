@@ -1,0 +1,27 @@
+(()=>{
+ const style=document.createElement('style');
+ style.textContent='.purchase-summary{grid-template-columns:repeat(6,1fr)!important}.pending-ledger{margin-top:12px;padding:8px;background:#fff6b5;border:2px solid;border-color:#808080 #fff #fff #808080;box-shadow:inset 1px 1px #000}.pending-ledger h3{margin:0 0 5px;font-size:14px}.pending-ledger p{margin:0;font-size:11px}.purchase-order.pending-order{border-color:#fff #8b6d00 #8b6d00 #fff}.purchase-order.pending-order .purchase-order-head{background:#fff2a6}.pending-tag{display:inline-block;padding:1px 5px;margin-left:5px;border:1px solid #8b6d00;background:#fff;font-size:10px;color:#6a5100}.purchase-source{padding:5px 7px}@media(max-width:760px){.purchase-summary{grid-template-columns:1fr 1fr!important}}';
+ document.head.appendChild(style);
+ function stats(list){
+  const orders=new Map(),suppliers=new Set();let units=0,spend=0;
+  for(const p of list){const key=p.order_id||p.source_message_id||p.id;if(!orders.has(key))orders.set(key,{total:Number(p.order_total_yen||0),shipping:Number(p.order_shipping_yen||0)});if(p.supplier_key)suppliers.add(p.supplier_key);units+=Number(p.quantity||0);spend+=Number(p.allocated_net_line_yen??p.line_total_yen??0)}
+  let paidTotal=0,shippingTotal=0;for(const o of orders.values()){paidTotal+=o.total;shippingTotal+=o.shipping}
+  return {lines:list.length,orders:orders.size,units,spend,paidTotal,shippingTotal,suppliers:suppliers.size};
+ }
+ function groups(list){const m=new Map();for(const p of list){const k=(p.supplier_key||'')+'|'+(p.order_id||p.source_message_id);if(!m.has(k))m.set(k,{supplier:p.supplier_name,orderId:p.order_id||'—',orderedAt:p.ordered_at,shipping:Number(p.order_shipping_yen||0),discount:Number(p.order_discount_yen||0),total:Number(p.order_total_yen||0),source:p.source_url,bucket:p.metadata?.bucket||'',items:[]});m.get(k).items.push(p)}return m}
+ function orderHtml(g,pending=false){
+  const itemNet=g.items.reduce((a,p)=>a+Number(p.allocated_net_line_yen??p.line_total_yen??0),0),cash=g.total||itemNet+g.shipping,kind=g.bucket==='preorder_unshipped'?'予約・未納':'要確認';
+  return '<section class="purchase-order '+(pending?'pending-order':'')+'"><div class="purchase-order-head"><span><b>'+esc(g.supplier)+'</b>　'+esc(fmtDate(g.orderedAt))+'　注文 '+esc(g.orderId)+(pending?'<span class="pending-tag">'+kind+'</span>':'')+'</span><span class="order-total">'+(pending?'注文額 ':'支払総額 ')+yen(cash)+(g.shipping?'（送料 '+yen(g.shipping)+'）':'')+'</span></div><div class="purchase-table-wrap"><table class="purchase-table"><thead><tr><th>商品</th><th>型番</th><th>サイズ/色</th><th>数量</th><th>表示単価</th><th>実質単価</th><th>実質原価</th></tr></thead><tbody>'+g.items.map(p=>'<tr><td><b>'+esc(p.product_name)+'</b></td><td>'+esc(p.sku||'—')+'</td><td>'+esc(p.variant||'—')+'</td><td class="num">'+esc(p.quantity)+'</td><td class="num">'+yenPrecise(p.unit_price_yen)+'</td><td class="num net">'+yenPrecise(p.allocated_net_unit_yen??p.unit_price_yen)+'</td><td class="num net">'+yenPrecise(p.allocated_net_line_yen??p.line_total_yen)+'</td></tr>').join('')+'</tbody></table></div><div class="purchase-source">'+(g.source?'<a href="'+esc(g.source)+'" target="_blank" rel="noopener">Gmail元メールを開く</a>':'')+(g.discount?'　値引等 '+yen(g.discount):'')+'</div></section>';
+ }
+ purchaseLedgerHtml=function(){
+  const rows=sourcingApp.purchases||[],confirmed=rows.filter(p=>p.status==='purchased'),pending=rows.filter(p=>p.status==='unknown');if(!rows.length)return '<div class="empty"><b>実仕入れ元帳はまだありません。</b></div>';
+  const c=sourcingApp.purchaseCounts&&sourcingApp.purchaseCounts.paidTotal!==undefined?sourcingApp.purchaseCounts:stats(confirmed),pc=stats(pending),pre=stats(pending.filter(p=>p.metadata?.bucket==='preorder_unshipped')),nr=stats(pending.filter(p=>p.metadata?.bucket!=='preorder_unshipped'));
+  let out='<div class="purchase-summary"><div class="purchase-stat"><small>確定注文</small><b>'+esc(c.orders||0)+'件</b></div><div class="purchase-stat"><small>仕入点数</small><b>'+esc(c.units||0)+'点</b></div><div class="purchase-stat"><small>実質商品原価</small><b>'+yen(c.spend||0)+'</b></div><div class="purchase-stat"><small>仕入送料</small><b>'+yen(c.shippingTotal||0)+'</b></div><div class="purchase-stat"><small>支払総額</small><b>'+yen(c.paidTotal||0)+'</b></div><div class="purchase-stat"><small>仕入れ先</small><b>'+esc(c.suppliers||0)+'店</b></div></div><p class="purchase-note">※ 確定仕入れは発送・確保・最終金額までGmailで確認できたものを優先。予約・未納と私物の可能性がある注文は下の別枠です。</p><div class="sourcing-caption"><b>確定仕入れ</b><span>'+esc(c.orders||0)+'注文 / '+yen(c.paidTotal||0)+'</span></div>';
+  for(const g of groups(confirmed).values())out+=orderHtml(g,false);
+  if(pending.length){out+='<div class="pending-ledger"><h3>予約・未納 / 要確認</h3><p>確定仕入れには含めません。予約・未納 '+esc(pre.orders)+'件 '+yen(pre.paidTotal)+' / 要確認 '+esc(nr.orders)+'件 '+yen(nr.paidTotal)+'。</p></div><div class="sourcing-caption"><b>未確定の発注</b><span>'+esc(pc.orders)+'注文 / '+yen(pc.paidTotal)+'</span></div>';for(const g of groups(pending).values())out+=orderHtml(g,true)}
+  return out;
+ };
+ const oldRender=renderSourcing;
+ renderSourcing=function(){oldRender();const rows=sourcingApp.purchases||[],p=new Set(rows.filter(x=>x.status==='unknown').map(x=>x.order_id||x.source_message_id)).size,c=Number(sourcingApp.purchaseCounts?.orders||0),badge=document.getElementById('sourcingPurchaseCount');if(badge)badge.textContent=String(c)+(p?' +'+p:'');};
+ const v=[...document.querySelectorAll('.status-panel')].find(x=>/司令塔 ver/.test(x.textContent||''));if(v)v.textContent='司令塔 ver 1.30';
+})();
