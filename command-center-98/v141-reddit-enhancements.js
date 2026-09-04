@@ -31,7 +31,7 @@
  };
  const oldBind=R.bind;
  R.bind=host=>{oldBind(host);host.querySelectorAll('[data-r-research]').forEach(b=>b.onclick=()=>R.copyResearchPrompt(b.dataset.rResearch,b))};
- R.copyResearchPrompt=(id,btn)=>{const x=R.state.items.find(v=>v.id===id);if(!x)return;const prompt=`次の商品をReddit海外価格差投稿用に調査してください。\n\n商品: ${x.productName||''}\n型番: ${x.modelNumber||'不明'}\n日本価格: ${x.japanPriceYen?yen(x.japanPriceYen):'未確認'}\n日本側URL: ${x.japanSourceUrl||'未登録'}\n比較市場: ${x.overseasMarket||'US'}\n\n必須:\n1. 同一型番・同一仕様か確認\n2. 海外の公式/小売価格を個別URL付きで確認\n3. eBay等のSOLD/Completedやオークション実売があれば確認\n4. 為替換算し、日本価格との差額・差率を計算\n5. 税・送料・buyer fee・保証など比較上の注意点を明記\n6. Redditや海外コミュニティの需要/反応も確認\n7. 誇張せず、Retail差と実売差を分ける\n8. 最後に司令塔へ入れる値（海外価格、通貨、円換算、比較元種別、URL、需要、注意点、採点案）をまとめる\n\n日本語で調査結果を出してください。`;R.copy(prompt,btn)};
+ R.copyResearchPrompt=(id,btn)=>{const x=R.state.items.find(v=>v.id===id);if(!x)return;const prompt=`次の商品をReddit海外価格差投稿用に調査してください。\n\n商品: ${x.productName||''}\n型番: ${x.modelNumber||'不明'}\n日本価格: ${x.japanPriceYen?yen(x.japanPriceYen):'未確認'}\n日本側URL: ${x.japanSourceUrl||'未登録'}\n比較市場: ${x.overseasMarket||'US'}\n\n必須:\n1. 同一型番・同一仕様か確認\n2. 海外の公式/小売価格を個別URL付きで確認\n3. eBay等のSOLD/Completedやオークション実売があれば確認\n4. 為替換算し、日本価格との差額・差率を計算\n5. 税・送料・buyer fee・保証など比較上の注意点を明記\n6. Redditや海外コミュニティの需要/反応も確認\n7. 誇張せず、Retail差と実売差を分ける\n8. 最後に候補箱へ入れる値（海外価格、通貨、円換算、比較元種別、URL、需要、注意点、採点案）をまとめる\n\n日本語で調査結果を出してください。`;R.copy(prompt,btn)};
 
  // Import an existing command-center signal into 海外価格差.exe with one click.
  // If the 19:00 task has already created the same candidate, open that row instead
@@ -59,5 +59,5 @@
  const oldHide=R.hide;R.hide=()=>{oldHide();document.body.classList.remove('reddit-mode');fab.hidden=true};
  fab.hidden=app.view!=='reddit';
  const intro=document.querySelector('.reddit-intro');if(intro)intro.innerHTML='<b>Reddit向け価格差投稿を半自動化。</b> 監視結果から1クリックで候補化 → 海外価格を調査 → 採点 → 英語＋日本語確認下書き。<b>「海外向け投稿下書き」タスクの結果も自動で未判定へ同期します。</b> Redditへの最終投稿だけは人間が行います。';
- const v=[...document.querySelectorAll('.status-panel')].find(x=>/司令塔 ver/.test(x.textContent||''));if(v)v.textContent='司令塔 ver 1.42';
+
 })();
