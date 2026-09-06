@@ -19,7 +19,7 @@
       });
     }
     document.querySelectorAll('.status-bar .status-panel').forEach(el=>{
-      if(/^ver\s/i.test(el.textContent.trim()))el.textContent='ver 1.53';
+      if(/^ver\s/i.test(el.textContent.trim()))el.textContent='ver 1.54';
     });
   }
 
@@ -28,6 +28,39 @@
     filtered=function(){
       const items=originalFiltered();
       return app.view==='history'?items.filter(x=>(x.reviewState||'new')!=='new'):items;
+    };
+  }
+
+  async function hydrateAllUnconfirmed(){
+    if(typeof app==='undefined'||app.view!=='active')return;
+    try{
+      const learnedById=new Map((app.items||[]).map(x=>[String(x.id),x]));
+      const r=await fetch(API+'?view=history',{cache:'no-store',headers:authHeaders()});
+      if(r.status===401){authExpired();return}
+      const d=await r.json();
+      if(!r.ok||!d?.ok)throw new Error(d?.error||('HTTP '+r.status));
+      if(app.view!=='active')return;
+      const all=(Array.isArray(d.items)?d.items:[])
+        .filter(x=>(x.reviewState||'new')==='new')
+        .map(x=>{
+          const learned=learnedById.get(String(x.id));
+          return learned?{...x,score:learned.score,baseScore:learned.baseScore,feedbackPenalty:learned.feedbackPenalty}:x;
+        })
+        .sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||new Date(b.lastSeen||0)-new Date(a.lastSeen||0));
+      app.items=all;
+      app.data={...(app.data||{}),generatedAt:d.generatedAt??app.data?.generatedAt,storedCount:d.storedCount??app.data?.storedCount,unconfirmedCount:all.length};
+      renderAll();
+      setStatus('準備完了｜未確認 '+all.length+'件');
+    }catch(e){
+      console.warn('all unconfirmed hydrate failed',e);
+    }
+  }
+
+  if(typeof load==='function'){
+    const originalLoad=load;
+    load=async function(view=app.view){
+      await originalLoad(view);
+      if(view==='active'&&app.view==='active')await hydrateAllUnconfirmed();
     };
   }
 
@@ -83,4 +116,12 @@
   if(typeof app!=='undefined'&&app.items?.length){
     try{renderList();renderStats()}catch(e){console.warn('review status patch render skipped',e)}
   }
+
+  let initialChecks=0;
+  const hydrateInitial=()=>{
+    initialChecks++;
+    if(typeof app==='undefined'||app.busy){if(initialChecks<80)setTimeout(hydrateInitial,150);return}
+    if(app.view==='active')hydrateAllUnconfirmed();
+  };
+  setTimeout(hydrateInitial,220);
 })();
