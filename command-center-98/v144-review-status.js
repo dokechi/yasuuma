@@ -11,6 +11,7 @@
 
   function relabelStatic(){
     relabelTabs();
+    if(typeof stateLabels!=='undefined')stateLabels.new='未確認';
     const help=document.getElementById('helpModal');
     if(help){
       help.querySelectorAll('dd').forEach(el=>{
@@ -22,16 +23,24 @@
     });
   }
 
+  if(typeof filtered==='function'){
+    const originalFiltered=filtered;
+    filtered=function(){
+      const items=originalFiltered();
+      return app.view==='history'?items.filter(x=>(x.reviewState||'new')!=='new'):items;
+    };
+  }
+
   if(typeof cardHtml==='function'){
     const originalCardHtml=cardHtml;
     cardHtml=function(x,i){
       let html=originalCardHtml(x,i);
       const updated=stampValue(x);
-      const headerStamp='<span class="review-updated" title="この候補が司令塔で最後に更新された日時">更新 '+esc(fmtUpdated(updated))+'</span>';
+      const headerStamp='<span class="review-updated" title="司令塔がこの候補を最後に更新・検知した日時">更新 '+esc(fmtUpdated(updated))+'</span>';
       html=html.replace(/(<span class="thread-title">.*?<\/span>)(?=<span class="new">|<span class="state-tag">)/, '$1'+headerStamp);
       const oldRow='<tr><th>最終確認</th><td colspan="3">'+esc(fmtDate(x.lastSeen))+'</td></tr>';
-      const newRow='<tr><th>更新日時</th><td><b>'+esc(fmtDate(updated))+'</b></td><th>最終検知</th><td>'+esc(fmtDate(x.lastSeen))+'</td></tr>';
-      html=html.replace(oldRow,newRow);
+      const newRow='<tr><th>更新・検知</th><td colspan="3"><b>'+esc(fmtDate(updated))+'</b></td></tr>';
+      html=html.replace(oldRow,newRow).replace('未処理に戻す','未確認に戻す');
       return html;
     };
   }
