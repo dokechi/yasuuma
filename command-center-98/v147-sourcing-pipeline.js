@@ -1,0 +1,38 @@
+(()=>{
+  if(typeof sourcingCardHtml!=='function'||typeof renderSourcing!=='function'||typeof sourcingFields!=='function')return;
+  const S=window.CCSourcingWorkflow={api:'https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-workflow-api',type:'sourcing_candidate',states:new Map(),loading:false,lastSig:''};
+  const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const marks={pending:'待',pass:'✓',fail:'×',blocked:'止',skipped:'—',ready:'→',done:'✓'};
+  const stages=[['discovered','発見'],['judgment','判定'],['verification','独立検証'],['execution','実行'],['audit','監査']];
+  S.headers=()=>({...authHeaders(),'Content-Type':'application/json'});
+  S.request=async(options={})=>{const r=await fetch(S.api,{cache:'no-store',...options});if(r.status===401){authExpired();throw Error('認証期限切れ')}const d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||('HTTP '+r.status));return d};
+  S.seed=x=>x.sourcingVerdict==='miss'?'fail':((['S','A'].includes(x.basePriority||x.priority)&&x.url)?'pass':'pending');
+  S.ensure=async items=>{if(!items.length)return;const d=await S.request({method:'POST',headers:S.headers(),body:JSON.stringify({action:'ensure',entityType:S.type,items:items.slice(0,400).map(x=>({entityId:String(x.id),judgmentStatus:S.seed(x)}))})});(d.states||[]).forEach(s=>S.states.set(String(s.entityId),s))};
+  S.get=x=>S.states.get(String(x.id))||{entityType:S.type,entityId:String(x.id),discovered:'pass',judgment:S.seed(x),verification:'pending',execution:'pending',audit:'pending'};
+  S.patch=async(x,stage,status,extra={})=>{const d=await S.request({method:'PATCH',headers:S.headers(),body:JSON.stringify({entityType:S.type,entityId:String(x.id),stage,status,judgmentSeed:S.seed(x),...extra})});S.states.set(String(x.id),d.state);return d.state};
+  S.currentItems=()=>{if(!['queue','success','close','miss'].includes(sourcingApp.sub))return[];const verdict={queue:null,success:'success',close:'close',miss:'miss'}[sourcingApp.sub];return sourcingApp.items.filter(x=>verdict===null?isReadySourcing(x):x.sourcingVerdict===verdict).sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||new Date(b.lastSeen||0)-new Date(a.lastSeen||0)).slice(0,400)};
+  S.verifyChecks=x=>{
+    const f=sourcingFields(x),p=typeof sourcingEvidence==='function'?sourcingEvidence(x):(x.payload||{}),bad=[];
+    if(!/^https?:\/\//i.test(String(x.url||'')))bad.push('商品URL');
+    if(f.buy===null||!Number.isFinite(Number(f.buy))||Number(f.buy)<=0)bad.push('仕入値');
+    if(f.sell===null||!Number.isFinite(Number(f.sell))||Number(f.sell)<=0)bad.push('保守売価');
+    if(!Number.isFinite(Number(x.impact))||Number(x.impact)<=0)bad.push('想定純利益');
+    const raw=p.mercari_sold_urls||p.mercari_new_sold_urls||p.mercari_new_sold_evidence_urls||p['mercari新品SOLD根拠URL']||[];
+    const soldLinks=(Array.isArray(raw)?raw:[raw]).filter(v=>/^https?:\/\//i.test(String(v||'')));
+    const salesEvidence=String(p.sales_evidence||p['成約根拠']||p.sell_through_evidence||'').trim();
+    if(!soldLinks.length&&!salesEvidence)bad.push('成約根拠');
+    const missing=String(p.missing_checks||p['未確認の条件']||'').trim();
+    if(missing&&!/^(なし|none|n\/a|—|-|0)$/i.test(missing))bad.push('未確認条件');
+    return {ok:bad.length===0,note:bad.length?'NG: '+bad.join('・'):'PASS: 仕入値/保守売価/利益/成約根拠/未確認条件を独立確認'};
+  };
+  S.verify=async(x,b)=>{bump(b);setStatus('仕入れを独立検証中...',true);try{const r=S.verifyChecks(x);await S.patch(x,'verification',r.ok?'pass':'fail',{note:r.note});renderSourcing();toast(r.ok?'仕入れ検証 PASS':'仕入れ検証 NG',r.ok?'good':'bad');setStatus('準備完了')}catch(err){toast(err.message||'検証できませんでした','bad');setStatus('入力待ち')}};
+  S.recheck=async(x,b)=>{bump(b);try{await S.patch(x,'verification','pending',{note:'再検証待ち'});renderSourcing();toast('再検証待ちに戻しました','good')}catch(err){toast(err.message||'戻せませんでした','bad')}};
+  S.execute=async(x,b)=>{const s=S.get(x);if(s.verification!=='pass'){toast('先に独立検証をPASSしてください','bad');return}const ev=prompt('仕入れ実行の証拠を入力\n例：注文完了画面／注文確認メール／注文番号','注文完了を確認');if(ev===null)return;bump(b);try{await S.patch(x,'execution','done',{note:'仕入れ実行済みとして記録',evidenceNote:String(ev).trim()||null});renderSourcing();toast('仕入れ実行済みにしました','good')}catch(err){toast(err.message||'保存できませんでした','bad')}};
+  S.audit=async(x,status,b)=>{bump(b);try{const s=S.get(x);await S.patch(x,'audit',status,{note:status==='pass'?'注文証拠を別工程で確認':'監査で不一致を検出',evidenceNote:s.evidenceNote||null,evidenceUrl:s.evidenceUrl||null});renderSourcing();toast(status==='pass'?'仕入れ監査 PASS':'仕入れ監査 NG',status==='pass'?'good':'bad')}catch(err){toast(err.message==='evidence_required_for_audit'?'注文証拠がないため監査PASSにできません':(err.message||'監査できませんでした'),'bad')}};
+  S.panel=x=>{const s=S.get(x),steps=stages.map(([k,l])=>{const v=s[k]||'pending';return '<div class="wf-step '+h(v)+'"><small>'+h(l)+'</small><b>'+h(marks[v]||v)+'</b></div>'}).join('<span class="wf-arrow">›</span>');let actions='';if(s.judgment==='pass'&&['pending','blocked','skipped'].includes(s.verification))actions+='<button class="push-button small wf-verify" data-swf-verify="'+h(x.id)+'">独立検証</button>';if(s.verification==='fail')actions+='<button class="push-button small" data-swf-recheck="'+h(x.id)+'">再検証</button>';if(s.verification==='pass'&&s.execution!=='done')actions+='<button class="push-button small" data-swf-exec="'+h(x.id)+'">購入済みを記録</button>';if(s.execution==='done'&&s.audit!=='pass')actions+='<button class="push-button small wf-audit" data-swf-audit="'+h(x.id)+'">監査PASS</button><button class="push-button small" data-swf-audit-ng="'+h(x.id)+'">監査NG</button>';if(s.audit==='pass')actions+='<span class="wf-complete">完了：購入＋証拠確認済み</span>';const notes=[s.verificationNote?('検証: '+s.verificationNote):'',s.evidenceNote?('証拠: '+s.evidenceNote):'',s.auditNote?('監査: '+s.auditNote):''].filter(Boolean).join(' ／ ');return '<section class="wf-panel sourcing-wf"><div class="wf-title"><b>AI工程</b><span>元のS/A判定とは別系統で検品</span></div><div class="wf-steps">'+steps+'</div>'+(notes?'<div class="wf-note">'+h(notes)+'</div>':'')+(actions?'<div class="wf-actions">'+actions+'</div>':'')+'<div class="wf-foot">「◎仕入れできた」の学習記録とは別。工程完了は注文証拠を監査してから。</div></section>'};
+  const baseCard=sourcingCardHtml;
+  sourcingCardHtml=function(x,i){return baseCard(x,i).replace('<div class="sourcing-reason">',S.panel(x)+'<div class="sourcing-reason">')};
+  S.bind=()=>{document.querySelectorAll('[data-swf-verify]').forEach(b=>b.onclick=()=>{const x=sourcingApp.items.find(v=>String(v.id)===b.dataset.swfVerify);if(x)S.verify(x,b)});document.querySelectorAll('[data-swf-recheck]').forEach(b=>b.onclick=()=>{const x=sourcingApp.items.find(v=>String(v.id)===b.dataset.swfRecheck);if(x)S.recheck(x,b)});document.querySelectorAll('[data-swf-exec]').forEach(b=>b.onclick=()=>{const x=sourcingApp.items.find(v=>String(v.id)===b.dataset.swfExec);if(x)S.execute(x,b)});document.querySelectorAll('[data-swf-audit]').forEach(b=>b.onclick=()=>{const x=sourcingApp.items.find(v=>String(v.id)===b.dataset.swfAudit);if(x)S.audit(x,'pass',b)});document.querySelectorAll('[data-swf-audit-ng]').forEach(b=>b.onclick=()=>{const x=sourcingApp.items.find(v=>String(v.id)===b.dataset.swfAuditNg);if(x)S.audit(x,'fail',b)})};
+  const baseRender=renderSourcing;
+  renderSourcing=function(){baseRender();S.bind();const items=S.currentItems();if(!items.length||S.loading)return;const sig=sourcingApp.sub+'|'+items.map(x=>x.id).join('|');if(sig===S.lastSig)return;S.loading=true;S.ensure(items).then(()=>{S.lastSig=sig;baseRender();S.bind()}).catch(err=>{console.warn('sourcing workflow load failed',err);toast('仕入れAI工程を読み込めませんでした','bad')}).finally(()=>{S.loading=false})};
+})();
