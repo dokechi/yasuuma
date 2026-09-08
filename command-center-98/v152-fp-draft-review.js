@@ -1,5 +1,5 @@
 (()=>{
-  if(typeof renderList!=='function'||!window.app)return;
+  if(typeof renderList!=='function'||typeof app==='undefined')return;
 
   const TYPE='fp_content';
   const API='https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-workflow-api';
