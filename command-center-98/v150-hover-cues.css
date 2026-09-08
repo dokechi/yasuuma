@@ -1,0 +1,86 @@
+/* Global hover/focus affordance for Command Center.
+   Keep the Win98 character while making the current mouse target obvious. */
+
+/* All standard clickable controls */
+button:not(:disabled),
+a[href],
+summary,
+.task-row,
+[role="button"]{
+  cursor:pointer;
+}
+
+/* Main 3D buttons: pale-yellow hover + inner focus frame. */
+.push-button:not(:disabled):hover,
+.win-control:not(:disabled):hover,
+.retro-menu-item:not(:disabled):hover,
+.task-origin-link:hover,
+.kpi-sourcing-link:hover{
+  background:#fff6b5 !important;
+  color:#111 !important;
+  outline:1px dotted #000080;
+  outline-offset:-4px;
+}
+
+/* Top menu uses the classic Windows selection cue. */
+.menu-item:not(:disabled):hover{
+  background:#000080 !important;
+  color:#fff !important;
+  outline:1px dotted #fff;
+  outline-offset:-3px;
+}
+
+/* Ordinary text links should also visibly react. */
+a[href]:not(.push-button):not(.task-origin-link):not(.kpi-sourcing-link):hover{
+  background:#fff6b5;
+  color:#000080;
+  text-decoration:underline;
+  outline:1px dotted #000080;
+  outline-offset:2px;
+}
+
+/* Expand/collapse targets. */
+summary:hover{
+  background:#fff6b5 !important;
+  outline:1px dotted #000080;
+  outline-offset:-2px;
+}
+
+/* Clickable rows / cards from the different desks. */
+.task-row:hover,
+.x-row:hover,
+tr.clickable:hover{
+  background:#eef !important;
+  outline:1px dotted #000080;
+  outline-offset:-2px;
+}
+
+/* KPI/action buttons that may not use push-button styling. */
+button.kpi-sourcing-link:hover,
+button[data-kpi-action]:hover,
+button[data-open-sourcing]:hover,
+button[data-source-task]:hover{
+  box-shadow:inset 1px 1px #fff,inset -1px -1px #808080;
+}
+
+/* Keyboard focus gets the same visible target treatment. */
+button:focus-visible,
+a[href]:focus-visible,
+summary:focus-visible,
+.task-row:focus-visible,
+[role="button"]:focus-visible{
+  outline:2px dotted #000080 !important;
+  outline-offset:2px;
+}
+
+/* Do not make disabled controls look actionable. */
+button:disabled{
+  cursor:default;
+}
+
+@media (hover:none){
+  /* Touch devices have no persistent hover; keep tap targets unchanged. */
+  .push-button:hover,.win-control:hover,.retro-menu-item:hover,.menu-item:hover,a[href]:hover,summary:hover{
+    outline:none;
+  }
+}
