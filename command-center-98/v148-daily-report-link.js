@@ -1,5 +1,12 @@
 (()=>{
-  const DAILY_REPORT_URL='http://127.0.0.1:8765/';
+  const LOCAL_DAILY_REPORT_URL='http://127.0.0.1:8765/';
+  const LAN_DAILY_REPORT_URL='http://192.168.11.10:8765/';
+  const isMobileDevice=()=>{
+    if(typeof navigator.userAgentData?.mobile==='boolean')return navigator.userAgentData.mobile;
+    if(/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent))return true;
+    return navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1;
+  };
+  const dailyReportUrl=()=>isMobileDevice()?LAN_DAILY_REPORT_URL:LOCAL_DAILY_REPORT_URL;
   const COONEY_URL='https://cooney-os.vercel.app/';
   const menu=document.getElementById('menuBar');
   const helpButton=document.getElementById('menuHelp');
@@ -12,8 +19,8 @@
     dailyButton.className='menu-item';
     dailyButton.type='button';
     dailyButton.id='menuDaily';
-    dailyButton.setAttribute('aria-label','このPCで作業日報を開く');
-    dailyButton.title='このPCで作業日報を開く';
+    dailyButton.setAttribute('aria-label','作業日報を開く');
+    dailyButton.title='PCはこのPC、スマホは社内Wi-Fi経由で作業日報を開く';
     dailyButton.innerHTML='<u>作</u>業日報(R)';
     helpButton.before(dailyButton);
   }
@@ -39,7 +46,7 @@
   if(createdDaily){
     dailyButton.addEventListener('click',()=>{
       if(typeof bump==='function')bump(dailyButton);
-      openUrl(DAILY_REPORT_URL);
+      openUrl(dailyReportUrl());
     });
   }
   if(createdCooney){
@@ -73,7 +80,7 @@
         const dailyTerm=document.createElement('dt');
         const dailyDescription=document.createElement('dd');
         dailyTerm.textContent='作業日報';
-        dailyDescription.textContent='このPCの日報集計を新しいタブで開く';
+        dailyDescription.textContent='PCはこのPC、スマホは社内Wi-Fi経由で日報集計を開く';
         readLabel.before(dailyTerm,dailyDescription);
       }
       const cooneyTerm=document.createElement('dt');
