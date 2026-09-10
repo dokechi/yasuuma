@@ -1,0 +1,106 @@
+/*
+ * Command Center HOME v1.55
+ * Glance-style information hierarchy expressed with the existing Windows 98 UI.
+ * The legacy detail views remain untouched and are only hidden while HOME is active.
+ */
+
+#mainWindow.home-active>.window-body>.hero,
+#mainWindow.home-active #regularHub,
+#mainWindow.home-active #sourcingHub,
+#mainWindow.home-active #redditHub,
+#mainWindow.home-active #xHub{display:none!important}
+
+.command-home{margin:0 0 10px}
+.window.home-active.focus-mode .home-decision-window{display:none}
+.home-window,.home-panel{background:var(--win-gray);border:2px solid;border-color:#fff #000 #000 #fff;box-shadow:inset -1px -1px #808080,inset 1px 1px #dfdfdf}
+.home-window-title,.home-panel-title{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:25px;padding:4px 7px;background:#000080;color:#fff;font:700 12px "MS Gothic","MS UI Gothic",monospace}
+.home-window-title small,.home-panel-title small{font:400 10px Tahoma,"MS UI Gothic",sans-serif;color:#fff;white-space:nowrap}
+.home-window-body{padding:8px}
+
+.home-decision-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.home-metric{min-width:0;min-height:80px;padding:8px 10px;background:#fff;color:#111;border:2px solid;border-color:#fff #000 #000 #fff;box-shadow:inset -1px -1px #808080,inset 1px 1px #dfdfdf;text-align:left;font:inherit;cursor:pointer}
+.home-metric:hover{background:#eef}
+.home-metric:active,.home-metric.is-pressing{border-color:#000 #fff #fff #000;background:#ddd;transform:translate(1px,1px)}
+.home-metric:focus-visible,.home-row:focus-visible,.home-priority-item:focus-visible,.home-mobile-nav button:focus-visible{outline:2px dotted #000080;outline-offset:2px}
+.home-metric-label{display:block;color:#333;font-size:12px}
+.home-metric-value{display:block;margin-top:3px;color:#000080;font:900 25px/1 "MS Gothic",monospace;font-variant-numeric:tabular-nums}
+.home-metric-note{display:block;margin-top:6px;color:#555;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-metric.is-urgent .home-metric-value{color:#a40000}
+
+.home-priority-box{margin-top:7px;background:#fff6b5;border:1px solid #9b8e51}
+.home-priority-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 7px;border-bottom:1px solid #b8a94b;font-size:11px}
+.home-priority-head b{color:#8b0000;font-size:13px}
+.home-priority-list{display:grid}
+.home-priority-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;width:100%;padding:7px 9px;border:0;border-top:1px solid #ded18b;background:#fffdf0;color:#111;text-align:left;font:inherit;cursor:pointer}
+.home-priority-item:first-child{border-top:0}
+.home-priority-item:hover{background:#fff3ad}
+.home-priority-item:active{box-shadow:inset 1px 1px #808080;transform:translate(1px,1px)}
+.home-priority-title{min-width:0;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-priority-meta{grid-column:2;grid-row:1;color:#8b0000;font:700 11px "MS Gothic",monospace;white-space:nowrap}
+.home-priority-next{grid-column:1/-1;color:#555;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-empty-row{padding:13px 10px;color:#555;text-align:center;font-size:11px}
+
+.home-panel-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:7px;margin-top:7px}
+.home-panel{min-width:0}
+.home-panel-sourcing{grid-column:span 5}
+.home-panel-information{grid-column:span 4}
+.home-panel-monitoring{grid-column:span 3}
+.home-panel-shortcuts{grid-column:1/-1}
+.home-panel-body{min-height:168px;padding:5px;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080;box-shadow:inset 1px 1px #000}
+.home-panel-body.is-loading{color:#555}
+.home-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:29px;padding:5px 6px;border:0;border-bottom:1px solid #ddd;background:#fff;color:#111;text-align:left;font:inherit;cursor:pointer}
+.home-row:last-of-type{border-bottom:0}
+.home-row:hover{background:#eef;color:#000080}
+.home-row:active{box-shadow:inset 1px 1px #808080;transform:translate(1px,1px)}
+.home-row span{min-width:0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-row b{flex:0 0 auto;color:#000080;font:900 15px "MS Gothic",monospace;font-variant-numeric:tabular-nums}
+.home-row.is-alert b{color:#a40000}
+.home-panel-highlight{margin:5px 3px 2px;padding:6px;background:#fff6b5;border:1px solid #b8a94b;font-size:10px;line-height:1.45}
+.home-panel-highlight b{display:block;margin-bottom:2px;color:#333}
+.home-panel-meta{margin:5px 3px 1px;color:#555;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-panel-error{margin:5px 3px;padding:5px;background:#ffd7d7;border:1px solid #a40000;color:#700;font-size:10px}
+
+.home-shortcut-body{display:flex;align-items:center;gap:5px;min-height:auto;padding:7px;flex-wrap:wrap}
+.home-shortcut-body .push-button{min-width:94px}
+.home-shortcut-note{margin-left:auto;color:#444;font-size:10px}
+.home-mobile-nav{display:none}
+
+@media(max-width:900px){
+  .home-panel-sourcing{grid-column:span 6}
+  .home-panel-information{grid-column:span 6}
+  .home-panel-monitoring{grid-column:1/-1}
+  .home-panel-monitoring .home-panel-body{display:grid;grid-template-columns:repeat(3,1fr);min-height:auto}
+  .home-panel-monitoring .home-panel-meta,.home-panel-monitoring .home-panel-error{grid-column:1/-1}
+}
+
+@media(max-width:700px){
+  body.home-mode{padding:5px 5px 66px}
+  #mainWindow.home-active .toolbar{display:none}
+  .command-home{margin-bottom:0}
+  .home-window-title,.home-panel-title{min-height:28px;font-size:13px}
+  .home-window-title small{white-space:normal;text-align:right}
+  .home-decision-grid{grid-template-columns:1fr 1fr}
+  .home-metric{min-height:75px;padding:8px}
+  .home-metric-value{font-size:23px}
+  .home-priority-item{grid-template-columns:minmax(0,1fr);gap:3px;padding:9px}
+  .home-priority-meta{grid-column:1;grid-row:auto}
+  .home-panel-grid{grid-template-columns:1fr;gap:7px}
+  .home-panel-sourcing,.home-panel-information,.home-panel-monitoring,.home-panel-shortcuts{grid-column:1;min-width:0}
+  .home-panel-sourcing{order:1}
+  .home-panel-information{order:2}
+  .home-panel-monitoring{order:3}
+  .home-panel-shortcuts{order:4}
+  .home-panel-body{min-height:0}
+  .home-panel-monitoring .home-panel-body{display:block}
+  .home-row{min-height:42px;padding:7px 8px}
+  .home-row b{font-size:17px}
+  .home-shortcut-body{display:grid;grid-template-columns:1fr 1fr}
+  .home-shortcut-body .push-button{min-width:0;min-height:42px}
+  .home-shortcut-note{grid-column:1/-1;margin:2px 0 0}
+  .home-mode .home-mobile-nav{position:fixed;left:5px;right:5px;bottom:5px;z-index:110;display:grid;grid-template-columns:repeat(4,1fr);gap:3px;padding:4px;background:var(--win-gray);border:2px solid;border-color:#fff #000 #000 #fff;box-shadow:2px 2px #000}
+  .home-mobile-nav .push-button{min-width:0;min-height:42px;padding:3px 2px;font-size:11px;white-space:nowrap}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .home-metric,.home-row,.home-priority-item{transition:none!important}
+}
