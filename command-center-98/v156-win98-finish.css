@@ -1,0 +1,541 @@
+/*
+  Command Center 98: final Windows 98 state layer.
+  This file is intentionally independent from the data and navigation layers.
+  Remove this stylesheet to return to the v155 presentation.
+*/
+
+:root{
+  --cc-face:#c0c0c0;
+  --cc-light:#fff;
+  --cc-light-mid:#dfdfdf;
+  --cc-shadow:#808080;
+  --cc-dark:#000;
+  --cc-active-title:#000080;
+  --cc-active-title-end:#1084d0;
+  --cc-inactive-title:#808080;
+  --cc-inactive-title-end:#b5b5b5;
+  --cc-selection:#000080;
+  --cc-selection-text:#fff;
+}
+
+::selection{background:var(--cc-selection);color:var(--cc-selection-text)}
+
+/* Deep Windows frames: outer highlight/shadow plus the inner bevel. */
+.window,
+.task-window,
+.dialog-window,
+.sourcing-program,
+.reddit-program,
+.reddit-editor-window,
+.x-program,
+.x-editor,
+.purchase-drill-window,
+.fp-draft-dialog,
+.toast,
+.home-window,
+.home-panel{
+  border:2px solid!important;
+  border-color:var(--cc-light) var(--cc-dark) var(--cc-dark) var(--cc-light)!important;
+  border-radius:0!important;
+  box-shadow:inset -1px -1px var(--cc-shadow),inset 1px 1px var(--cc-light-mid),2px 2px 0 rgba(0,0,0,.45)!important;
+}
+
+/* Active and inactive captions are real application states, not decoration. */
+.title-bar,
+.modal-backdrop.open .title-bar,
+.fp-draft-dialog>header{
+  background:linear-gradient(90deg,var(--cc-active-title),var(--cc-active-title-end))!important;
+  color:#fff!important;
+  text-shadow:1px 1px #000;
+}
+
+body:has(.modal-backdrop.open) #mainWindow>.title-bar,
+body.fp-modal-open #mainWindow>.title-bar,
+body.cc-app-inactive #mainWindow>.title-bar,
+body.cc-app-inactive .modal-backdrop.open .title-bar,
+body.cc-app-inactive .fp-draft-dialog>header{
+  background:linear-gradient(90deg,var(--cc-inactive-title),var(--cc-inactive-title-end))!important;
+  color:#e8e8e8!important;
+  text-shadow:none;
+}
+
+.title-bar,
+.home-window-title,
+.home-panel-title,
+.sourcing-program-head,
+.reddit-program-head,
+.x-head{
+  letter-spacing:0;
+  border-radius:0!important;
+}
+
+.app-icon{
+  border:1px solid #000!important;
+  border-radius:0!important;
+  box-shadow:1px 1px #fff;
+}
+
+/* Caption controls use the same raised, pressed and focused vocabulary. */
+.win-control{
+  color:#000!important;
+  background:var(--cc-face)!important;
+  border:2px solid!important;
+  border-color:var(--cc-light) var(--cc-dark) var(--cc-dark) var(--cc-light)!important;
+  border-radius:0!important;
+  box-shadow:inset -1px -1px var(--cc-shadow),inset 1px 1px var(--cc-light-mid)!important;
+  text-shadow:none;
+}
+
+.win-control:not(:disabled):hover{
+  background:#d4d4d4!important;
+  color:#000!important;
+  outline:0!important;
+}
+
+.win-control:active,
+.win-control.is-pressing{
+  border-color:var(--cc-dark) var(--cc-light) var(--cc-light) var(--cc-dark)!important;
+  box-shadow:inset 1px 1px var(--cc-shadow)!important;
+  transform:translate(1px,1px);
+}
+
+/* Menus: shallow hover on the menu bar, selection blue inside popups. */
+.menu-bar{
+  background:var(--cc-face);
+  border-bottom:1px solid var(--cc-shadow)!important;
+  box-shadow:0 1px var(--cc-light);
+}
+
+.menu-item{
+  color:#000;
+  border:1px solid transparent!important;
+  border-radius:0!important;
+}
+
+.menu-item:not(:disabled):hover{
+  color:#000!important;
+  background:var(--cc-face)!important;
+  border-color:var(--cc-light) var(--cc-shadow) var(--cc-shadow) var(--cc-light)!important;
+  outline:0!important;
+}
+
+.menu-item:active,
+.menu-item.active,
+.menu-item[aria-expanded="true"]{
+  color:#fff!important;
+  background:var(--cc-selection)!important;
+  border-color:var(--cc-dark) var(--cc-light) var(--cc-light) var(--cc-dark)!important;
+  box-shadow:inset 1px 1px var(--cc-shadow)!important;
+}
+
+.retro-menu{
+  padding:2px!important;
+  background:var(--cc-face)!important;
+  border:2px solid!important;
+  border-color:var(--cc-light) var(--cc-dark) var(--cc-dark) var(--cc-light)!important;
+  border-radius:0!important;
+  box-shadow:2px 2px #000!important;
+}
+
+.retro-menu-item{
+  position:relative;
+  border:0!important;
+  border-radius:0!important;
+}
+
+.retro-menu-item:not(:disabled):hover,
+.retro-menu-item:focus-visible{
+  color:#fff!important;
+  background:var(--cc-selection)!important;
+  outline:0!important;
+}
+
+.retro-menu-item[role="menuitemradio"]{padding-left:25px}
+.retro-menu-item[role="menuitemradio"][aria-checked="true"]:before{
+  content:"\2022";
+  position:absolute;
+  left:9px;
+  top:50%;
+  font-size:16px;
+  line-height:1;
+  transform:translateY(-52%);
+}
+
+.menu-separator-line{
+  height:2px!important;
+  margin:3px 2px!important;
+  border-top:1px solid var(--cc-shadow)!important;
+  border-bottom:1px solid var(--cc-light)!important;
+  background:transparent!important;
+}
+
+/* Buttons have six distinguishable states: normal, hover, pressed, selected, focus and disabled. */
+.push-button,
+.home-metric,
+.home-mobile-nav button{
+  color:#111;
+  background:var(--cc-face);
+  border:2px solid!important;
+  border-color:var(--cc-light) var(--cc-dark) var(--cc-dark) var(--cc-light)!important;
+  border-radius:0!important;
+  box-shadow:inset -1px -1px var(--cc-shadow),inset 1px 1px var(--cc-light-mid)!important;
+  text-shadow:none;
+}
+
+.push-button:not(:disabled):hover,
+.home-metric:not(:disabled):hover,
+.home-mobile-nav button:not(:disabled):hover{
+  color:#111!important;
+  background:#d4d4d4!important;
+  outline:0!important;
+}
+
+.push-button:active,
+.push-button.is-pressing,
+.home-metric:active,
+.home-metric.is-pressing,
+.home-mobile-nav button:active{
+  border-color:var(--cc-dark) var(--cc-light) var(--cc-light) var(--cc-dark)!important;
+  box-shadow:inset 1px 1px var(--cc-shadow)!important;
+  transform:translate(1px,1px);
+}
+
+.push-button.selected,
+.push-button[aria-pressed="true"],
+.home-mobile-nav button.selected,
+.home-mobile-nav button[aria-pressed="true"]{
+  border-color:var(--cc-dark) var(--cc-light) var(--cc-light) var(--cc-dark)!important;
+  background-color:#d9d9d9!important;
+  background-image:repeating-conic-gradient(#fff 0 25%,#d2d2d2 0 50%)!important;
+  background-size:2px 2px!important;
+  box-shadow:inset 1px 1px var(--cc-shadow)!important;
+  font-weight:700;
+}
+
+.push-button.default,
+.dialog-footer .push-button:last-child:not(:disabled),
+.x-editor-actions .x-main:not(:disabled){
+  outline:1px solid #000;
+  outline-offset:1px;
+}
+
+button:disabled,
+.push-button:disabled,
+.win-control:disabled{
+  color:var(--cc-shadow)!important;
+  background:var(--cc-face)!important;
+  text-shadow:1px 1px var(--cc-light)!important;
+  border-color:var(--cc-light) var(--cc-dark) var(--cc-dark) var(--cc-light)!important;
+  box-shadow:inset -1px -1px var(--cc-shadow),inset 1px 1px var(--cc-light-mid)!important;
+  opacity:1!important;
+}
+
+button:focus-visible,
+.push-button:focus-visible,
+.win-control:focus-visible,
+.home-metric:focus-visible,
+.home-row:focus-visible,
+.home-priority-item:focus-visible,
+.purchase-stat.drillable:focus-visible{
+  outline:1px dotted #000!important;
+  outline-offset:-5px!important;
+}
+
+.menu-item:focus-visible{
+  outline:1px dotted #000!important;
+  outline-offset:-3px!important;
+}
+
+a[href]:focus-visible,
+summary:focus-visible,
+.task-row:focus-visible,
+[role="button"]:focus-visible{
+  outline:1px dotted var(--cc-active-title)!important;
+  outline-offset:2px!important;
+}
+
+.task-row.selected:focus-visible,
+.retro-menu-item:focus-visible{
+  outline:1px dotted #fff!important;
+  outline-offset:-3px!important;
+}
+
+/* Recessed content panes and fields share one depth. */
+.hero,
+.empty,
+.task-pane,
+.task-stat,
+.review-toolbar,
+.dialog-empty,
+.help-grid,
+.sourcing-intro,
+.supplier-ledger-head,
+.supplier-table-wrap,
+.purchase-stat,
+.purchase-drill-table-wrap,
+.purchase-drill-titleline,
+.reddit-intro,
+.reddit-stat,
+.reddit-scorebar,
+.reddit-empty,
+.reddit-loading,
+.x-intro,
+.x-stats>div,
+.x-facts>div,
+.x-empty,
+.fp-draft-actions,
+.home-panel-body,
+.home-metric-value,
+input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+textarea,
+select{
+  border:2px solid!important;
+  border-color:var(--cc-shadow) var(--cc-light) var(--cc-light) var(--cc-shadow)!important;
+  border-radius:0!important;
+  box-shadow:inset 1px 1px var(--cc-dark)!important;
+}
+
+input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+textarea,
+select{
+  color:#111!important;
+  background:#fff!important;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible{
+  outline:1px dotted var(--cc-active-title)!important;
+  outline-offset:2px!important;
+}
+
+input:disabled,
+textarea:disabled,
+select:disabled{
+  color:var(--cc-shadow)!important;
+  background:var(--cc-face)!important;
+  text-shadow:1px 1px var(--cc-light);
+}
+
+input[type="checkbox"],input[type="radio"]{
+  appearance:none;
+  width:13px;
+  height:13px;
+  margin:0 4px 0 0;
+  vertical-align:-2px;
+  background:#fff;
+  border:2px solid;
+  border-color:var(--cc-shadow) var(--cc-light) var(--cc-light) var(--cc-shadow);
+  border-radius:0;
+  box-shadow:inset 1px 1px #000;
+}
+
+input[type="checkbox"]:checked{
+  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 9 9' shape-rendering='crispEdges'%3E%3Cpath d='M1 4h2v2h1V3h1V2h3v2H7v1H6v1H5v1H4v1H3V7H2V6H1z' fill='%23000'/%3E%3C/svg%3E") center/9px 9px no-repeat;
+}
+
+input[type="radio"]{border-radius:50%}
+input[type="radio"]:checked{background:radial-gradient(circle,#000 0 3px,#fff 3px)}
+
+fieldset{
+  border:2px groove var(--cc-light)!important;
+  border-radius:0!important;
+}
+
+/* Raised table headers and a hard selection make dense data easier to scan. */
+.kpi-table th,
+.task-table th,
+.supplier-table th,
+.purchase-table th,
+.purchase-drill-table th,
+.reddit-info th,
+.x-info th{
+  color:#111;
+  background:var(--cc-face)!important;
+  border:1px solid!important;
+  border-color:var(--cc-light) var(--cc-shadow) var(--cc-shadow) var(--cc-light)!important;
+  box-shadow:inset -1px -1px var(--cc-light-mid);
+}
+
+.task-row:hover,
+.x-row:hover,
+tr.clickable:hover,
+.purchase-drill-table tr.order-drill-row:hover{
+  color:#000080!important;
+  background:#e8edff!important;
+  outline:1px dotted #000080!important;
+  outline-offset:-2px;
+}
+
+.task-row.selected,
+.task-row.selected:hover,
+tr[aria-selected="true"]{
+  color:var(--cc-selection-text)!important;
+  background:var(--cc-selection)!important;
+  outline-color:#fff!important;
+}
+
+/* HOME counters become Control Panel-style property panes instead of SaaS cards. */
+.home-metric{
+  min-height:80px;
+  background:var(--cc-face)!important;
+}
+
+.home-metric-label{color:#111!important;font-weight:700}
+.home-metric-value{
+  display:inline-block!important;
+  min-width:48px;
+  margin-top:5px!important;
+  padding:2px 7px 1px;
+  color:var(--cc-active-title)!important;
+  background:#fff;
+  line-height:1.05!important;
+}
+
+.home-metric.is-urgent .home-metric-value{color:#a40000!important}
+.home-metric-note{color:#444!important}
+
+.home-window-title,
+.home-panel-title,
+.sourcing-program-head,
+.reddit-program-head,
+.x-head{
+  background:var(--cc-active-title)!important;
+  color:#fff!important;
+  text-shadow:1px 1px #000;
+}
+
+.home-row:not(:disabled):hover,
+.home-priority-item:not(:disabled):hover{
+  background:#e8edff!important;
+  color:#000080!important;
+  outline:1px dotted #000080!important;
+  outline-offset:-3px;
+}
+
+.home-row:active,
+.home-priority-item:active{
+  color:#fff!important;
+  background:var(--cc-selection)!important;
+  box-shadow:inset 1px 1px #000!important;
+}
+
+/* Shallow status panes and separators finish the application frame. */
+.status-bar{
+  gap:2px!important;
+  margin-top:5px!important;
+  padding-top:2px;
+  border-top:1px solid var(--cc-light);
+  box-shadow:inset 0 1px var(--cc-shadow);
+}
+
+.status-panel{
+  min-height:20px!important;
+  padding:2px 5px!important;
+  border:1px solid!important;
+  border-color:var(--cc-shadow) var(--cc-light) var(--cc-light) var(--cc-shadow)!important;
+  box-shadow:none!important;
+}
+
+.separator{
+  width:2px!important;
+  background:var(--cc-shadow)!important;
+  border-right:1px solid var(--cc-light)!important;
+}
+
+.spinner{
+  border-radius:0!important;
+  border-width:1px!important;
+  background:linear-gradient(90deg,var(--cc-active-title) 50%,#fff 50%);
+}
+
+/* Desktop scrollbars retain the native behaviour but speak the same UI language. */
+@media (min-width:701px) and (hover:hover){
+  *::-webkit-scrollbar{width:15px;height:15px;background:var(--cc-face)}
+  *::-webkit-scrollbar-track{
+    background-color:#fff;
+    background-image:repeating-conic-gradient(#fff 0 25%,#d6d6d6 0 50%);
+    background-size:2px 2px;
+  }
+  *::-webkit-scrollbar-thumb{
+    min-width:20px;
+    min-height:20px;
+    background:var(--cc-face);
+    border:2px solid;
+    border-color:var(--cc-light) var(--cc-dark) var(--cc-dark) var(--cc-light);
+    box-shadow:inset -1px -1px var(--cc-shadow),inset 1px 1px var(--cc-light-mid);
+  }
+  *::-webkit-scrollbar-thumb:active{
+    border-color:var(--cc-dark) var(--cc-light) var(--cc-light) var(--cc-dark);
+    box-shadow:inset 1px 1px var(--cc-shadow);
+  }
+  *::-webkit-scrollbar-corner{background:var(--cc-face)}
+  *::-webkit-scrollbar-button:single-button{
+    display:block;
+    width:15px;
+    height:15px;
+    background-color:var(--cc-face);
+    background-position:center;
+    background-repeat:no-repeat;
+    border:2px solid;
+    border-color:var(--cc-light) var(--cc-dark) var(--cc-dark) var(--cc-light);
+  }
+  *::-webkit-scrollbar-button:single-button:active{
+    border-color:var(--cc-dark) var(--cc-light) var(--cc-light) var(--cc-dark);
+    background-position:calc(50% + 1px) calc(50% + 1px);
+  }
+  *::-webkit-scrollbar-button:single-button:vertical:decrement{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 9 9' shape-rendering='crispEdges'%3E%3Cpath d='M4 2h1v1h1v1h1v1H2V4h1V3h1z' fill='%23000'/%3E%3C/svg%3E");
+  }
+  *::-webkit-scrollbar-button:single-button:vertical:increment{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 9 9' shape-rendering='crispEdges'%3E%3Cpath d='M2 3h5v1H6v1H5v1H4V5H3V4H2z' fill='%23000'/%3E%3C/svg%3E");
+  }
+  *::-webkit-scrollbar-button:single-button:horizontal:decrement{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 9 9' shape-rendering='crispEdges'%3E%3Cpath d='M2 4h1V3h1V2h1v5H4V6H3V5H2z' fill='%23000'/%3E%3C/svg%3E");
+  }
+  *::-webkit-scrollbar-button:single-button:horizontal:increment{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 9 9' shape-rendering='crispEdges'%3E%3Cpath d='M4 2h1v1h1v1h1v1H6v1H5v1H4z' fill='%23000'/%3E%3C/svg%3E");
+  }
+}
+
+@media (min-width:701px){
+  body{padding:8px}
+  .window-body{padding:8px}
+  .title-bar{height:22px;min-height:22px;padding:2px 3px;font-size:12px}
+  .title-left{gap:4px}
+  .app-icon{width:16px;height:16px;font-size:10px}
+  .win-controls{gap:2px}
+  .win-control{width:18px;height:17px;min-height:17px;font-size:12px;line-height:11px}
+  .menu-bar{height:24px;min-height:24px;padding:1px 3px}
+  .menu-item{padding:2px 6px}
+  .retro-menu-item{min-height:24px;padding-top:3px;padding-bottom:3px}
+  .toolbar{padding:6px}
+  .home-window-title,.home-panel-title{min-height:22px;padding:3px 6px}
+}
+
+@media (max-width:700px){
+  .title-bar{min-height:28px}
+  .win-control{width:25px;height:22px;min-height:22px}
+  .menu-bar{min-height:28px;height:auto}
+  .menu-item{min-height:26px;padding-inline:5px}
+  .home-metric{min-height:77px}
+  .home-metric-value{min-width:45px}
+  .retro-menu-item{min-height:38px}
+  input[type="checkbox"],input[type="radio"]{width:18px;height:18px}
+}
+
+@media (hover:none){
+  .push-button:hover,
+  .win-control:hover,
+  .home-metric:hover,
+  .home-row:hover,
+  .home-priority-item:hover,
+  .menu-item:hover,
+  .retro-menu-item:hover{
+    outline:0!important;
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .spinner{animation:none!important}
+}
