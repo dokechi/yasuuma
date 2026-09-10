@@ -9,7 +9,7 @@
   let topLoading=false;
   let topLoadedAt=0;
   const escFp=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const fp=x=>x?.payload?.content_type==='fp_post_candidate';
+  const fp=x=>x?.payload?.content_type==='fp_post_candidate'||['fp_psychology','fp_reaction'].includes(x?.payload?.category);
   const list=v=>Array.isArray(v)?v:[];
   const defaultState=x=>({entityId:String(x.id),discovered:'pass',judgment:(x.reviewState==='accepted'?'pass':'pending'),verification:'pending',execution:'pending',audit:'pending'});
   const state=x=>states.get(String(x.id))||defaultState(x);
@@ -33,7 +33,8 @@
       renderTop();
     }catch(err){console.warn('FP content workflow unavailable',err)}
   };
-  const sourceLinks=p=>list(p.official_sources).map((s,i)=>'<a href="'+escFp(s.url)+'" target="_blank" rel="noopener">'+escFp(s.label||('公式根拠 '+(i+1)))+'</a>').join('／')||'採用後に確認';
+  const sourceLinks=p=>{const rows=[...list(p.official_sources),...list(p.official_urls)];return rows.map((s,i)=>{const url=typeof s==='string'?s:s?.url,label=typeof s==='string'?('公式根拠 '+(i+1)):(s?.label||s?.title||('公式根拠 '+(i+1)));return url?'<a href="'+escFp(url)+'" target="_blank" rel="noopener">'+escFp(label)+'</a>':''}).filter(Boolean).join('／')||'追加調査で確認'};
+  const evidenceComments=p=>list(p.source_comments).slice(0,4).map(v=>'#'+escFp(v?.comment_no||'?')+' '+escFp(v?.summary||'')).join('<br>')||'次回候補から根拠コメントを保存';
   const stageMark=value=>value==='pass'||value==='done'?'✓':value==='ready'?'→':value==='fail'?'×':'待';
   const stage=(label,value)=>'<span class="fp-stage '+escFp(value)+'"><small>'+escFp(label)+'</small><b>'+stageMark(value)+'</b></span>';
   const draftStatus=x=>{const s=state(x);if(s.audit==='pass'||x.payload?.image_status==='ready')return{label:'画像確認待ち',queued:true};if(s.execution==='done')return{label:'画像制作待ち',queued:true};return{label:'原稿確認待ち',queued:false}};
@@ -41,8 +42,12 @@
   const panel=x=>{
     const p=x.payload||{},s=state(x),chosen=s.judgment==='pass'||x.reviewState==='accepted';
     const steps=stage('発掘','pass')+stage('選択',chosen?'pass':'pending')+stage('追加調査',s.verification||'pending')+stage('原稿',s.execution||'pending')+stage('画像',s.audit||'pending');
-    const structure=list(p.definitive_structure).map(v=>'<li>'+escFp(v)+'</li>').join('');
-    return '<section class="fp-candidate" data-fp-panel="'+escFp(x.id)+'"><div class="fp-head"><b>FP投稿候補</b><span class="fp-signal">'+escFp(p.engagement_label||'反応確認済み')+'</span><span class="fp-state">'+(chosen?'制作待ち':'選択待ち')+'</span></div><div class="fp-question"><small>読者が知りたいこと</small>'+escFp(p.reader_question||'')+'</div><dl class="fp-grid"><dt>反応の核</dt><dd>'+escFp(p.strong_reaction||'')+'</dd><dt>なぜ今か</dt><dd>'+escFp(p.hot_reason||'')+'</dd><dt>決定版の構成</dt><dd><ol>'+structure+'</ol></dd><dt>公式根拠</dt><dd>'+sourceLinks(p)+'</dd><dt>保険導線</dt><dd>'+escFp(p.affiliate_route||'')+'</dd><dt>調査状態</dt><dd>'+escFp(p.research_status||'')+'</dd></dl><div class="fp-stages">'+steps+'</div>'+(chosen?'<p class="fp-ready">選択済み。追加調査→原稿→事実確認→画像の順で制作します。</p>':'')+draftControls(x)+'</section>';
+    const structure=(list(p.definitive_structure).length?list(p.definitive_structure):list(p.post_structure)).map(v=>'<li>'+escFp(typeof v==='string'?v:(v?.text||v?.title||JSON.stringify(v)))+'</li>').join('');
+    const question=p.reader_question||p.question_lineage?.selected_question||p.first_impression||p.cover_idea||x.title||'';
+    const reaction=p.strong_reaction||p.reaction_summary||x.reason||'';
+    const hot=p.hot_reason||x.reason||x.summary||'';
+    const research=p.research_status||(p.source_checked_at?'元記事・コメント確認済み':'追加調査待ち');
+    return '<section class="fp-candidate" data-fp-panel="'+escFp(x.id)+'"><div class="fp-head"><b>FP投稿候補</b><span class="fp-signal">'+escFp(p.engagement_label||'反応確認済み')+'</span><span class="fp-state">'+(chosen?'制作待ち':'選択待ち')+'</span></div><div class="fp-question"><small>この投稿が答える疑問</small>'+escFp(question)+'</div><dl class="fp-grid"><dt>反応の核</dt><dd>'+escFp(reaction)+'</dd><dt>根拠コメント</dt><dd>'+evidenceComments(p)+'</dd><dt>なぜ今か</dt><dd>'+escFp(hot)+'</dd><dt>投稿構成</dt><dd><ol>'+structure+'</ol></dd><dt>公式根拠</dt><dd>'+sourceLinks(p)+'</dd><dt>調査状態</dt><dd>'+escFp(research)+'</dd></dl><div class="fp-stages">'+steps+'</div>'+(chosen?'<p class="fp-ready">選択済み。追加調査→原稿→事実確認→画像の順で制作します。</p>':'')+draftControls(x)+'</section>';
   };
   const baseCard=cardHtml;
   cardHtml=(x,i)=>{
@@ -58,7 +63,7 @@
     relabel();
   };
   const topStatus=x=>{const s=state(x),p=x.payload||{};if(s.audit==='pass'||p.image_status==='ready')return{label:'画像確認待ち',kind:'review',weight:400};if(s.execution==='done')return{label:'画像制作待ち',kind:'making',weight:300};if(s.verification==='pass'&&p.draft_status==='ready')return{label:'原稿確認待ち',kind:'action',weight:500};return{label:'追加調査中',kind:'research',weight:200}};
-  const topCard=x=>{const t=topStatus(x),p=x.payload||{},d=draftStatus(x),controls=p.draft_status==='ready'?'<button class="push-button small fp-open-draft" data-fp-open="'+escFp(x.id)+'">原稿を見る</button><button class="push-button small fp-request-images" data-fp-images="'+escFp(x.id)+'" '+(d.queued?'disabled':'')+'>'+(d.queued?'画像化を依頼済み':'この原稿で画像化')+'</button>':'<button class="push-button small" data-fp-open-accepted="1">採用済みを開く</button>';return'<article class="fp-top-card '+escFp(t.kind)+'"><div class="fp-top-rank"><b>'+escFp(x.score||'—')+'</b><small>点</small></div><div class="fp-top-main"><div><span class="fp-top-status">'+escFp(t.label)+'</span><strong>'+escFp(x.title||p.draft_cover||'FP投稿候補')+'</strong></div><p>'+escFp(p.reader_question||x.summary||'')+'</p><div class="fp-top-actions">'+controls+'</div></div></article>'};
+  const topCard=x=>{const t=topStatus(x),p=x.payload||{},d=draftStatus(x),controls=p.draft_status==='ready'?'<button class="push-button small fp-open-draft" data-fp-open="'+escFp(x.id)+'">原稿を見る</button><button class="push-button small fp-request-images" data-fp-images="'+escFp(x.id)+'" '+(d.queued?'disabled':'')+'>'+(d.queued?'画像化を依頼済み':'この原稿で画像化')+'</button>':'<button class="push-button small" data-fp-open-accepted="1">採用済みを開く</button>';return'<article class="fp-top-card '+escFp(t.kind)+'"><div class="fp-top-rank"><b>'+escFp(x.score||'—')+'</b><small>点</small></div><div class="fp-top-main"><div><span class="fp-top-status">'+escFp(t.label)+'</span><strong>'+escFp(x.title||p.draft_cover||'FP投稿候補')+'</strong></div><p>'+escFp(p.reader_question||p.question_lineage?.selected_question||p.first_impression||p.cover_idea||x.summary||'')+'</p><div class="fp-top-actions">'+controls+'</div></div></article>'};
   const renderTop=()=>{let host=document.getElementById('fpPriorityBoard');if(app.view!=='active'){host?.remove();return}if(!host){host=document.createElement('section');host.id='fpPriorityBoard';host.className='fp-top-board';document.querySelector('#regularHub .section-title')?.before(host)}const ranked=topItems.slice().sort((a,b)=>{const aw=topStatus(a).weight+(Number(a.score)||0),bw=topStatus(b).weight+(Number(b.score)||0);return bw-aw}).slice(0,3);host.hidden=!ranked.length;host.innerHTML=ranked.length?'<div class="fp-top-title"><div><b>いま確認する重要案件</b><span>決定済みの進行状況</span></div><button class="push-button small" data-fp-open-accepted="1">すべて見る</button></div><div class="fp-top-list">'+ranked.map(topCard).join('')+'</div>':''};
   const loadTop=async(force=false)=>{if(topLoading||app.view!=='active')return;if(!force&&Date.now()-topLoadedAt<30000){renderTop();return}topLoading=true;try{const r=await fetch(SIGNAL_API+'?view=accepted',{cache:'no-store',headers:authHeaders()});if(r.status===401){authExpired();return}const d=await r.json();if(!r.ok||!d?.ok)throw Error(d?.error||('HTTP '+r.status));topItems=list(d.items).filter(fp);topLoadedAt=Date.now();renderTop();await ensure(topItems);renderTop()}catch(err){console.warn('FP priority board unavailable',err)}finally{topLoading=false}};
   const findFpItem=id=>[...(app.items||[]),...topItems].find(v=>String(v.id)===String(id));
@@ -96,7 +101,7 @@
     if(!fp(x))return;
     e.preventDefault();e.stopImmediatePropagation();choose(x,b);
   },true);
-  document.addEventListener('click',e=>{const accepted=e.target.closest?.('[data-fp-open-accepted]');if(accepted){e.preventDefault();app.domain='money';setSelected('#domainTabs button[data-domain]','domain','money');load('accepted');return}const open=e.target.closest?.('[data-fp-open]');if(open){e.preventDefault();const x=findFpItem(open.dataset.fpOpen);if(x)openDraft(x);return}if(e.target.closest?.('.fp-close-draft')||e.target.classList?.contains('fp-draft-modal')){e.preventDefault();closeDraft();return}const b=e.target.closest?.('[data-fp-images]');if(b){e.preventDefault();const x=findFpItem(b.dataset.fpImages);if(x)requestImages(x,b)}});
+  document.addEventListener('click',e=>{const accepted=e.target.closest?.('[data-fp-open-accepted]');if(accepted){e.preventDefault();app.domain='all';setSelected('#domainTabs button[data-domain]','domain','all');load('accepted');return}const open=e.target.closest?.('[data-fp-open]');if(open){e.preventDefault();const x=findFpItem(open.dataset.fpOpen);if(x)openDraft(x);return}if(e.target.closest?.('.fp-close-draft')||e.target.classList?.contains('fp-draft-modal')){e.preventDefault();closeDraft();return}const b=e.target.closest?.('[data-fp-images]');if(b){e.preventDefault();const x=findFpItem(b.dataset.fpImages);if(x)requestImages(x,b)}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.querySelector('[data-fp-modal]'))closeDraft()});
   const style=document.createElement('style');
   style.textContent=`
