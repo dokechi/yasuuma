@@ -1,0 +1,88 @@
+/* Command Center 98 v1.57
+ * Audit A fixes only: touch targets, critical copy, and explicit default actions.
+ * Layout, data hierarchy, and feature styling remain owned by the existing layers.
+ */
+
+/* v156 used DOM order to imply a default action. Only explicit actions get the ring. */
+.dialog-footer .push-button:last-child:not(:disabled){
+  outline:0;
+  outline-offset:0;
+}
+
+.push-button.default,
+.push-button[data-default-action="true"]{
+  outline:1px solid #000;
+  outline-offset:1px;
+}
+
+.dialog-footer .push-button.default:not(:disabled),
+.dialog-footer .push-button[data-default-action="true"]:not(:disabled){
+  outline:1px solid #000;
+  outline-offset:1px;
+}
+
+/* Errors and operational notes must stay readable. */
+.home-panel-error{
+  font-size:12px;
+  line-height:1.45;
+}
+
+.home-shortcut-note{
+  font-size:12px;
+  line-height:1.4;
+}
+
+@media (pointer:coarse) and (max-width:700px){
+  /* Keep the Win98 chrome, but size its real hit boxes for touch. */
+  .title-bar{
+    min-height:48px;
+    height:auto;
+  }
+
+  .win-control{
+    width:44px;
+    min-width:44px;
+    height:44px;
+    min-height:44px;
+    font-size:16px;
+    line-height:38px;
+  }
+
+  .menu-bar{
+    min-height:48px;
+    height:auto;
+    align-items:stretch;
+  }
+
+  .menu-bar > .menu-wrap,
+  .menu-bar > .menu-item{
+    flex:1 1 0;
+    min-width:0;
+  }
+
+  .menu-bar > .menu-wrap > .menu-item,
+  .menu-bar > .menu-item{
+    width:100%;
+    min-width:0;
+    min-height:44px;
+    height:44px;
+    padding:3px 2px;
+    font-size:11px;
+    line-height:1.15;
+  }
+
+  .retro-menu-item{
+    min-height:44px;
+  }
+
+  .home-row,
+  .home-shortcut-body .push-button,
+  .home-mobile-nav .push-button{
+    min-height:44px;
+  }
+
+  .home-panel-error,
+  .home-shortcut-note{
+    font-size:13px;
+  }
+}
