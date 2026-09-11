@@ -4,43 +4,43 @@
   const snapshot={
     asOf:'2026/09/11',
     sourcing:[
-      {name:'Amazon.co.jp',month:'8・9月',reason:'仕入れ実績あり。私物も混在するため商品内容・数量・過去の調査履歴で判定'},
-      {name:'ECJOY',month:'8月',reason:'Birkenstockなど一般商品の仕入れ'},
-      {name:'detail-online-store',month:'8・9月',reason:'一般商品の仕入れ'},
-      {name:'Outdoor Shop Orange',month:'8・9月',reason:'REEFなどアウトドア・フットウェアの仕入れ'},
-      {name:'FirstStage',month:'8・9月',reason:'G/FORE・ゴルフ用品の仕入れ'},
-      {name:'マルイウェブチャネル',month:'8月',reason:'ファッション商品の仕入れ'},
-      {name:'スポーツジュエン',month:'8・9月',reason:'スポーツ・ゴルフ商品の仕入れ'},
-      {name:'ゴルフパートナー annex',month:'8月',reason:'ゴルフ用品の仕入れ'},
-      {name:'Mac-House',month:'8月',reason:'アパレル商品の仕入れ'},
-      {name:'GILT',month:'8月',reason:'ファッション商品の仕入れ'},
-      {name:'Dempsey Sports',month:'8月',reason:'スポーツ商品の仕入れ'},
-      {name:'ZOZOTOWN Yahoo!店',month:'8月',reason:'ファッション商品の仕入れ'},
-      {name:'END.',month:'8月',reason:'海外ファッション商品の仕入れ'},
-      {name:'アエナ公式',month:'8月',reason:'同一商品を複数購入。美容商品の仕入れ'},
-      {name:'YOOX',month:'8月',reason:'仕入れ目的の購入実績あり'},
-      {name:'INNOCN Japan',month:'9月',reason:'モニターの仕入れ'},
-      {name:'ロコンド（販売元：MEGA SPORTS）',month:'9月',reason:'スポーツ・フットウェアの仕入れ'},
-      {name:'現場市場',month:'9月',reason:'ミズノなど一般商品の仕入れ'}
+      {name:'Amazon.co.jp',month:'8・9月',products:"クロックス サンダル、ミズノ LD40、UGG W Goldenglow Slide、Converse Hot Wheelsほか",reason:'仕入れ実績あり。私物も混在するため商品内容・数量・過去の調査履歴で判定'},
+      {name:'ECJOY',month:'8月',products:"BIRKENSTOCK Gizeh EVA Khaki（43・44）",reason:'Birkenstockなど一般商品の仕入れ'},
+      {name:'detail-online-store',month:'8・9月',products:"VANS HALF CAB 33 DX、NIKE SB FORCE58、PEARLY GATES CROCS JIBBITZ、RAMIDUS NECK POUCHほか",reason:'一般商品の仕入れ'},
+      {name:'Outdoor Shop Orange',month:'8・9月',products:"REEF OASIS DOUBLE UP、REEF MULLIGAN II Links",reason:'REEFなどアウトドア・フットウェアの仕入れ'},
+      {name:'FirstStage',month:'8・9月',products:"G/FORE 半袖ポロシャツ、HONMA アイアンカバーほか",reason:'G/FORE・ゴルフ用品の仕入れ'},
+      {name:'マルイウェブチャネル',month:'8月',products:"ファッション商品（Gmail本文では商品名を確認できず）",reason:'ファッション商品の仕入れ'},
+      {name:'スポーツジュエン',month:'8・9月',products:"DIADORA サンバイザー、adidas ゴルフスカート",reason:'スポーツ・ゴルフ商品の仕入れ'},
+      {name:'ゴルフパートナー annex',month:'8月',products:"Callaway アクティブ ラウンド トートバッグほか",reason:'ゴルフ用品の仕入れ'},
+      {name:'Mac-House',month:'8月',products:"POLO RALPH LAUREN商品（複数点）",reason:'アパレル商品の仕入れ'},
+      {name:'GILT',month:'8月',products:"Clarks Cologne Arlo サイドゴア ショートブーツ",reason:'ファッション商品の仕入れ'},
+      {name:'Dempsey Sports',month:'8月',products:"HUMMEL HANDBALL PERFEKT HM226303",reason:'スポーツ商品の仕入れ'},
+      {name:'ZOZOTOWN Yahoo!店',month:'8月',products:"ファッション商品（Gmail本文では商品名を確認できず）",reason:'ファッション商品の仕入れ'},
+      {name:'END.',month:'8月',products:"海外ファッション商品（Gmail本文では商品名を確認できず）",reason:'海外ファッション商品の仕入れ'},
+      {name:'アエナ公式',month:'8月',products:"Cleo's Beaute リペアトリートメント エキゾチックウッディ 380ml ×7",reason:'同一商品を複数購入。美容商品の仕入れ'},
+      {name:'YOOX',month:'8月',products:"ファッション商品（Gmail本文では商品名を確認できず）",reason:'仕入れ目的の購入実績あり'},
+      {name:'INNOCN Japan',month:'9月',products:"INNOCN WF26-PRO モニター",reason:'モニターの仕入れ'},
+      {name:'ロコンド（販売元：MEGA SPORTS）',month:'9月',products:"NIKE Tiempo Legend 10 Pro HOT LAVA／WHITE（複数サイズ）",reason:'スポーツ・フットウェアの仕入れ'},
+      {name:'現場市場',month:'9月',products:"MIZUNO KUGEKI 長袖・半袖、ナビドライTシャツほか",reason:'ミズノなど一般商品の仕入れ'}
     ],
     tcg:[
-      {name:'トレカショップLEAD.',month:'8月',reason:'TCG。専用タスクで管理'},
-      {name:'トレカドンドン',month:'8月',reason:'TCG。専用タスクで管理'},
-      {name:'ポケモンセンターオンライン',month:'8月',reason:'ポケモン・TCG系。専用タスクで管理'},
-      {name:'ジャンプキャラクターズストア',month:'8月',reason:'キャラクター商品。専用タスクで管理'},
-      {name:'タカラトミーモール',month:'8月',reason:'玩具・キャラクター系。専用タスクで管理'},
-      {name:'楽天ブックス',month:'8月',reason:'今回の購入はTCG・キャラクター系'},
-      {name:'LIFETUNES MALL',month:'8月',reason:'TCG商品。専用タスクで管理'},
-      {name:'ビックカメラ',month:'8月',reason:'今回の注文はROBOT魂・ゴジラ・仮面ライダー系中心'}
+      {name:'トレカショップLEAD.',month:'8月',products:"機動戦士ガンダム アーセナルベース スペシャルスターターデッキセット",reason:'TCG。専用タスクで管理'},
+      {name:'トレカドンドン',month:'8月',products:"ガンダムカードゲーム商品",reason:'TCG。専用タスクで管理'},
+      {name:'ポケモンセンターオンライン',month:'8月',products:"ポケモンカードゲーム MEGAシリーズ抽選商品",reason:'ポケモン・TCG系。専用タスクで管理'},
+      {name:'ジャンプキャラクターズストア',month:'8月',products:"ジャンプ作品キャラクター商品（Gmail本文では商品名を確認できず）",reason:'キャラクター商品。専用タスクで管理'},
+      {name:'タカラトミーモール',month:'8月',products:"デュエル・マスターズ／キャラクター商品",reason:'玩具・キャラクター系。専用タスクで管理'},
+      {name:'楽天ブックス',month:'8月',products:"Magic: The Gathering Secret Lair Commander Deck: Hatsune Miku",reason:'今回の購入はTCG・キャラクター系'},
+      {name:'LIFETUNES MALL',month:'8月',products:"TCG商品［02］Highway in 2026",reason:'TCG商品。専用タスクで管理'},
+      {name:'ビックカメラ',month:'8月',products:"ROBOT魂、加湿王 バーニングゴジラ【改】、仮面ライダーギーツ商品ほか",reason:'今回の注文はROBOT魂・ゴジラ・仮面ライダー系中心'}
     ],
     excluded:[
-      {name:'アイリスプラザ',month:'8月',reason:'会社・事務用'},
-      {name:'Legare-factory',month:'8月',reason:'個人用のチタン製品'},
-      {name:'エレコムダイレクト Yahoo!店',month:'8月',reason:'個人用'},
-      {name:'セイコー堂 Yahoo!店',month:'8月',reason:'個人用'},
-      {name:'Shop Trade／strade-web',month:'8月',reason:'掃除用品。仕入れ対象外'},
-      {name:'newfine',month:'8月',reason:'ミネラルウォーター。仕入れ対象外'},
-      {name:'サンプル百貨店',month:'9月',reason:'飲料・食品。一般仕入れ監視の対象外'}
+      {name:'アイリスプラザ',month:'8月',products:"FASHIONABLE MASK、STR-1200ほか",reason:'会社・事務用'},
+      {name:'Legare-factory',month:'8月',products:"TITAN MANIA チタン製品 Ver.7",reason:'個人用のチタン製品'},
+      {name:'エレコムダイレクト Yahoo!店',month:'8月',products:"エレコム ノートPC用クーラー SX-CL23LBK",reason:'個人用'},
+      {name:'セイコー堂 Yahoo!店',month:'8月',products:"SEIKO NATOタイプ バンド 20mm RS18C20NY",reason:'個人用'},
+      {name:'Shop Trade／strade-web',month:'8月',products:"アズマ工業 高所外回り お掃除3点セット",reason:'掃除用品。仕入れ対象外'},
+      {name:'newfine',month:'8月',products:"国産天然水 500ml 45本（シリカ42mg/L・ラベルレス）",reason:'ミネラルウォーター。仕入れ対象外'},
+      {name:'サンプル百貨店',month:'9月',products:"ドトール カフェ・オ・レ／ブラック飲料、むぎスティック・むぎまぐブレンド",reason:'飲料・食品。一般仕入れ監視の対象外'}
     ]
   };
 
@@ -50,7 +50,7 @@
   const classes={sourcing:'accepted',tcg:'separate',excluded:'excluded'};
 
   function rows(kind){
-    return snapshot[kind].map((x,i)=>'<tr class="'+classes[kind]+'"><td class="store-no">'+String(i+1).padStart(2,'0')+'</td><td><b>'+h(x.name)+'</b></td><td>'+h(x.month)+'</td><td><span class="store-status '+classes[kind]+'">'+h(labels[kind])+'</span></td><td>'+h(x.reason)+'</td></tr>').join('');
+    return snapshot[kind].map((x,i)=>'<tr class="'+classes[kind]+'"><td class="store-no">'+String(i+1).padStart(2,'0')+'</td><td><b>'+h(x.name)+'</b></td><td>'+h(x.month)+'</td><td class="store-products">'+h(x.products||'—')+'</td><td><span class="store-status '+classes[kind]+'">'+h(labels[kind])+'</span></td><td>'+h(x.reason)+'</td></tr>').join('');
   }
 
   function panel(){
@@ -58,7 +58,7 @@
     return '<div class="store-audit-head"><div><b>8・9月 購入店舗の判定</b><br><small>'+h(snapshot.asOf)+'時点。Gmailの注文履歴と本人確認を反映。</small></div><div class="store-audit-total">'+total+'店舗を分類済み</div></div>'+
       '<div class="store-audit-summary"><button class="push-button small '+(category==='sourcing'?'selected':'')+'" data-store-kind="sourcing">一般仕入れ <b>'+snapshot.sourcing.length+'</b></button><button class="push-button small '+(category==='tcg'?'selected':'')+'" data-store-kind="tcg">TCG別枠 <b>'+snapshot.tcg.length+'</b></button><button class="push-button small '+(category==='excluded'?'selected':'')+'" data-store-kind="excluded">仕入れではない <b>'+snapshot.excluded.length+'</b></button></div>'+
       (category==='sourcing'?'<p class="store-audit-note"><b>Amazonだけは店舗単位で決めない。</b> 同一商品の複数購入、商品カテゴリ、過去の調査履歴から注文ごとに判定します。</p>':'')+
-      '<div class="supplier-table-wrap"><table class="supplier-table store-audit-table"><thead><tr><th>No.</th><th>店舗</th><th>購入月</th><th>判定</th><th>理由</th></tr></thead><tbody>'+rows(category)+'</tbody></table></div>'+
+      '<div class="supplier-table-wrap"><table class="supplier-table store-audit-table"><thead><tr><th>No.</th><th>店舗</th><th>購入月</th><th>購入商品</th><th>判定</th><th>理由</th></tr></thead><tbody>'+rows(category)+'</tbody></table></div>'+
       '<p class="store-audit-foot">誤判定の確認用に、仕入れ対象外の店舗も削除せず残しています。</p>';
   }
 
@@ -93,8 +93,8 @@
     .store-audit-summary{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
     .store-audit-summary .push-button b{display:inline-block;min-width:20px;margin-left:5px;padding:0 4px;background:#fff;border:1px solid #777;line-height:16px}
     .store-audit-note{margin:0 0 8px;padding:8px 10px;background:#fff6b5;border:1px solid #9b8e51;font-size:12px;line-height:1.55}
-    .store-audit-table{min-width:760px}
-    .store-audit-table .store-no{width:48px;color:#555;text-align:right}
+    .store-audit-table{min-width:1040px}
+    .store-audit-table .store-products{min-width:310px;line-height:1.45}.store-audit-table .store-no{width:48px;color:#555;text-align:right}
     .store-audit-table tr.accepted{background:#f1fff1}
     .store-audit-table tr.separate{background:#f3f3ff}
     .store-audit-table tr.excluded{background:#f5f5f5;color:#444}
