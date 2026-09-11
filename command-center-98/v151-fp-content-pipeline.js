@@ -1,5 +1,6 @@
 (()=>{
   if(typeof cardHtml!=='function'||typeof renderList!=='function')return;
+
   const TYPE='fp_content';
   const API='https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-workflow-api';
   const SIGNAL_API='https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-retro-api';
@@ -8,111 +9,363 @@
   let topItems=[];
   let topLoading=false;
   let topLoadedAt=0;
-  const escFp=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const fp=x=>x?.payload?.content_type==='fp_post_candidate'||['fp_psychology','fp_reaction'].includes(x?.payload?.category);
-  const list=v=>Array.isArray(v)?v:[];
-  const defaultState=x=>({entityId:String(x.id),discovered:'pass',judgment:(x.reviewState==='accepted'?'pass':'pending'),verification:'pending',execution:'pending',audit:'pending'});
-  const state=x=>states.get(String(x.id))||defaultState(x);
+
+  const escFp=value=>String(value??'').replace(/[&<>"']/g,char=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[char]));
+  const list=value=>Array.isArray(value)?value:[];
+  const text=value=>String(value??'').trim();
+  const fp=item=>item?.payload?.content_type==='fp_post_candidate'||['fp_psychology','fp_reaction'].includes(item?.payload?.category);
+  const officialSources=payload=>{
+    const seen=new Set();
+    return [...list(payload.draft_sources),...list(payload.official_sources),...list(payload.official_urls)].filter(source=>{
+      const key=sourceUrl(source)||text(source);
+      if(!key||seen.has(key))return false;
+      seen.add(key);
+      return true;
+    });
+  };
+  const sourceUrl=source=>typeof source==='string'?source:source?.url;
+  const sourceLabel=(source,index=0)=>typeof source==='string'?`一次情報 ${index+1}`:(source?.label||source?.title||`一次情報 ${index+1}`);
+  const draftTitle=(item,payload=item.payload||{})=>text(payload.post_title||payload.draft_title||payload.draft_cover||item.title);
+  const draftCaption=payload=>text(payload.caption||payload.draft_caption||payload.post_caption);
+  const hasUnknownPremise=payload=>list(payload.premise_checks).some(row=>text(row?.status).toLowerCase()==='unknown');
+  const isGirlsChannel=payload=>payload.discovery_source==='girlschannel'||/girlschannel\.net/i.test(text(payload.source_url));
+
+  const packageQuality=item=>{
+    const payload=item.payload||{};
+    const issues=[];
+    if(payload.draft_status!=='ready')issues.push('完成原稿が未確定');
+    if(list(payload.draft_slides).length<5)issues.push('ページ別原稿が不足');
+    if(!text(payload.source_url||item.url))issues.push('元記事の直リンクが未保存');
+    if(!text(payload.source_checked_at))issues.push('元記事の確認日時が未保存');
+    if(!officialSources(payload).some(source=>text(sourceUrl(source))))issues.push('一次情報の直リンクが未保存');
+    if(!text(payload.question_lineage?.selected_question)||!text(payload.question_lineage?.answer_target))issues.push('中心疑問の追跡が未保存');
+    if(isGirlsChannel(payload)&&!list(payload.source_comments).length)issues.push('採用コメントが未保存');
+    if(isGirlsChannel(payload)&&!list(payload.source_anchor_comment_nos).length)issues.push('疑問の根拠コメント番号が未保存');
+    if(hasUnknownPremise(payload))issues.push('未確認の重要前提が残っている');
+    if(!draftTitle(item,payload))issues.push('投稿タイトルが未保存');
+    if(!draftCaption(payload))issues.push('キャプションが未保存');
+    return {ready:issues.length===0,issues};
+  };
+
+  const defaultState=item=>({
+    entityId:String(item.id),discovered:'pass',judgment:item.reviewState==='accepted'?'pass':'pending',
+    verification:packageQuality(item).ready?'pass':'pending',execution:item.payload?.draft_status==='ready'?'ready':'pending',audit:'pending'
+  });
+  const state=item=>states.get(String(item.id))||defaultState(item);
   const request=async options=>{
-    const r=await fetch(API,{cache:'no-store',...options});
-    if(r.status===401){authExpired();throw Error('認証期限切れ')}
-    const d=await r.json();
-    if(!r.ok||!d.ok)throw Error(d.error||('HTTP '+r.status));
-    return d;
+    const response=await fetch(API,{cache:'no-store',...options});
+    if(response.status===401){authExpired();throw Error('認証期限切れ')}
+    const data=await response.json();
+    if(!response.ok||!data.ok)throw Error(data.error||('HTTP '+response.status));
+    return data;
   };
   const headers=()=>({...authHeaders(),'Content-Type':'application/json'});
-  const put=rows=>list(rows).forEach(s=>states.set(String(s.entityId),s));
+  const put=rows=>list(rows).forEach(row=>states.set(String(row.entityId),row));
   const ensure=async items=>{
-    const fresh=items.filter(x=>fp(x)&&!ensuring.has(String(x.id)));
+    const fresh=items.filter(item=>fp(item)&&!ensuring.has(String(item.id)));
     if(!fresh.length)return;
-    fresh.forEach(x=>ensuring.add(String(x.id)));
+    fresh.forEach(item=>ensuring.add(String(item.id)));
     try{
-      const d=await request({method:'POST',headers:headers(),body:JSON.stringify({action:'ensure',entityType:TYPE,items:fresh.map(x=>({entityId:String(x.id),judgmentStatus:x.reviewState==='accepted'?'pass':'pending'}))})});
-      put(d.states);
+      const data=await request({
+        method:'POST',headers:headers(),
+        body:JSON.stringify({action:'ensure',entityType:TYPE,items:fresh.map(item=>({
+          entityId:String(item.id),judgmentStatus:item.reviewState==='accepted'?'pass':'pending'
+        }))})
+      });
+      put(data.states);
       refreshPanels();
       renderTop();
-    }catch(err){console.warn('FP content workflow unavailable',err)}
+    }catch(error){console.warn('FP content workflow unavailable',error)}
   };
-  const sourceLinks=p=>{const rows=[...list(p.official_sources),...list(p.official_urls)];return rows.map((s,i)=>{const url=typeof s==='string'?s:s?.url,label=typeof s==='string'?('公式根拠 '+(i+1)):(s?.label||s?.title||('公式根拠 '+(i+1)));return url?'<a href="'+escFp(url)+'" target="_blank" rel="noopener">'+escFp(label)+'</a>':''}).filter(Boolean).join('／')||'追加調査で確認'};
-  const evidenceComments=p=>list(p.source_comments).slice(0,4).map(v=>'#'+escFp(v?.comment_no||'?')+' '+escFp(v?.summary||'')).join('<br>')||'次回候補から根拠コメントを保存';
-  const stageMark=value=>value==='pass'||value==='done'?'✓':value==='ready'?'→':value==='fail'?'×':'待';
+
+  const directCommentUrl=(payload,comment)=>text(comment?.direct_url||comment?.url||comment?.anchor_url);
+  const sourceLinks=payload=>officialSources(payload).map((source,index)=>{
+    const url=sourceUrl(source);
+    if(!url)return'';
+    return '<a href="'+escFp(url)+'" target="_blank" rel="noopener">'+escFp(sourceLabel(source,index))+'</a>';
+  }).filter(Boolean).join('／')||'一次情報の確認待ち';
+  const evidenceComments=payload=>list(payload.source_comments).slice(0,4).map(comment=>{
+    const label='#'+escFp(comment?.comment_no||'?')+' '+escFp(comment?.summary||'');
+    const url=directCommentUrl(payload,comment);
+    return url?'<a href="'+escFp(url)+'" target="_blank" rel="noopener">'+label+'</a>':label;
+  }).join('<br>')||'採用コメントの保存待ち';
+  const stageMark=value=>['pass','done'].includes(value)?'✓':value==='ready'?'→':value==='fail'?'×':'待';
   const stage=(label,value)=>'<span class="fp-stage '+escFp(value)+'"><small>'+escFp(label)+'</small><b>'+stageMark(value)+'</b></span>';
-  const draftStatus=x=>{const s=state(x);if(s.audit==='pass'||x.payload?.image_status==='ready')return{label:'画像確認待ち',queued:true};if(s.execution==='done')return{label:'画像制作待ち',queued:true};return{label:'原稿確認待ち',queued:false}};
-  const draftControls=x=>{const p=x.payload||{};if(x.reviewState!=='accepted'||p.draft_status!=='ready')return'';const d=draftStatus(x);return '<section class="fp-draft-actions" data-fp-draft-actions="'+escFp(x.id)+'"><div class="fp-draft-status"><b>'+escFp(d.label)+'</b><span>原稿・出典・要確認点を保存済み</span></div><div class="fp-draft-buttons"><button class="push-button fp-open-draft" data-fp-open="'+escFp(x.id)+'">原稿を見る</button><button class="push-button fp-request-images" data-fp-images="'+escFp(x.id)+'" '+(d.queued?'disabled':'')+'>'+(d.queued?'画像化を依頼済み':'この原稿で画像化')+'</button></div></section>'};
-  const panel=x=>{
-    const p=x.payload||{},s=state(x),chosen=s.judgment==='pass'||x.reviewState==='accepted';
-    const steps=stage('発掘','pass')+stage('選択',chosen?'pass':'pending')+stage('追加調査',s.verification||'pending')+stage('原稿',s.execution||'pending')+stage('画像',s.audit||'pending');
-    const structure=(list(p.definitive_structure).length?list(p.definitive_structure):list(p.post_structure)).map(v=>'<li>'+escFp(typeof v==='string'?v:(v?.text||v?.title||JSON.stringify(v)))+'</li>').join('');
-    const question=p.reader_question||p.question_lineage?.selected_question||p.first_impression||p.cover_idea||x.title||'';
-    const reaction=p.strong_reaction||p.reaction_summary||x.reason||'';
-    const hot=p.hot_reason||x.reason||x.summary||'';
-    const research=p.research_status||(p.source_checked_at?'元記事・コメント確認済み':'追加調査待ち');
-    return '<section class="fp-candidate" data-fp-panel="'+escFp(x.id)+'"><div class="fp-head"><b>FP投稿候補</b><span class="fp-signal">'+escFp(p.engagement_label||'反応確認済み')+'</span><span class="fp-state">'+(chosen?'制作待ち':'選択待ち')+'</span></div><div class="fp-question"><small>この投稿が答える疑問</small>'+escFp(question)+'</div><dl class="fp-grid"><dt>反応の核</dt><dd>'+escFp(reaction)+'</dd><dt>根拠コメント</dt><dd>'+evidenceComments(p)+'</dd><dt>なぜ今か</dt><dd>'+escFp(hot)+'</dd><dt>投稿構成</dt><dd><ol>'+structure+'</ol></dd><dt>公式根拠</dt><dd>'+sourceLinks(p)+'</dd><dt>調査状態</dt><dd>'+escFp(research)+'</dd></dl><div class="fp-stages">'+steps+'</div>'+(chosen?'<p class="fp-ready">選択済み。追加調査→原稿→事実確認→画像の順で制作します。</p>':'')+draftControls(x)+'</section>';
+  const draftStatus=item=>{
+    const quality=packageQuality(item);
+    if(!quality.ready&&item.payload?.draft_status==='ready')return{label:'根拠の補完待ち',kind:'blocked'};
+    if(quality.ready&&item.reviewState==='accepted')return{label:'画像化用コピー待ち',kind:'ready'};
+    if(quality.ready)return{label:'完成原稿あり',kind:'ready'};
+    return{label:'原稿作成待ち',kind:'draft'};
   };
+  const draftControls=item=>{
+    const payload=item.payload||{};
+    if(!list(payload.draft_slides).length)return'';
+    const status=draftStatus(item);
+    const quality=packageQuality(item);
+    return '<section class="fp-draft-actions" data-fp-draft-actions="'+escFp(item.id)+'">'
+      +'<div class="fp-draft-status '+escFp(status.kind)+'"><b>'+escFp(status.label)+'</b><span>'
+      +(quality.ready?'原稿・根拠・スクショ指示・投稿文を保存済み':escFp(quality.issues.join('／')))
+      +'</span></div><div class="fp-draft-buttons">'
+      +'<button class="push-button fp-open-draft" data-fp-open="'+escFp(item.id)+'">原稿と根拠を見る</button>'
+      +'<button class="push-button fp-copy-images" data-fp-copy-package="'+escFp(item.id)+'" '+(quality.ready?'':'disabled')+'>画像化用にコピー</button>'
+      +'</div></section>';
+  };
+
+  const panel=item=>{
+    const payload=item.payload||{};
+    const workflow=state(item);
+    const chosen=workflow.judgment==='pass'||item.reviewState==='accepted';
+    const quality=packageQuality(item);
+    const verified=quality.ready?'pass':(payload.source_checked_at?'ready':'pending');
+    const drafted=list(payload.draft_slides).length?(quality.ready?'pass':'ready'):'pending';
+    const steps=stage('発掘','pass')+stage('事実確認',verified)+stage('原稿',drafted)+stage('選択',chosen?'pass':'pending')+stage('画像',payload.image_status==='ready'?'pass':'pending');
+    const structure=(list(payload.definitive_structure).length?list(payload.definitive_structure):list(payload.post_structure)).map(row=>'<li>'+escFp(typeof row==='string'?row:(row?.text||row?.title||JSON.stringify(row)))+'</li>').join('');
+    const question=payload.reader_question||payload.question_lineage?.selected_question||payload.first_impression||payload.cover_idea||item.title||'';
+    const reaction=payload.strong_reaction||payload.reaction_summary||item.reason||'';
+    const hot=payload.hot_reason||item.reason||item.summary||'';
+    const research=quality.ready?'元記事・該当コメント・一次情報・原稿を確認済み':(payload.research_status||(payload.source_checked_at?'原稿に必要な根拠を確認中':'追加調査待ち'));
+    return '<section class="fp-candidate" data-fp-panel="'+escFp(item.id)+'"><div class="fp-head"><b>FP投稿候補</b><span class="fp-signal">'+escFp(payload.engagement_label||'反応確認済み')+'</span><span class="fp-state">'+(quality.ready?'原稿あり':chosen?'調査中':'選択待ち')+'</span></div>'
+      +'<div class="fp-question"><small>この投稿が答える疑問</small>'+escFp(question)+'</div>'
+      +'<dl class="fp-grid"><dt>反応の核</dt><dd>'+escFp(reaction)+'</dd><dt>根拠コメント</dt><dd>'+evidenceComments(payload)+'</dd><dt>なぜ今か</dt><dd>'+escFp(hot)+'</dd><dt>投稿構成</dt><dd><ol>'+structure+'</ol></dd><dt>一次情報</dt><dd>'+sourceLinks(payload)+'</dd><dt>調査状態</dt><dd>'+escFp(research)+'</dd></dl>'
+      +'<div class="fp-stages">'+steps+'</div>'
+      +(chosen?'<p class="fp-ready">選択済み。内容を確認して「画像化用にコピー」から制作へ渡せます。</p>':'')
+      +draftControls(item)+'</section>';
+  };
+
   const baseCard=cardHtml;
-  cardHtml=(x,i)=>{
-    const html=baseCard(x,i);
-    if(!fp(x))return html;
-    return html.replace('<table class="meta">',panel(x)+'<table class="meta">');
+  cardHtml=(item,index)=>{
+    const html=baseCard(item,index);
+    if(!fp(item))return html;
+    return html.replace('<table class="meta">',panel(item)+'<table class="meta">');
   };
   const refreshPanels=()=>{
     document.querySelectorAll('[data-fp-panel]').forEach(old=>{
-      const x=(app.items||[]).find(v=>String(v.id)===old.dataset.fpPanel);
-      if(x)old.outerHTML=panel(x);
+      const item=(app.items||[]).find(row=>String(row.id)===old.dataset.fpPanel);
+      if(item)old.outerHTML=panel(item);
     });
     relabel();
   };
-  const topStatus=x=>{const s=state(x),p=x.payload||{};if(s.audit==='pass'||p.image_status==='ready')return{label:'画像確認待ち',kind:'review',weight:400};if(s.execution==='done')return{label:'画像制作待ち',kind:'making',weight:300};if(s.verification==='pass'&&p.draft_status==='ready')return{label:'原稿確認待ち',kind:'action',weight:500};return{label:'追加調査中',kind:'research',weight:200}};
-  const topCard=x=>{const t=topStatus(x),p=x.payload||{},d=draftStatus(x),controls=p.draft_status==='ready'?'<button class="push-button small fp-open-draft" data-fp-open="'+escFp(x.id)+'">原稿を見る</button><button class="push-button small fp-request-images" data-fp-images="'+escFp(x.id)+'" '+(d.queued?'disabled':'')+'>'+(d.queued?'画像化を依頼済み':'この原稿で画像化')+'</button>':'<button class="push-button small" data-fp-open-accepted="1">採用済みを開く</button>';return'<article class="fp-top-card '+escFp(t.kind)+'"><div class="fp-top-rank"><b>'+escFp(x.score||'—')+'</b><small>点</small></div><div class="fp-top-main"><div><span class="fp-top-status">'+escFp(t.label)+'</span><strong>'+escFp(x.title||p.draft_cover||'FP投稿候補')+'</strong></div><p>'+escFp(p.reader_question||p.question_lineage?.selected_question||p.first_impression||p.cover_idea||x.summary||'')+'</p><div class="fp-top-actions">'+controls+'</div></div></article>'};
-  const renderTop=()=>{let host=document.getElementById('fpPriorityBoard');if(app.view!=='active'){host?.remove();return}if(!host){host=document.createElement('section');host.id='fpPriorityBoard';host.className='fp-top-board';document.querySelector('#regularHub .section-title')?.before(host)}const ranked=topItems.slice().sort((a,b)=>{const aw=topStatus(a).weight+(Number(a.score)||0),bw=topStatus(b).weight+(Number(b.score)||0);return bw-aw}).slice(0,3);host.hidden=!ranked.length;host.innerHTML=ranked.length?'<div class="fp-top-title"><div><b>いま確認する重要案件</b><span>決定済みの進行状況</span></div><button class="push-button small" data-fp-open-accepted="1">すべて見る</button></div><div class="fp-top-list">'+ranked.map(topCard).join('')+'</div>':''};
-  const loadTop=async(force=false)=>{if(topLoading||app.view!=='active')return;if(!force&&Date.now()-topLoadedAt<30000){renderTop();return}topLoading=true;try{const r=await fetch(SIGNAL_API+'?view=accepted',{cache:'no-store',headers:authHeaders()});if(r.status===401){authExpired();return}const d=await r.json();if(!r.ok||!d?.ok)throw Error(d?.error||('HTTP '+r.status));topItems=list(d.items).filter(fp);topLoadedAt=Date.now();renderTop();await ensure(topItems);renderTop()}catch(err){console.warn('FP priority board unavailable',err)}finally{topLoading=false}};
-  const findFpItem=id=>[...(app.items||[]),...topItems].find(v=>String(v.id)===String(id));
+
+  const topStatus=item=>{
+    const status=draftStatus(item);
+    if(status.kind==='ready')return{label:status.label,kind:'action',weight:500};
+    if(status.kind==='blocked')return{label:status.label,kind:'research',weight:300};
+    return{label:'原稿作成待ち',kind:'research',weight:200};
+  };
+  const topCard=item=>{
+    const status=topStatus(item);
+    const payload=item.payload||{};
+    const quality=packageQuality(item);
+    const controls=list(payload.draft_slides).length
+      ?'<button class="push-button small fp-open-draft" data-fp-open="'+escFp(item.id)+'">原稿と根拠</button><button class="push-button small fp-copy-images" data-fp-copy-package="'+escFp(item.id)+'" '+(quality.ready?'':'disabled')+'>画像化用にコピー</button>'
+      :'<button class="push-button small" data-fp-open-accepted="1">採用済みを開く</button>';
+    return'<article class="fp-top-card '+escFp(status.kind)+'"><div class="fp-top-rank"><b>'+escFp(item.score||'—')+'</b><small>点</small></div><div class="fp-top-main"><div><span class="fp-top-status">'+escFp(status.label)+'</span><strong>'+escFp(draftTitle(item,payload)||'FP投稿候補')+'</strong></div><p>'+escFp(payload.reader_question||payload.question_lineage?.selected_question||payload.first_impression||payload.cover_idea||item.summary||'')+'</p><div class="fp-top-actions">'+controls+'</div></div></article>';
+  };
+  const renderTop=()=>{
+    let host=document.getElementById('fpPriorityBoard');
+    if(app.view!=='active'){host?.remove();return}
+    if(!host){host=document.createElement('section');host.id='fpPriorityBoard';host.className='fp-top-board';document.querySelector('#regularHub .section-title')?.before(host)}
+    const ranked=topItems.slice().sort((a,b)=>(topStatus(b).weight+(Number(b.score)||0))-(topStatus(a).weight+(Number(a.score)||0))).slice(0,3);
+    host.hidden=!ranked.length;
+    host.innerHTML=ranked.length?'<div class="fp-top-title"><div><b>いま確認する重要案件</b><span>完成原稿から画像制作へ</span></div><button class="push-button small" data-fp-open-accepted="1">すべて見る</button></div><div class="fp-top-list">'+ranked.map(topCard).join('')+'</div>':'';
+  };
+  const loadTop=async(force=false)=>{
+    if(topLoading||app.view!=='active')return;
+    if(!force&&Date.now()-topLoadedAt<30000){renderTop();return}
+    topLoading=true;
+    try{
+      const response=await fetch(SIGNAL_API+'?view=accepted',{cache:'no-store',headers:authHeaders()});
+      if(response.status===401){authExpired();return}
+      const data=await response.json();
+      if(!response.ok||!data?.ok)throw Error(data?.error||('HTTP '+response.status));
+      topItems=list(data.items).filter(fp);
+      topLoadedAt=Date.now();
+      renderTop();
+      await ensure(topItems);
+      renderTop();
+    }catch(error){console.warn('FP priority board unavailable',error)}
+    finally{topLoading=false}
+  };
+  const findFpItem=id=>[...(app.items||[]),...topItems].find(item=>String(item.id)===String(id));
   const relabel=()=>{
     document.querySelectorAll('.thread').forEach(card=>{
-      const b=card.querySelector('.action-accept');
-      if(!b)return;
-      const x=(app.items||[]).find(v=>String(v.id)===String(b.dataset.id));
-      if(fp(x)){b.textContent='これに決定';b.classList.add('fp-select')}
+      const button=card.querySelector('.action-accept');
+      if(!button)return;
+      const item=(app.items||[]).find(row=>String(row.id)===String(button.dataset.id));
+      if(fp(item)){button.textContent='これに決定';button.classList.add('fp-select')}
     });
   };
   const baseRender=renderList;
   renderList=()=>{baseRender();relabel();ensure(app.items||[]);renderTop();loadTop()};
-  const choose=async(x,b)=>{
-    if(b.disabled)return;
-    bump(b);b.disabled=true;b.textContent='決定を保存中…';setStatus('FP投稿候補を制作待ちに移しています...',true);
+
+  const choose=async(item,button)=>{
+    if(button.disabled)return;
+    bump(button);button.disabled=true;button.textContent='決定を保存中…';setStatus('FP投稿候補を保存しています...',true);
     try{
-      const d=await request({method:'PATCH',headers:headers(),body:JSON.stringify({entityType:TYPE,entityId:String(x.id),stage:'judgment',status:'pass',judgmentSeed:'pending',note:'投稿候補として決定・追加調査待ち'})});
-      states.set(String(x.id),d.state);
+      const quality=packageQuality(item);
+      const data=await request({method:'PATCH',headers:headers(),body:JSON.stringify({
+        entityType:TYPE,entityId:String(item.id),stage:'judgment',status:'pass',judgmentSeed:'pending',
+        note:quality.ready?'完成原稿を確認して画像化候補に決定':'投稿候補として決定・原稿補完待ち'
+      })});
+      states.set(String(item.id),data.state);
       refreshPanels();
-      const ok=await review(String(x.id),'accepted',b);
-      if(ok)toast('これに決定。追加調査待ちへ移しました','good');
-      else{b.disabled=false;b.textContent='これに決定'}
-    }catch(err){b.disabled=false;b.textContent='これに決定';setStatus('保存エラー');toast(err.message||'決定を保存できませんでした','bad')}
+      const ok=await review(String(item.id),'accepted',button);
+      if(ok)toast(quality.ready?'これに決定。画像化用にコピーできます':'これに決定。原稿の補完待ちです','good');
+      else{button.disabled=false;button.textContent='これに決定'}
+    }catch(error){button.disabled=false;button.textContent='これに決定';setStatus('保存エラー');toast(error.message||'決定を保存できませんでした','bad')}
   };
-  const sourceRow=s=>{if(typeof s==='string')return'<li>'+escFp(s)+'</li>';const label=s?.label||s?.title||s?.url||'出典';return'<li>'+(s?.url?'<a href="'+escFp(s.url)+'" target="_blank" rel="noopener">'+escFp(label)+'</a>':escFp(label))+(s?.note?'<small>'+escFp(s.note)+'</small>':'')+'</li>'};
-  const slideRow=(s,i)=>{const title=s?.headline||s?.title||s?.heading||('スライド '+(i+1)),body=s?.body||s?.text||s?.copy||'';return'<article class="fp-draft-slide"><div>'+(i+1)+'</div><section><h4>'+escFp(title)+'</h4><p>'+escFp(body).replace(/\n/g,'<br>')+'</p></section></article>'};
+
+  const copyText=async(value,message='コピーしました')=>{
+    try{await navigator.clipboard.writeText(value)}
+    catch{
+      const area=document.createElement('textarea');area.value=value;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();document.execCommand('copy');area.remove();
+    }
+    toast(message,'good');
+  };
+  const compactSource=source=>{
+    if(typeof source==='string')return source;
+    return [source?.label||source?.title,source?.url,source?.claim||source?.note,source?.checked_at?`確認: ${source.checked_at}`:''].filter(Boolean).join('｜');
+  };
+  const slideText=(slide,index,total)=>{
+    const page=slide?.page||index+1;
+    const teaser=text(slide?.teaser||slide?.kicker||slide?.section_label);
+    const lines=[`【${page}/${total}${teaser?'｜付箋: '+teaser:''}】`,text(slide?.headline||slide?.title||slide?.heading),text(slide?.body||slide?.text||slide?.copy)];
+    if(text(slide?.emphasis))lines.push(`強調: ${slide.emphasis}`);
+    if(text(slide?.visual))lines.push(`画面: ${slide.visual}`);
+    if(text(slide?.screenshot_request_id))lines.push(`スクショ: ${slide.screenshot_request_id}`);
+    if(list(slide?.source_refs).length)lines.push(`根拠: ${slide.source_refs.join(', ')}`);
+    return lines.filter(Boolean).join('\n');
+  };
+  const buildHandoff=item=>{
+    const payload=item.payload||{};
+    const slides=list(payload.draft_slides);
+    const screenshots=list(payload.screenshot_requests);
+    const sources=officialSources(payload);
+    const reference=text(payload.design_reference_url||payload.draft_design?.reference_url);
+    return [
+      '以下の確定原稿から、Instagramカルーセル画像を作成してください。',
+      '',
+      '【制作前の必須確認】',
+      '・原稿と根拠の内容を変えない。推測で補わない。',
+      '・必須スクショが未添付なら、画像生成を始める前に添付を求める。',
+      '・完成画像は各ページを独立した別画像として、1ページ目から順番にチャット内へ直接表示する。結合画像・一覧・コラージュ・ZIPだけの納品は禁止。',
+      '',
+      '【公開面のルール】',
+      '・ガールズちゃんねるの名称、URL、コメント番号、引用元表記は画像に出さない。需要確認のための内部資料としてのみ扱う。',
+      '・アフィリエイト、プロフィール誘導、販売文句を画像に入れない。',
+      '・1投稿1疑問。制度説明から始めず、人が実際に引っかかった問いから始める。',
+      '',
+      '【デザイン】',
+      '・1080×1350px、4:5、白地、太い日本語ゴシック、濃いチャコール、落ち着いた青緑のアクセント。',
+      '・小さな黒線の人物キャラクターを脇役として使い、問い・数字・余白を主役にする。',
+      '・ロゴや「しゃちほこ」の表記は入れない。',
+      '・2ページ目以降は、ページ番号を大きめの付箋として見せる。付箋にはページ番号と、そのページで扱う短い話題を入れ、次の内容が一目で分かるようにする。',
+      '・事実や数字を載せるページだけ、確認済み一次情報の短い出典名を下端へ小さく置く。',
+      reference?`・デザイン見本: ${reference}`:'',
+      '',
+      '【タイトル】',draftTitle(item,payload),'',
+      '【中心疑問】',text(payload.question_lineage?.selected_question),'',
+      '【最後に戻す答え】',text(payload.question_lineage?.answer_target),'',
+      '【ページ別の確定原稿】',slides.map((slide,index)=>slideText(slide,index,slides.length)).join('\n\n'),'',
+      '【スクショ素材】',screenshots.length?screenshots.map(row=>[
+        row?.required?'必須':'任意',row?.id||'',row?.label||'',row?.url||'',row?.capture_range||row?.capture_area||'',row?.purpose||'',row?.slide_no?`使用ページ: ${row.slide_no}`:''
+      ].filter(Boolean).join('｜')).join('\n'):'今回はスクショ素材なし。線画と文字で構成する。','',
+      '【公開内容の一次情報】',sources.map(compactSource).join('\n'),'',
+      '【キャプション】',draftCaption(payload)
+    ].filter((row,index,array)=>row!==''||array[index-1]!=='').join('\n').trim();
+  };
+  const buildDraftCopy=item=>{
+    const payload=item.payload||{};
+    const slides=list(payload.draft_slides);
+    return ['【タイトル】',draftTitle(item,payload),'','【ページ別原稿】',slides.map((slide,index)=>slideText(slide,index,slides.length)).join('\n\n'),'','【キャプション】',draftCaption(payload)].join('\n').trim();
+  };
+
+  const sourceRow=source=>{
+    if(typeof source==='string')return'<li><a href="'+escFp(source)+'" target="_blank" rel="noopener">'+escFp(source)+'</a></li>';
+    const url=source?.url;
+    const label=source?.label||source?.title||url||'一次情報';
+    return'<li>'+(url?'<a href="'+escFp(url)+'" target="_blank" rel="noopener">'+escFp(label)+'</a>':escFp(label))
+      +(source?.claim?'<p>'+escFp(source.claim)+'</p>':'')+(source?.note?'<small>'+escFp(source.note)+'</small>':'')+(source?.checked_at?'<small>確認 '+escFp(source.checked_at)+'</small>':'')+'</li>';
+  };
+  const commentRow=(payload,comment)=>{
+    const url=directCommentUrl(payload,comment);
+    const number='#'+escFp(comment?.comment_no||'?');
+    const reactions=[comment?.plus!==undefined?'+'+escFp(comment.plus):'',comment?.minus!==undefined?'-'+escFp(comment.minus):''].filter(Boolean).join(' / ');
+    return'<li><b>'+(url?'<a href="'+escFp(url)+'" target="_blank" rel="noopener">'+number+'</a>':number)+'</b> '+escFp(comment?.summary||'')+(reactions?'<small>'+reactions+'</small>':'')+'</li>';
+  };
+  const premiseRow=row=>{
+    const status=text(row?.status).toLowerCase();
+    const mark=status==='confirmed'?'確認済み':status==='contradicted'?'前提と異なる':'未確認';
+    return'<li class="'+escFp(status||'unknown')+'"><b>'+escFp(mark)+'</b><span>'+escFp(row?.claim||'')+'</span>'+(row?.official_url?'<a href="'+escFp(row.official_url)+'" target="_blank" rel="noopener">根拠を開く</a>':'')+(row?.note?'<small>'+escFp(row.note)+'</small>':'')+'</li>';
+  };
+  const screenshotRow=row=>'<article class="fp-shot '+(row?.required?'required':'optional')+'"><div><b>'+(row?.required?'必須':'あると良い')+'</b><strong>'+escFp(row?.label||'スクショ候補')+'</strong></div>'+(row?.url?'<a href="'+escFp(row.url)+'" target="_blank" rel="noopener">撮影元を開く</a>':'')+'<dl><dt>撮る範囲</dt><dd>'+escFp(row?.capture_range||row?.capture_area||'')+'</dd><dt>使う理由</dt><dd>'+escFp(row?.purpose||'')+'</dd>'+(row?.slide_no?'<dt>使用ページ</dt><dd>'+escFp(row.slide_no)+'</dd>':'')+'</dl></article>';
+  const slideRow=(slide,index,total)=>{
+    const heading=slide?.headline||slide?.title||slide?.heading||('スライド '+(index+1));
+    const body=slide?.body||slide?.text||slide?.copy||'';
+    const teaser=text(slide?.teaser||slide?.kicker||slide?.section_label||heading).slice(0,18);
+    return'<article class="fp-draft-slide"><div class="fp-page-sticky"><b>'+(slide?.page||index+1)+'/'+total+'</b><small>'+escFp(teaser)+'</small></div><section><h4>'+escFp(heading)+'</h4><p>'+escFp(body).replace(/\n/g,'<br>')+'</p>'+(slide?.visual?'<small class="fp-slide-visual">画面：'+escFp(slide.visual)+'</small>':'')+(list(slide?.source_refs).length?'<small class="fp-slide-source">根拠：'+escFp(slide.source_refs.join('、'))+'</small>':'')+'</section></article>';
+  };
   const closeDraft=()=>{document.querySelector('[data-fp-modal]')?.remove();document.body.classList.remove('fp-modal-open')};
-  const openDraft=x=>{const p=x.payload||{},slides=list(p.draft_slides),sources=list(p.draft_sources),points=list(p.draft_review_points),d=draftStatus(x),modal=document.createElement('div');modal.className='fp-draft-modal';modal.dataset.fpModal='1';modal.innerHTML='<div class="fp-draft-dialog" role="dialog" aria-modal="true" aria-labelledby="fp-draft-title"><header><div><small>FPカルーセル原稿</small><h3 id="fp-draft-title">'+escFp(p.draft_cover||x.title||'原稿案')+'</h3></div><button class="push-button fp-close-draft">閉じる</button></header><main><section class="fp-draft-cover"><small>表紙案</small><b>'+escFp(p.draft_cover||x.title||'')+'</b></section><div class="fp-draft-slides">'+slides.map(slideRow).join('')+'</div>'+(points.length?'<section class="fp-draft-notes"><h4>公開前の確認点</h4><ul>'+points.map(v=>'<li>'+escFp(typeof v==='string'?v:(v?.text||v?.note||JSON.stringify(v)))+'</li>').join('')+'</ul></section>':'')+(sources.length?'<section class="fp-draft-sources"><h4>出典</h4><ol>'+sources.map(sourceRow).join('')+'</ol></section>':'')+'</main><footer><button class="push-button fp-close-draft">原稿一覧へ戻る</button><button class="push-button fp-request-images" data-fp-images="'+escFp(x.id)+'" '+(d.queued?'disabled':'')+'>'+(d.queued?'画像化を依頼済み':'この原稿で画像化')+'</button></footer></div>';document.body.appendChild(modal);document.body.classList.add('fp-modal-open');modal.querySelector('.fp-close-draft')?.focus()};
-  const requestImages=async(x,b)=>{if(b.disabled)return;b.disabled=true;b.textContent='画像化を受付中…';setStatus('画像制作キューへ送っています...',true);try{const d=await request({method:'PATCH',headers:headers(),body:JSON.stringify({entityType:TYPE,entityId:String(x.id),stage:'execution',status:'done',judgmentSeed:'pass',note:'画像化待ち（司令塔で原稿承認済み）'})});states.set(String(x.id),d.state);refreshPanels();renderTop();document.querySelectorAll('[data-fp-images="'+CSS.escape(String(x.id))+'"]').forEach(el=>{el.disabled=true;el.textContent='画像化を依頼済み'});setStatus('画像制作待ち');toast('画像制作キューへ送りました','good')}catch(err){b.disabled=false;b.textContent='この原稿で画像化';setStatus('保存エラー');toast(err.message||'画像化を依頼できませんでした','bad')}};
-  document.addEventListener('click',e=>{
-    const b=e.target.closest?.('.action-accept');
-    if(!b)return;
-    const x=(app.items||[]).find(v=>String(v.id)===String(b.dataset.id));
-    if(!fp(x))return;
-    e.preventDefault();e.stopImmediatePropagation();choose(x,b);
+  const openDraft=item=>{
+    const payload=item.payload||{};
+    const slides=list(payload.draft_slides);
+    const sources=officialSources(payload);
+    const comments=list(payload.source_comments);
+    const premises=list(payload.premise_checks);
+    const screenshots=list(payload.screenshot_requests);
+    const points=list(payload.draft_review_points);
+    const quality=packageQuality(item);
+    const modal=document.createElement('div');
+    modal.className='fp-draft-modal';modal.dataset.fpModal='1';
+    const sourcePage=text(payload.source_url||item.url);
+    modal.innerHTML='<div class="fp-draft-dialog" role="dialog" aria-modal="true" aria-labelledby="fp-draft-title"><header><div><small>FPカルーセル完成原稿</small><h3 id="fp-draft-title">'+escFp(draftTitle(item,payload)||'原稿案')+'</h3></div><button class="push-button fp-close-draft">閉じる</button></header><main>'
+      +'<section class="fp-package-status '+(quality.ready?'ready':'blocked')+'"><b>'+(quality.ready?'画像化へ渡せます':'根拠の補完が必要')+'</b>'+(quality.ready?'<span>元記事・一次情報・原稿・投稿文が揃っています。</span>':'<ul>'+quality.issues.map(issue=>'<li>'+escFp(issue)+'</li>').join('')+'</ul>')+'</section>'
+      +'<section class="fp-draft-cover"><small>表紙案</small><b>'+escFp(payload.draft_cover||draftTitle(item,payload))+'</b></section>'
+      +'<div class="fp-draft-slides">'+slides.map((slide,index)=>slideRow(slide,index,slides.length)).join('')+'</div>'
+      +'<section class="fp-evidence"><h4>元記事の証拠メモ <small>自分用・画像には出さない</small></h4>'+(sourcePage?'<p><a href="'+escFp(sourcePage)+'" target="_blank" rel="noopener">元記事を直接開く</a>　'+escFp(payload.source_title||'')+'</p>':'')+(payload.source_post_summary?'<p>'+escFp(payload.source_post_summary)+'</p>':'')+(comments.length?'<ol class="fp-comment-list">'+comments.map(comment=>commentRow(payload,comment)).join('')+'</ol>':'<p class="fp-empty">採用コメントは未保存です。</p>')+(payload.source_checked_at?'<small>本文・コメント確認：'+escFp(payload.source_checked_at)+'</small>':'')+'</section>'
+      +(premises.length?'<section class="fp-premises"><h4>出発点の前提確認</h4><ul>'+premises.map(premiseRow).join('')+'</ul></section>':'')
+      +'<section class="fp-draft-sources"><h4>一次情報と使った根拠</h4>'+(sources.length?'<ol>'+sources.map(sourceRow).join('')+'</ol>':'<p class="fp-empty">一次情報は未保存です。</p>')+'</section>'
+      +'<section class="fp-screenshots"><h4>しゃちほこが用意するスクショ</h4>'+(screenshots.length?screenshots.map(screenshotRow).join(''):'<p class="fp-empty">今回はスクショなしで成立します。</p>')+'</section>'
+      +(points.length?'<section class="fp-draft-notes"><h4>公開前の確認点</h4><ul>'+points.map(point=>'<li>'+escFp(typeof point==='string'?point:(point?.text||point?.note||JSON.stringify(point)))+'</li>').join('')+'</ul></section>':'')
+      +'<section class="fp-publish-copy"><h4>投稿時にコピー</h4><label>タイトル</label><div class="fp-copy-box"><pre>'+escFp(draftTitle(item,payload))+'</pre><button class="push-button small" data-fp-copy-title="'+escFp(item.id)+'">タイトルをコピー</button></div><label>キャプション</label><div class="fp-copy-box"><pre>'+escFp(draftCaption(payload))+'</pre><button class="push-button small" data-fp-copy-caption="'+escFp(item.id)+'">キャプションをコピー</button></div></section>'
+      +'</main><footer><button class="push-button fp-close-draft">戻る</button><button class="push-button" data-fp-copy-draft="'+escFp(item.id)+'">原稿をコピー</button><button class="push-button fp-copy-images" data-fp-copy-package="'+escFp(item.id)+'" '+(quality.ready?'':'disabled')+'>画像化用にコピー</button></footer></div>';
+    document.body.appendChild(modal);document.body.classList.add('fp-modal-open');modal.querySelector('.fp-close-draft')?.focus();
+  };
+
+  document.addEventListener('click',event=>{
+    const button=event.target.closest?.('.action-accept');
+    if(!button)return;
+    const item=(app.items||[]).find(row=>String(row.id)===String(button.dataset.id));
+    if(!fp(item))return;
+    event.preventDefault();event.stopImmediatePropagation();choose(item,button);
   },true);
-  document.addEventListener('click',e=>{const accepted=e.target.closest?.('[data-fp-open-accepted]');if(accepted){e.preventDefault();app.domain='all';setSelected('#domainTabs button[data-domain]','domain','all');load('accepted');return}const open=e.target.closest?.('[data-fp-open]');if(open){e.preventDefault();const x=findFpItem(open.dataset.fpOpen);if(x)openDraft(x);return}if(e.target.closest?.('.fp-close-draft')||e.target.classList?.contains('fp-draft-modal')){e.preventDefault();closeDraft();return}const b=e.target.closest?.('[data-fp-images]');if(b){e.preventDefault();const x=findFpItem(b.dataset.fpImages);if(x)requestImages(x,b)}});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.querySelector('[data-fp-modal]'))closeDraft()});
+  document.addEventListener('click',event=>{
+    const accepted=event.target.closest?.('[data-fp-open-accepted]');
+    if(accepted){event.preventDefault();app.domain='all';setSelected('#domainTabs button[data-domain]','domain','all');load('accepted');return}
+    const open=event.target.closest?.('[data-fp-open]');
+    if(open){event.preventDefault();const item=findFpItem(open.dataset.fpOpen);if(item)openDraft(item);return}
+    if(event.target.closest?.('.fp-close-draft')||event.target.classList?.contains('fp-draft-modal')){event.preventDefault();closeDraft();return}
+    const packageButton=event.target.closest?.('[data-fp-copy-package]');
+    if(packageButton){event.preventDefault();const item=findFpItem(packageButton.dataset.fpCopyPackage);if(item&&packageQuality(item).ready)copyText(buildHandoff(item),'画像化用の指示をコピーしました');return}
+    const draftButton=event.target.closest?.('[data-fp-copy-draft]');
+    if(draftButton){event.preventDefault();const item=findFpItem(draftButton.dataset.fpCopyDraft);if(item)copyText(buildDraftCopy(item),'原稿をコピーしました');return}
+    const titleButton=event.target.closest?.('[data-fp-copy-title]');
+    if(titleButton){event.preventDefault();const item=findFpItem(titleButton.dataset.fpCopyTitle);if(item)copyText(draftTitle(item),'タイトルをコピーしました');return}
+    const captionButton=event.target.closest?.('[data-fp-copy-caption]');
+    if(captionButton){event.preventDefault();const item=findFpItem(captionButton.dataset.fpCopyCaption);if(item)copyText(draftCaption(item.payload||{}),'キャプションをコピーしました')}
+  });
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.querySelector('[data-fp-modal]'))closeDraft()});
+
+  window.__fpContentPipeline={packageQuality,buildHandoff,buildDraftCopy};
+
   const style=document.createElement('style');
   style.textContent=`
-    .fp-candidate{margin:0 0 9px;padding:9px;background:#edf7ff;border:2px solid;border-color:#fff #55728a #55728a #fff;box-shadow:inset -1px -1px #9cb2c2;color:#111}
-    .fp-head{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:7px}.fp-head>b{color:#000080}.fp-signal,.fp-state{padding:1px 5px;border:1px solid #777;background:#fff;font-size:11px}.fp-state{margin-left:auto;background:#fff6b5;font-weight:700}
-    .fp-question{background:#fff;border:1px inset #aaa;padding:7px 8px;line-height:1.45;font-weight:700}.fp-question small{display:block;color:#555;font-weight:400}
-    .fp-grid{display:grid;grid-template-columns:92px 1fr;margin:7px 0 0;border:1px solid #9aa}.fp-grid dt,.fp-grid dd{margin:0;padding:5px 6px;border-bottom:1px solid #ccd;line-height:1.45}.fp-grid dt{background:#dce8f0;font-size:11px}.fp-grid dd{background:#fff;font-size:12px}.fp-grid ol{margin:0;padding-left:20px}.fp-grid a{color:#000080}
-    .fp-stages{display:flex;gap:5px;align-items:center;margin-top:7px;overflow-x:auto}.fp-stage{min-width:64px;padding:3px 6px;text-align:center;border:1px solid #777;background:#eee}.fp-stage.pass,.fp-stage.done{background:#d8f5d8}.fp-stage.ready{background:#fff3bf}.fp-stage.fail{background:#ffd7d7}.fp-stage small{display:block;font-size:10px}.fp-stage b{font-size:13px}.fp-ready{margin:7px 0 0;padding:6px;background:#fff6b5;border:1px solid #b8a94b;font-size:12px}.fp-select{font-weight:900;background:#d9ffd9}
-    .fp-draft-actions{margin-top:8px;padding:8px;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080}.fp-draft-status{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:7px}.fp-draft-status b{color:#000080}.fp-draft-status span{font-size:11px;color:#444}.fp-draft-buttons{display:flex;gap:7px;flex-wrap:wrap}.fp-request-images{font-weight:900;background:#fff3a8}.fp-request-images:disabled{background:#ddd;color:#555}.fp-modal-open{overflow:hidden}.fp-draft-modal{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.58);display:grid;place-items:center;padding:16px}.fp-draft-dialog{width:min(920px,100%);max-height:92vh;display:flex;flex-direction:column;background:#c0c0c0;color:#111;border:3px solid;border-color:#fff #111 #111 #fff;box-shadow:8px 8px 0 rgba(0,0,0,.35)}.fp-draft-dialog>header,.fp-draft-dialog>footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px}.fp-draft-dialog>header{background:#000080;color:#fff}.fp-draft-dialog h3{margin:2px 0 0;font-size:18px}.fp-draft-dialog>main{overflow:auto;padding:12px}.fp-draft-dialog>footer{border-top:1px solid #777;background:#d4d0c8}.fp-draft-cover{padding:18px;background:#f8f0dd;border:2px solid #263d57;text-align:center}.fp-draft-cover small{display:block;color:#555}.fp-draft-cover b{display:block;margin-top:7px;font-size:24px;line-height:1.45}.fp-draft-slides{display:grid;gap:8px;margin-top:10px}.fp-draft-slide{display:grid;grid-template-columns:42px 1fr;background:#fff;border:1px solid #777}.fp-draft-slide>div{display:grid;place-items:center;background:#16324f;color:#fff;font-weight:900}.fp-draft-slide section{padding:9px 11px}.fp-draft-slide h4,.fp-draft-slide p{margin:0}.fp-draft-slide p{margin-top:5px;line-height:1.6}.fp-draft-notes,.fp-draft-sources{margin-top:10px;padding:10px 12px;background:#fff6bf;border:1px solid #9a873a}.fp-draft-sources{background:#edf7ff;border-color:#55728a}.fp-draft-notes h4,.fp-draft-sources h4{margin:0 0 6px}.fp-draft-notes ul,.fp-draft-sources ol{margin:0;padding-left:22px}.fp-draft-sources li{margin:4px 0}.fp-draft-sources small{display:block;color:#555}
-    .fp-top-board{margin:0 0 12px;padding:9px;background:#fff6b5;border:3px double #7a6500;color:#111}.fp-top-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}.fp-top-title>div{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}.fp-top-title b{color:#8b0000;font-size:15px}.fp-top-title span{font-size:11px;color:#555}.fp-top-list{display:grid;gap:6px}.fp-top-card{display:grid;grid-template-columns:58px 1fr;background:#fff;border:1px solid #777}.fp-top-rank{display:grid;place-content:center;text-align:center;background:#16324f;color:#fff}.fp-top-rank b{font-size:22px}.fp-top-rank small{font-size:10px}.fp-top-main{padding:7px 9px}.fp-top-main>div:first-child{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.fp-top-main strong{font-size:13px}.fp-top-status{padding:2px 6px;border:1px solid #8b0000;background:#ffe0c2;color:#8b0000;font-weight:900;font-size:11px}.fp-top-card.making .fp-top-status{border-color:#775f00;background:#fff2a8;color:#665100}.fp-top-card.review .fp-top-status{border-color:#006400;background:#dff5df;color:#005b00}.fp-top-main p{margin:5px 0;font-size:11px;line-height:1.45}.fp-top-actions{display:flex;gap:6px;flex-wrap:wrap}
-    @media(max-width:700px){.fp-grid{grid-template-columns:78px 1fr}.fp-state{margin-left:0}.fp-stage{min-width:56px}.fp-draft-modal{padding:0}.fp-draft-dialog{width:100%;height:100dvh;max-height:none;border:0}.fp-draft-dialog h3{font-size:15px}.fp-draft-cover b{font-size:20px}.fp-draft-dialog>footer{flex-wrap:wrap}.fp-draft-dialog>footer .push-button,.fp-draft-buttons .push-button{flex:1;min-height:38px}.fp-draft-slide{grid-template-columns:34px 1fr}.fp-top-card{grid-template-columns:48px 1fr}.fp-top-rank b{font-size:18px}.fp-top-actions .push-button{min-height:38px}.fp-top-title{align-items:flex-start}}
+    .fp-candidate{margin:0 0 9px;padding:9px;background:#edf7ff;border:2px solid;border-color:#fff #55728a #55728a #fff;box-shadow:inset -1px -1px #9cb2c2;color:#111}.fp-head{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:7px}.fp-head>b{color:#000080}.fp-signal,.fp-state{padding:1px 5px;border:1px solid #777;background:#fff;font-size:11px}.fp-state{margin-left:auto;background:#fff6b5;font-weight:700}.fp-question{background:#fff;border:1px inset #aaa;padding:7px 8px;line-height:1.45;font-weight:700}.fp-question small{display:block;color:#555;font-weight:400}.fp-grid{display:grid;grid-template-columns:92px 1fr;margin:7px 0 0;border:1px solid #9aa}.fp-grid dt,.fp-grid dd{margin:0;padding:5px 6px;border-bottom:1px solid #ccd;line-height:1.45}.fp-grid dt{background:#dce8f0;font-size:11px}.fp-grid dd{background:#fff;font-size:12px}.fp-grid ol{margin:0;padding-left:20px}.fp-grid a{color:#000080}.fp-stages{display:flex;gap:5px;align-items:center;margin-top:7px;overflow-x:auto}.fp-stage{min-width:64px;padding:3px 6px;text-align:center;border:1px solid #777;background:#eee}.fp-stage.pass,.fp-stage.done{background:#d8f5d8}.fp-stage.ready{background:#fff3bf}.fp-stage.fail{background:#ffd7d7}.fp-stage small{display:block;font-size:10px}.fp-stage b{font-size:13px}.fp-ready{margin:7px 0 0;padding:6px;background:#fff6b5;border:1px solid #b8a94b;font-size:12px}.fp-select{font-weight:900;background:#d9ffd9}
+    .fp-draft-actions{margin-top:8px;padding:8px;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080}.fp-draft-status{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:7px}.fp-draft-status b{color:#000080}.fp-draft-status.blocked b{color:#8b0000}.fp-draft-status span{font-size:11px;color:#444}.fp-draft-buttons{display:flex;gap:7px;flex-wrap:wrap}.fp-copy-images{font-weight:900;background:#fff3a8}.fp-copy-images:disabled{background:#ddd;color:#555}.fp-modal-open{overflow:hidden}.fp-draft-modal{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.58);display:grid;place-items:center;padding:16px}.fp-draft-dialog{width:min(980px,100%);max-height:92vh;display:flex;flex-direction:column;background:#c0c0c0;color:#111;border:3px solid;border-color:#fff #111 #111 #fff;box-shadow:8px 8px 0 rgba(0,0,0,.35)}.fp-draft-dialog>header,.fp-draft-dialog>footer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px}.fp-draft-dialog>header{background:#000080;color:#fff}.fp-draft-dialog h3{margin:2px 0 0;font-size:18px}.fp-draft-dialog>main{overflow:auto;padding:12px}.fp-draft-dialog>footer{border-top:1px solid #777;background:#d4d0c8}.fp-package-status{display:flex;gap:10px;align-items:center;margin-bottom:10px;padding:9px 11px;border:2px solid}.fp-package-status.ready{background:#dbf5d8;border-color:#2f6b2f}.fp-package-status.blocked{display:block;background:#fff1b8;border-color:#8b6800}.fp-package-status ul{margin:5px 0 0;padding-left:20px}.fp-draft-cover{padding:18px;background:#f8f0dd;border:2px solid #263d57;text-align:center}.fp-draft-cover small{display:block;color:#555}.fp-draft-cover b{display:block;margin-top:7px;font-size:24px;line-height:1.45}.fp-draft-slides{display:grid;gap:8px;margin-top:10px}.fp-draft-slide{display:grid;grid-template-columns:112px 1fr;background:#fff;border:1px solid #777}.fp-page-sticky{align-self:start;display:flex;flex-direction:column;gap:2px;margin:9px 0 9px 9px;padding:8px;background:#fff0a8;border:1px solid #877522;box-shadow:3px 3px 0 #c2b46b;transform:rotate(-1deg)}.fp-page-sticky b{font-size:21px}.fp-page-sticky small{font-size:10px;line-height:1.3}.fp-draft-slide section{padding:10px 12px}.fp-draft-slide h4,.fp-draft-slide p{margin:0}.fp-draft-slide p{margin-top:5px;line-height:1.6}.fp-slide-visual,.fp-slide-source{display:block;margin-top:7px;padding-top:5px;border-top:1px dotted #aaa;color:#555}.fp-evidence,.fp-premises,.fp-draft-notes,.fp-draft-sources,.fp-screenshots,.fp-publish-copy{margin-top:10px;padding:10px 12px;background:#fff;border:1px solid #777}.fp-evidence{background:#f5f5f5}.fp-evidence h4,.fp-premises h4,.fp-draft-notes h4,.fp-draft-sources h4,.fp-screenshots h4,.fp-publish-copy h4{margin:0 0 7px}.fp-evidence h4 small{font-weight:400;color:#666}.fp-evidence p{margin:6px 0}.fp-comment-list{margin:7px 0;padding-left:28px}.fp-comment-list li{margin:5px 0}.fp-comment-list small{display:block;color:#666}.fp-premises{background:#fff6bf;border-color:#9a873a}.fp-premises ul{list-style:none;margin:0;padding:0}.fp-premises li{display:grid;grid-template-columns:90px 1fr auto;gap:8px;margin-top:5px;padding:6px;background:#fff}.fp-premises li>b{color:#006400}.fp-premises li.contradicted>b,.fp-premises li.unknown>b{color:#8b0000}.fp-premises li small{grid-column:2/-1;color:#555}.fp-draft-sources{background:#edf7ff;border-color:#55728a}.fp-draft-sources ol{margin:0;padding-left:24px}.fp-draft-sources li{margin:7px 0}.fp-draft-sources p,.fp-draft-sources small{display:block;margin:2px 0;color:#555}.fp-screenshots{background:#e8f5f2;border-color:#3d766f}.fp-shot{display:grid;grid-template-columns:1fr auto;gap:6px;margin-top:7px;padding:8px;background:#fff;border:1px solid #777}.fp-shot>div{display:flex;gap:7px;align-items:center}.fp-shot>div>b{padding:2px 5px;background:#d7efe9;border:1px solid #3d766f;font-size:10px}.fp-shot.required>div>b{background:#fff0a8;border-color:#877522}.fp-shot dl{grid-column:1/-1;display:grid;grid-template-columns:78px 1fr;margin:0}.fp-shot dt,.fp-shot dd{margin:0;padding:3px}.fp-shot dt{color:#555;font-size:11px}.fp-publish-copy label{display:block;margin:8px 0 3px;font-weight:700}.fp-copy-box{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:start}.fp-copy-box pre{min-width:0;max-height:180px;overflow:auto;margin:0;padding:8px;white-space:pre-wrap;background:#fff;border:1px inset #aaa;font-family:inherit;line-height:1.5}.fp-empty{color:#666}.fp-top-board{margin:0 0 12px;padding:9px;background:#fff6b5;border:3px double #7a6500;color:#111}.fp-top-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}.fp-top-title>div{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}.fp-top-title b{color:#8b0000;font-size:15px}.fp-top-title span{font-size:11px;color:#555}.fp-top-list{display:grid;gap:6px}.fp-top-card{display:grid;grid-template-columns:58px 1fr;background:#fff;border:1px solid #777}.fp-top-rank{display:grid;place-content:center;text-align:center;background:#16324f;color:#fff}.fp-top-rank b{font-size:22px}.fp-top-rank small{font-size:10px}.fp-top-main{padding:7px 9px}.fp-top-main>div:first-child{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.fp-top-main strong{font-size:13px}.fp-top-status{padding:2px 6px;border:1px solid #8b0000;background:#ffe0c2;color:#8b0000;font-weight:900;font-size:11px}.fp-top-card.action .fp-top-status{border-color:#006400;background:#dff5df;color:#005b00}.fp-top-main p{margin:5px 0;font-size:11px;line-height:1.45}.fp-top-actions{display:flex;gap:6px;flex-wrap:wrap}
+    @media(max-width:700px){.fp-grid{grid-template-columns:78px 1fr}.fp-state{margin-left:0}.fp-stage{min-width:56px}.fp-draft-modal{padding:0}.fp-draft-dialog{width:100%;height:100dvh;max-height:none;border:0}.fp-draft-dialog h3{font-size:15px}.fp-draft-cover b{font-size:20px}.fp-draft-dialog>footer{flex-wrap:wrap}.fp-draft-dialog>footer .push-button,.fp-draft-buttons .push-button{flex:1;min-height:40px}.fp-draft-slide{grid-template-columns:82px 1fr}.fp-page-sticky{margin:7px 0 7px 7px;padding:6px}.fp-page-sticky b{font-size:17px}.fp-premises li{grid-template-columns:82px 1fr}.fp-premises li a{grid-column:2}.fp-copy-box{grid-template-columns:1fr}.fp-copy-box .push-button{min-height:38px}.fp-top-card{grid-template-columns:48px 1fr}.fp-top-rank b{font-size:18px}.fp-top-actions .push-button{min-height:38px}.fp-top-title{align-items:flex-start}}
   `;
   document.head.appendChild(style);
   relabel();
