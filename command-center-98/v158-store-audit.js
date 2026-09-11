@@ -87,6 +87,7 @@
 
   function salesPanel(){
     return '<div class="store-audit-head"><div><b>Yahoo!フリマ 売却照合</b><br><small>2026/08/01〜09/11の支払い受付メール40件を商品IDで重複排除。金額は購入者の支払金額です。</small></div><div class="store-audit-total">照合17件</div></div>'+
+      '<div class="store-audit-summary"><button class="push-button small" data-store-kind="sourcing">一般仕入れ <b>'+snapshot.sourcing.length+'</b></button><button class="push-button small" data-store-kind="tcg">TCG別枠 <b>'+snapshot.tcg.length+'</b></button><button class="push-button small" data-store-kind="excluded">仕入れではない <b>'+snapshot.excluded.length+'</b></button><button class="push-button small selected" data-store-kind="sales">売却照合 <b>17</b></button></div>'+
       '<div class="sale-kpis"><div><b>売価確認</b><strong>15件／¥32,906</strong></div><div><b>照合内訳</b><strong>確定16・高確度1</strong></div><div><b>未照合</b><strong>25件／¥143,775</strong></div></div>'+
       '<p class="store-audit-note"><b>売価と受取額は別です。</b> ここでは「支払い受付」の購入者支払金額を売価として集計。売上確定メールしか残っていない2件は売価合計に入れていません。</p>'+
       '<h3 class="sale-section-title">仕入れ店舗まで照合できたもの</h3><div class="supplier-table-wrap"><table class="supplier-table store-audit-table sale-match-table"><thead><tr><th>No.</th><th>仕入れ店舗</th><th>売れた商品</th><th>件数</th><th>売価</th><th>状態</th><th>照合根拠</th></tr></thead><tbody>'+salesRows()+'</tbody></table></div>'+
