@@ -44,26 +44,56 @@
     ],
     sales:{
       matched:[
-        {store:'detail-online-store',confidence:'確定',count:'2件',amount:'¥7,498',status:'2件とも売上確定',items:'crocs Echo Clog BLACK 26cm ¥5,999／PEARLY GATES JIBBITZ 5個 ¥1,499',note:'注文#12622のM8（26cm）と注文#12606・#12700のJIBBITZに一致'},
-        {store:'ゴルフパートナー annex',confidence:'確定',count:'13件',amount:'売価確認11件 ¥19,210',status:'売上確定9件・支払受付4件',items:'HONMA ポロ2枚セットM×3、メッシュキャップ×6、靴下3足25–27cm×1、白ポロM×1。ほか売上確定のみ2件',note:'8/21注文のHONMA夏の福袋58セットの構成品と一致。売価メールがない2件は受取額のみ確認'},
-        {store:'スポーツジュエン',confidence:'確定',count:'1件',amount:'¥1,199',status:'支払受付',items:'DIADORA 吸汗速乾テニスサンバイザー 白',note:'8/28注文 D103172935 C0351（実発送7個）と一致'},
-        {store:'FirstStage',confidence:'高確度',count:'1件',amount:'¥4,999',status:'売上確定',items:'G/FORE レディース ハーフジップ半袖 ブラック',note:'9/9注文 073212056 ブラック／XSと商品・色が一致。売却タイトルにサイズ・型番記載なし'}
+        {store:'ゴルフパートナー annex',confidence:'確定',count:'39件',amount:'売価確認37件 ¥52,985',status:'取引完了34件・支払受付5件',items:'HONMA福袋構成品、SRIXONスコアカウンター、MIZUNO BGサポーター、Callawayカートバッグ',note:'注文メールの商品名・型番・サイズまたは福袋構成品と一致。売上確定のみ2件は売価合計外'},
+        {store:'detail-online-store',confidence:'確定',count:'5件',amount:'¥11,995',status:'5件とも取引完了／売上確定',items:'crocs Echo Clog BLACK 26cm×1／PEARLY GATES JIBBITZ 5個×4',note:'注文#12622のM8（26cm）と注文#12606・#12700のJIBBITZに一致'},
+        {store:'スポーツジュエン',confidence:'確定',count:'2件',amount:'¥5,198',status:'取引完了1件・支払受付1件',items:'DIADORA サンバイザー ¥1,199／adidas GOLF プリーツスカートL緑 ¥3,999',note:'8/28注文のD103172935とIS9686 J/Lに一致'},
+        {store:'FirstStage',confidence:'確定＋高確度',count:'7件',amount:'¥36,194',status:'7件とも取引完了／売上確定',items:'G/FORE ピンク半袖ポロ×2、白プリーツスカートL×4、黒ハーフジップ×1',note:'確定5件。白スカート1件は捕捉注文数超過、黒ハーフジップは売却タイトルに型番・サイズなしのため高確度'},
+        {store:'Mac-House',confidence:'高確度',count:'5件',amount:'売価確認4件 ¥6,296',status:'5件とも取引完了／売上確定',items:'POLO RALPH LAUREN 靴下3足 白 25–27cm',note:'購入記録のブランド・商品種別と一致。売上確定のみ1件は売価合計外'},
+        {store:'アエナ公式',confidence:'高確度',count:'4件',amount:'¥16,496',status:'4件とも取引完了',items:"Cleo's Beauté リペアトリートメント 2本×3／4本×1",note:'商品は完全一致。ただし販売数量10本に対し今回捕捉した購入記録は7本のため高確度'}
       ],
       unmatched:[
-        {items:'DIESEL チェーン付き長袖カットソー',count:'1件',amount:'¥11,000'},
-        {items:'GUNDAM ARSENAL BASE PARALLEL 2 CARD SET',count:'1件',amount:'¥999'},
-        {items:'REEF THE LAYBACK 黒 27.2cm',count:'2件',amount:'¥3,598'},
-        {items:'TOM WOOD Kay Ring Leopard 60',count:'1件',amount:'¥40,000'},
-        {items:'VALLY Diamond Silicon Ring 10個',count:'1件',amount:'¥500'},
-        {items:'ミズノ LD アラウンド2 黒 22.0cm 4E',count:'1件',amount:'¥3,000'},
-        {items:'REEF OASIS TWO-BAR 黒 27.2cm',count:'1件',amount:'¥2,400'},
-        {items:'ELECOM NESTOUT SPEAKER-1',count:'3件',amount:'¥8,200'},
-        {items:'SRIXON スコアカウンター＆ベルト2個',count:'1件',amount:'¥799'},
-        {items:'ミズノ BG GOLF ふくらはぎサポーター M',count:'1件',amount:'¥1,499'},
-        {items:'加湿王ゴジラ改 バーニングゴジラ改 2個',count:'2件',amount:'¥13,200'},
+        {items:'TOM WOOD Frame Ring Slim 56',count:'2件',amount:'¥50,000'},
         {items:'Tom Wood Kim Ring Kambaba',count:'1件',amount:'¥41,000'},
-        {items:'Thom Browne メガネ',count:'1件',amount:'¥9,000'},
-        {items:'アートクラスバイロダン シェーディング02',count:'8件',amount:'¥8,580'}
+        {items:'TOM WOOD Kay Ring Leopard 60',count:'1件',amount:'¥40,000'},
+        {items:'ReFa ドライヤースマート RE-AN-02A',count:'1件',amount:'¥29,000'},
+        {items:'LAURA MERCIER ブラシセット',count:'8件',amount:'¥24,000'},
+        {items:'THOM BROWNE TB-507-BT メガネ',count:'2件',amount:'¥17,998'},
+        {items:'MARIA BLACK Mambo パールピアス',count:'1件',amount:'¥14,999'},
+        {items:'加湿王ゴジラ改 バーニングゴジラ改 2個',count:'2件',amount:'¥13,200'},
+        {items:'DIESEL チェーン付き長袖カットソー',count:'1件',amount:'¥11,000'},
+        {items:'DIESEL PLAY-D フラグメントケース',count:'1件',amount:'¥9,999'},
+        {items:'Thom Browne メガネ（Yahoo!フリマ）',count:'1件',amount:'¥9,000'},
+        {items:'まとめ商品（u様／2点）',count:'1件',amount:'¥9,000'},
+        {items:'アートクラスバイロダン シェーディング02',count:'8件',amount:'¥8,580'},
+        {items:'ELECOM NESTOUT SPEAKER-1',count:'3件',amount:'¥8,200'},
+        {items:'Fitbit エアロバイク',count:'1件',amount:'¥8,000'},
+        {items:'ポールスミス ドレスシューズ',count:'1件',amount:'¥8,000'},
+        {items:'The Fallen & The Virtuous 4枚',count:'1件',amount:'¥7,500'},
+        {items:'VANS LX Old Skool Y2Kフレイム 26.5cm',count:'1件',amount:'¥7,000'},
+        {items:'REEF THE LAYBACK 黒 27.2cm',count:'3件',amount:'¥5,397'},
+        {items:'ミズノ LDアラウンド2 黒 22cm 4E',count:'2件',amount:'¥5,500'},
+        {items:'電動回転モップクリーナー',count:'1件',amount:'¥5,000'},
+        {items:'CABaN SOLBIATI リネンパンツL',count:'1件',amount:'¥5,000'},
+        {items:'G/FORE 総柄ポロシャツ36 S 黒白',count:'1件',amount:'¥4,999'},
+        {items:'Reebok Club C 85 AXB 26.5cm',count:'1件',amount:'¥3,500'},
+        {items:'For fam 全身保湿ケアホイップ5本',count:'1件',amount:'¥3,500'},
+        {items:'LAURA MERCIER ボディオイル ネロリ',count:'1件',amount:'¥3,000'},
+        {items:'専用出品（kirara様）',count:'1件',amount:'¥3,000'},
+        {items:'高品質オーディオ用スパイク4pcs',count:'2件',amount:'¥3,000'},
+        {items:'マーベルレジェンド メリージェーン',count:'1件',amount:'¥3,000'},
+        {items:'まとめ商品（K様／3点）',count:'1件',amount:'¥2,700'},
+        {items:'サンリオ いちご新聞50周年トレカ8パック',count:'1件',amount:'¥2,500'},
+        {items:'REEF OASIS TWO-BAR 黒 27.2cm',count:'1件',amount:'¥2,400'},
+        {items:'Vネック ホワイトTシャツM 日本製',count:'1件',amount:'¥2,000'},
+        {items:'第五人格 血の女王 TシャツL 3枚',count:'1件',amount:'¥1,999'},
+        {items:'仮面ライダー BLACK SUN ソフビセット',count:'1件',amount:'¥1,500'},
+        {items:'VALLY シリコンリング',count:'2件',amount:'¥1,400'},
+        {items:'MIZUNO GOLF ペイント総柄キャップ',count:'1件',amount:'¥999'},
+        {items:'GUNDAM ARSENAL BASE PARALLEL 2 CARD SET',count:'1件',amount:'¥999'},
+        {items:'DAD Automotive Fragrance Tablet 5個',count:'1件',amount:'¥900'},
+        {items:'仮面ライダー カードダス',count:'1件',amount:'¥800'},
+        {items:'foil 嵐の鎚、ミョルニル',count:'1件',amount:'¥600'},
+        {items:'文豪ストレイドッグス 中原中也 アクスタ',count:'1件',amount:'¥600'}
       ]
     }
   };
@@ -86,10 +116,10 @@
   }
 
   function salesPanel(){
-    return '<div class="store-audit-head"><div><b>Yahoo!フリマ 売却照合</b><br><small>2026/08/01〜09/11の支払い受付メール40件を商品IDで重複排除。金額は購入者の支払金額です。</small></div><div class="store-audit-total">照合17件</div></div>'+
-      '<div class="store-audit-summary"><button class="push-button small" data-store-kind="sourcing">一般仕入れ <b>'+snapshot.sourcing.length+'</b></button><button class="push-button small" data-store-kind="tcg">TCG別枠 <b>'+snapshot.tcg.length+'</b></button><button class="push-button small" data-store-kind="excluded">仕入れではない <b>'+snapshot.excluded.length+'</b></button><button class="push-button small selected" data-store-kind="sales">売却照合 <b>17</b></button></div>'+
-      '<div class="sale-kpis"><div><b>売価確認</b><strong>15件／¥32,906</strong></div><div><b>照合内訳</b><strong>確定16・高確度1</strong></div><div><b>未照合</b><strong>25件／¥143,775</strong></div></div>'+
-      '<p class="store-audit-note"><b>売価と受取額は別です。</b> ここでは「支払い受付」の購入者支払金額を売価として集計。売上確定メールしか残っていない2件は売価合計に入れていません。</p>'+
+    return '<div class="store-audit-head"><div><b>メルカリ＋Yahoo!フリマ 売却照合</b><br><small>2026/08/01〜09/11。2つのGmailからメルカリ取引完了85件＋Yahoo!フリマ支払い受付40件を商品IDで重複排除。</small></div><div class="store-audit-total">照合62件</div></div>'+
+      '<div class="store-audit-summary"><button class="push-button small" data-store-kind="sourcing">一般仕入れ <b>'+snapshot.sourcing.length+'</b></button><button class="push-button small" data-store-kind="tcg">TCG別枠 <b>'+snapshot.tcg.length+'</b></button><button class="push-button small" data-store-kind="excluded">仕入れではない <b>'+snapshot.excluded.length+'</b></button><button class="push-button small selected" data-store-kind="sales">売却照合 <b>62</b></button></div>'+
+      '<div class="sale-kpis"><div><b>売価確認</b><strong>59件／¥129,164</strong></div><div><b>照合内訳</b><strong>確定51・高確度11</strong></div><div><b>未照合</b><strong>66件／¥380,769</strong></div></div>'+
+      '<p class="store-audit-note"><b>売価と受取額は別です。</b> メルカリは取引完了メールの商品価格、Yahoo!フリマは支払い受付メールの購入者支払金額を売価として集計。売上確定メールしか残っていない3件は売価合計に入れていません。</p>'+
       '<h3 class="sale-section-title">仕入れ店舗まで照合できたもの</h3><div class="supplier-table-wrap"><table class="supplier-table store-audit-table sale-match-table"><thead><tr><th>No.</th><th>仕入れ店舗</th><th>売れた商品</th><th>件数</th><th>売価</th><th>状態</th><th>照合根拠</th></tr></thead><tbody>'+salesRows()+'</tbody></table></div>'+
       '<h3 class="sale-section-title">未照合（確認用に残す）</h3><p class="store-audit-foot">未照合は「仕入れではない」という意味ではありません。購入メールの店・型番・サイズまで一致したら上へ移します。</p><div class="supplier-table-wrap"><table class="supplier-table store-audit-table"><thead><tr><th>No.</th><th>売れた商品</th><th>件数</th><th>売価合計</th><th>未照合理由</th></tr></thead><tbody>'+unmatchedRows()+'</tbody></table></div>';
   }
@@ -98,7 +128,7 @@
     if(category==='sales')return salesPanel();
     const total=snapshot.sourcing.length+snapshot.tcg.length+snapshot.excluded.length;
     return '<div class="store-audit-head"><div><b>8・9月 購入店舗の判定</b><br><small>'+h(snapshot.asOf)+'時点。Gmailの注文履歴と本人確認を反映。</small></div><div class="store-audit-total">'+total+'店舗を分類済み</div></div>'+
-      '<div class="store-audit-summary"><button class="push-button small '+(category==='sourcing'?'selected':'')+'" data-store-kind="sourcing">一般仕入れ <b>'+snapshot.sourcing.length+'</b></button><button class="push-button small '+(category==='tcg'?'selected':'')+'" data-store-kind="tcg">TCG別枠 <b>'+snapshot.tcg.length+'</b></button><button class="push-button small '+(category==='excluded'?'selected':'')+'" data-store-kind="excluded">仕入れではない <b>'+snapshot.excluded.length+'</b></button><button class="push-button small '+(category==='sales'?'selected':'')+'" data-store-kind="sales">売却照合 <b>17</b></button></div>'+
+      '<div class="store-audit-summary"><button class="push-button small '+(category==='sourcing'?'selected':'')+'" data-store-kind="sourcing">一般仕入れ <b>'+snapshot.sourcing.length+'</b></button><button class="push-button small '+(category==='tcg'?'selected':'')+'" data-store-kind="tcg">TCG別枠 <b>'+snapshot.tcg.length+'</b></button><button class="push-button small '+(category==='excluded'?'selected':'')+'" data-store-kind="excluded">仕入れではない <b>'+snapshot.excluded.length+'</b></button><button class="push-button small '+(category==='sales'?'selected':'')+'" data-store-kind="sales">売却照合 <b>62</b></button></div>'+
       (category==='sourcing'?'<p class="store-audit-note"><b>Amazonだけは店舗単位で決めない。</b> 同一商品の複数購入、商品カテゴリ、過去の調査履歴から注文ごとに判定します。</p>':'')+
       '<div class="supplier-table-wrap"><table class="supplier-table store-audit-table"><thead><tr><th>No.</th><th>店舗</th><th>購入月</th><th>購入商品</th><th>判定</th><th>理由</th></tr></thead><tbody>'+rows(category)+'</tbody></table></div>'+
       '<p class="store-audit-foot">誤判定の確認用に、仕入れ対象外の店舗も削除せず残しています。</p>';
