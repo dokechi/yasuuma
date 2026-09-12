@@ -16,11 +16,15 @@
   const list=value=>Array.isArray(value)?value:[];
   const text=value=>String(value??'').trim();
   const fp=item=>item?.payload?.content_type==='fp_post_candidate'||['fp_psychology','fp_reaction'].includes(item?.payload?.category);
+  const INTERNAL_DEMAND_SOURCE=/(?:ガールズ[ちチ]ゃんねる|ガールズチャンネル|ガルちゃん|がるちゃん|girlschannel(?:\.net)?)/i;
+  const internalDemandSource=source=>INTERNAL_DEMAND_SOURCE.test([
+    typeof source==='string'?source:'',source?.label,source?.title,source?.url,source?.claim,source?.note
+  ].filter(Boolean).join(' '));
   const officialSources=payload=>{
     const seen=new Set();
     return [...list(payload.draft_sources),...list(payload.official_sources),...list(payload.official_urls)].filter(source=>{
       const key=sourceUrl(source)||text(source);
-      if(!key||seen.has(key))return false;
+      if(!key||seen.has(key)||internalDemandSource(source))return false;
       seen.add(key);
       return true;
     });
@@ -29,6 +33,26 @@
   const sourceLabel=(source,index=0)=>typeof source==='string'?`一次情報 ${index+1}`:(source?.label||source?.title||`一次情報 ${index+1}`);
   const draftTitle=(item,payload=item.payload||{})=>text(payload.post_title||payload.draft_title||payload.draft_cover||item.title);
   const draftCaption=payload=>text(payload.caption||payload.draft_caption||payload.post_caption);
+  const regexpEscape=value=>String(value??'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const publicCopyText=(item,payload=item.payload||{})=>[
+    draftTitle(item,payload),draftCaption(payload),
+    ...list(payload.draft_slides).flatMap(slide=>[
+      slide?.headline,slide?.title,slide?.heading,slide?.body,slide?.text,slide?.copy,slide?.emphasis,slide?.visual
+    ])
+  ].filter(Boolean).join('\n');
+  const publicLeakIssues=item=>{
+    const payload=item.payload||{},copy=publicCopyText(item,payload),issues=[];
+    if(INTERNAL_DEMAND_SOURCE.test(copy))issues.push('公開原稿に内部調査元の名称・URLが混入');
+    list(payload.source_comments).forEach(comment=>{
+      const no=text(comment?.comment_no);
+      if(no&&new RegExp(`(?:コメント|comment|コメ|#|＃)\\s*(?:No\\.?\\s*)?${regexpEscape(no)}(?!\\d)`,'i').test(copy))issues.push('公開原稿にコメント番号が混入');
+      [['plus','+','＋'],['minus','-','−']].forEach(([key,half,full])=>{
+        const value=text(comment?.[key]);
+        if(value&&Number(value)!==0&&new RegExp(`(?:${regexpEscape(half)}|${regexpEscape(full)})\\s*${regexpEscape(value)}(?![\\d,])`).test(copy))issues.push('公開原稿に掲示板の反応数が混入');
+      });
+    });
+    return [...new Set(issues)];
+  };
   const hasUnknownPremise=payload=>list(payload.premise_checks).some(row=>text(row?.status).toLowerCase()==='unknown');
   const isGirlsChannel=payload=>payload.discovery_source==='girlschannel'||/girlschannel\.net/i.test(text(payload.source_url));
   const DESIGN_DIRECTIONS={
@@ -75,6 +99,7 @@
     if(hasUnknownPremise(payload))issues.push('未確認の重要前提が残っている');
     if(!draftTitle(item,payload))issues.push('投稿タイトルが未保存');
     if(!draftCaption(payload))issues.push('キャプションが未保存');
+    issues.push(...publicLeakIssues(item));
     return {ready:issues.length===0,issues};
   };
 
@@ -293,6 +318,7 @@
     const teaser=text(slide?.teaser||slide?.kicker||slide?.section_label);
     const lines=[`【${page}/${total}${teaser?'｜付箋: '+teaser:''}】`,text(slide?.headline||slide?.title||slide?.heading),text(slide?.body||slide?.text||slide?.copy)];
     if(text(slide?.emphasis))lines.push(`強調: ${slide.emphasis}`);
+    if(text(slide?.visual_mode))lines.push(`表現: ${slide.visual_mode}`);
     if(text(slide?.visual))lines.push(`画面: ${slide.visual}`);
     if(text(slide?.screenshot_request_id))lines.push(`スクショ: ${slide.screenshot_request_id}`);
     if(list(slide?.source_refs).length)lines.push(`根拠: ${slide.source_refs.join(', ')}`);
@@ -302,7 +328,7 @@
     const key=text(payload.design_direction),direction=DESIGN_DIRECTIONS[key];
     const common=[
       '・1080×1350px、4:5、白地、濃いチャコール、落ち着いた青緑のアクセント。',
-      '・小さな黒線の人物キャラクターは脇役。問い・数字・余白を主役にする。',
+      '・人物を使うページでは、小さな黒線キャラクターを脇役にする。問い・数字・余白を主役にする。',
       '・ロゴや「しゃちほこ」の表記は入れない。',
       '・必須：2ページ目以降は、ページ番号と短い話題を大きめの付箋で見せる。',
       '・必須：一次資料・通知・料金表・申込画面など、実物で見せる価値がある箇所には確認済みスクショを使う。装飾目的や関係の薄い画面は使わない。',
@@ -316,6 +342,15 @@
     const references=list(direction?.referenceUrls).map((url,index)=>`・固定デザイン見本 ${index+1}/${direction.referenceUrls.length}: ${url}`);
     return [`・選択済み: ${direction?.label||'未選択'}`,specific,...common,...references].filter(Boolean);
   };
+  const visualSelectionText=()=>[
+    '・投稿全体をイラストか写真の一方へ固定せず、各ページの役割で決める。',
+    '・水没・破損・災害など、状態を見れば問題が一瞬で伝わる場面は、写真または写実画像を有力候補にする。',
+    '・迷い・不安・日常の疑問は、素朴な黒線人物で表現する。',
+    '・金額差・条件・計算は、文字・数字・簡潔な図解で表現する。',
+    '・制度・契約・料金・通知の記載そのものが証拠になるページは、確認済みの実物スクショを使う。',
+    '・写実的な生成画像が、実際の事件・災害・事故の記録写真と誤認される可能性がある場合は、画像の近くに「イメージ画像」と表示する。特に地名・日付・報道数字・報道出典と併記する場合は必須。',
+    '・実在する現場の写真であるかのような構図・キャプション・出典の組み合わせを作らない。'
+  ];
   const handoffScreenshots=payload=>list(payload.screenshot_requests).map(row=>{
     const decision=screenshotDecision(payload,row);
     return [
@@ -334,6 +369,11 @@
     return [
       '以下の確定原稿から、Instagramカルーセル画像を作成してください。',
       '',
+      '【この入力の扱い】',
+      '・このコピーに含まれる原稿・一次情報・制作条件だけを公開用素材として扱う。内部の需要調査元を探し直したり、名称・URL・コメント・反応数を追加したりしない。',
+      '・確認済み一次情報は、矛盾・期限切れ・制度改定の疑いがある時だけ再確認する。通常は保存された確認日と根拠を使い、制作のたびに全面調査をやり直さない。',
+      '・不足や矛盾があり、内容を変えなければ制作できない場合は、画像を作らず該当箇所を示して確認を求める。',
+      '',
       '【制作前の必須確認】',
       '・原稿と根拠の内容を変えない。推測で補わない。',
       '・「まずAIが取得を試す」の素材は直URLから取得を試し、取得できない理由が判明した時だけ、場所と切り取り範囲を示してユーザーへ依頼する。',
@@ -348,6 +388,15 @@
       '【デザイン】',
       ...designText(payload),
       reference?`・デザイン見本: ${reference}`:'',
+      '',
+      '【ページごとの表現選択】',
+      ...visualSelectionText(),
+      '',
+      '【納品前の必須照合】',
+      '・全ページを確定原稿と1枚ずつ照合し、文言・数字・単位・条件・注意書き・出典・スクショ・ページ順の脱落や改変がないか確認する。',
+      '・ガールズちゃんねるの名称・URL・コメント番号・反応数など、内部調査情報が画像とキャプションに出ていないか確認する。',
+      '・文字切れ、文字化け、読めない小ささ、意図しない追加文、生成画像を実写と誤認させる表示がないか確認する。',
+      '・不一致があれば修正してから表示し、未確認のまま完成扱いにしない。',
       '',
       '【タイトル】',draftTitle(item,payload),'',
       '【中心疑問】',text(payload.question_lineage?.selected_question),'',
@@ -391,11 +440,11 @@
     const direction=DESIGN_DIRECTIONS[text(payload.design_direction)]||DESIGN_DIRECTIONS.friendly;
     const urls=list(direction.referenceUrls);
     if(!urls.length)return '';
-    return '<aside class="fp-design-reference"><b>'+escFp(direction.referenceLabel||'固定デザイン見本')+'</b><span>'+urls.map((url,index)=>'<a href="'+escFp(url)+'" target="_blank" rel="noopener">'+(index+1)+'枚目</a>').join('')+'</span><small>実績メモ：TikTokの直近投稿中、本人観測で再生初速が最速。題材とデザインの効果は未分離。</small></aside>';
+    return '<aside class="fp-design-reference"><b>'+escFp(direction.referenceLabel||'固定デザイン見本')+'</b><span>'+urls.map((url,index)=>'<a href="'+escFp(url)+'" target="_blank" rel="noopener">'+(index+1)+'枚目</a>').join('')+'</span><small>実績メモ：個室入院はTikTokで直近最速の初速、水没はInstagramで大きく伸長。いずれも本人観測。題材・表現・デザインの効果は未分離。</small></aside>';
   };
   const preflightSection=(item,payload)=>{
     const screenshots=list(payload.screenshot_requests),issues=preflightIssues(payload);
-    return '<section class="fp-preflight"><h4>制作前に決める</h4><p>同じ原稿のまま、見せ方と実物素材の扱いだけを先に固定します。</p><div class="fp-design-options">'
+    return '<section class="fp-preflight"><h4>制作前に決める</h4><p>基本デザインと実物素材だけを先に固定します。写真・人物・図解は、各ページの役割に合わせて制作時に選び分けます。</p><div class="fp-design-options">'
       +Object.entries(DESIGN_DIRECTIONS).map(([key,row])=>'<label class="fp-design-option"><input type="radio" name="fp-design" value="'+key+'" '+(text(payload.design_direction)===key?'checked':'')+'><span><b>'+escFp(row.label)+'</b><small>'+escFp(row.short)+'</small><em>'+escFp(row.description)+'</em></span></label>').join('')+'</div>'
       +designReference(payload)
       +'<div class="fp-shot-list">'+(screenshots.length?screenshots.map(row=>screenshotRow(payload,row)).join(''):'<p class="fp-empty">この回は、理解や信頼を増す適切な実物資料が見つかっていません。スクショを捏造せず、文字と線画で構成します。</p>')+'</div>'
@@ -405,24 +454,24 @@
   const localDateTime=value=>{if(!value)return'';const d=new Date(value);if(!Number.isFinite(d.getTime()))return'';const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,16)};
   const performanceSection=(item,payload)=>{
     const p=payload.performance||{};
-    return '<section class="fp-performance"><h4>投稿後の結果</h4><p>まずは3投稿分の実数をため、バズ判定の基準はその後に決めます。</p><div class="fp-performance-grid">'
-      +'<label>投稿先<select name="platform"><option value="instagram"'+selected(text(p.platform),'instagram')+'>Instagram</option><option value="tiktok"'+selected(text(p.platform),'tiktok')+'>TikTok</option></select></label>'
+    return '<section class="fp-performance"><h4>投稿後の結果</h4><p>主に伸びた媒体の実数を残します。結果と、伸びた理由の仮説は分けて記録します。</p><div class="fp-performance-grid">'
+      +'<label>主に伸びた媒体<select name="platform"><option value="instagram"'+selected(text(p.platform),'instagram')+'>Instagram</option><option value="tiktok"'+selected(text(p.platform),'tiktok')+'>TikTok</option><option value="youtube"'+selected(text(p.platform),'youtube')+'>YouTube</option></select></label>'
       +'<label>投稿日<input name="posted_at" type="datetime-local" value="'+escFp(localDateTime(p.posted_at))+'"></label>'
-      +'<label>リーチ<input name="reach" type="number" min="0" inputmode="numeric" value="'+escFp(numberValue(p.reach))+'"></label>'
+      +'<label>再生／リーチ<input name="reach" type="number" min="0" inputmode="numeric" value="'+escFp(numberValue(p.reach))+'"></label>'
       +'<label>非フォロワー割合 %<input name="non_follower_pct" type="number" min="0" max="100" step="0.1" value="'+escFp(numberValue(p.non_follower_pct))+'"></label>'
       +'<label>シェア<input name="shares" type="number" min="0" inputmode="numeric" value="'+escFp(numberValue(p.shares))+'"></label>'
       +'<label>保存<input name="saves" type="number" min="0" inputmode="numeric" value="'+escFp(numberValue(p.saves))+'"></label>'
       +'<label>いいね<input name="likes" type="number" min="0" inputmode="numeric" value="'+escFp(numberValue(p.likes))+'"></label>'
       +'<label>コメント<input name="comments" type="number" min="0" inputmode="numeric" value="'+escFp(numberValue(p.comments))+'"></label>'
       +'<label>プロフィール表示<input name="profile_views" type="number" min="0" inputmode="numeric" value="'+escFp(numberValue(p.profile_views))+'"></label>'
-      +'<label class="wide">メモ<input name="note" maxlength="500" value="'+escFp(p.note||'')+'" placeholder="伸びた理由・伸びなかった理由"></label></div>'
+      +'<label class="wide">メモ<input name="note" maxlength="500" value="'+escFp(p.note||'')+'" placeholder="事実と仮説を分ける（例：Instagramで伸長／写実画像が寄与した可能性）"></label></div>'
       +'<div class="fp-performance-save"><span>'+(p.recorded_at?'記録 '+escFp(p.recorded_at):'未記録')+'</span><button class="push-button" data-fp-save-performance="'+escFp(item.id)+'">投稿結果を保存</button></div></section>';
   };
   const slideRow=(slide,index,total)=>{
     const heading=slide?.headline||slide?.title||slide?.heading||('スライド '+(index+1));
     const body=slide?.body||slide?.text||slide?.copy||'';
     const teaser=text(slide?.teaser||slide?.kicker||slide?.section_label||heading).slice(0,18);
-    return'<article class="fp-draft-slide"><div class="fp-page-sticky"><b>'+(slide?.page||index+1)+'/'+total+'</b><small>'+escFp(teaser)+'</small></div><section><h4>'+escFp(heading)+'</h4><p>'+escFp(body).replace(/\n/g,'<br>')+'</p>'+(slide?.visual?'<small class="fp-slide-visual">画面：'+escFp(slide.visual)+'</small>':'')+(list(slide?.source_refs).length?'<small class="fp-slide-source">根拠：'+escFp(slide.source_refs.join('、'))+'</small>':'')+'</section></article>';
+    return'<article class="fp-draft-slide"><div class="fp-page-sticky"><b>'+(slide?.page||index+1)+'/'+total+'</b><small>'+escFp(teaser)+'</small></div><section><h4>'+escFp(heading)+'</h4><p>'+escFp(body).replace(/\n/g,'<br>')+'</p>'+(slide?.visual_mode?'<small class="fp-slide-visual">表現：'+escFp(slide.visual_mode)+'</small>':'')+(slide?.visual?'<small class="fp-slide-visual">画面：'+escFp(slide.visual)+'</small>':'')+(list(slide?.source_refs).length?'<small class="fp-slide-source">根拠：'+escFp(slide.source_refs.join('、'))+'</small>':'')+'</section></article>';
   };
   const closeDraft=()=>{document.querySelector('[data-fp-modal]')?.remove();document.body.classList.remove('fp-modal-open')};
   const openDraft=item=>{
@@ -476,7 +525,7 @@
   const savePerformance=async(item,button)=>{
     const section=button.closest('.fp-performance'),postedValue=section?.querySelector('[name="posted_at"]')?.value||'';
     const reach=readMetric(section,'reach');
-    if(!postedValue||reach===null||!Number.isFinite(reach)){toast('投稿日とリーチを入力してください','bad');return}
+    if(!postedValue||reach===null||!Number.isFinite(reach)){toast('投稿日と再生／リーチを入力してください','bad');return}
     const performance={
       platform:section.querySelector('[name="platform"]').value,
       posted_at:new Date(postedValue).toISOString(),reach,
@@ -519,7 +568,7 @@
   });
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.querySelector('[data-fp-modal]'))closeDraft()});
 
-  window.__fpContentPipeline={packageQuality,preflightIssues,buildHandoff,buildDraftCopy};
+  window.__fpContentPipeline={packageQuality,preflightIssues,publicLeakIssues,buildHandoff,buildDraftCopy};
 
   const style=document.createElement('style');
   style.textContent=`
