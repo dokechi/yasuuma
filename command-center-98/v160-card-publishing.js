@@ -14,9 +14,9 @@
   if(heading)heading.innerHTML='<span>カード投稿.exe - X / THREADS DRAFT DESK</span><span>発見 → 公式確認 → 下書き → 人が投稿</span>';
   const intro=document.querySelector('#xHub .x-intro');
   if(intro)intro.innerHTML='<b>カード情報を、投稿できる直前まで整えます。</b> 公式確認を済ませ、必要な時だけ価値の一言を加えて、XとThreadsの文案を同時に作ります。最後の編集・コピー・投稿は人が行います。';
-  document.querySelectorAll('.status-panel').forEach(node=>{if(/^ver\s/i.test(node.textContent||''))node.textContent='ver 1.60'});
+  document.querySelectorAll('.status-panel').forEach(node=>{if(/^ver\s/i.test(node.textContent||''))node.textContent='ver 1.61'});
   const helpNote=document.querySelector('.help-note');
-  if(helpNote)helpNote.textContent=(helpNote.textContent||'').replace(/ver\s+[\d.]+/i,'ver 1.60');
+  if(helpNote)helpNote.textContent=(helpNote.textContent||'').replace(/ver\s+[\d.]+/i,'ver 1.61');
   const tabs=by('xTabs');
   if(tabs)tabs.innerHTML=Object.entries(labels).map(([key,label])=>'<button class="push-button small" data-x-tab="'+key+'">'+label+' <span id="xCount'+key+'">0</span></button>').join('')+'<span class="x-spacer"></span><button class="push-button small" id="xAdd">＋ 手入力</button>';
 
@@ -36,11 +36,12 @@
     X.state.items.forEach(item=>{const status=viewStatus(item);counts[status]=(counts[status]||0)+1});
     X.state.counts=counts;
   };
-  X.active=()=>X.state.items.filter(item=>viewStatus(item)===X.state.tab).sort((a,b)=>{
-    const ad=a.applicationDeadline?new Date(a.applicationDeadline).getTime():Infinity;
-    const bd=b.applicationDeadline?new Date(b.applicationDeadline).getTime():Infinity;
-    return ad-bd||(b.score||0)-(a.score||0)||new Date(b.updatedAt)-new Date(a.updatedAt);
-  });
+  X.time=value=>{const time=value?new Date(value).getTime():0;return Number.isFinite(time)?time:0};
+  X.active=()=>X.state.items.filter(item=>viewStatus(item)===X.state.tab).sort((a,b)=>
+    X.time(b.updatedAt||b.detectedAt||b.createdAt)-X.time(a.updatedAt||a.detectedAt||a.createdAt)
+    ||X.time(b.detectedAt||b.createdAt)-X.time(a.detectedAt||a.createdAt)
+    ||(b.score||0)-(a.score||0)
+  );
   X.officialBadge=item=>item.officialVerified
     ?'<span class="x-verify ok">✓ 公式確認済み'+(item.officialCheckedAt?' '+h(fmtDate(item.officialCheckedAt)):'')+'</span>'
     :'<span class="x-verify ng">! 公式未確認</span>';
@@ -69,10 +70,13 @@
     const hook=item.valueHook?'<div class="x-value-hook"><b>投稿に使える一言</b><span>'+h(item.valueHook)+'</span>'+(item.valueHookSourceUrl?link(item.valueHookSourceUrl,'根拠を開く'):'')+'</div>':'';
     const drafts=[X.draftPanel(item,'x'),X.draftPanel(item,'threads')].filter(Boolean).join('');
     const posting=(item.postedAt||item.threadsPostedAt)?'<div class="x-posting-state">'+(item.postedAt?'X '+h(fmtDate(item.postedAt)):'X 未投稿')+' ／ '+(item.threadsPostedAt?'Threads '+h(fmtDate(item.threadsPostedAt)):'Threads 未投稿')+'</div>':'';
+    const detectedAt=item.detectedAt||item.createdAt;
+    const updatedAt=item.updatedAt||detectedAt;
+    const freshness=(detectedAt?'<span class="x-freshness">情報取得 '+h(fmtDate(detectedAt))+'</span>':'')+(updatedAt&&X.time(updatedAt)!==X.time(detectedAt)?'<span class="x-freshness updated">最終更新 '+h(fmtDate(updatedAt))+'</span>':'');
     const auto=typeof X.applicationAutomation==='function'?X.applicationAutomation(item):null;
     const autoPanel=auto?'<div class="x-auto-panel '+h(auto.mode)+'"><div><small>自動入力</small><span class="x-auto-badge">'+h(auto.label)+'</span></div><div class="x-auto-note"><b>'+h(auto.note)+'</b><div class="x-auto-legend">応募の自動入力は次の段階で扱います。</div></div></div>':'';
     const workflow=window.CCWorkflow?.panel?window.CCWorkflow.panel(item):'';
-    return '<article class="x-card '+h(viewStatus(item))+'"><div class="x-card-head"><span class="priority '+String(item.priority).toLowerCase()+'">['+h(item.priority)+'] '+h(item.score)+'点</span><b>'+h(item.productName)+'</b><span>'+h(labels[viewStatus(item)])+'</span></div><div class="x-card-body"><div class="x-card-flags">'+X.officialBadge(item)+(item.discoverySource?'<span class="x-source">発見元 '+h(item.discoverySource)+'</span>':'')+'</div><div class="x-facts"><div><small>店舗・主催</small><b>'+h(item.organizer||'未登録')+'</b></div><div><small>締切（JST）</small><b>'+h(item.applicationDeadline?fmtDate(item.applicationDeadline):'未確認')+'</b></div><div><small>対象</small><b>'+h(item.targetRegion||'未確認')+'</b></div><div><small>アフィ導線</small><b>'+h({available:'あり',none:'なし',check:'要確認'}[item.affiliateStatus]||'要確認')+'</b></div></div>'+autoPanel+workflow+'<table class="x-info"><tr><th>条件</th><td>'+h(item.conditions||'未確認')+'</td></tr><tr><th>応募</th><td>'+link(item.applicationUrl,'応募ページ')+'</td></tr><tr><th>確認元</th><td>'+link(item.officialUrl,'公式')+(item.discoveryUrl?' ／ '+link(item.discoveryUrl,'発見元ページ'):'')+'</td></tr></table>'+hook+(drafts?'<div class="x-draft-grid">'+drafts+'</div>':'')+posting+(item.decisionReason?'<div class="x-decision"><b>見送り理由：</b>'+h(item.decisionReason)+'</div>':'')+'<div class="x-actions">'+X.actions(item)+'<button class="push-button small" data-xedit="'+h(item.id)+'">詳細・編集</button></div></div></article>';
+    return '<article class="x-card '+h(viewStatus(item))+'"><div class="x-card-head"><span class="priority '+String(item.priority).toLowerCase()+'">['+h(item.priority)+'] '+h(item.score)+'点</span><b>'+h(item.productName)+'</b><span>'+h(labels[viewStatus(item)])+'</span></div><div class="x-card-body"><div class="x-card-flags">'+freshness+X.officialBadge(item)+(item.discoverySource?'<span class="x-source">発見元 '+h(item.discoverySource)+'</span>':'')+'</div><div class="x-facts"><div><small>店舗・主催</small><b>'+h(item.organizer||'未登録')+'</b></div><div><small>締切（JST）</small><b>'+h(item.applicationDeadline?fmtDate(item.applicationDeadline):'未確認')+'</b></div><div><small>対象</small><b>'+h(item.targetRegion||'未確認')+'</b></div><div><small>アフィ導線</small><b>'+h({available:'あり',none:'なし',check:'要確認'}[item.affiliateStatus]||'要確認')+'</b></div></div>'+autoPanel+workflow+'<table class="x-info"><tr><th>条件</th><td>'+h(item.conditions||'未確認')+'</td></tr><tr><th>応募</th><td>'+link(item.applicationUrl,'応募ページ')+'</td></tr><tr><th>確認元</th><td>'+link(item.officialUrl,'公式')+(item.discoveryUrl?' ／ '+link(item.discoveryUrl,'発見元ページ'):'')+'</td></tr></table>'+hook+(drafts?'<div class="x-draft-grid">'+drafts+'</div>':'')+posting+(item.decisionReason?'<div class="x-decision"><b>見送り理由：</b>'+h(item.decisionReason)+'</div>':'')+'<div class="x-actions">'+X.actions(item)+'<button class="push-button small" data-xedit="'+h(item.id)+'">詳細・編集</button></div></div></article>';
   };
   X.render=()=>{
     X.recount();

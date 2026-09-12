@@ -365,7 +365,11 @@ Deno.serve(async (req: Request) => {
   try {
     if (req.method === "GET") {
       const { data, error } = await db.from("command_center_x_candidates").select("*")
-        .order("score", { ascending: false }).order("updated_at", { ascending: false }).limit(400);
+        .order("updated_at", { ascending: false })
+        .order("detected_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .order("score", { ascending: false })
+        .limit(400);
       if (error) throw error;
       const items = (data || []).map(map);
       const counts: Record<string, number> = { total: items.length, inbox: 0, candidate: 0, draft: 0, approved: 0, expired: 0, posted: 0, rejected: 0 };
