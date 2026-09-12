@@ -77,7 +77,7 @@
           <div class="home-panel-body home-shortcut-body">
             <button class="push-button small" type="button" data-home-shortcut="daily">作業日報</button>
             <button class="push-button small" type="button" data-home-shortcut="cooney">92</button>
-            <button class="push-button small" type="button" data-home-shortcut="x">カード</button>
+            <button class="push-button small" type="button" data-home-shortcut="x">カード投稿</button>
             <button class="push-button small" type="button" data-home-shortcut="reddit">海外差</button>
             <button class="push-button small" type="button" data-home-domain="money">FP</button>
             <button class="push-button small" type="button" data-home-domain="ai">AI</button>
@@ -242,7 +242,9 @@
   }
 
   homeButton.addEventListener('click',()=>{bump(homeButton);showHome();if(!H.loading)refreshHome()});
-  tabs.addEventListener('click',event=>{if(event.target.closest('button[data-view]'))leaveHome()},true);
+  tabs.addEventListener('click',event=>{
+    if(event.target.closest('button[data-view], #xViewBtn, #redditViewBtn'))leaveHome();
+  },true);
   document.addEventListener('click',event=>{
     const action=event.target.closest('[data-home-action]');
     if(action){bump(action);runAction(action.dataset.homeAction);return}
@@ -262,9 +264,9 @@
   document.getElementById('fileRefresh')?.addEventListener('click',interceptRefresh,true);
   document.addEventListener('keydown',event=>{if(H.active&&event.key==='F5'){event.preventDefault();event.stopImmediatePropagation();refreshHome()}},true);
 
-  document.querySelectorAll('.status-bar .status-panel').forEach(el=>{if(/^ver\s/i.test(el.textContent.trim()))el.textContent='ver 1.55'});
+  document.querySelectorAll('.status-bar .status-panel').forEach(el=>{if(/^ver\s/i.test(el.textContent.trim()))el.textContent='ver 1.60'});
   const helpNote=document.querySelector('#helpModal .help-note');
-  if(helpNote)helpNote.textContent=helpNote.textContent.replace(/ver\s+[\d.]+/i,'ver 1.55');
+  if(helpNote)helpNote.textContent=helpNote.textContent.replace(/ver\s+[\d.]+/i,'ver 1.60');
   showHome();
   renderHome();
   setTimeout(refreshHome,180);
