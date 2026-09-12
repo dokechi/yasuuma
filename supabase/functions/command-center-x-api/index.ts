@@ -132,83 +132,163 @@ function threadLength(value: string) {
   return Array.from(value).length;
 }
 
+const TONE_PROFILE = "tcg_neighbor_guide_v2";
+
 type DraftParts = {
   product: string;
   shop: string;
   deadline: string;
   condition: string;
-  hook: string;
+  lead: string;
   link: string;
   affiliate: string;
+  price: string;
+  action: string;
+  mentionProduct: boolean;
 };
 
-function composeX(type: string, p: DraftParts) {
-  const optional = [p.hook, p.condition].filter(Boolean).join("\n");
-  const facts = optional ? `${optional}\n\n` : "";
-  if (type === "deadline") {
-    return `これ、もうすぐ締切やん😳\n\n${p.product}\n${p.shop}は${p.deadline}まで。\n${facts}応募はこちら👇\n${p.link}`;
-  }
-  if (type === "affiliate") {
-    return `[PR] ${p.product}\n\n${p.shop}で受付中。\n締切 ${p.deadline}\n${facts}応募はこちら👇\n${p.link}\n\n関連商品👇\n${p.affiliate}`;
-  }
-  return `これ、受付始まってるやん😳\n\n${p.product}\n${p.shop}で受付中。\n締切 ${p.deadline}\n${facts}応募はこちら👇\n${p.link}`;
+function finishSentence(value: string) {
+  const result = String(value || "").trim();
+  if (!result) return "";
+  return /[。！？!?☺️👀]$/.test(result) ? result : `${result}。`;
+}
+function friendlyProduct(value: unknown) {
+  const original = String(value || "").trim();
+  const result = original
+    .replace(/^ONE\s*PIECEカードゲーム\s*/i, "")
+    .replace(/^ポケモンカードゲーム\s*(?:MEGA\s*)?/i, "")
+    .replace(/^デュエル・マスターズ\s*/i, "")
+    .replace(/^(?:ブースターパック|強化拡張パック|拡張パック)\s*/i, "")
+    .trim();
+  return result || original;
+}
+
+function friendlyRegion(value: unknown, max: number) {
+  let region = String(value || "").trim();
+  if (/名古屋/i.test(region) && /mozo/i.test(region)) return "名古屋のmozo";
+  region = region.replace(/ワンダーシティ/gi, "").replace(/\s+/g, " ").trim();
+  return oneLine(region, max);
+}
+
+function actionLabel(category: unknown) {
+  const value = String(category || "card_lottery");
+  if (value === "card_reservation") return "予約受付中";
+  if (["card_stock", "card_sale"].includes(value)) return "販売中";
+  if (value === "card_bonus") return "特典付きで受付中";
+  if (value === "card_giveaway") return "キャンペーン受付中";
+  return "抽選受付中";
+}
+
+function isSpecificRegion(value: unknown) {
+  const region = String(value || "").trim();
+  return !!region && !/(全国|国内|オンライン|全店|配送)/.test(region);
+}
+
+function audienceLead(row: Record<string, unknown>, type: string, hookLimit: number, regionLimit: number) {
+  const hook = oneLine(row.value_hook, hookLimit);
+  if (hook) return finishSentence(hook).replace(/。$/, "👀");
+  const condition = String(row.conditions || "");
+  const shop = oneLine(row.organizer || "公式ストア", 18);
+  if (/イオンカード/.test(condition)) return "イオンカード持ってる方、これ見ました？☺️";
+  if (/購入履歴/.test(condition)) return `${shop}で購入履歴がある方へ☺️`;
+  if (isSpecificRegion(row.target_region)) return `${friendlyRegion(row.target_region, regionLimit)}に行ける方へ☺️`;
+  if (type === "deadline") return "まだ応募してない方へ👀";
+  return "欲しかった方、これ見ました？☺️";
+}
+
+function priceLabel(value: unknown) {
+  const price = Number(value);
+  return Number.isFinite(price) && price > 0 ? `${Math.round(price).toLocaleString("ja-JP")}円` : "";
+}
+
+function composeX(type: string, p: DraftParts, includePrice: boolean, compactCta: boolean) {
+  const prefix = type === "affiliate" ? "[PR]\n" : "";
+  const details = [
+    p.mentionProduct ? `${p.shop}で${p.product}の${p.action}です。` : `${p.shop}で${p.action}です。`,
+    includePrice && p.price ? `価格は${p.price}。` : "",
+  ].filter(Boolean).join("\n");
+  const condition = p.condition ? `\n\n${finishSentence(p.condition)}` : "";
+  const cta = compactCta
+    ? "締切前にこちらから👇"
+    : type === "deadline"
+      ? "まだの方は忘れないうちに👇"
+      : "欲しかった方は忘れないうちに👇";
+  const affiliate = type === "affiliate" ? `\n関連商品👇\n${p.affiliate}` : "";
+  return `${prefix}${p.lead}\n\n${details}${condition}\n\n締切は${p.deadline}。\n${cta}\n${p.link}${affiliate}`;
 }
 
 function composeThreads(type: string, p: DraftParts) {
-  const optional = [p.hook, p.condition].filter(Boolean).join("\n");
-  const facts = optional ? `${optional}\n\n` : "";
-  if (type === "deadline") {
-    return `これ、もうすぐ締切やん😳\n\n${p.product}\n${p.shop}の受付は${p.deadline}まで。\n\n${facts}条件に当てはまる方は、忘れる前に確認しておいた方がよさそう。\n\n応募はこちら👇\n${p.link}`;
-  }
-  if (type === "affiliate") {
-    return `[PR]\nこれ、${p.product}の受付始まってるやん😳\n\n${p.shop}で受付中。締切は${p.deadline}。\n\n${facts}応募ページ👇\n${p.link}\n\n関連商品はこちら👇\n${p.affiliate}`;
-  }
-  return `これ、${p.product}の受付始まってるやん😳\n\n${p.shop}で受付中。締切は${p.deadline}。\n\n${facts}条件に当てはまる方は、忘れる前に確認しておくのがよさそう。\n\n応募はこちら👇\n${p.link}`;
+  const prefix = type === "affiliate" ? "[PR]\n" : "";
+  const price = p.price ? `\n価格は${p.price}です。` : "";
+  const condition = p.condition ? `\n\n${finishSentence(p.condition)}` : "";
+  const cta = type === "deadline" ? "まだの方は忘れないうちに👇" : "欲しかった方は忘れないうちに👇";
+  const affiliate = type === "affiliate" ? `\n\n関連商品はこちら👇\n${p.affiliate}` : "";
+  const listing = p.mentionProduct ? `${p.shop}で${p.product}の${p.action}です。` : `${p.shop}で${p.action}です。`;
+  return `${prefix}${p.lead}\n\n${listing}${price}${condition}\n\n締切は${p.deadline}。\n${cta}\n${p.link}${affiliate}`;
 }
 
 function drafts(row: Record<string, unknown>, type: string) {
-  const product = String(row.product_name || "").trim();
+  const rawProduct = String(row.product_name || "").trim();
+  const product = friendlyProduct(rawProduct);
   const shop = String(row.organizer || "公式ストア").trim();
   const link = String(row.application_url || row.official_url || "").trim();
   const affiliate = String(row.affiliate_url || "").trim();
-  if (!product || !link) throw new Error("商品名と応募URLが必要です");
+  const condition = String(row.conditions || "").trim();
+  if (!rawProduct || !link) throw new Error("商品名と応募URLが必要です");
   if (!row.official_verified || !row.official_url) throw new Error("公式確認を済ませてから下書きを作成してください");
   if (type === "affiliate" && !affiliate) throw new Error("PR導線にはアフィリエイトURLが必要です");
 
-  const base: DraftParts = {
-    product: oneLine(product, 90),
-    shop: oneLine(shop, 42),
-    deadline: fmt(row.application_deadline),
-    condition: oneLine(row.conditions, 52),
-    hook: oneLine(row.value_hook, 54),
-    link,
-    affiliate,
-  };
-  let xText = composeX(type, base);
-  if (!tweetMeta(xText).valid) xText = composeX(type, { ...base, condition: "" });
-  if (!tweetMeta(xText).valid) xText = composeX(type, { ...base, condition: "", hook: "" });
-  let productLimit = 72;
-  while (!tweetMeta(xText).valid && productLimit >= 18) {
-    xText = composeX(type, {
-      ...base,
-      condition: "",
-      hook: "",
-      product: oneLine(product, productLimit),
-    });
-    productLimit -= 6;
+  const variants = [
+    { product: 64, shop: 34, condition: 82, lead: 64, region: 22, price: true, compact: false },
+    { product: 52, shop: 28, condition: 64, lead: 52, region: 18, price: false, compact: false },
+    { product: 42, shop: 24, condition: 48, lead: 42, region: 15, price: false, compact: true },
+    { product: 32, shop: 20, condition: 34, lead: 34, region: 12, price: false, compact: true },
+    { product: 24, shop: 16, condition: 20, lead: 26, region: 10, price: false, compact: true },
+  ];
+  let xText = "";
+  for (const variant of variants) {
+    const parts: DraftParts = {
+      product: oneLine(product, variant.product),
+      shop: oneLine(shop, variant.shop),
+      deadline: fmt(row.application_deadline),
+      condition: condition ? oneLine(condition, variant.condition) : "",
+      lead: audienceLead(row, type, variant.lead, variant.region),
+      link,
+      affiliate,
+      price: priceLabel(row.price_yen),
+      action: actionLabel(row.category),
+      mentionProduct: !String(row.value_hook || "").trim(),
+    };
+    xText = composeX(type, parts, variant.price, variant.compact);
+    if (tweetMeta(xText).valid) break;
   }
   if (!tweetMeta(xText).valid) throw new Error("X投稿文を280文字以内に収められませんでした");
+  const conditionMarker = Array.from(condition.replace(/\s+/g, " ").trim()).slice(0, 12).join("");
+  if (condition && !xText.includes(conditionMarker)) throw new Error("主要条件を残したままX投稿文を生成できませんでした");
 
-  let threadsText = composeThreads(type, {
-    ...base,
-    condition: oneLine(row.conditions, 100),
-    hook: oneLine(row.value_hook, 90),
-  });
+  const threadParts: DraftParts = {
+    product: oneLine(product, 100),
+    shop: oneLine(shop, 50),
+    deadline: fmt(row.application_deadline),
+    condition: condition ? oneLine(condition, 180) : "",
+    lead: audienceLead(row, type, 90, 28),
+    link,
+    affiliate,
+    price: priceLabel(row.price_yen),
+    action: actionLabel(row.category),
+    mentionProduct: !String(row.value_hook || "").trim(),
+  };
+  let threadsText = composeThreads(type, threadParts);
   if (threadLength(threadsText) > 500) {
-    threadsText = composeThreads(type, { ...base, condition: oneLine(row.conditions, 60), hook: oneLine(row.value_hook, 60) });
+    threadsText = composeThreads(type, {
+      ...threadParts,
+      product: oneLine(product, 70),
+      condition: condition ? oneLine(condition, 100) : "",
+      lead: audienceLead(row, type, 60, 20),
+    });
   }
   if (threadLength(threadsText) > 500) throw new Error("Threads投稿文を500文字以内に収められませんでした");
-  return { xText, threadsText };
+  return { xText, threadsText, toneProfile: TONE_PROFILE };
 }
 
 function isExpired(row: Record<string, unknown>) {
@@ -418,6 +498,7 @@ Deno.serve(async (req: Request) => {
           x_draft: generated.xText,
           threads_draft: generated.threadsText,
           draft_type: type,
+          tone_profile: generated.toneProfile,
           status: "draft",
         }).eq("id", id).select("*").single();
         if (error) throw error;
