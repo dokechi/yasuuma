@@ -1,6 +1,19 @@
 (()=>{
   const n=s=>String(s||'').normalize('NFKC').toUpperCase().replace(/\s+/g,' ');
   const money=v=>'¥'+Number(v||0).toLocaleString('ja-JP');
+  const mizunoMockSold={
+    'M|WHITE':2,'M|BLACK':2,'M|NAVY':4,
+    'L|WHITE':2,'L|BLACK':3,'L|NAVY':2,
+    'XL|WHITE':5,'XL|BLACK':1,'XL|NAVY':2,
+    '2XL|WHITE':0,'2XL|BLACK':1,'2XL|NAVY':0
+  };
+  function mizunoMockVariant(raw){
+    const v=n(raw);
+    const sm=v.match(/(?:^|[^A-Z0-9])(2XL|XXL|XL|L|M)(?=$|[^A-Z0-9])/);
+    const size=sm?(sm[1]==='XXL'?'2XL':sm[1]):null;
+    const color=/ホワイト|(?:^|[^A-Z])WHITE(?=$|[^A-Z])/.test(v)?'WHITE':/ブラック|(?:^|[^A-Z])BLACK(?=$|[^A-Z])/.test(v)?'BLACK':/ネイビー|(?:^|[^A-Z])NAVY(?=$|[^A-Z])/.test(v)?'NAVY':null;
+    return size&&color?size+'|'+color:null;
+  }
 
   function ruleFor(ctx){
     const t=n(ctx.text),order=n(ctx.order),qty=Number(ctx.qty||0);
@@ -28,6 +41,13 @@
       return exact(Math.min(qty,4),3196,'赤＋青セット 4件 ¥799×4（売上は注文内で1回だけ集計）',{shared:true});
     if((t.includes('MIZUNO')||t.includes('ミズノ'))&&t.includes('BG')&&(t.includes(' M')||t.includes('/M')||t.includes('Mサイズ')))
       return exact(2,2998,'BG サポーターM ¥1,499×2');
+    if(t.includes('E2JJ050')){
+      const key=mizunoMockVariant(ctx.variant);
+      if(key&&Object.prototype.hasOwnProperty.call(mizunoMockSold,key)){
+        const sold=mizunoMockSold[key],label=key.replace('WHITE','白').replace('BLACK','黒').replace('NAVY','紺');
+        return exact(sold,null,'モックネック '+label+'：販売数'+sold+'枚（2026-09-13 ユーザー確認）');
+      }
+    }
     if((t.includes('CALLAWAY')||t.includes('キャロウェイ'))&&(t.includes('カート')||t.includes('BAG')))
       return exact(1,1899,'Callaway カートバッグ ¥1,899');
 
@@ -60,12 +80,12 @@
       let sharedShown=false;
       table.querySelectorAll('tbody tr').forEach(tr=>{
         const cells=[...tr.children],qty=Number((cells[3]?.textContent||'').replace(/[^0-9.-]/g,''));
-        const r=ruleFor({text:cells.slice(0,3).map(x=>x.textContent).join(' '),order:head,qty});
+        const r=ruleFor({text:cells.slice(0,3).map(x=>x.textContent).join(' '),variant:cells[2]?.textContent||'',order:head,qty});
         if(!r){tr.insertAdjacentHTML('beforeend','<td class="sale-empty">未照合</td><td class="sale-empty">—</td><td class="sale-empty">未確定</td>');return}
         let total=r.total;
         if(r.shared&&sharedShown)total=0;
         if(r.shared)sharedShown=true;
-        const amount=r.kind==='candidate'?money(r.total)+'<small>参考</small>':r.kind==='component'?money(r.total)+'<small>確認分</small>':total?money(total):'<small>上段に集計</small>';
+        const amount=r.total===null||r.total===undefined?'<small>未入力</small>':r.kind==='candidate'?money(r.total)+'<small>参考</small>':r.kind==='component'?money(r.total)+'<small>確認分</small>':total?money(total):'<small>上段に集計</small>';
         const rem=r.remaining===null?'要確認':r.remaining+'点';
         tr.classList.add('sale-linked-'+r.kind);
         tr.insertAdjacentHTML('beforeend','<td>'+badge(r)+'</td><td class="num ledger-sale-money">'+amount+'</td><td class="num ledger-sale-rem">'+rem+'<span class="ledger-sale-tip">'+String(r.detail).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'</span></td>');
