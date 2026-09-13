@@ -27,7 +27,12 @@
     const payload=item?.payload||{};
     return payload.draft_status==='ready'&&Array.isArray(payload.draft_slides)&&payload.draft_slides.length>=5;
   };
-  const sortNewest=items=>items.sort((a,b)=>new Date(b.updatedAt||b.lastSeen||0)-new Date(a.updatedAt||a.lastSeen||0));
+  const fpNewestTime=item=>{
+    const values=[item?.lastSeen,item?.occurredAt,item?.detectedAt,item?.createdAt,item?.updatedAt,item?.payload?.occurred_at,item?.payload?.detected_at,item?.payload?.created_at,item?.payload?.updated_at];
+    for(const value of values){const time=Date.parse(value);if(Number.isFinite(time))return time}
+    return 0;
+  };
+  const sortNewest=items=>items.sort((a,b)=>fpNewestTime(b)-fpNewestTime(a));
   const setText=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value};
   const setBadge=count=>setText('fpDraftTabBadge',Number(count||0).toLocaleString('ja-JP'));
 
