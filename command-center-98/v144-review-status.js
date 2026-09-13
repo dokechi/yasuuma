@@ -1,6 +1,11 @@
 (()=>{
   const byView=(view)=>({active:'未確認',history:'確認済み',accepted:'採用済み',rejected:'却下済み'}[view]||null);
   const stampValue=(x)=>x?.updatedAt||x?.lastSeen||null;
+  const newestTime=(x)=>{
+    const values=[x?.lastSeen,x?.occurredAt,x?.detectedAt,x?.createdAt,x?.updatedAt,x?.payload?.occurred_at,x?.payload?.detected_at,x?.payload?.created_at,x?.payload?.updated_at,x?.payload?.source_published_at];
+    for(const value of values){const time=Date.parse(value);if(Number.isFinite(time))return time}
+    return 0;
+  };
 
   function relabelTabs(){
     const active=document.querySelector('#viewTabs [data-view="active"]');
@@ -27,7 +32,10 @@
     const originalFiltered=filtered;
     filtered=function(){
       const items=originalFiltered();
-      return app.view==='history'?items.filter(x=>(x.reviewState||'new')!=='new'):items;
+      const visible=app.view==='history'?items.filter(x=>(x.reviewState||'new')!=='new'):items;
+      return ['active','history','accepted','rejected','saved'].includes(app.view)
+        ? visible.slice().sort((a,b)=>newestTime(b)-newestTime(a)||(Number(b.score)||0)-(Number(a.score)||0))
+        : visible;
     };
   }
 
@@ -46,7 +54,7 @@
           const learned=learnedById.get(String(x.id));
           return learned?{...x,score:learned.score,baseScore:learned.baseScore,feedbackPenalty:learned.feedbackPenalty}:x;
         })
-        .sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||new Date(b.lastSeen||0)-new Date(a.lastSeen||0));
+        .sort((a,b)=>newestTime(b)-newestTime(a)||(Number(b.score)||0)-(Number(a.score)||0));
       app.items=all;
       app.data={...(app.data||{}),generatedAt:d.generatedAt??app.data?.generatedAt,storedCount:d.storedCount??app.data?.storedCount,unconfirmedCount:all.length};
       renderAll();
