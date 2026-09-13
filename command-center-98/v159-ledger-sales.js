@@ -3,7 +3,7 @@
   const money=v=>'¥'+Number(v||0).toLocaleString('ja-JP');
   const mizunoMockSold={
     'M|WHITE':3,'M|BLACK':2,'M|NAVY':4,
-    'L|WHITE':2,'L|BLACK':3,'L|NAVY':2,
+    'L|WHITE':3,'L|BLACK':4,'L|NAVY':2,
     'XL|WHITE':5,'XL|BLACK':1,'XL|NAVY':2,
     '2XL|WHITE':0,'2XL|BLACK':1,'2XL|NAVY':0
   };
