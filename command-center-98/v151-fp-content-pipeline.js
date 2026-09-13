@@ -248,13 +248,18 @@
       :'<button class="push-button small" data-fp-open-accepted="1">採用済みを開く</button>';
     return'<article class="fp-top-card '+escFp(status.kind)+'"><div class="fp-top-rank"><b>'+escFp(item.score||'—')+'</b><small>点</small></div><div class="fp-top-main"><div><span class="fp-top-status">'+escFp(status.label)+'</span><strong>'+escFp(draftTitle(item,payload)||'FP投稿候補')+'</strong></div><p>'+escFp(payload.reader_question||payload.question_lineage?.selected_question||payload.first_impression||payload.cover_idea||item.summary||'')+'</p><div class="fp-top-actions">'+controls+'</div></div></article>';
   };
+  const fpNewestTime=item=>{
+    const values=[item?.lastSeen,item?.occurredAt,item?.detectedAt,item?.createdAt,item?.updatedAt,item?.payload?.occurred_at,item?.payload?.detected_at,item?.payload?.created_at,item?.payload?.updated_at];
+    for(const value of values){const time=Date.parse(value);if(Number.isFinite(time))return time}
+    return 0;
+  };
   const renderTop=()=>{
     let host=document.getElementById('fpPriorityBoard');
     if(app.view!=='active'){host?.remove();return}
     if(!host){host=document.createElement('section');host.id='fpPriorityBoard';host.className='fp-top-board';document.querySelector('#regularHub .section-title')?.before(host)}
-    const ranked=topItems.slice().sort((a,b)=>(topStatus(b).weight+(Number(b.score)||0))-(topStatus(a).weight+(Number(a.score)||0))).slice(0,3);
+    const ranked=topItems.slice().sort((a,b)=>fpNewestTime(b)-fpNewestTime(a)).slice(0,3);
     host.hidden=!ranked.length;
-    host.innerHTML=ranked.length?'<div class="fp-top-title"><div><b>いま確認する重要案件</b><span>完成原稿から画像制作へ</span></div><button class="push-button small" data-fp-open-accepted="1">すべて見る</button></div><div class="fp-top-list">'+ranked.map(topCard).join('')+'</div>':'';
+    host.innerHTML=ranked.length?'<div class="fp-top-title"><div><b>新着FP案件</b><span>新しい情報が上</span></div><button class="push-button small" data-fp-open-accepted="1">すべて見る</button></div><div class="fp-top-list">'+ranked.map(topCard).join('')+'</div>':'';
   };
   const loadTop=async(force=false)=>{
     if(topLoading||app.view!=='active')return;
