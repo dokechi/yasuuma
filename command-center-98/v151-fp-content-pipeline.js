@@ -65,6 +65,29 @@
     editorial:{label:'静かな編集記事型',short:'サイボウズ寄り',description:'装飾を抑え、余白と小さな観察文で読ませる。写真や資料は必要なページだけ使う。'},
     notebook:{label:'調査ノート型',short:'根拠の実物を見せる',description:'公式資料のスクショ、囲み、短い注釈を活かす。調べた跡が見える設計。'}
   };
+  const COLOR_PALETTES={
+    teal:{label:'白・墨・青緑',short:'基準の配色',description:'落ち着きと信頼感。家計、制度、計算を静かに読ませる。',colors:['#ffffff','#242929','#28766e'],instruction:'白地、濃いチャコール、落ち着いた青緑を中心にする。'},
+    warm:{label:'生成り・濃茶・くすみ橙',short:'暮らしの配色',description:'買い物や日常の違和感に、少し温かい生活感を出す。',colors:['#fffaf0','#3b3029','#b9683a'],instruction:'生成りの地、濃い茶、くすんだオレンジを中心にする。'},
+    blue:{label:'白・濃紺・青',short:'比較の配色',description:'車、住宅、料金などの具体的な比較をすっきり見せる。',colors:['#ffffff','#17243a','#39769e'],instruction:'白地、濃紺、落ち着いた青を中心にする。'}
+  };
+  const COVER_MODES={
+    photo:{label:'写真・写実画像',short:'何の話かを一瞬で伝える',description:'車、住宅、災害、破損など、対象や状態そのものが入口になる表紙。'},
+    character:{label:'素朴な人物線画',short:'迷いや生活感を見せる',description:'保険、家計、不安など、読者の気持ちや日常の疑問が入口になる表紙。'},
+    type_only:{label:'文字・数字を主役',short:'問いを最短で読ませる',description:'金額差、条件、計算など、言葉や数字だけで疑問が成立する表紙。'}
+  };
+  const paletteKey=payload=>{
+    const raw=text(payload.color_palette||payload.production_preflight?.color_palette||payload.palette_recommendation?.key);
+    return COLOR_PALETTES[raw]?raw:'teal';
+  };
+  const inferredCoverMode=payload=>{
+    const raw=text(payload.cover_mode||payload.production_preflight?.cover_mode||payload.cover_recommendation?.mode);
+    if(COVER_MODES[raw])return raw;
+    const first=text(list(payload.draft_slides)[0]?.visual_mode).toLowerCase();
+    if(['photo','realistic','screenshot'].includes(first))return 'photo';
+    if(['type_only','diagram'].includes(first))return 'type_only';
+    return 'character';
+  };
+  const coverReason=payload=>text(payload.cover_recommendation?.reason||payload.cover_reason)||COVER_MODES[inferredCoverMode(payload)].description;
   const demand=payload=>payload.demand_evidence&&typeof payload.demand_evidence==='object'?payload.demand_evidence:{};
   const demandVerdict=payload=>text(demand(payload).verdict).toLowerCase();
   const demandReady=payload=>{
@@ -75,6 +98,8 @@
   const preflightIssues=payload=>{
     const issues=[];
     if(!DESIGN_DIRECTIONS[text(payload.design_direction)])issues.push('デザインを選ぶ');
+    if(text(payload.color_palette)&&!COLOR_PALETTES[text(payload.color_palette)])issues.push('配色を選び直す');
+    if(text(payload.cover_mode)&&!COVER_MODES[text(payload.cover_mode)])issues.push('表紙表現を選び直す');
     list(payload.screenshot_requests).forEach(row=>{
       const value=screenshotDecision(payload,row);
       const allowed=['assistant','user'];
@@ -331,8 +356,10 @@
   };
   const designText=payload=>{
     const key=text(payload.design_direction),direction=DESIGN_DIRECTIONS[key];
+    const palette=COLOR_PALETTES[paletteKey(payload)];
     const common=[
-      '・1080×1350px、4:5、白地、濃いチャコール、落ち着いた青緑のアクセント。',
+      `・配色: ${palette.label}。${palette.instruction}`,
+      '・1080×1350px、4:5。配色は投稿内で統一し、ページごとにランダムに変えない。',
       '・人物を使うページでは、小さな黒線キャラクターを脇役にする。問い・数字・余白を主役にする。',
       '・ロゴや「しゃちほこ」の表記は入れない。',
       '・必須：2ページ目以降は、ページ番号と短い話題を大きめの付箋で見せる。',
@@ -340,12 +367,22 @@
       '・事実や数字を載せるページだけ、確認済み一次情報の短い出典名を下端へ小さく置く。'
     ];
     const specific={
-      friendly:'・個室入院投稿の完成版を基準にする。白地の広い余白、極太の日本語ゴシック、黒と青緑の二色中心、丸みのある素朴な黒線人物、1ページ1主張、問いと数字の大きな強弱を再現する。',
+      friendly:'・個室入院投稿の完成版を基準にする。広い余白、極太の日本語ゴシック、丸みのある素朴な黒線人物、1ページ1主張、問いと数字の大きな強弱を再現する。色は選択した配色へ置き換える。',
       editorial:'・静かな編集記事型。サイボウズの記事のように、装飾を抑えた余白、観察から始まる短い言葉、落ち着いた文字組みで読ませる。',
       notebook:'・調査ノート型。公式資料の実物、囲み、短い注釈を活かし、調べた過程が自然に見える紙面にする。'
     }[key];
     const references=list(direction?.referenceUrls).map((url,index)=>`・固定デザイン見本 ${index+1}/${direction.referenceUrls.length}: ${url}`);
     return [`・選択済み: ${direction?.label||'未選択'}`,specific,...common,...references].filter(Boolean);
+  };
+  const coverSelectionText=payload=>{
+    const mode=COVER_MODES[inferredCoverMode(payload)];
+    return [
+      `・選択済み: ${mode.label}。${mode.short}。`,
+      `・選択理由: ${coverReason(payload)}`,
+      '・表紙は、文字を読み切る前に題材が分かる表現を優先する。毎回同じ人物イラストへ固定しない。',
+      '・写真や写実画像を使っても、問いと余白を主役にし、画像で文字を圧迫しない。',
+      '・実在資料や公式画像が必要な場合は、下記スクショ素材の指示に従う。'
+    ];
   };
   const visualSelectionText=()=>[
     '・投稿全体をイラストか写真の一方へ固定せず、各ページの役割で決める。',
@@ -393,6 +430,9 @@
       '【デザイン】',
       ...designText(payload),
       reference?`・デザイン見本: ${reference}`:'',
+      '',
+      '【表紙の表現】',
+      ...coverSelectionText(payload),
       '',
       '【ページごとの表現選択】',
       ...visualSelectionText(),
@@ -449,9 +489,12 @@
   };
   const preflightSection=(item,payload)=>{
     const screenshots=list(payload.screenshot_requests),issues=preflightIssues(payload);
-    return '<section class="fp-preflight"><h4>制作前に決める</h4><p>基本デザインと実物素材だけを先に固定します。写真・人物・図解は、各ページの役割に合わせて制作時に選び分けます。</p><div class="fp-design-options">'
+    const recommendedCover=text(payload.cover_recommendation?.mode),cover=inferredCoverMode(payload),palette=paletteKey(payload);
+    return '<section class="fp-preflight"><h4>制作前に決める</h4><p>デザイン、配色、表紙の主役、実物素材を先に固定します。おすすめは原稿から入れてあるので、必要な時だけ変更できます。</p><h5>基本デザイン</h5><div class="fp-design-options">'
       +Object.entries(DESIGN_DIRECTIONS).map(([key,row])=>'<label class="fp-design-option"><input type="radio" name="fp-design" value="'+key+'" '+(text(payload.design_direction)===key?'checked':'')+'><span><b>'+escFp(row.label)+'</b><small>'+escFp(row.short)+'</small><em>'+escFp(row.description)+'</em></span></label>').join('')+'</div>'
       +designReference(payload)
+      +'<h5>配色</h5><div class="fp-palette-options">'+Object.entries(COLOR_PALETTES).map(([key,row])=>'<label class="fp-palette-option"><input type="radio" name="fp-palette" value="'+key+'" '+(palette===key?'checked':'')+'><span><i>'+row.colors.map(color=>'<b style="background:'+escFp(color)+'"></b>').join('')+'</i><strong>'+escFp(row.label)+'</strong><small>'+escFp(row.description)+'</small></span></label>').join('')+'</div>'
+      +'<h5>表紙の主役</h5><div class="fp-cover-options">'+Object.entries(COVER_MODES).map(([key,row])=>'<label class="fp-cover-option"><input type="radio" name="fp-cover" value="'+key+'" '+(cover===key?'checked':'')+'><span><b>'+escFp(row.label)+(recommendedCover===key?' <mark>おすすめ</mark>':'')+'</b><small>'+escFp(row.short)+'</small><em>'+escFp(row.description)+'</em></span></label>').join('')+'</div><p class="fp-cover-reason"><b>選んだ理由：</b>'+escFp(coverReason(payload))+'</p>'
       +'<div class="fp-shot-list">'+(screenshots.length?screenshots.map(row=>screenshotRow(payload,row)).join(''):'<p class="fp-empty">この回は、理解や信頼を増す適切な実物資料が見つかっていません。スクショを捏造せず、文字と線画で構成します。</p>')+'</div>'
       +'<div class="fp-preflight-save"><span>'+(issues.length?'未決定：'+escFp(issues.join('／')):'制作条件を保存済み')+'</span><button class="push-button" data-fp-save-preflight="'+escFp(item.id)+'">制作条件を保存</button></div></section>';
   };
@@ -459,7 +502,8 @@
   const localDateTime=value=>{if(!value)return'';const d=new Date(value);if(!Number.isFinite(d.getTime()))return'';const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,16)};
   const performanceSection=(item,payload)=>{
     const p=payload.performance||{};
-    return '<section class="fp-performance"><h4>投稿後の結果</h4><p>主に伸びた媒体の実数を残します。結果と、伸びた理由の仮説は分けて記録します。</p><div class="fp-performance-grid">'
+    const context=[DESIGN_DIRECTIONS[text(payload.design_direction)]?.label,COLOR_PALETTES[paletteKey(payload)]?.label,COVER_MODES[inferredCoverMode(payload)]?.label].filter(Boolean).join(' ／ ');
+    return '<section class="fp-performance"><h4>投稿後の結果</h4><p>主に伸びた媒体の実数を残します。結果と、伸びた理由の仮説は分けて記録します。</p>'+(context?'<p class="fp-performance-context">制作条件：'+escFp(context)+'</p>':'')+'<div class="fp-performance-grid">'
       +'<label>主に伸びた媒体<select name="platform"><option value="instagram"'+selected(text(p.platform),'instagram')+'>Instagram</option><option value="tiktok"'+selected(text(p.platform),'tiktok')+'>TikTok</option><option value="youtube"'+selected(text(p.platform),'youtube')+'>YouTube</option></select></label>'
       +'<label>投稿日<input name="posted_at" type="datetime-local" value="'+escFp(localDateTime(p.posted_at))+'"></label>'
       +'<label>再生／リーチ<input name="reach" type="number" min="0" inputmode="numeric" value="'+escFp(numberValue(p.reach))+'"></label>'
@@ -511,10 +555,14 @@
   const savePreflight=async(item,button)=>{
     const section=button.closest('.fp-preflight');
     const designDirection=section?.querySelector('input[name="fp-design"]:checked')?.value||'';
+    const colorPalette=section?.querySelector('input[name="fp-palette"]:checked')?.value||'';
+    const coverMode=section?.querySelector('input[name="fp-cover"]:checked')?.value||'';
     const screenshotDecisions={};
     section?.querySelectorAll('[data-fp-shot-decision]').forEach(select=>{if(select.value)screenshotDecisions[select.dataset.fpShotDecision]=select.value});
     const localIssues=[];
     if(!DESIGN_DIRECTIONS[designDirection])localIssues.push('デザイン');
+    if(!COLOR_PALETTES[colorPalette])localIssues.push('配色');
+    if(!COVER_MODES[coverMode])localIssues.push('表紙の主役');
     list(item.payload?.screenshot_requests).forEach(row=>{
       const value=screenshotDecisions[row?.id],allowed=['assistant','user'];
       if(!allowed.includes(value))localIssues.push(row?.label||'スクショ');
@@ -522,7 +570,7 @@
     if(localIssues.length){toast('未決定があります：'+localIssues.join('／'),'bad');return}
     bump(button);button.disabled=true;button.textContent='保存中…';setStatus('制作条件を保存しています...',true);
     try{
-      const data=await signalRequest({action:'fp_preflight',id:String(item.id),designDirection,screenshotDecisions});
+      const data=await signalRequest({action:'fp_preflight',id:String(item.id),designDirection,colorPalette,coverMode,screenshotDecisions});
       reopenDraft(data.item);toast('制作条件を保存しました','good');setStatus('準備完了');
     }catch(error){button.disabled=false;button.textContent='制作条件を保存';toast(error.message||'制作条件を保存できませんでした','bad');setStatus('保存エラー')}
   };
@@ -573,13 +621,14 @@
   });
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.querySelector('[data-fp-modal]'))closeDraft()});
 
-  window.__fpContentPipeline={packageQuality,preflightIssues,publicLeakIssues,buildHandoff,buildDraftCopy};
+  window.__fpContentPipeline={packageQuality,preflightIssues,publicLeakIssues,buildHandoff,buildDraftCopy,COLOR_PALETTES,COVER_MODES};
 
   const style=document.createElement('style');
   style.textContent=`
     .fp-candidate{margin:0 0 9px;padding:9px;background:#edf7ff;border:2px solid;border-color:#fff #55728a #55728a #fff;box-shadow:inset -1px -1px #9cb2c2;color:#111}.fp-head{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:7px}.fp-head>b{color:#000080}.fp-signal,.fp-state{padding:1px 5px;border:1px solid #777;background:#fff;font-size:11px}.fp-state{margin-left:auto;background:#fff6b5;font-weight:700}.fp-question{background:#fff;border:1px inset #aaa;padding:7px 8px;line-height:1.45;font-weight:700}.fp-question small{display:block;color:#555;font-weight:400}.fp-demand{margin-top:7px;padding:8px 9px;background:#fff;border:1px solid #777}.fp-demand header{display:flex;align-items:center;justify-content:space-between;gap:8px}.fp-demand header span{padding:2px 7px;border:1px solid #777;background:#eee;font-weight:900}.fp-demand.strong{border-color:#2f6b2f;background:#eef9ee}.fp-demand.strong header span{color:#005b00;background:#d8f5d8;border-color:#2f6b2f}.fp-demand.medium{background:#fff8d1;border-color:#8b6800}.fp-demand p{margin:5px 0;line-height:1.45}.fp-demand small{color:#555}.fp-demand ul{margin:5px 0 0;padding-left:19px}.fp-grid{display:grid;grid-template-columns:92px 1fr;margin:7px 0 0;border:1px solid #9aa}.fp-grid dt,.fp-grid dd{margin:0;padding:5px 6px;border-bottom:1px solid #ccd;line-height:1.45}.fp-grid dt{background:#dce8f0;font-size:11px}.fp-grid dd{background:#fff;font-size:12px}.fp-grid ol{margin:0;padding-left:20px}.fp-grid a{color:#000080}.fp-stages{display:flex;gap:5px;align-items:center;margin-top:7px;overflow-x:auto}.fp-stage{min-width:64px;padding:3px 6px;text-align:center;border:1px solid #777;background:#eee}.fp-stage.pass,.fp-stage.done{background:#d8f5d8}.fp-stage.ready{background:#fff3bf}.fp-stage.fail{background:#ffd7d7}.fp-stage small{display:block;font-size:10px}.fp-stage b{font-size:13px}.fp-ready{margin:7px 0 0;padding:6px;background:#fff6b5;border:1px solid #b8a94b;font-size:12px}.fp-select{font-weight:900;background:#d9ffd9}
     .fp-draft-actions{margin-top:8px;padding:8px;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080}.fp-draft-status{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:7px}.fp-draft-status b{color:#000080}.fp-draft-status.blocked b{color:#8b0000}.fp-draft-status span{font-size:11px;color:#444}.fp-draft-buttons{display:flex;gap:7px;flex-wrap:wrap}.fp-copy-images{font-weight:900;background:#fff3a8}.fp-copy-images:disabled{background:#ddd;color:#555}.fp-modal-open{overflow:hidden}.fp-draft-modal{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.58);display:grid;place-items:center;padding:16px}.fp-draft-dialog{width:min(980px,100%);max-height:92vh;display:flex;flex-direction:column;background:#c0c0c0;color:#111;border:3px solid;border-color:#fff #111 #111 #fff;box-shadow:8px 8px 0 rgba(0,0,0,.35)}.fp-draft-dialog>header,.fp-draft-dialog>footer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px}.fp-draft-dialog>header{background:#000080;color:#fff}.fp-draft-dialog h3{margin:2px 0 0;font-size:18px}.fp-draft-dialog>main{overflow:auto;padding:12px}.fp-draft-dialog>footer{border-top:1px solid #777;background:#d4d0c8}.fp-package-status{display:flex;gap:10px;align-items:center;margin-bottom:10px;padding:9px 11px;border:2px solid}.fp-package-status.ready{background:#dbf5d8;border-color:#2f6b2f}.fp-package-status.blocked{display:block;background:#fff1b8;border-color:#8b6800}.fp-package-status ul{margin:5px 0 0;padding-left:20px}.fp-draft-cover{padding:18px;background:#f8f0dd;border:2px solid #263d57;text-align:center}.fp-draft-cover small{display:block;color:#555}.fp-draft-cover b{display:block;margin-top:7px;font-size:24px;line-height:1.45}.fp-preflight,.fp-performance{margin-top:10px;padding:10px 12px;background:#fff;border:2px solid #4d6f69}.fp-preflight h4,.fp-performance h4{margin:0 0 4px}.fp-preflight>p,.fp-performance>p{margin:0 0 8px;color:#555}.fp-design-options{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.fp-design-option{display:block}.fp-design-option input{position:absolute;opacity:0}.fp-design-option span{display:block;height:100%;padding:9px;background:#f5f5f5;border:2px solid;border-color:#fff #777 #777 #fff;cursor:pointer}.fp-design-option input:checked+span{background:#dff5ef;border-color:#277267;box-shadow:inset 0 0 0 2px #fff}.fp-design-option b,.fp-design-option small,.fp-design-option em{display:block}.fp-design-option small{margin-top:2px;color:#006b60;font-weight:700}.fp-design-option em{margin-top:5px;color:#555;font-size:11px;font-style:normal;line-height:1.4}.fp-design-reference{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;margin-top:9px;padding:8px;background:#eef8f5;border:1px solid #4d6f69}.fp-design-reference>span{display:flex;gap:5px;flex-wrap:wrap}.fp-design-reference>small{grid-column:1/-1;color:#555}.fp-shot-list{margin-top:8px}.fp-shot{display:grid;grid-template-columns:1fr auto;gap:6px;margin-top:7px;padding:8px;background:#fff;border:1px solid #777}.fp-shot>div{display:flex;gap:7px;align-items:center}.fp-shot>div>b{padding:2px 5px;background:#d7efe9;border:1px solid #3d766f;font-size:10px}.fp-shot.required>div>b{background:#fff0a8;border-color:#877522}.fp-shot dl{grid-column:1/-1;display:grid;grid-template-columns:78px 1fr;margin:0}.fp-shot dt,.fp-shot dd{margin:0;padding:3px}.fp-shot dt{color:#555;font-size:11px}.fp-shot>label{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-weight:700}.fp-shot select,.fp-performance select,.fp-performance input{min-height:30px;padding:4px;border:2px inset #ddd;background:#fff;font:inherit}.fp-preflight-save,.fp-performance-save{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding-top:8px;border-top:1px dotted #777}.fp-performance{border-color:#6b5792;background:#faf7ff}.fp-performance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.fp-performance-grid label{display:grid;gap:3px;font-size:11px;font-weight:700}.fp-performance-grid label.wide{grid-column:1/-1}.fp-draft-slides{display:grid;gap:8px;margin-top:10px}.fp-draft-slide{display:grid;grid-template-columns:112px 1fr;background:#fff;border:1px solid #777}.fp-page-sticky{align-self:start;display:flex;flex-direction:column;gap:2px;margin:9px 0 9px 9px;padding:8px;background:#fff0a8;border:1px solid #877522;box-shadow:3px 3px 0 #c2b46b;transform:rotate(-1deg)}.fp-page-sticky b{font-size:21px}.fp-page-sticky small{font-size:10px;line-height:1.3}.fp-draft-slide section{padding:10px 12px}.fp-draft-slide h4,.fp-draft-slide p{margin:0}.fp-draft-slide p{margin-top:5px;line-height:1.6}.fp-slide-visual,.fp-slide-source{display:block;margin-top:7px;padding-top:5px;border-top:1px dotted #aaa;color:#555}.fp-evidence,.fp-premises,.fp-draft-notes,.fp-draft-sources,.fp-publish-copy{margin-top:10px;padding:10px 12px;background:#fff;border:1px solid #777}.fp-evidence{background:#f5f5f5}.fp-evidence h4,.fp-premises h4,.fp-draft-notes h4,.fp-draft-sources h4,.fp-publish-copy h4{margin:0 0 7px}.fp-evidence h4 small{font-weight:400;color:#666}.fp-evidence p{margin:6px 0}.fp-comment-list{margin:7px 0;padding-left:28px}.fp-comment-list li{margin:5px 0}.fp-comment-list small{display:block;color:#666}.fp-premises{background:#fff6bf;border-color:#9a873a}.fp-premises ul{list-style:none;margin:0;padding:0}.fp-premises li{display:grid;grid-template-columns:90px 1fr auto;gap:8px;margin-top:5px;padding:6px;background:#fff}.fp-premises li>b{color:#006400}.fp-premises li.contradicted>b,.fp-premises li.unknown>b{color:#8b0000}.fp-premises li small{grid-column:2/-1;color:#555}.fp-draft-sources{background:#edf7ff;border-color:#55728a}.fp-draft-sources ol{margin:0;padding-left:24px}.fp-draft-sources li{margin:7px 0}.fp-draft-sources p,.fp-draft-sources small{display:block;margin:2px 0;color:#555}.fp-publish-copy label{display:block;margin:8px 0 3px;font-weight:700}.fp-copy-box{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:start}.fp-copy-box pre{min-width:0;max-height:180px;overflow:auto;margin:0;padding:8px;white-space:pre-wrap;background:#fff;border:1px inset #aaa;font-family:inherit;line-height:1.5}.fp-empty{color:#666}.fp-top-board{margin:0 0 12px;padding:9px;background:#fff6b5;border:3px double #7a6500;color:#111}.fp-top-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}.fp-top-title>div{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}.fp-top-title b{color:#8b0000;font-size:15px}.fp-top-title span{font-size:11px;color:#555}.fp-top-list{display:grid;gap:6px}.fp-top-card{display:grid;grid-template-columns:58px 1fr;background:#fff;border:1px solid #777}.fp-top-rank{display:grid;place-content:center;text-align:center;background:#16324f;color:#fff}.fp-top-rank b{font-size:22px}.fp-top-rank small{font-size:10px}.fp-top-main{padding:7px 9px}.fp-top-main>div:first-child{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.fp-top-main strong{font-size:13px}.fp-top-status{padding:2px 6px;border:1px solid #8b0000;background:#ffe0c2;color:#8b0000;font-weight:900;font-size:11px}.fp-top-card.action .fp-top-status{border-color:#006400;background:#dff5df;color:#005b00}.fp-top-main p{margin:5px 0;font-size:11px;line-height:1.45}.fp-top-actions{display:flex;gap:6px;flex-wrap:wrap}
-    @media(max-width:700px){.fp-grid{grid-template-columns:78px 1fr}.fp-state{margin-left:0}.fp-stage{min-width:56px}.fp-draft-modal{padding:0}.fp-draft-dialog{width:100%;height:100dvh;max-height:none;border:0}.fp-draft-dialog h3{font-size:15px}.fp-draft-cover b{font-size:20px}.fp-draft-dialog>footer{flex-wrap:wrap}.fp-draft-dialog>footer .push-button,.fp-draft-buttons .push-button{flex:1;min-height:40px}.fp-design-options,.fp-performance-grid{grid-template-columns:1fr}.fp-performance-grid label.wide{grid-column:auto}.fp-preflight-save,.fp-performance-save{align-items:stretch;flex-direction:column}.fp-preflight-save .push-button,.fp-performance-save .push-button{min-height:40px}.fp-shot>label{align-items:stretch;flex-direction:column}.fp-shot select{width:100%}.fp-draft-slide{grid-template-columns:82px 1fr}.fp-page-sticky{margin:7px 0 7px 7px;padding:6px}.fp-page-sticky b{font-size:17px}.fp-premises li{grid-template-columns:82px 1fr}.fp-premises li a{grid-column:2}.fp-copy-box{grid-template-columns:1fr}.fp-copy-box .push-button{min-height:38px}.fp-top-card{grid-template-columns:48px 1fr}.fp-top-rank b{font-size:18px}.fp-top-actions .push-button{min-height:38px}.fp-top-title{align-items:flex-start}}
+    .fp-preflight h5{margin:12px 0 5px;padding-bottom:3px;border-bottom:1px dotted #888;font-size:12px}.fp-palette-options,.fp-cover-options{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.fp-palette-option,.fp-cover-option{display:block}.fp-palette-option input,.fp-cover-option input{position:absolute;opacity:0}.fp-palette-option>span,.fp-cover-option>span{display:block;height:100%;padding:9px;background:#f5f5f5;border:2px solid;border-color:#fff #777 #777 #fff;cursor:pointer}.fp-palette-option input:checked+span,.fp-cover-option input:checked+span{background:#dff5ef;border-color:#277267;box-shadow:inset 0 0 0 2px #fff}.fp-palette-option strong,.fp-palette-option small,.fp-cover-option b,.fp-cover-option small,.fp-cover-option em{display:block}.fp-palette-option i{display:flex;gap:3px;margin-bottom:7px}.fp-palette-option i b{width:28px;height:18px;border:1px solid #777}.fp-palette-option small,.fp-cover-option em{margin-top:5px;color:#555;font-size:11px;font-style:normal;line-height:1.4}.fp-cover-option small{margin-top:2px;color:#006b60;font-weight:700}.fp-cover-option mark{padding:1px 4px;background:#fff0a8;font-size:9px}.fp-cover-reason{margin-top:7px!important;padding:7px;background:#f4f8f7;border-left:4px solid #28766e}.fp-performance-context{padding:6px;background:#fff;border:1px dotted #7a6a99}
+    @media(max-width:700px){.fp-grid{grid-template-columns:78px 1fr}.fp-state{margin-left:0}.fp-stage{min-width:56px}.fp-draft-modal{padding:0}.fp-draft-dialog{width:100%;height:100dvh;max-height:none;border:0}.fp-draft-dialog h3{font-size:15px}.fp-draft-cover b{font-size:20px}.fp-draft-dialog>footer{flex-wrap:wrap}.fp-draft-dialog>footer .push-button,.fp-draft-buttons .push-button{flex:1;min-height:40px}.fp-design-options,.fp-palette-options,.fp-cover-options,.fp-performance-grid{grid-template-columns:1fr}.fp-performance-grid label.wide{grid-column:auto}.fp-preflight-save,.fp-performance-save{align-items:stretch;flex-direction:column}.fp-preflight-save .push-button,.fp-performance-save .push-button{min-height:40px}.fp-shot>label{align-items:stretch;flex-direction:column}.fp-shot select{width:100%}.fp-draft-slide{grid-template-columns:82px 1fr}.fp-page-sticky{margin:7px 0 7px 7px;padding:6px}.fp-page-sticky b{font-size:17px}.fp-premises li{grid-template-columns:82px 1fr}.fp-premises li a{grid-column:2}.fp-copy-box{grid-template-columns:1fr}.fp-copy-box .push-button{min-height:38px}.fp-top-card{grid-template-columns:48px 1fr}.fp-top-rank b{font-size:18px}.fp-top-actions .push-button{min-height:38px}.fp-top-title{align-items:flex-start}}
   `;
   document.head.appendChild(style);
   relabel();
