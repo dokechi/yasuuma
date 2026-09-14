@@ -1,5 +1,5 @@
 /*
- * Command Center HOME v1.64
+ * Command Center HOME v1.66
  * A newest-first launcher using the existing Windows 98 visual language.
  */
 
@@ -16,7 +16,7 @@
 .home-window-title small{font:400 10px Tahoma,"MS UI Gothic",sans-serif;color:#fff;white-space:nowrap}
 .home-window-body{padding:7px}
 
-.home-primary-nav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;padding:5px;background:var(--win-gray);border:2px solid;border-color:#fff #000 #000 #fff;box-shadow:inset -1px -1px #808080,inset 1px 1px #dfdfdf}
+.home-primary-nav{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;padding:5px;background:var(--win-gray);border:2px solid;border-color:#fff #000 #000 #fff;box-shadow:inset -1px -1px #808080,inset 1px 1px #dfdfdf}
 .home-nav-button,.home-launcher-card{min-width:0;border:2px solid;border-color:#fff #000 #000 #fff;background:#d4d0c8;color:#111;font:inherit;text-align:left;cursor:pointer}
 .home-nav-button{min-height:43px;padding:5px 8px}
 .home-nav-button b,.home-nav-button span,.home-launcher-card b,.home-launcher-card span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -30,7 +30,7 @@
 .home-system-alert div{display:flex;gap:10px;align-items:center;min-width:0}
 .home-system-alert span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.home-main-feeds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.home-main-feeds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
 .home-feed-card{display:grid;grid-template-rows:auto 1fr auto;min-width:0;min-height:196px;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080;box-shadow:inset 1px 1px #000}
 .home-feed-card>header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 8px;border-bottom:1px solid #808080;background:#e7e7e7}
 .home-feed-card>header button{min-width:0;padding:0;border:0;background:transparent;color:#000080;font:900 14px Tahoma,"MS UI Gothic",sans-serif;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -63,7 +63,7 @@
 .home-mobile-nav{display:none}
 
 @media(max-width:900px){
-  .home-primary-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .home-primary-nav{grid-template-columns:repeat(4,minmax(0,1fr))}
   .home-main-feeds{grid-template-columns:1fr}
   .home-feed-card{min-height:0}
   .home-launcher-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -83,7 +83,7 @@
   .home-launcher-card{min-height:48px}
   .home-system-alert{align-items:stretch;flex-direction:column}
   .home-system-alert div{align-items:flex-start;flex-direction:column;gap:2px}
-  .home-mode .home-mobile-nav{position:fixed;left:5px;right:5px;bottom:5px;z-index:110;display:grid;grid-template-columns:repeat(4,1fr);gap:3px;padding:4px;background:var(--win-gray);border:2px solid;border-color:#fff #000 #000 #fff;box-shadow:2px 2px #000}
+  .home-mode .home-mobile-nav{position:fixed;left:5px;right:5px;bottom:5px;z-index:110;display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:4px;background:var(--win-gray);border:2px solid;border-color:#fff #000 #000 #fff;box-shadow:2px 2px #000}
   .home-mobile-nav .push-button{min-width:0;min-height:42px;padding:3px 2px;font-size:11px;white-space:nowrap}
 }
 
