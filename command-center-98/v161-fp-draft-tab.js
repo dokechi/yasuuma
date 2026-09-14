@@ -23,6 +23,8 @@
   const completed=item=>{
     if(taskId(item)!==TASK_ID)return false;
     const quality=window.__fpContentPipeline?.packageQuality;
+    const legacy=window.__fpContentPipeline?.legacyPublished;
+    if(typeof legacy==='function'&&legacy(item))return true;
     if(typeof quality==='function')return quality(item).ready;
     const payload=item?.payload||{};
     return payload.draft_status==='ready'&&Array.isArray(payload.draft_slides)&&payload.draft_slides.length>=5;
