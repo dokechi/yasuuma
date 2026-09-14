@@ -1,0 +1,79 @@
+/* Same Windows visual language at HOME and every internal destination. */
+.cc-navigation #ccPrimaryNav{position:sticky;top:0;z-index:115;margin-bottom:8px}
+.cc-navigation #ccDestination[hidden],.cc-navigation #ccMore[hidden],.cc-navigation #ccOverview[hidden]{display:none!important}
+.cc-navigation .cc-heading{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid #808080;margin-bottom:8px}
+.cc-heading>div{flex:1;min-width:0}
+.cc-heading h1{margin:0;font-size:21px;color:#000080;line-height:1.4}
+.cc-heading p{margin:3px 0 0;color:#444;font-size:12px}
+#ccRefreshSlot .push-button{white-space:nowrap;margin:0}
+#ccMore{padding:8px;margin-bottom:8px;background:#dfdfdf;border:2px solid;border-color:#fff #808080 #808080 #fff}
+.cc-more-head{display:flex;justify-content:space-between;align-items:center}
+#ccMore .home-launcher-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.cc-navigation .toolbar{display:none!important}
+#ccFilters{display:flex;flex-wrap:wrap;gap:12px;padding:8px 0;margin-bottom:4px}
+#ccFilters[hidden],#ccStateLabel[hidden]{display:none!important}
+#ccFilters label{display:flex;align-items:center;gap:6px;font-size:12px}
+#ccFilters select{min-height:32px;padding:4px 8px;border:2px inset #eee;background:#fff;color:#111;font:inherit}
+.cc-navigation[data-cc-view="fp"] #listFilter,.cc-navigation[data-cc-view="house"] #listFilter{display:none!important}
+.cc-navigation #viewTabs .cc-legacy-route{display:none!important}
+.cc-navigation #viewTabs,.cc-navigation #domainTabs{display:flex!important;flex-wrap:wrap!important;overflow:visible!important;gap:4px;width:100%;height:auto;min-height:0}
+.cc-navigation #domainTabs[hidden]{display:none!important}
+.cc-navigation #viewTabs>.push-button,.cc-navigation #domainTabs>.push-button{width:auto;min-width:64px}
+.cc-navigation[data-cc-view="events"] #viewTabs{display:none!important}
+.cc-guide{margin:7px 0;color:#444;font-size:12px}
+.cc-guide>summary{padding:6px 2px;cursor:pointer;width:fit-content}
+.cc-guide[open]{padding-bottom:8px}
+.cc-navigation .x-head,.cc-navigation .reddit-program-head,.cc-navigation .sourcing-program-head{display:none!important}
+.cc-navigation #xHub,.cc-navigation #redditHub,.cc-navigation #sourcingHub{margin-top:0}
+.cc-navigation .x-program,.cc-navigation .reddit-program,.cc-navigation .sourcing-program{border:0!important;box-shadow:none!important}
+.cc-navigation .x-body,.cc-navigation .reddit-program-body,.cc-navigation .sourcing-program-body{padding:0}
+.cc-navigation #xTabs,.cc-navigation #redditTabs,.cc-navigation #sourcingTabs{display:flex;flex-wrap:wrap!important;overflow:visible!important;gap:5px;height:auto}
+.cc-navigation #xTabs button,.cc-navigation #redditTabs button,.cc-navigation #sourcingTabs button{white-space:normal;min-height:34px}
+.cc-navigation .x-spacer,.cc-navigation .reddit-toolbar-spacer,.cc-navigation #sourcingTabs .separator{display:none}
+.cc-navigation #list>.thread,.cc-navigation #xList>.x-card,.cc-navigation #redditBody>.reddit-card,.cc-navigation .sourcing-grid>.sourcing-card{position:relative;margin:0;border:1px solid #999;box-shadow:none;background:#fff;min-width:0}
+.cc-navigation #list,.cc-navigation #xList,.cc-navigation #redditBody,.cc-navigation .sourcing-grid{display:grid;grid-template-columns:1fr;gap:7px}
+.cc-item-summary{position:relative;display:block;padding:12px 16px 10px 30px;cursor:pointer;list-style:none;background:#fff;color:#111}
+.cc-item-summary::-webkit-details-marker{display:none}
+.cc-item-summary::before{content:'▸';position:absolute;left:11px;top:12px;color:#000080}
+.cc-item[open]>.cc-item-summary::before{content:'▾'}
+.cc-item-summary>strong{display:block;font-size:15px;line-height:1.5;overflow-wrap:anywhere}
+.cc-item-meta{display:block;margin-top:4px;font-size:11px;color:#555;line-height:1.5;overflow-wrap:anywhere}
+.cc-item-excerpt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:6px;font-size:13px;font-weight:400;line-height:1.5}
+.cc-item-cue{display:block;margin-top:5px;color:#000080;font-size:11px}
+.cc-item-summary:hover{background:#f2f4fc}
+.cc-item-summary:focus-visible{outline:2px dotted #000080;outline-offset:-4px}
+.cc-item[open]>.cc-item-summary{background:#eef0f8;border-bottom:1px solid #999}
+.cc-item-content>[class$="-head"],.cc-item-content>.thread-head{display:none}
+.cc-item-content{padding:8px;overflow-wrap:anywhere}
+.cc-item-content table{max-width:100%}
+.cc-item-close{margin:8px 0 0}
+.cc-open-draft{margin:0 12px 12px 30px;color:#000080;font-weight:bold}
+.cc-navigation article{scroll-margin-top:76px}
+.cc-navigation .thread-title,.cc-navigation .lead{white-space:normal}
+.cc-navigation .home-mobile-nav{z-index:115}
+.cc-navigation~.reddit-fab{display:none!important}
+@media(max-width:700px){
+  html{scroll-padding-bottom:80px}
+  .cc-navigation button,.cc-item-summary{scroll-margin-bottom:80px}
+  body:has(.cc-navigation){padding:5px 5px 70px}
+  .cc-navigation #ccPrimaryNav{position:static}
+  .cc-navigation:not(.home-active) #ccPrimaryNav{display:none}
+  .cc-heading{flex-wrap:wrap;gap:7px!important;padding:7px 0!important}
+  .cc-heading>div{flex-basis:calc(100% - 110px)}
+  .cc-heading h1{font-size:19px}
+  .cc-heading p{font-size:11px}
+  .cc-heading>.push-button{min-height:38px}
+  .cc-heading .cc-more-button{margin-left:auto}
+  #ccRefreshSlot .push-button{min-height:38px}
+  #ccMore .home-launcher-grid{grid-template-columns:1fr 1fr}
+  .cc-navigation #viewTabs>.push-button,.cc-navigation #domainTabs>.push-button{min-width:0;min-height:36px;width:auto;flex:0 1 auto;padding:5px 8px}
+  .cc-navigation #xTabs button,.cc-navigation #redditTabs button,.cc-navigation #sourcingTabs button{flex:1 1 auto;min-height:38px}
+  .cc-item-summary{padding:10px 10px 9px 25px}
+  .cc-item-summary::before{left:8px;top:11px}
+  .cc-item-summary>strong{font-size:14px}
+  .cc-item-content{padding:4px}
+  .cc-navigation article{scroll-margin-top:8px}
+  body:has(.cc-navigation) .home-mobile-nav{position:fixed;left:5px;right:5px;bottom:5px;z-index:115;display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:4px;background:#c0c0c0;border:2px solid;border-color:#fff #000 #000 #fff;box-shadow:2px 2px #000}
+  .reddit-fab{display:none!important}
+  .cc-navigation .task-table{table-layout:fixed}
+}
