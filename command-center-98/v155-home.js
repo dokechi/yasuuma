@@ -27,9 +27,9 @@
     gal:{label:'お金投稿',description:'お金の完成原稿を開く',action:'fp-draft'},
     house:{label:'家投稿',description:'家の完成原稿を開く',action:'house-draft'},
     sourcing:{label:'仕入れ',description:'仕入れ候補を開く',action:'sourcing-queue'},
-    daily:{label:'作業日報',description:'日報を開く',shortcut:'daily'},
+    daily:{label:'作業日報',description:'別タブで日報を開く',shortcut:'daily'},
     more:{label:'その他',description:'すべての入口',action:'more'},
-    cooney:{label:'92',description:'92を開く',shortcut:'cooney'},
+    cooney:{label:'92',description:'別タブで92を開く',shortcut:'cooney'},
     reddit:{label:'海外差',description:'海外情報を見る',shortcut:'reddit'},
     subsidy:{label:'補助金',description:'補助金の情報',domain:'subsidy'},
     company:{label:'会社',description:'会社・業界の情報',domain:'company'},
@@ -211,7 +211,7 @@
     const statusLabels={inbox:'未判定',candidate:'投稿候補',draft:'下書き',approved:'投稿待ち'};
     const items=newest(H.cardItems.filter(item=>!item.isExpired&&!['posted','rejected','expired'].includes(item.status)));
     setText('homeCardsCount',ready?'候補 '+countText(items.length):'--');
-    renderFeed('homeCardsList',items,{ready,title:item=>item.productName||'カード情報',meta:item=>statusLabels[item.status]||'候補',target:()=> 'data-home-shortcut="x"',limit:3});
+    renderFeed('homeCardsList',items,{ready,title:item=>item.productName||'カード情報',meta:item=>statusLabels[item.status]||'候補',target:item=> 'data-home-card-item="'+esc(item.id)+'"',limit:3});
   }
 
   function renderSourcingHome(){
@@ -219,7 +219,7 @@
     const ready=H.loaded.sourcing;
     const queue=ready?newest(items.filter(x=>typeof isReadySourcing==='function'?isReadySourcing(x):(!x.sourcingVerdict&&(x.reviewState||'new')==='new'))):[];
     setText('homeSourcingCount',ready?'候補 '+countText(queue.length):'--');
-    renderFeed('homeSourcingList',queue,{ready,title:item=>item.title||'仕入れ候補',meta:item=>item.priority?item.priority+' '+(item.score??'')+'点':'',target:()=> 'data-home-action="sourcing-queue"',limit:3});
+    renderFeed('homeSourcingList',queue,{ready,title:item=>item.title||'仕入れ候補',meta:item=>item.priority?item.priority+' '+(item.score??'')+'点':'',target:item=> 'data-home-sourcing-item="'+esc(item.id)+'"',limit:3});
   }
 
   function renderSystemAlert(){
@@ -273,39 +273,44 @@
     homeButton.classList.add('selected');homeButton.setAttribute('aria-pressed','true');
     tabs.querySelectorAll('button[data-view]').forEach(button=>button.classList.remove('selected'));
     mobile.querySelectorAll('button').forEach(button=>button.classList.toggle('selected',button.dataset.homeAction==='home'));
-    window.scrollTo({top:0,behavior:'instant'});renderHome();
+    window.scrollTo({top:0,behavior:'instant'});renderHome();window.CCNavigation?.sync();
   }
   function leaveHome(){
+    if(H.active)H.wasHome=true;
     H.active=false;root.classList.remove('home-active');document.body.classList.remove('home-mode');document.getElementById('commandHome').hidden=true;
     homeButton.classList.remove('selected');homeButton.setAttribute('aria-pressed','false');
     mobile.querySelectorAll('button').forEach(button=>button.classList.remove('selected'));
+    window.CCNavigation?.sync();
   }
   async function openActive(domain='all',rank='all',itemId=null){
     if(app.busy){toast('読み込み完了後に開いてください','bad');return}
     leaveHome();app.domain=domain;app.rank='all';setSelected('#domainTabs button[data-domain]','domain',domain);
     await load('active');
     if(rank==='S'){app.rank='S';renderList()}
-    if(itemId){const item=document.getElementById('card-'+cssSafe(itemId));item?.scrollIntoView({block:'start',behavior:'instant'})}
+    if(itemId&&window.CCNavigation){window.CCNavigation.reveal(itemId)}
+    else if(itemId){const item=document.getElementById('card-'+cssSafe(itemId));item?.scrollIntoView({block:'start',behavior:'instant'})}
     else scrollToList();
   }
   async function openFpDraft(itemId=null){
     if(app.busy){toast('読み込み完了後に開いてください','bad');return}
     leaveHome();
     await load('fp');
-    if(itemId){document.getElementById('card-'+cssSafe(itemId))?.scrollIntoView({block:'start',behavior:'instant'})}
+    if(itemId&&window.CCNavigation){window.CCNavigation.reveal(itemId)}
+    else if(itemId){document.getElementById('card-'+cssSafe(itemId))?.scrollIntoView({block:'start',behavior:'instant'})}
     else scrollToList();
   }
   async function openHouseDraft(itemId=null){
     if(app.busy){toast('読み込み完了後に開いてください','bad');return}
     leaveHome();
     await load('house');
-    if(itemId){document.getElementById('card-'+cssSafe(itemId))?.scrollIntoView({block:'start',behavior:'instant'})}
+    if(itemId&&window.CCNavigation){window.CCNavigation.reveal(itemId)}
+    else if(itemId){document.getElementById('card-'+cssSafe(itemId))?.scrollIntoView({block:'start',behavior:'instant'})}
     else scrollToList();
   }
   async function runAction(action){
     if(action==='home'){showHome();return}
     if(action==='refresh'){await refreshHome();return}
-    if(action==='more'){document.getElementById('homeLauncher')?.scrollIntoView({block:'start',behavior:'smooth'});return}
+    if(action==='more'){if(window.CCNavigation)window.CCNavigation.toggleMore();else document.getElementById('homeLauncher')?.scrollIntoView({block:'start',behavior:'smooth'});return}
     if(action==='fp-draft'){await openFpDraft();return}
     if(action==='house-draft'){await openHouseDraft();return}
     if(action==='tasks'){openTasks();return}
@@ -318,11 +323,16 @@
     if(sourcing){leaveHome();await openSourcingSection(sourcing)}
   }
 
+  H.show=showHome;H.leave=leaveHome;
   homeButton.addEventListener('click',()=>{bump(homeButton);showHome();if(!H.loading)refreshHome()});
   tabs.addEventListener('click',event=>{
     if(event.target.closest('button[data-view], #xViewBtn, #redditViewBtn'))leaveHome();
   },true);
-  document.addEventListener('click',event=>{
+  document.addEventListener('click',async event=>{
+    const cardItem=event.target.closest('[data-home-card-item]');
+    if(cardItem){if(app.busy||window.CCX?.state.loading)return;leaveHome();await load('x');window.CCNavigation?.reveal(cardItem.dataset.homeCardItem);return}
+    const sourcingItem=event.target.closest('[data-home-sourcing-item]');
+    if(sourcingItem){if(app.busy)return;await runAction('sourcing-queue');window.CCNavigation?.reveal(sourcingItem.dataset.homeSourcingItem);return}
     const action=event.target.closest('[data-home-action]');
     if(action){bump(action);runAction(action.dataset.homeAction);return}
     const domain=event.target.closest('[data-home-domain]');
@@ -332,7 +342,7 @@
     const houseItem=event.target.closest('[data-home-house-item]');
     if(houseItem){bump(houseItem);openHouseDraft(houseItem.dataset.homeHouseItem);return}
     const item=event.target.closest('[data-home-item]');
-    if(item){bump(item);openActive('all','all',item.dataset.homeItem);return}
+    if(item){bump(item);openActive(H.activeItems.find(row=>String(row.id)===item.dataset.homeItem)?.domain||'all','all',item.dataset.homeItem);return}
     const shortcut=event.target.closest('[data-home-shortcut]');
     if(!shortcut)return;
     bump(shortcut);
