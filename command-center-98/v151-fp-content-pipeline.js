@@ -1,7 +1,8 @@
 (()=>{
   if(typeof cardHtml!=='function'||typeof renderList!=='function')return;
 
-  const TYPE='fp_content';
+  const TYPE_FP='fp_content';
+  const TYPE_HOUSE='house_content';
   const API='https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-workflow-api';
   const SIGNAL_API='https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-retro-api';
   const states=new Map();
@@ -16,6 +17,12 @@
   const list=value=>Array.isArray(value)?value:[];
   const text=value=>String(value??'').trim();
   const fp=item=>item?.payload?.content_type==='fp_post_candidate'||['fp_psychology','fp_reaction'].includes(item?.payload?.category);
+  const house=item=>item?.payload?.content_type==='house_post_candidate'||item?.payload?.category==='house_living';
+  const contentCandidate=item=>fp(item)||house(item);
+  const contentType=item=>house(item)?TYPE_HOUSE:TYPE_FP;
+  const contentLabel=item=>house(item)?'家':'FP';
+  const housePayload=payload=>payload?.content_type==='house_post_candidate'||payload?.category==='house_living';
+  const legacyPublished=item=>item?.payload?.legacy_status==='published_before_demand_gate';
   const INTERNAL_DEMAND_SOURCE=/(?:ガールズ[ちチ]ゃんねる|ガールズチャンネル|ガルちゃん|がるちゃん|girlschannel(?:\.net)?)/i;
   const internalDemandSource=source=>INTERNAL_DEMAND_SOURCE.test([
     typeof source==='string'?source:'',source?.label,source?.title,source?.url,source?.claim,source?.note
@@ -46,9 +53,9 @@
     list(payload.source_comments).forEach(comment=>{
       const no=text(comment?.comment_no);
       if(no&&new RegExp(`(?:コメント|comment|コメ|#|＃)\\s*(?:No\\.?\\s*)?${regexpEscape(no)}(?!\\d)`,'i').test(copy))issues.push('公開原稿にコメント番号が混入');
-      [['plus','+','＋'],['minus','-','−']].forEach(([key,half,full])=>{
+      [['plus','プラス|高評価|賛成'],['minus','マイナス|低評価|反対']].forEach(([key,label])=>{
         const value=text(comment?.[key]);
-        if(value&&Number(value)!==0&&new RegExp(`(?:${regexpEscape(half)}|${regexpEscape(full)})\\s*${regexpEscape(value)}(?![\\d,])`).test(copy))issues.push('公開原稿に掲示板の反応数が混入');
+        if(value&&Number(value)!==0&&new RegExp(`(?:${label}|反応数|評価数|いいね数)\\s*[:：]?\\s*[+＋\\-−]?\\s*${regexpEscape(value)}(?![\\d,])`,'i').test(copy))issues.push('公開原稿に掲示板の反応数が混入');
       });
     });
     return [...new Set(issues)];
@@ -61,6 +68,10 @@
       description:'白地の広い余白、太い黒文字、落ち着いた青緑、素朴な黒線人物。問いと数字を大きく見せる。',
       referenceLabel:'個室入院投稿・完成見本',
       referenceUrls:Array.from({length:7},(_,index)=>`https://dokechi.github.io/yasuuma/command-center-98/assets/fp-private-room-style/${String(index+1).padStart(2,'0')}.webp`)
+    },
+    house:{
+      label:'家の実績デザイン',short:'窓・洗面投稿の完成版',
+      description:'白地と濃紺を基調に、生活場面の写真・図・公式資料を使い分ける。問いを大きく、説明は会話のように短く置く。'
     },
     editorial:{label:'静かな編集記事型',short:'サイボウズ寄り',description:'装飾を抑え、余白と小さな観察文で読ませる。写真や資料は必要なページだけ使う。'},
     notebook:{label:'調査ノート型',short:'根拠の実物を見せる',description:'公式資料のスクショ、囲み、短い注釈を活かす。調べた跡が見える設計。'}
@@ -88,6 +99,11 @@
     return 'character';
   };
   const coverReason=payload=>text(payload.cover_recommendation?.reason||payload.cover_reason)||COVER_MODES[inferredCoverMode(payload)].description;
+  const outputSpec=payload=>{
+    const size=text(payload.production_spec?.size)||(housePayload(payload)?'1080×1440px':'1080×1350px');
+    const ratio=text(payload.production_spec?.ratio)||(housePayload(payload)?'3:4':'4:5');
+    return {size:size.replace(/x/i,'×'),ratio};
+  };
   const demand=payload=>payload.demand_evidence&&typeof payload.demand_evidence==='object'?payload.demand_evidence:{};
   const demandVerdict=payload=>text(demand(payload).verdict).toLowerCase();
   const demandReady=payload=>{
@@ -132,7 +148,8 @@
     entityId:String(item.id),discovered:'pass',judgment:item.reviewState==='accepted'?'pass':'pending',
     verification:packageQuality(item).ready?'pass':'pending',execution:item.payload?.draft_status==='ready'?'ready':'pending',audit:'pending'
   });
-  const state=item=>states.get(String(item.id))||defaultState(item);
+  const stateKey=item=>contentType(item)+':'+String(item.id);
+  const state=item=>states.get(stateKey(item))||defaultState(item);
   const request=async options=>{
     const response=await fetch(API,{cache:'no-store',...options});
     if(response.status===401){authExpired();throw Error('認証期限切れ')}
@@ -153,22 +170,26 @@
     const replace=rows=>{const index=rows.findIndex(row=>String(row.id)===String(fresh.id));if(index>=0)rows[index]={...rows[index],...fresh}};
     replace(app.items||[]);replace(topItems);
   };
-  const put=rows=>list(rows).forEach(row=>states.set(String(row.entityId),row));
+  const put=(rows,type)=>list(rows).forEach(row=>states.set(type+':'+String(row.entityId),row));
   const ensure=async items=>{
-    const fresh=items.filter(item=>fp(item)&&!ensuring.has(String(item.id)));
+    const fresh=items.filter(item=>contentCandidate(item)&&!ensuring.has(stateKey(item)));
     if(!fresh.length)return;
-    fresh.forEach(item=>ensuring.add(String(item.id)));
+    fresh.forEach(item=>ensuring.add(stateKey(item)));
     try{
-      const data=await request({
-        method:'POST',headers:headers(),
-        body:JSON.stringify({action:'ensure',entityType:TYPE,items:fresh.map(item=>({
-          entityId:String(item.id),judgmentStatus:item.reviewState==='accepted'?'pass':'pending'
-        }))})
-      });
-      put(data.states);
+      for(const type of [TYPE_FP,TYPE_HOUSE]){
+        const group=fresh.filter(item=>contentType(item)===type);
+        if(!group.length)continue;
+        const data=await request({
+          method:'POST',headers:headers(),
+          body:JSON.stringify({action:'ensure',entityType:type,items:group.map(item=>({
+            entityId:String(item.id),judgmentStatus:item.reviewState==='accepted'?'pass':'pending'
+          }))})
+        });
+        put(data.states,type);
+      }
       refreshPanels();
       renderTop();
-    }catch(error){console.warn('FP content workflow unavailable',error)}
+    }catch(error){console.warn('Carousel content workflow unavailable',error)}
   };
 
   const directCommentUrl=(payload,comment)=>text(comment?.direct_url||comment?.url||comment?.anchor_url);
@@ -199,6 +220,7 @@
   const stage=(label,value)=>'<span class="fp-stage '+escFp(value)+'"><small>'+escFp(label)+'</small><b>'+stageMark(value)+'</b></span>';
   const draftStatus=item=>{
     const quality=packageQuality(item);
+    if(legacyPublished(item))return{label:'旧基準で制作済み',kind:'history'};
     if(!quality.ready&&item.payload?.draft_status==='ready')return{label:'根拠の補完待ち',kind:'blocked'};
     if(quality.ready&&!preflightReady(item.payload||{}))return{label:'制作条件を選ぶ',kind:'ready'};
     if(quality.ready&&item.reviewState==='accepted')return{label:'画像化用コピー待ち',kind:'ready'};
@@ -210,10 +232,11 @@
     if(!list(payload.draft_slides).length)return'';
     const status=draftStatus(item);
     const quality=packageQuality(item);
+    const legacy=legacyPublished(item);
     const copyReady=quality.ready&&preflightReady(payload);
     return '<section class="fp-draft-actions" data-fp-draft-actions="'+escFp(item.id)+'">'
       +'<div class="fp-draft-status '+escFp(status.kind)+'"><b>'+escFp(status.label)+'</b><span>'
-      +(quality.ready?'原稿・根拠・スクショ指示・投稿文を保存済み':escFp(quality.issues.join('／')))
+      +(legacy?'制作済みの履歴です。現在の需要ゲートでは再利用しません。':quality.ready?'原稿・根拠・スクショ指示・投稿文を保存済み':escFp(quality.issues.join('／')))
       +'</span></div><div class="fp-draft-buttons">'
       +'<button class="push-button fp-open-draft" data-fp-open="'+escFp(item.id)+'">原稿・需要・制作条件</button>'
       +'<button class="push-button fp-copy-images" data-fp-copy-package="'+escFp(item.id)+'" '+(copyReady?'':'disabled')+'>画像化用にコピー</button>'
@@ -232,8 +255,8 @@
     const question=payload.reader_question||payload.question_lineage?.selected_question||payload.first_impression||payload.cover_idea||item.title||'';
     const reaction=payload.strong_reaction||payload.reaction_summary||item.reason||'';
     const hot=payload.hot_reason||item.reason||item.summary||'';
-    const research=quality.ready?'元記事・該当コメント・一次情報・原稿を確認済み':(payload.research_status||(payload.source_checked_at?'原稿に必要な根拠を確認中':'追加調査待ち'));
-    return '<section class="fp-candidate" data-fp-panel="'+escFp(item.id)+'"><div class="fp-head"><b>FP投稿候補</b><span class="fp-signal">'+escFp(payload.engagement_label||'反応確認済み')+'</span><span class="fp-state">'+(quality.ready?'原稿あり':chosen?'調査中':'選択待ち')+'</span></div>'
+    const research=legacyPublished(item)?'旧基準で制作済み。履歴として保存':quality.ready?'元記事・該当コメント・一次情報・原稿を確認済み':(payload.research_status||(payload.source_checked_at?'原稿に必要な根拠を確認中':'追加調査待ち'));
+    return '<section class="fp-candidate" data-fp-panel="'+escFp(item.id)+'"><div class="fp-head"><b>'+contentLabel(item)+'投稿候補</b><span class="fp-signal">'+escFp(payload.engagement_label||'反応確認済み')+'</span><span class="fp-state">'+(legacyPublished(item)?'制作済み':quality.ready?'原稿あり':chosen?'調査中':'選択待ち')+'</span></div>'
       +'<div class="fp-question"><small>この投稿が答える疑問</small>'+escFp(question)+'</div>'
       +demandPanel(payload)
       +'<dl class="fp-grid"><dt>反応の核</dt><dd>'+escFp(reaction)+'</dd><dt>根拠コメント</dt><dd>'+evidenceComments(payload)+'</dd><dt>なぜ今か</dt><dd>'+escFp(hot)+'</dd><dt>投稿構成</dt><dd><ol>'+structure+'</ol></dd><dt>一次情報</dt><dd>'+sourceLinks(payload)+'</dd><dt>調査状態</dt><dd>'+escFp(research)+'</dd></dl>'
@@ -245,7 +268,7 @@
   const baseCard=cardHtml;
   cardHtml=(item,index)=>{
     const html=baseCard(item,index);
-    if(!fp(item))return html;
+    if(!contentCandidate(item))return html;
     return html.replace('<table class="meta">',panel(item)+'<table class="meta">');
   };
   const refreshPanels=()=>{
@@ -260,6 +283,7 @@
     const status=draftStatus(item);
     if(status.kind==='ready'&&!preflightReady(item.payload||{}))return{label:'制作条件を選ぶ',kind:'action',weight:540};
     if(status.kind==='ready')return{label:status.label,kind:'action',weight:500};
+    if(status.kind==='history')return{label:status.label,kind:'history',weight:100};
     if(status.kind==='blocked')return{label:status.label,kind:'research',weight:300};
     return{label:'原稿作成待ち',kind:'research',weight:200};
   };
@@ -271,7 +295,7 @@
     const controls=list(payload.draft_slides).length
       ?'<button class="push-button small fp-open-draft" data-fp-open="'+escFp(item.id)+'">原稿・需要・制作条件</button><button class="push-button small fp-copy-images" data-fp-copy-package="'+escFp(item.id)+'" '+(copyReady?'':'disabled')+'>画像化用にコピー</button>'
       :'<button class="push-button small" data-fp-open-accepted="1">採用済みを開く</button>';
-    return'<article class="fp-top-card '+escFp(status.kind)+'"><div class="fp-top-rank"><b>'+escFp(item.score||'—')+'</b><small>点</small></div><div class="fp-top-main"><div><span class="fp-top-status">'+escFp(status.label)+'</span><strong>'+escFp(draftTitle(item,payload)||'FP投稿候補')+'</strong></div><p>'+escFp(payload.reader_question||payload.question_lineage?.selected_question||payload.first_impression||payload.cover_idea||item.summary||'')+'</p><div class="fp-top-actions">'+controls+'</div></div></article>';
+    return'<article class="fp-top-card '+escFp(status.kind)+'"><div class="fp-top-rank"><b>'+escFp(item.score||'—')+'</b><small>点</small></div><div class="fp-top-main"><div><span class="fp-top-status">'+escFp(status.label)+'</span><strong>'+escFp(draftTitle(item,payload)||contentLabel(item)+'投稿候補')+'</strong></div><p>'+escFp(payload.reader_question||payload.question_lineage?.selected_question||payload.first_impression||payload.cover_idea||item.summary||'')+'</p><div class="fp-top-actions">'+controls+'</div></div></article>';
   };
   const fpNewestTime=item=>{
     const values=[item?.lastSeen,item?.occurredAt,item?.detectedAt,item?.createdAt,item?.updatedAt,item?.payload?.occurred_at,item?.payload?.detected_at,item?.payload?.created_at,item?.payload?.updated_at];
@@ -309,7 +333,7 @@
       const button=card.querySelector('.action-accept');
       if(!button)return;
       const item=(app.items||[]).find(row=>String(row.id)===String(button.dataset.id));
-      if(fp(item)){button.textContent='これに決定';button.classList.add('fp-select')}
+      if(contentCandidate(item)){button.textContent='これに決定';button.classList.add('fp-select')}
     });
   };
   const baseRender=renderList;
@@ -317,14 +341,14 @@
 
   const choose=async(item,button)=>{
     if(button.disabled)return;
-    bump(button);button.disabled=true;button.textContent='決定を保存中…';setStatus('FP投稿候補を保存しています...',true);
+    bump(button);button.disabled=true;button.textContent='決定を保存中…';setStatus(contentLabel(item)+'投稿候補を保存しています...',true);
     try{
       const quality=packageQuality(item);
       const data=await request({method:'PATCH',headers:headers(),body:JSON.stringify({
-        entityType:TYPE,entityId:String(item.id),stage:'judgment',status:'pass',judgmentSeed:'pending',
+        entityType:contentType(item),entityId:String(item.id),stage:'judgment',status:'pass',judgmentSeed:'pending',
         note:quality.ready?'完成原稿を確認して画像化候補に決定':'投稿候補として決定・原稿補完待ち'
       })});
-      states.set(String(item.id),data.state);
+      states.set(stateKey(item),data.state);
       refreshPanels();
       const ok=await review(String(item.id),'accepted',button);
       if(ok)toast(quality.ready?'これに決定。画像化用にコピーできます':'これに決定。原稿の補完待ちです','good');
@@ -357,17 +381,19 @@
   const designText=payload=>{
     const key=text(payload.design_direction),direction=DESIGN_DIRECTIONS[key];
     const palette=COLOR_PALETTES[paletteKey(payload)];
+    const spec=outputSpec(payload);
     const common=[
       `・配色: ${palette.label}。${palette.instruction}`,
-      '・1080×1350px、4:5。配色は投稿内で統一し、ページごとにランダムに変えない。',
+      `・${spec.size}、${spec.ratio}。配色は投稿内で統一し、ページごとにランダムに変えない。`,
       '・人物を使うページでは、小さな黒線キャラクターを脇役にする。問い・数字・余白を主役にする。',
       '・ロゴや「しゃちほこ」の表記は入れない。',
-      '・必須：2ページ目以降は、ページ番号と短い話題を大きめの付箋で見せる。',
+      '・必須：全ページに現在ページ／総ページ数と、次へ進む矢印を入れる。2ページ目以降は短い話題を付箋で見せる。',
       '・必須：一次資料・通知・料金表・申込画面など、実物で見せる価値がある箇所には確認済みスクショを使う。装飾目的や関係の薄い画面は使わない。',
       '・事実や数字を載せるページだけ、確認済み一次情報の短い出典名を下端へ小さく置く。'
     ];
     const specific={
       friendly:'・個室入院投稿の完成版を基準にする。広い余白、極太の日本語ゴシック、丸みのある素朴な黒線人物、1ページ1主張、問いと数字の大きな強弱を再現する。色は選択した配色へ置き換える。',
+      house:'・窓と洗面・脱衣の完成版を基準にする。上部の大きな問い、生活場面が伝わる写真または図、下部の一つの判断を組み合わせる。公式の図表は改変せず、そのまま読める大きさで使う。',
       editorial:'・静かな編集記事型。サイボウズの記事のように、装飾を抑えた余白、観察から始まる短い言葉、落ち着いた文字組みで読ませる。',
       notebook:'・調査ノート型。公式資料の実物、囲み、短い注釈を活かし、調べた過程が自然に見える紙面にする。'
     }[key];
@@ -409,7 +435,7 @@
     const sources=officialSources(payload);
     const reference=text(payload.design_reference_url||payload.draft_design?.reference_url);
     return [
-      '以下の確定原稿から、Instagramカルーセル画像を作成してください。',
+      '以下の確定原稿から、カルーセル画像を作成してください。',
       '',
       '【この入力の扱い】',
       '・このコピーに含まれる原稿・一次情報・制作条件だけを公開用素材として扱う。内部の需要調査元を探し直したり、名称・URL・コメント・反応数を追加したりしない。',
@@ -426,6 +452,11 @@
       '・ガールズちゃんねるの名称、URL、コメント番号、引用元表記は画像に出さない。需要確認のための内部資料としてのみ扱う。',
       '・アフィリエイト、プロフィール誘導、販売文句を画像に入れない。',
       '・1投稿1疑問。制度説明から始めず、人が実際に引っかかった問いから始める。',
+      ...(house(item)?[
+        '・語り手は「家のことを調べすぎる、しゃちほこ」。先生の完成した説明ではなく、最初の感覚、調べて分かったこと、最後に残った現実的な疑問の順で話す。',
+        '・関西弁の語尾を毎ページへ置かない。判断の仕方と、理由を確かめる過程で本人らしさを出す。',
+        '・本人が家を建てた、施工した、設計したなど、確認できない経験は作らない。'
+      ]:[]),
       '',
       '【デザイン】',
       ...designText(payload),
@@ -487,11 +518,15 @@
     if(!urls.length)return '';
     return '<aside class="fp-design-reference"><b>'+escFp(direction.referenceLabel||'固定デザイン見本')+'</b><span>'+urls.map((url,index)=>'<a href="'+escFp(url)+'" target="_blank" rel="noopener">'+(index+1)+'枚目</a>').join('')+'</span><small>実績メモ：個室入院はTikTokで直近最速の初速、水没はInstagramで大きく伸長。いずれも本人観測。題材・表現・デザインの効果は未分離。</small></aside>';
   };
+  const designEntries=payload=>{
+    const keys=housePayload(payload)?['house','editorial','notebook']:['friendly','editorial','notebook'];
+    return keys.map(key=>[key,DESIGN_DIRECTIONS[key]]);
+  };
   const preflightSection=(item,payload)=>{
     const screenshots=list(payload.screenshot_requests),issues=preflightIssues(payload);
     const recommendedCover=text(payload.cover_recommendation?.mode),cover=inferredCoverMode(payload),palette=paletteKey(payload);
     return '<section class="fp-preflight"><h4>制作前に決める</h4><p>デザイン、配色、表紙の主役、実物素材を先に固定します。おすすめは原稿から入れてあるので、必要な時だけ変更できます。</p><h5>基本デザイン</h5><div class="fp-design-options">'
-      +Object.entries(DESIGN_DIRECTIONS).map(([key,row])=>'<label class="fp-design-option"><input type="radio" name="fp-design" value="'+key+'" '+(text(payload.design_direction)===key?'checked':'')+'><span><b>'+escFp(row.label)+'</b><small>'+escFp(row.short)+'</small><em>'+escFp(row.description)+'</em></span></label>').join('')+'</div>'
+      +designEntries(payload).map(([key,row])=>'<label class="fp-design-option"><input type="radio" name="fp-design" value="'+key+'" '+(text(payload.design_direction)===key?'checked':'')+'><span><b>'+escFp(row.label)+'</b><small>'+escFp(row.short)+'</small><em>'+escFp(row.description)+'</em></span></label>').join('')+'</div>'
       +designReference(payload)
       +'<h5>配色</h5><div class="fp-palette-options">'+Object.entries(COLOR_PALETTES).map(([key,row])=>'<label class="fp-palette-option"><input type="radio" name="fp-palette" value="'+key+'" '+(palette===key?'checked':'')+'><span><i>'+row.colors.map(color=>'<b style="background:'+escFp(color)+'"></b>').join('')+'</i><strong>'+escFp(row.label)+'</strong><small>'+escFp(row.description)+'</small></span></label>').join('')+'</div>'
       +'<h5>表紙の主役</h5><div class="fp-cover-options">'+Object.entries(COVER_MODES).map(([key,row])=>'<label class="fp-cover-option"><input type="radio" name="fp-cover" value="'+key+'" '+(cover===key?'checked':'')+'><span><b>'+escFp(row.label)+(recommendedCover===key?' <mark>おすすめ</mark>':'')+'</b><small>'+escFp(row.short)+'</small><em>'+escFp(row.description)+'</em></span></label>').join('')+'</div><p class="fp-cover-reason"><b>選んだ理由：</b>'+escFp(coverReason(payload))+'</p>'
@@ -536,8 +571,9 @@
     const modal=document.createElement('div');
     modal.className='fp-draft-modal';modal.dataset.fpModal='1';
     const sourcePage=text(payload.source_url||item.url);
-    modal.innerHTML='<div class="fp-draft-dialog" role="dialog" aria-modal="true" aria-labelledby="fp-draft-title"><header><div><small>FPカルーセル完成原稿</small><h3 id="fp-draft-title">'+escFp(draftTitle(item,payload)||'原稿案')+'</h3></div><button class="push-button fp-close-draft">閉じる</button></header><main>'
-      +'<section class="fp-package-status '+(quality.ready?'ready':'blocked')+'"><b>'+(quality.ready?'原稿と根拠は完成':'根拠の補完が必要')+'</b>'+(quality.ready?'<span>需要の証拠、元記事、一次情報、原稿、投稿文が揃っています。</span>':'<ul>'+quality.issues.map(issue=>'<li>'+escFp(issue)+'</li>').join('')+'</ul>')+'</section>'
+    const legacy=legacyPublished(item);
+    modal.innerHTML='<div class="fp-draft-dialog" role="dialog" aria-modal="true" aria-labelledby="fp-draft-title"><header><div><small>'+contentLabel(item)+'カルーセル完成原稿</small><h3 id="fp-draft-title">'+escFp(draftTitle(item,payload)||'原稿案')+'</h3></div><button class="push-button fp-close-draft">閉じる</button></header><main>'
+      +'<section class="fp-package-status '+(quality.ready?'ready':'blocked')+'"><b>'+(legacy?'旧基準で制作済み':quality.ready?'原稿と根拠は完成':'根拠の補完が必要')+'</b>'+(legacy?'<span>制作済みの履歴です。現在の需要ゲートを満たすまで、再画像化には使いません。</span>':quality.ready?'<span>需要の証拠、元記事、一次情報、原稿、投稿文が揃っています。</span>':'<ul>'+quality.issues.map(issue=>'<li>'+escFp(issue)+'</li>').join('')+'</ul>')+'</section>'
       +'<section class="fp-draft-cover"><small>表紙案</small><b>'+escFp(payload.draft_cover||draftTitle(item,payload))+'</b></section>'
       +demandPanel(payload)
       +preflightSection(item,payload)
@@ -597,7 +633,7 @@
     const button=event.target.closest?.('.action-accept');
     if(!button)return;
     const item=(app.items||[]).find(row=>String(row.id)===String(button.dataset.id));
-    if(!fp(item))return;
+    if(!contentCandidate(item))return;
     event.preventDefault();event.stopImmediatePropagation();choose(item,button);
   },true);
   document.addEventListener('click',event=>{
@@ -621,7 +657,8 @@
   });
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.querySelector('[data-fp-modal]'))closeDraft()});
 
-  window.__fpContentPipeline={packageQuality,preflightIssues,publicLeakIssues,buildHandoff,buildDraftCopy,COLOR_PALETTES,COVER_MODES};
+  window.__fpContentPipeline={packageQuality,preflightIssues,publicLeakIssues,buildHandoff,buildDraftCopy,COLOR_PALETTES,COVER_MODES,contentCandidate,house,legacyPublished};
+  window.__carouselContentPipeline=window.__fpContentPipeline;
 
   const style=document.createElement('style');
   style.textContent=`
