@@ -10,6 +10,7 @@
     loading:false,
     activeItems:[],
     galItems:[],
+    houseItems:[],
     activeMeta:null,
     sourcing:null,
     cardItems:[],
@@ -23,7 +24,8 @@
   const destinations={
     home:{label:'HOME',description:'新しい情報を見る',action:'home'},
     cards:{label:'カード投稿',description:'投稿候補を開く',shortcut:'x'},
-    gal:{label:'ガルちゃん',description:'投稿に直結する完成原稿',action:'fp-draft'},
+    gal:{label:'お金投稿',description:'お金の完成原稿を開く',action:'fp-draft'},
+    house:{label:'家投稿',description:'家の完成原稿を開く',action:'house-draft'},
     sourcing:{label:'仕入れ',description:'仕入れ候補を開く',action:'sourcing-queue'},
     daily:{label:'作業日報',description:'日報を開く',shortcut:'daily'},
     more:{label:'その他',description:'すべての入口',action:'more'},
@@ -44,7 +46,7 @@
   const html=`
     <section class="command-home" id="commandHome" aria-labelledby="homeTitle">
       <nav class="home-primary-nav" aria-label="主要画面">
-        ${['home','cards','gal','sourcing','daily','more'].map(key=>destinationButton(key,'home-nav-button'+(key==='home'?' selected':''))).join('')}
+        ${['home','cards','gal','house','sourcing','daily','more'].map(key=>destinationButton(key,'home-nav-button'+(key==='home'?' selected':''))).join('')}
       </nav>
 
       <section class="home-system-alert" id="homeSystemAlert" hidden aria-live="polite">
@@ -61,9 +63,14 @@
             <button class="home-feed-more" type="button" data-home-shortcut="x">カード投稿を開く</button>
           </section>
           <section class="home-feed-card" aria-labelledby="homeGalTitle">
-            <header><button type="button" data-home-action="fp-draft" id="homeGalTitle">ガルちゃん投稿</button><span id="homeGalCount">--</span></header>
+            <header><button type="button" data-home-action="fp-draft" id="homeGalTitle">お金投稿</button><span id="homeGalCount">--</span></header>
             <div class="home-feed-list" id="homeGalList" aria-live="polite"><div class="home-empty-row">読み込み中...</div></div>
-            <button class="home-feed-more" type="button" data-home-action="fp-draft">完成原稿を開く</button>
+            <button class="home-feed-more" type="button" data-home-action="fp-draft">お金原稿を開く</button>
+          </section>
+          <section class="home-feed-card" aria-labelledby="homeHouseTitle">
+            <header><button type="button" data-home-action="house-draft" id="homeHouseTitle">家投稿</button><span id="homeHouseCount">--</span></header>
+            <div class="home-feed-list" id="homeHouseList" aria-live="polite"><div class="home-empty-row">読み込み中...</div></div>
+            <button class="home-feed-more" type="button" data-home-action="house-draft">家原稿を開く</button>
           </section>
           <section class="home-feed-card" aria-labelledby="homeSourcingTitle">
             <header><button type="button" data-home-action="sourcing-queue" id="homeSourcingTitle">仕入れ</button><span id="homeSourcingCount">--</span></header>
@@ -74,7 +81,7 @@
       </section>
 
       <section class="home-window home-other-window">
-        <div class="home-window-title"><span>その他の新着</span><small>カード・ガルちゃん・仕入れ以外</small></div>
+        <div class="home-window-title"><span>その他の新着</span><small>カード・お金・家・仕入れ以外</small></div>
         <div class="home-other-list" id="homeOtherList" aria-live="polite"><div class="home-empty-row">読み込み中...</div></div>
       </section>
 
@@ -98,7 +105,7 @@
   const mobile=document.createElement('nav');
   mobile.className='home-mobile-nav';
   mobile.setAttribute('aria-label','ホームの主要画面');
-  mobile.innerHTML='<button class="push-button selected" type="button" data-home-action="home">HOME</button><button class="push-button" type="button" data-home-shortcut="x">カード</button><button class="push-button" type="button" data-home-action="fp-draft">ガルちゃん</button><button class="push-button" type="button" data-home-action="sourcing-queue">仕入れ</button>';
+  mobile.innerHTML='<button class="push-button selected" type="button" data-home-action="home">HOME</button><button class="push-button" type="button" data-home-shortcut="x">カード</button><button class="push-button" type="button" data-home-action="fp-draft">お金</button><button class="push-button" type="button" data-home-action="house-draft">家</button><button class="push-button" type="button" data-home-action="sourcing-queue">仕入れ</button>';
   document.body.appendChild(mobile);
 
   const setText=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value};
@@ -107,15 +114,35 @@
   const itemTime=item=>item?.updatedAt||item?.lastSeen||item?.detectedAt||item?.createdAt||item?.applicationDeadline||null;
   const newest=(items,getTime=itemTime)=>[...(items||[])].sort((a,b)=>timeValue(getTime(b))-timeValue(getTime(a)));
   const GAL_TASK_ID='6a9e5826d4888191a4d82a643e6d5adf';
+  const HOUSE_TASK_ID='6aa77eb5ce7881919d8dc62554833b60';
   const galTaskId=item=>{
     if(typeof signalTaskId==='function')return signalTaskId(item);
     const prefix='task:'+GAL_TASK_ID+':';
     return String(item?.id||'').startsWith(prefix)?GAL_TASK_ID:'';
   };
-  const isGalItem=item=>galTaskId(item)===GAL_TASK_ID;
+  const isGalItem=item=>{
+    const payload=item?.payload||{};
+    return galTaskId(item)===GAL_TASK_ID&&(payload.content_type==='fp_post_candidate'||['fp_psychology','fp_reaction'].includes(payload.category));
+  };
+  const houseTaskId=item=>{
+    if(typeof signalTaskId==='function')return signalTaskId(item);
+    const prefix='task:'+HOUSE_TASK_ID+':';
+    return String(item?.id||'').startsWith(prefix)?HOUSE_TASK_ID:'';
+  };
+  const isHouseItem=item=>{
+    const payload=item?.payload||{};
+    return houseTaskId(item)===HOUSE_TASK_ID&&(payload.content_type==='house_post_candidate'||payload.category==='house_living');
+  };
   const isCompletedGal=item=>{
     if(!isGalItem(item))return false;
     const quality=window.__fpContentPipeline?.packageQuality;
+    if(typeof quality==='function')return quality(item).ready;
+    const payload=item?.payload||{};
+    return payload.draft_status==='ready'&&Array.isArray(payload.draft_slides)&&payload.draft_slides.length>=5;
+  };
+  const isCompletedHouse=item=>{
+    if(!isHouseItem(item))return false;
+    const quality=window.__carouselContentPipeline?.packageQuality;
     if(typeof quality==='function')return quality(item).ready;
     const payload=item?.payload||{};
     return payload.draft_status==='ready'&&Array.isArray(payload.draft_slides)&&payload.draft_slides.length>=5;
@@ -155,7 +182,7 @@
   function renderActive(){
     const ready=H.loaded.active;
     const items=H.activeItems;
-    const otherItems=newest(items.filter(item=>item.domain!=='sourcing'&&!isGalItem(item)));
+    const otherItems=newest(items.filter(item=>item.domain!=='sourcing'&&!isGalItem(item)&&!isHouseItem(item)));
     renderFeed('homeOtherList',otherItems,{ready,title:item=>'['+(labels[item.domain]||item.domain||'情報')+'] '+(item.title||'無題'),meta:item=>item.summary||'',limit:5});
   }
 
@@ -166,6 +193,16 @@
     renderFeed('homeGalList',items,{
       ready,title:galTitle,meta:galStatus,time:galItemTime,
       target:item=>'data-home-fp-item="'+esc(item.id)+'"',limit:3
+    });
+  }
+
+  function renderHouseHome(){
+    const ready=H.loaded.active;
+    const items=newest(H.houseItems,galItemTime);
+    setText('homeHouseCount',ready?'投稿原稿 '+countText(items.length):'--');
+    renderFeed('homeHouseList',items,{
+      ready,title:galTitle,meta:galStatus,time:galItemTime,
+      target:item=>'data-home-house-item="'+esc(item.id)+'"',limit:3
     });
   }
 
@@ -196,7 +233,7 @@
     setText('homeSystemAlertText',failed.length?failed.join('・')+'を更新できませんでした。':'');
   }
 
-  function renderHome(){renderActive();renderGalHome();renderCardsHome();renderSourcingHome();renderSystemAlert();updateLabel()}
+  function renderHome(){renderActive();renderGalHome();renderHouseHome();renderCardsHome();renderSourcingHome();renderSystemAlert();updateLabel()}
 
   async function readJson(url){
     const response=await fetch(url,{cache:'no-store',headers:authHeaders()});
@@ -206,7 +243,7 @@
     return data;
   }
   async function fetchActive(){
-    try{const data=await readJson(API+'?view=history');const items=Array.isArray(data.items)?data.items:[];H.activeMeta=data;H.activeItems=items.filter(x=>(x.reviewState||'new')==='new');H.galItems=items.filter(isCompletedGal);H.loaded.active=true;H.errors.active=false}
+    try{const data=await readJson(API+'?view=history');const items=Array.isArray(data.items)?data.items:[];H.activeMeta=data;H.activeItems=items.filter(x=>(x.reviewState||'new')==='new');H.galItems=items.filter(isCompletedGal);H.houseItems=items.filter(isCompletedHouse);H.loaded.active=true;H.errors.active=false}
     catch(error){H.errors.active=true;console.warn('HOME active summary unavailable',error)}
   }
   async function fetchSourcingHome(){
@@ -258,11 +295,19 @@
     if(itemId){document.getElementById('card-'+cssSafe(itemId))?.scrollIntoView({block:'start',behavior:'instant'})}
     else scrollToList();
   }
+  async function openHouseDraft(itemId=null){
+    if(app.busy){toast('読み込み完了後に開いてください','bad');return}
+    leaveHome();
+    await load('house');
+    if(itemId){document.getElementById('card-'+cssSafe(itemId))?.scrollIntoView({block:'start',behavior:'instant'})}
+    else scrollToList();
+  }
   async function runAction(action){
     if(action==='home'){showHome();return}
     if(action==='refresh'){await refreshHome();return}
     if(action==='more'){document.getElementById('homeLauncher')?.scrollIntoView({block:'start',behavior:'smooth'});return}
     if(action==='fp-draft'){await openFpDraft();return}
+    if(action==='house-draft'){await openHouseDraft();return}
     if(action==='tasks'){openTasks();return}
     if(action==='pending'){await openActive();return}
     if(action==='priority'){await openActive('all','S');return}
@@ -284,6 +329,8 @@
     if(domain){bump(domain);openActive(domain.dataset.homeDomain);return}
     const fpItem=event.target.closest('[data-home-fp-item]');
     if(fpItem){bump(fpItem);openFpDraft(fpItem.dataset.homeFpItem);return}
+    const houseItem=event.target.closest('[data-home-house-item]');
+    if(houseItem){bump(houseItem);openHouseDraft(houseItem.dataset.homeHouseItem);return}
     const item=event.target.closest('[data-home-item]');
     if(item){bump(item);openActive('all','all',item.dataset.homeItem);return}
     const shortcut=event.target.closest('[data-home-shortcut]');
@@ -298,9 +345,9 @@
   document.getElementById('fileRefresh')?.addEventListener('click',interceptRefresh,true);
   document.addEventListener('keydown',event=>{if(H.active&&event.key==='F5'){event.preventDefault();event.stopImmediatePropagation();refreshHome()}},true);
 
-  document.querySelectorAll('.status-bar .status-panel').forEach(el=>{if(/^ver\s/i.test(el.textContent.trim()))el.textContent='ver 1.65'});
+  document.querySelectorAll('.status-bar .status-panel').forEach(el=>{if(/^ver\s/i.test(el.textContent.trim()))el.textContent='ver 1.66'});
   const helpNote=document.querySelector('#helpModal .help-note');
-  if(helpNote)helpNote.textContent=helpNote.textContent.replace(/ver\s+[\d.]+/i,'ver 1.65');
+  if(helpNote)helpNote.textContent=helpNote.textContent.replace(/ver\s+[\d.]+/i,'ver 1.66');
   showHome();
   renderHome();
   setTimeout(refreshHome,180);
