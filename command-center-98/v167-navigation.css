@@ -30,6 +30,7 @@
 .cc-navigation #xTabs,.cc-navigation #redditTabs,.cc-navigation #sourcingTabs{display:flex;flex-wrap:wrap!important;overflow:visible!important;gap:5px;height:auto}
 .cc-navigation #xTabs button,.cc-navigation #redditTabs button,.cc-navigation #sourcingTabs button{white-space:normal;min-height:34px}
 .cc-navigation .x-spacer,.cc-navigation .reddit-toolbar-spacer,.cc-navigation #sourcingTabs .separator{display:none}
+.cc-navigation .next-action{display:none!important}
 .cc-navigation #list>.thread,.cc-navigation #xList>.x-card,.cc-navigation #redditBody>.reddit-card,.cc-navigation .sourcing-grid>.sourcing-card{position:relative;margin:0;border:1px solid #999;box-shadow:none;background:#fff;min-width:0}
 .cc-navigation #list,.cc-navigation #xList,.cc-navigation #redditBody,.cc-navigation .sourcing-grid{display:grid;grid-template-columns:1fr;gap:7px}
 .cc-item-summary{position:relative;display:block;padding:12px 16px 10px 30px;cursor:pointer;list-style:none;background:#fff;color:#111}
@@ -77,3 +78,4 @@
   .reddit-fab{display:none!important}
   .cc-navigation .task-table{table-layout:fixed}
 }
+
