@@ -11,80 +11,78 @@
     activeItems:[],
     activeMeta:null,
     sourcing:null,
+    cardItems:[],
     tasks:[],
     taskCounts:null,
-    loaded:{active:false,sourcing:false,tasks:false},
-    errors:{active:false,sourcing:false,tasks:false},
+    loaded:{active:false,sourcing:false,cards:false,tasks:false},
+    errors:{active:false,sourcing:false,cards:false,tasks:false},
     refreshedAt:null
+  };
+
+  const destinations={
+    home:{label:'HOME',description:'新しい情報を見る',action:'home'},
+    cards:{label:'カード投稿',description:'投稿候補を開く',shortcut:'x'},
+    fp:{label:'FP',description:'FP・家計の情報',domain:'money'},
+    sourcing:{label:'仕入れ',description:'仕入れ候補を開く',action:'sourcing-queue'},
+    daily:{label:'作業日報',description:'日報を開く',shortcut:'daily'},
+    more:{label:'その他',description:'すべての入口',action:'more'},
+    cooney:{label:'92',description:'92を開く',shortcut:'cooney'},
+    reddit:{label:'海外差',description:'海外情報を見る',shortcut:'reddit'},
+    subsidy:{label:'補助金',description:'補助金の情報',domain:'subsidy'},
+    company:{label:'会社',description:'会社・業界の情報',domain:'company'},
+    ai:{label:'AI',description:'AI実務の情報',domain:'ai'},
+    deal:{label:'お得',description:'お得情報',domain:'deal'},
+    tasks:{label:'監視',description:'監視タスクを確認',action:'tasks'}
+  };
+  const destinationButton=(key,className='push-button')=>{
+    const item=destinations[key];
+    const target=item.action?'data-home-action="'+item.action+'"':item.domain?'data-home-domain="'+item.domain+'"':'data-home-shortcut="'+item.shortcut+'"';
+    return '<button class="'+className+'" type="button" '+target+'><b>'+item.label+'</b><span>'+item.description+'</span></button>';
   };
 
   const html=`
     <section class="command-home" id="commandHome" aria-labelledby="homeTitle">
-      <section class="home-window home-decision-window">
-        <div class="home-window-title"><span id="homeTitle">今日の判断</span><small id="homeUpdated">実データを集計中...</small></div>
-        <div class="home-window-body">
-          <div class="home-decision-grid" aria-label="今日確認する件数">
-            <button class="home-metric is-urgent" type="button" data-home-action="pending"><span class="home-metric-label">要判断</span><b class="home-metric-value" id="homeDecisionPending">--</b><span class="home-metric-note">未確認の案件</span></button>
-            <button class="home-metric is-urgent" type="button" data-home-action="deadlines"><span class="home-metric-label">締切要確認</span><b class="home-metric-value" id="homeDecisionDeadline">--</b><span class="home-metric-note" id="homeDecisionDeadlineNote">期限超過と14日以内</span></button>
-            <button class="home-metric" type="button" data-home-action="priority"><span class="home-metric-label">最優先</span><b class="home-metric-value" id="homeDecisionPriority">--</b><span class="home-metric-note">Sランクの未確認</span></button>
-            <button class="home-metric is-urgent" type="button" data-home-action="sourcing-queue"><span class="home-metric-label">仕入れ判断</span><b class="home-metric-value" id="homeDecisionSourcing">--</b><span class="home-metric-note">条件確認済み候補</span></button>
-          </div>
-          <section class="home-priority-box" aria-labelledby="homePriorityTitle">
-            <div class="home-priority-head"><b id="homePriorityTitle">先に見る案件</b><span>締切と優先度順</span></div>
-            <div class="home-priority-list" id="homePriorityList" aria-live="polite"><div class="home-empty-row">集計中...</div></div>
+      <nav class="home-primary-nav" aria-label="主要画面">
+        ${['home','cards','fp','sourcing','daily','more'].map(key=>destinationButton(key,'home-nav-button'+(key==='home'?' selected':''))).join('')}
+      </nav>
+
+      <section class="home-system-alert" id="homeSystemAlert" hidden aria-live="polite">
+        <div><b>更新できない情報があります</b><span id="homeSystemAlertText">取得状況を確認してください。</span></div>
+        <button class="push-button small" type="button" data-home-action="refresh">再読み込み</button>
+      </section>
+
+      <section class="home-window home-feed-window">
+        <div class="home-window-title"><span id="homeTitle">新着</span><small id="homeUpdated">実データを集計中...</small></div>
+        <div class="home-window-body home-main-feeds">
+          <section class="home-feed-card" aria-labelledby="homeCardsTitle">
+            <header><button type="button" data-home-shortcut="x" id="homeCardsTitle">カード投稿</button><span id="homeCardsCount">--</span></header>
+            <div class="home-feed-list" id="homeCardsList" aria-live="polite"><div class="home-empty-row">読み込み中...</div></div>
+            <button class="home-feed-more" type="button" data-home-shortcut="x">カード投稿を開く</button>
+          </section>
+          <section class="home-feed-card" aria-labelledby="homeFpTitle">
+            <header><button type="button" data-home-domain="money" id="homeFpTitle">FP</button><span id="homeFpCount">--</span></header>
+            <div class="home-feed-list" id="homeFpList" aria-live="polite"><div class="home-empty-row">読み込み中...</div></div>
+            <button class="home-feed-more" type="button" data-home-domain="money">FPを開く</button>
+          </section>
+          <section class="home-feed-card" aria-labelledby="homeSourcingTitle">
+            <header><button type="button" data-home-action="sourcing-queue" id="homeSourcingTitle">仕入れ</button><span id="homeSourcingCount">--</span></header>
+            <div class="home-feed-list" id="homeSourcingList" aria-live="polite"><div class="home-empty-row">読み込み中...</div></div>
+            <button class="home-feed-more" type="button" data-home-action="sourcing-queue">仕入れを開く</button>
           </section>
         </div>
       </section>
 
-      <div class="home-panel-grid">
-        <section class="home-panel home-panel-sourcing" aria-labelledby="homeSourcingTitle">
-          <div class="home-panel-title"><span id="homeSourcingTitle">仕入れ</span><small id="homeSourcingUpdated">確認中...</small></div>
-          <div class="home-panel-body" id="homeSourcingBody">
-            <button class="home-row is-alert" type="button" data-home-action="sourcing-queue"><span>仕入れ判断</span><b id="homeSourcingQueue">--</b></button>
-            <button class="home-row" type="button" data-home-action="sourcing-success"><span>仕入れできた</span><b id="homeSourcingSuccess">--</b></button>
-            <button class="home-row" type="button" data-home-action="sourcing-close"><span>惜しかった</span><b id="homeSourcingClose">--</b></button>
-            <button class="home-row" type="button" data-home-action="sourcing-suppliers"><span>仕入れ先</span><b id="homeSourcingSuppliers">--</b></button>
-            <div class="home-panel-highlight" id="homeSourcingHighlight"><b>直近の重要候補</b><span>読み込み中...</span></div>
-            <div class="home-panel-error" id="homeSourcingError" hidden>仕入れデータを取得できません。更新で再試行できます。</div>
-          </div>
-        </section>
+      <section class="home-window home-other-window">
+        <div class="home-window-title"><span>その他の新着</span><small>カード・FP・仕入れ以外</small></div>
+        <div class="home-other-list" id="homeOtherList" aria-live="polite"><div class="home-empty-row">読み込み中...</div></div>
+      </section>
 
-        <section class="home-panel home-panel-information" aria-labelledby="homeInformationTitle">
-          <div class="home-panel-title"><span id="homeInformationTitle">情報</span><small>未確認を分野別に集計</small></div>
-          <div class="home-panel-body">
-            <button class="home-row" type="button" data-home-domain="money"><span>FP・家計</span><b id="homeInfoMoney">--</b></button>
-            <button class="home-row" type="button" data-home-domain="subsidy"><span>補助金</span><b id="homeInfoSubsidy">--</b></button>
-            <button class="home-row" type="button" data-home-domain="ai"><span>AI実務</span><b id="homeInfoAi">--</b></button>
-            <button class="home-row" type="button" data-home-domain="deal"><span>お得</span><b id="homeInfoDeal">--</b></button>
-            <div class="home-panel-highlight" id="homeInformationHighlight"><b>最新の未確認</b><span>読み込み中...</span></div>
-            <div class="home-panel-error" id="homeInformationError" hidden>情報データを取得できません。更新で再試行できます。</div>
-          </div>
-        </section>
-
-        <section class="home-panel home-panel-monitoring" aria-labelledby="homeMonitoringTitle">
-          <div class="home-panel-title"><span id="homeMonitoringTitle">監視タスク</span><small>ChatGPT通知</small></div>
-          <div class="home-panel-body">
-            <button class="home-row" type="button" data-home-action="tasks"><span>稼働中</span><b id="homeTaskEnabled">--</b></button>
-            <button class="home-row" type="button" data-home-action="tasks"><span>通知ON</span><b id="homeTaskNotify">--</b></button>
-            <button class="home-row is-alert" type="button" data-home-action="tasks"><span>結果連携待ち</span><b id="homeTaskWaiting">--</b></button>
-            <div class="home-panel-meta" id="homeTaskLastRun">最終実行を確認中...</div>
-            <div class="home-panel-error" id="homeTaskError" hidden>監視タスクを取得できません。更新で再試行できます。</div>
-          </div>
-        </section>
-
-        <section class="home-panel home-panel-shortcuts" aria-labelledby="homeShortcutsTitle">
-          <div class="home-panel-title"><span id="homeShortcutsTitle">その他の入口</span><small>既存機能はそのまま開きます</small></div>
-          <div class="home-panel-body home-shortcut-body">
-            <button class="push-button small" type="button" data-home-shortcut="daily">作業日報</button>
-            <button class="push-button small" type="button" data-home-shortcut="cooney">92</button>
-            <button class="push-button small" type="button" data-home-shortcut="x">カード投稿</button>
-            <button class="push-button small" type="button" data-home-shortcut="reddit">海外差</button>
-            <button class="push-button small" type="button" data-home-domain="money">FP</button>
-            <button class="push-button small" type="button" data-home-domain="ai">AI</button>
-            <span class="home-shortcut-note">粗利・月間目標は確実な実データがないためHOMEには表示していません。</span>
-          </div>
-        </section>
-      </div>
+      <section class="home-window home-launcher-window" id="homeLauncher">
+        <div class="home-window-title"><span>その他の入口</span><small>目的の画面へ直接移動</small></div>
+        <div class="home-launcher-grid">
+          ${['cooney','reddit','subsidy','company','ai','deal','tasks'].map(key=>destinationButton(key,'home-launcher-card')).join('')}
+        </div>
+      </section>
     </section>`;
 
   body.querySelector('.hero')?.insertAdjacentHTML('beforebegin',html);
@@ -99,33 +97,30 @@
   const mobile=document.createElement('nav');
   mobile.className='home-mobile-nav';
   mobile.setAttribute('aria-label','ホームの主要画面');
-  mobile.innerHTML='<button class="push-button selected" type="button" data-home-action="home">HOME</button><button class="push-button" type="button" data-home-action="sourcing-queue">仕入れ</button><button class="push-button" type="button" data-home-action="pending">未確認</button><button class="push-button" type="button" data-home-action="tasks">監視</button>';
+  mobile.innerHTML='<button class="push-button selected" type="button" data-home-action="home">HOME</button><button class="push-button" type="button" data-home-shortcut="x">カード</button><button class="push-button" type="button" data-home-domain="money">FP</button><button class="push-button" type="button" data-home-action="sourcing-queue">仕入れ</button>';
   document.body.appendChild(mobile);
 
   const setText=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value};
   const countText=value=>Number.isFinite(Number(value))?Number(value).toLocaleString('ja-JP')+'件':'--';
-  const maxDate=values=>values.map(v=>new Date(v)).filter(d=>Number.isFinite(d.getTime())).sort((a,b)=>b-a)[0]||null;
-  const parseDeadline=value=>{
-    if(!value||!/^\d{4}-\d{2}-\d{2}/.test(String(value)))return null;
-    const d=new Date(String(value).slice(0,10)+'T23:59:59');
-    return Number.isFinite(d.getTime())?d:null;
-  };
-  const deadlineState=()=>{
-    const today=new Date();today.setHours(0,0,0,0);
-    const end=new Date(today);end.setDate(end.getDate()+14);end.setHours(23,59,59,999);
-    const overdue=[],soon=[];
-    for(const item of H.activeItems){const date=parseDeadline(item.deadline);if(!date)continue;if(date<today)overdue.push({item,date});else if(date<=end)soon.push({item,date})}
-    overdue.sort((a,b)=>a.date-b.date);soon.sort((a,b)=>a.date-b.date);
-    return {overdue,soon,all:[...overdue,...soon]};
-  };
-  const priorityItems=()=>{
-    const due=deadlineState().all.map(x=>x.item),seen=new Set(due.map(x=>String(x.id)));
-    const ranked=H.activeItems.filter(x=>!seen.has(String(x.id))&&x.priority==='S').sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||new Date(b.lastSeen||0)-new Date(a.lastSeen||0));
-    return [...due,...ranked].slice(0,3);
+  const timeValue=value=>{const result=value?new Date(value).getTime():0;return Number.isFinite(result)?result:0};
+  const itemTime=item=>item?.updatedAt||item?.lastSeen||item?.detectedAt||item?.createdAt||item?.applicationDeadline||null;
+  const newest=items=>[...(items||[])].sort((a,b)=>timeValue(itemTime(b))-timeValue(itemTime(a)));
+  const timeLabel=value=>value?fmtUpdated(value):'時刻不明';
+  const renderFeed=(id,items,options={})=>{
+    const host=document.getElementById(id);
+    if(!host)return;
+    if(!options.ready){host.innerHTML='<div class="home-empty-row">読み込み中...</div>';return}
+    if(!items.length){host.innerHTML='<div class="home-empty-row">新しい情報はありません。</div>';return}
+    host.innerHTML=items.slice(0,options.limit||3).map(item=>{
+      const title=options.title?options.title(item):(item.title||'無題');
+      const meta=options.meta?options.meta(item):'';
+      const target=options.target?options.target(item):'data-home-item="'+esc(item.id)+'"';
+      return '<button class="home-feed-row" type="button" '+target+'><time>'+esc(timeLabel(itemTime(item)))+'</time><span><b>'+esc(title)+'</b>'+(meta?'<small>'+esc(meta)+'</small>':'')+'</span></button>';
+    }).join('');
   };
   const updateLabel=()=>{
     const parts=[];
-    if(H.errors.active||H.errors.sourcing||H.errors.tasks)parts.push('一部取得失敗');
+    if(H.errors.active||H.errors.sourcing||H.errors.cards||H.errors.tasks)parts.push('一部取得失敗');
     if(H.refreshedAt)parts.push('更新 '+fmtUpdated(H.refreshedAt));
     setText('homeUpdated',parts.join(' / ')||(H.loading?'実データを集計中...':'更新待ち'));
   };
@@ -133,52 +128,41 @@
   function renderActive(){
     const ready=H.loaded.active;
     const items=H.activeItems;
-    const deadlines=deadlineState();
-    setText('homeDecisionPending',ready?countText(items.length):'--');
-    setText('homeDecisionPriority',ready?countText(items.filter(x=>x.priority==='S').length):'--');
-    setText('homeDecisionDeadline',ready?countText(deadlines.all.length):'--');
-    setText('homeDecisionDeadlineNote',ready?'超過 '+deadlines.overdue.length+'件 / 14日内 '+deadlines.soon.length+'件':'期限超過と14日以内');
-    for(const domain of ['money','subsidy','ai','deal'])setText('homeInfo'+domain[0].toUpperCase()+domain.slice(1),ready?countText(items.filter(x=>x.domain===domain).length):'--');
-    const list=document.getElementById('homePriorityList');
-    const important=priorityItems();
-    if(!ready)list.innerHTML='<div class="home-empty-row">実データを集計中...</div>';
-    else if(!important.length)list.innerHTML='<div class="home-empty-row">期限間近またはSランクの未確認はありません。</div>';
-    else list.innerHTML=important.map(item=>{
-      const date=parseDeadline(item.deadline),today=new Date();today.setHours(0,0,0,0);
-      const urgency=date?(date<today?'期限超過 '+String(item.deadline).slice(0,10):'期限 '+String(item.deadline).slice(0,10)):'Sランク '+esc(item.score??'')+'点';
-      return '<button class="home-priority-item" type="button" data-home-item="'+esc(item.id)+'"><span class="home-priority-title">['+esc(labels[item.domain]||item.domain||'情報')+'] '+esc(item.title||'無題')+'</span><span class="home-priority-meta">'+esc(urgency)+'</span><span class="home-priority-next">次: '+esc(item.next||item.summary||'詳細を確認')+'</span></button>';
-    }).join('');
-    const newest=[...items].sort((a,b)=>new Date(b.lastSeen||0)-new Date(a.lastSeen||0))[0];
-    document.querySelector('#homeInformationHighlight span').textContent=ready?(newest?.title||'未確認なし'):'読み込み中...';
-    document.getElementById('homeInformationError').hidden=!H.errors.active;
+    const fpItems=newest(items.filter(item=>item.domain==='money'));
+    const otherItems=newest(items.filter(item=>!['money','sourcing'].includes(item.domain)));
+    setText('homeFpCount',ready?'未確認 '+countText(fpItems.length):'--');
+    renderFeed('homeFpList',fpItems,{ready,title:item=>item.title,meta:item=>item.priority?item.priority+' '+(item.score??'')+'点':'',limit:3});
+    renderFeed('homeOtherList',otherItems,{ready,title:item=>'['+(labels[item.domain]||item.domain||'情報')+'] '+(item.title||'無題'),meta:item=>item.summary||'',limit:5});
+  }
+
+  function renderCardsHome(){
+    const ready=H.loaded.cards;
+    const statusLabels={inbox:'未判定',candidate:'投稿候補',draft:'下書き',approved:'投稿待ち'};
+    const items=newest(H.cardItems.filter(item=>!item.isExpired&&!['posted','rejected','expired'].includes(item.status)));
+    setText('homeCardsCount',ready?'候補 '+countText(items.length):'--');
+    renderFeed('homeCardsList',items,{ready,title:item=>item.productName||'カード情報',meta:item=>statusLabels[item.status]||'候補',target:()=> 'data-home-shortcut="x"',limit:3});
   }
 
   function renderSourcingHome(){
-    const data=H.sourcing||{},items=Array.isArray(data.items)?data.items:[],counts=data.counts||{};
+    const data=H.sourcing||{},items=Array.isArray(data.items)?data.items:[];
     const ready=H.loaded.sourcing;
-    const queue=ready?items.filter(x=>typeof isReadySourcing==='function'?isReadySourcing(x):(!x.sourcingVerdict&&(x.reviewState||'new')==='new')).sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||new Date(b.lastSeen||0)-new Date(a.lastSeen||0)):[];
-    setText('homeDecisionSourcing',ready?countText(queue.length):'--');
-    setText('homeSourcingQueue',ready?countText(queue.length):'--');
-    setText('homeSourcingSuccess',ready?countText(counts.success??items.filter(x=>x.sourcingVerdict==='success').length):'--');
-    setText('homeSourcingClose',ready?countText(counts.close??items.filter(x=>x.sourcingVerdict==='close').length):'--');
-    setText('homeSourcingSuppliers',ready?Number(counts.suppliers??data.suppliers?.length??0).toLocaleString('ja-JP')+'店':'--');
-    setText('homeSourcingUpdated',ready?'更新 '+fmtUpdated(data.generatedAt||maxDate(items.map(x=>x.lastSeen))):'確認中...');
-    document.querySelector('#homeSourcingHighlight span').textContent=ready?(queue[0]?.title||'仕入れ判断待ちなし'):'読み込み中...';
-    document.getElementById('homeSourcingError').hidden=!H.errors.sourcing;
+    const queue=ready?newest(items.filter(x=>typeof isReadySourcing==='function'?isReadySourcing(x):(!x.sourcingVerdict&&(x.reviewState||'new')==='new'))):[];
+    setText('homeSourcingCount',ready?'候補 '+countText(queue.length):'--');
+    renderFeed('homeSourcingList',queue,{ready,title:item=>item.title||'仕入れ候補',meta:item=>item.priority?item.priority+' '+(item.score??'')+'点':'',target:()=> 'data-home-action="sourcing-queue"',limit:3});
   }
 
-  function renderTasksHome(){
-    const c=H.taskCounts||{},tasks=H.tasks||[],ready=H.loaded.tasks;
-    const total=Number(c.enabled??tasks.filter(x=>x.enabled).length),bridged=Number(c.bridged??tasks.filter(x=>x.enabled&&x.bridge).length),waiting=Math.max(0,total-bridged);
-    setText('homeTaskEnabled',ready?countText(total):'--');
-    setText('homeTaskNotify',ready?countText(c.notify??tasks.filter(x=>x.notifications).length):'--');
-    setText('homeTaskWaiting',ready?countText(waiting):'--');
-    const latest=maxDate(tasks.map(x=>x.lastRun));
-    setText('homeTaskLastRun',ready?(latest?'最終実行 '+fmtDate(latest):'最終実行の記録なし'):'最終実行を確認中...');
-    document.getElementById('homeTaskError').hidden=!H.errors.tasks;
+  function renderSystemAlert(){
+    const failed=[];
+    if(H.errors.active)failed.push('情報');
+    if(H.errors.cards)failed.push('カード投稿');
+    if(H.errors.sourcing)failed.push('仕入れ');
+    if(H.errors.tasks)failed.push('監視タスク');
+    const alert=document.getElementById('homeSystemAlert');
+    alert.hidden=!failed.length;
+    setText('homeSystemAlertText',failed.length?failed.join('・')+'を更新できませんでした。':'');
   }
 
-  function renderHome(){renderActive();renderSourcingHome();renderTasksHome();updateLabel()}
+  function renderHome(){renderActive();renderCardsHome();renderSourcingHome();renderSystemAlert();updateLabel()}
 
   async function readJson(url){
     const response=await fetch(url,{cache:'no-store',headers:authHeaders()});
@@ -195,6 +179,13 @@
     try{H.sourcing=await readJson(API+'?resource=sourcing');H.loaded.sourcing=true;H.errors.sourcing=false}
     catch(error){H.errors.sourcing=true;console.warn('HOME sourcing summary unavailable',error)}
   }
+  async function fetchCardsHome(){
+    try{
+      if(!window.CCX?.request)throw new Error('カード投稿機能を読み込めません');
+      const data=await window.CCX.request({headers:authHeaders()});
+      H.cardItems=Array.isArray(data.items)?data.items:[];H.loaded.cards=true;H.errors.cards=false;
+    }catch(error){H.errors.cards=true;console.warn('HOME card summary unavailable',error)}
+  }
   async function fetchTasksHome(){
     try{const data=await readJson(API+'?resource=tasks');H.tasks=Array.isArray(data.tasks)?data.tasks:[];H.taskCounts=data.counts||{};H.loaded.tasks=true;H.errors.tasks=false}
     catch(error){H.errors.tasks=true;console.warn('HOME task summary unavailable',error)}
@@ -202,7 +193,7 @@
   async function refreshHome(){
     if(H.loading)return;
     H.loading=true;updateLabel();
-    await Promise.allSettled([fetchActive(),fetchSourcingHome(),fetchTasksHome()]);
+    await Promise.allSettled([fetchActive(),fetchCardsHome(),fetchSourcingHome(),fetchTasksHome()]);
     H.refreshedAt=new Date();H.loading=false;renderHome();
   }
 
@@ -228,13 +219,12 @@
   }
   async function runAction(action){
     if(action==='home'){showHome();return}
+    if(action==='refresh'){await refreshHome();return}
+    if(action==='more'){document.getElementById('homeLauncher')?.scrollIntoView({block:'start',behavior:'smooth'});return}
     if(action==='tasks'){openTasks();return}
     if(action==='pending'){await openActive();return}
     if(action==='priority'){await openActive('all','S');return}
-    if(action==='deadlines'){
-      const first=deadlineState().all[0]?.item;
-      await openActive('all','all',first?.id||null);return;
-    }
+    if(action==='deadlines'){await openActive();return}
     const sourcing={
       'sourcing-queue':'queue','sourcing-success':'success','sourcing-close':'close','sourcing-suppliers':'suppliers'
     }[action];
@@ -264,9 +254,9 @@
   document.getElementById('fileRefresh')?.addEventListener('click',interceptRefresh,true);
   document.addEventListener('keydown',event=>{if(H.active&&event.key==='F5'){event.preventDefault();event.stopImmediatePropagation();refreshHome()}},true);
 
-  document.querySelectorAll('.status-bar .status-panel').forEach(el=>{if(/^ver\s/i.test(el.textContent.trim()))el.textContent='ver 1.61'});
+  document.querySelectorAll('.status-bar .status-panel').forEach(el=>{if(/^ver\s/i.test(el.textContent.trim()))el.textContent='ver 1.64'});
   const helpNote=document.querySelector('#helpModal .help-note');
-  if(helpNote)helpNote.textContent=helpNote.textContent.replace(/ver\s+[\d.]+/i,'ver 1.61');
+  if(helpNote)helpNote.textContent=helpNote.textContent.replace(/ver\s+[\d.]+/i,'ver 1.64');
   showHome();
   renderHome();
   setTimeout(refreshHome,180);
