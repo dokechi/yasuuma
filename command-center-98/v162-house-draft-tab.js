@@ -1,0 +1,150 @@
+(()=>{
+  if(typeof API==='undefined'||typeof load!=='function'||typeof authHeaders!=='function')return;
+
+  const TASK_ID='6aa77eb5ce7881919d8dc62554833b60';
+  const tabs=document.getElementById('viewTabs');
+  if(!tabs||document.getElementById('houseDraftViewBtn'))return;
+
+  const button=document.createElement('button');
+  button.type='button';
+  button.id='houseDraftViewBtn';
+  button.className='push-button small';
+  button.dataset.view='house';
+  button.setAttribute('aria-label','ガルちゃん×家の原稿を開く');
+  button.innerHTML='<span>家</span><span class="fp-tab-badge" id="houseDraftTabBadge">…</span>';
+  const saved=tabs.querySelector('[data-view="saved"]');
+  saved?.insertAdjacentElement('beforebegin',button);
+
+  const taskId=item=>{
+    if(typeof signalTaskId==='function')return signalTaskId(item);
+    const prefix='task:'+TASK_ID+':';
+    return String(item?.id||'').startsWith(prefix)?TASK_ID:'';
+  };
+  const completed=item=>{
+    if(taskId(item)!==TASK_ID)return false;
+    const payload=item?.payload||{};
+    if(payload.content_type!=='house_post_candidate'&&payload.category!=='house_living')return false;
+    const quality=window.__carouselContentPipeline?.packageQuality;
+    return typeof quality==='function'
+      ?quality(item).ready
+      :payload.draft_status==='ready'&&Array.isArray(payload.draft_slides)&&payload.draft_slides.length>=5;
+  };
+  const newestTime=item=>{
+    const values=[item?.lastSeen,item?.occurredAt,item?.detectedAt,item?.createdAt,item?.updatedAt,item?.payload?.occurred_at,item?.payload?.detected_at,item?.payload?.created_at,item?.payload?.updated_at];
+    for(const value of values){const time=Date.parse(value);if(Number.isFinite(time))return time}
+    return 0;
+  };
+  const sortNewest=items=>items.sort((a,b)=>newestTime(b)-newestTime(a));
+  const setText=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value};
+  const setBadge=count=>setText('houseDraftTabBadge',Number(count||0).toLocaleString('ja-JP'));
+
+  function leaveOtherDesks(){
+    window.CCX?.hide?.();
+    window.CCReddit?.hide?.();
+    const home=window.CCHome;
+    if(home)home.active=false;
+    document.getElementById('mainWindow')?.classList.remove('home-active');
+    document.body.classList.remove('home-mode','x-mode');
+    const homePanel=document.getElementById('commandHome');
+    if(homePanel)homePanel.hidden=true;
+    const homeButton=document.getElementById('homeViewBtn');
+    homeButton?.classList.remove('selected');
+    homeButton?.setAttribute('aria-pressed','false');
+    document.getElementById('sourcingHub')?.setAttribute('hidden','');
+    const regular=document.getElementById('regularHub');
+    if(regular)regular.hidden=false;
+    const domains=document.getElementById('domainTabs');
+    if(domains)domains.hidden=true;
+  }
+
+  function renderStats(data,items){
+    const copyReady=items.filter(item=>{
+      const issues=window.__carouselContentPipeline?.preflightIssues;
+      return typeof issues!=='function'||issues(item.payload||{}).length===0;
+    }).length;
+    setText('kpiLabelCount','家の完成原稿');
+    setText('kpiCount',items.length+'件');
+    setText('kpiLabelS','画像化可能');
+    setText('kpiS',copyReady+'件');
+    setText('kpiLabelImpact','選択済み');
+    setText('kpiImpact',items.filter(item=>item.reviewState==='accepted').length+'件');
+    document.getElementById('kpiImpact')?.classList.remove('has-value');
+    setText('kpiLabelStored','家候補');
+    setText('kpiStored',items.length+'件');
+    setText('agentCount',(data.agents?.connected??7)+'/'+(data.agents?.total??7));
+    setText('generatedAt','更新 '+fmtUpdated(data.generatedAt));
+  }
+
+  function renderHouseList(data,items){
+    app.data=data;
+    app.items=items;
+    renderList();
+    setText('listCaption','ガルちゃん×家｜完成原稿');
+    setText('visibleCount',items.length+'件');
+    const filter=document.getElementById('listFilter');
+    if(filter){filter.hidden=false;filter.innerHTML='<span><b>家づくりの完成原稿</b> · 新しい候補が上</span>'}
+    renderStats(data,items);
+    setBadge(items.length);
+  }
+
+  async function fetchHouseItems(){
+    const response=await fetch(API+'?view=history',{cache:'no-store',headers:authHeaders()});
+    if(response.status===401){authExpired();throw new Error('認証の有効期限が切れました')}
+    const data=await response.json();
+    if(!response.ok||!data?.ok)throw new Error(data?.error||('HTTP '+response.status));
+    return {data,items:sortNewest((Array.isArray(data.items)?data.items:[]).filter(completed))};
+  }
+
+  async function loadHouse(){
+    if(app.busy)return;
+    app.busy=true;
+    app.view='house';app.domain='all';app.rank='all';
+    leaveOtherDesks();
+    setSelected('#viewTabs button[data-view]','view','house');
+    button.setAttribute('aria-pressed','true');
+    const refresh=document.getElementById('refreshBtn');
+    if(refresh)refresh.disabled=true;
+    setStatus('家の完成原稿を読み込み中...',true);
+    showLoading();
+    try{
+      const {data,items}=await fetchHouseItems();
+      if(app.view!=='house')return;
+      renderHouseList(data,items);
+      setStatus('準備完了｜家の完成原稿 '+items.length+'件');
+    }catch(error){
+      const host=document.getElementById('list');
+      if(host)host.innerHTML='<div class="empty"><b>家の完成原稿を取得できませんでした。</b><br><small>'+esc(error.message||error)+'</small><br><br><button class="push-button" onclick="load(\'house\')">再試行</button></div>';
+      setStatus('通信エラー');
+      toast('家の完成原稿の読み込みに失敗しました','bad');
+    }finally{
+      app.busy=false;
+      if(refresh)refresh.disabled=false;
+    }
+  }
+
+  const previousLoad=load;
+  load=async function(view=app.view){
+    button.setAttribute('aria-pressed',view==='house'?'true':'false');
+    if(view==='house')return loadHouse();
+    return previousLoad(view);
+  };
+
+  async function refreshBadge(){
+    try{const {items}=await fetchHouseItems();setBadge(items.length)}
+    catch(error){setText('houseDraftTabBadge','!');console.warn('House draft tab count unavailable',error)}
+  }
+
+  const style=document.createElement('style');
+  style.textContent=`
+    #viewTabs>#houseDraftViewBtn{width:70px;min-width:70px;background:#dff1e8;font-weight:700}
+    #viewTabs>#houseDraftViewBtn.selected{background:#c9eadc}
+    @media(max-width:700px){#viewTabs>#houseDraftViewBtn{width:64px;min-width:64px;min-height:36px}}
+  `;
+  document.head.appendChild(style);
+
+  document.querySelectorAll('.status-bar .status-panel').forEach(el=>{if(/^ver\s/i.test(el.textContent.trim()))el.textContent='ver 1.62'});
+  const helpNote=document.querySelector('#helpModal .help-note');
+  if(helpNote)helpNote.textContent=helpNote.textContent.replace(/ver\s+[\d.]+/i,'ver 1.62');
+  window.__houseDraftTab={taskId:TASK_ID,completed,load:loadHouse,refreshBadge};
+  setTimeout(refreshBadge,650);
+})();
