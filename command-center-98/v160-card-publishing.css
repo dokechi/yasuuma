@@ -22,3 +22,22 @@
 .x-editor small{display:block}
 @media(max-width:860px){.x-stats{grid-template-columns:repeat(3,1fr)}.x-draft-grid{grid-template-columns:1fr}.x-value-hook{grid-template-columns:1fr}.x-value-hook b{white-space:normal}}
 @media(max-width:700px){.x-stats{grid-template-columns:1fr 1fr}}
+
+.x-copy-moment{margin-left:auto;border:1px solid #777;background:#ececec;padding:2px 6px;font-size:11px;white-space:nowrap}
+.x-copy-moment.day_before{background:#fff3bd}
+.x-copy-moment.deadline_day{background:#ffd7d7;color:#8a0000}
+.x-copy-moment.after_deadline{background:#ddd;color:#555}
+.x-copy-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 8px 8px}
+.x-draft-grid .x-draft>.x-copy-controls{margin:0 8px 8px}
+.x-copy-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:12px;color:#333}
+.x-copy-meta .push-button{font-size:11px}
+.x-copy-warning{margin:0 8px 8px;padding:6px 8px;border-left:4px solid #d48400;background:#fff3bd;font-size:12px;line-height:1.45}
+.x-copy-history{margin:0 8px 8px;border:2px solid;border-color:#808080 #fff #fff #808080;background:#f4f4f4;padding:5px}
+.x-copy-entry{border-bottom:1px solid #aaa}
+.x-copy-entry:last-child{border-bottom:0}
+.x-copy-entry summary{display:grid;grid-template-columns:58px 1fr auto;gap:8px;align-items:center;padding:7px;cursor:pointer;font-size:12px}
+.x-copy-entry summary:hover{background:#dfe8ff}
+.x-copy-entry summary span:last-child{border:1px solid #888;background:#fff;padding:1px 5px}
+.x-copy-entry pre{margin:0 7px 8px;max-height:210px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:#fff;border:1px solid #999;padding:8px;font:12px/1.55 "Yu Gothic UI",Meiryo,sans-serif;color:#111}
+.x-copy-empty{padding:8px;font-size:12px;color:#555}
+@media(max-width:700px){.x-copy-controls{align-items:flex-start;flex-direction:column}.x-copy-entry summary{grid-template-columns:52px 1fr}.x-copy-entry summary span:last-child{grid-column:2}}

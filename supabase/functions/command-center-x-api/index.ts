@@ -132,6 +132,82 @@ function threadLength(value: string) {
   return Array.from(value).length;
 }
 
+
+const COPY_STAGES = new Set(["opening", "before_deadline", "day_before", "deadline_day", "after_deadline", "general"]);
+
+function tokyoDayIndex(value: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(value);
+  const values: Record<string, number> = {};
+  for (const part of parts) {
+    if (["year", "month", "day"].includes(part.type)) values[part.type] = Number(part.value);
+  }
+  return Date.UTC(values.year, values.month - 1, values.day) / 86400000;
+}
+
+function copyStage(deadline: unknown, draftType: unknown, copiedAt: string) {
+  const type = TYPES.has(String(draftType || "")) ? String(draftType) : "general";
+  if (!deadline) return type === "opening" ? "opening" : type === "deadline" ? "before_deadline" : "general";
+  const due = new Date(String(deadline));
+  const copied = new Date(copiedAt);
+  if (Number.isNaN(due.valueOf()) || Number.isNaN(copied.valueOf())) return "general";
+  if (due.valueOf() <= copied.valueOf()) return "after_deadline";
+  const days = tokyoDayIndex(due) - tokyoDayIndex(copied);
+  if (days === 0) return "deadline_day";
+  if (days === 1) return "day_before";
+  if (type === "opening") return "opening";
+  if (type === "deadline") return "before_deadline";
+  return "general";
+}
+
+function mapCopyEvent(row: Record<string, any>) {
+  return {
+    id: row.id,
+    clientEventId: row.client_event_id,
+    candidateId: row.candidate_id,
+    platform: row.platform,
+    draftType: row.draft_type,
+    relativeStage: row.relative_stage,
+    textSnapshot: row.text_snapshot,
+    deadlineSnapshot: row.deadline_snapshot,
+    createdAt: row.created_at,
+  };
+}
+
+function blankCopySummary() {
+  return {
+    x: { count: 0, lastAt: null },
+    threads: { count: 0, lastAt: null },
+  };
+}
+
+function copySummaryMap(rows: Record<string, any>[]) {
+  const result: Record<string, any> = {};
+  for (const value of rows || []) {
+    const candidateId = String(value.candidate_id || "");
+    const platform = String(value.platform || "");
+    if (!candidateId || !["x", "threads"].includes(platform)) continue;
+    if (!result[candidateId]) result[candidateId] = blankCopySummary();
+    result[candidateId][platform] = {
+      count: Number(value.copy_count || 0),
+      lastAt: value.last_copied_at || null,
+    };
+  }
+  return result;
+}
+
+async function copySummaryFor(candidateId: string) {
+  const { data, error } = await db.from("command_center_card_copy_summary")
+    .select("candidate_id,platform,copy_count,last_copied_at")
+    .eq("candidate_id", candidateId);
+  if (error) throw error;
+  return copySummaryMap(data || [])[candidateId] || blankCopySummary();
+}
+
 const TONE_PROFILE = "tcg_neighbor_guide_v2";
 
 type DraftParts = {
@@ -298,7 +374,7 @@ function isExpired(row: Record<string, unknown>) {
   return Number.isFinite(deadline) && deadline < Date.now();
 }
 
-function map(row: Record<string, any>) {
+function map(row: Record<string, any>, copySummary = blankCopySummary()) {
   const xMeta = tweetMeta(String(row.x_draft || ""));
   return {
     id: row.id,
@@ -330,6 +406,8 @@ function map(row: Record<string, any>) {
     xWeightedLength: xMeta.weightedLength,
     xDraftValid: !row.x_draft || xMeta.valid,
     threadsLength: threadLength(String(row.threads_draft || "")),
+    copySummary,
+    deadlinePassed: !!row.application_deadline && new Date(String(row.application_deadline)).valueOf() <= Date.now(),
     valueHook: row.value_hook,
     valueHookKind: row.value_hook_kind,
     valueHookSourceUrl: row.value_hook_source_url,
@@ -444,6 +522,23 @@ Deno.serve(async (req: Request) => {
   if (!(await auth(req))) return json(req, { ok: false, error: "unauthorized" }, 401);
   try {
     if (req.method === "GET") {
+      const requestUrl = new URL(req.url);
+      const historyId = String(requestUrl.searchParams.get("history") || "");
+      if (historyId) {
+        await row(historyId);
+        const { data, error, count } = await db.from("command_center_card_copy_history")
+          .select("id,client_event_id,candidate_id,platform,draft_type,relative_stage,text_snapshot,deadline_snapshot,created_at", { count: "exact" })
+          .eq("candidate_id", historyId)
+          .order("created_at", { ascending: false })
+          .limit(500);
+        if (error) throw error;
+        return json(req, {
+          ok: true,
+          history: (data || []).map(mapCopyEvent),
+          total: Number(count || 0),
+        });
+      }
+
       const { data, error } = await db.from("command_center_x_candidates").select("*")
         .order("updated_at", { ascending: false })
         .order("detected_at", { ascending: false, nullsFirst: false })
@@ -451,7 +546,17 @@ Deno.serve(async (req: Request) => {
         .order("score", { ascending: false })
         .limit(400);
       if (error) throw error;
-      const items = (data || []).map(map);
+      const candidateIds = (data || []).map((value) => value.id);
+      let summaryRows: Record<string, any>[] = [];
+      if (candidateIds.length) {
+        const summaryResult = await db.from("command_center_card_copy_summary")
+          .select("candidate_id,platform,copy_count,last_copied_at")
+          .in("candidate_id", candidateIds);
+        if (summaryResult.error) throw summaryResult.error;
+        summaryRows = summaryResult.data || [];
+      }
+      const summaries = copySummaryMap(summaryRows);
+      const items = (data || []).map((value) => map(value, summaries[value.id] || blankCopySummary()));
       const counts: Record<string, number> = { total: items.length, inbox: 0, candidate: 0, draft: 0, approved: 0, expired: 0, posted: 0, rejected: 0 };
       for (const item of items) counts[item.isExpired ? "expired" : item.status] = (counts[item.isExpired ? "expired" : item.status] || 0) + 1;
       return json(req, { ok: true, items, counts, generatedAt: new Date().toISOString() });
@@ -490,6 +595,52 @@ Deno.serve(async (req: Request) => {
       if (!id) return json(req, { ok: false, error: "id_required" }, 400);
       const current = await row(id);
       const action = String(body.action || "save");
+
+
+      if (action === "copy") {
+        const platform = String(body.platform || "");
+        if (!["x", "threads"].includes(platform)) return json(req, { ok: false, error: "invalid_platform" }, 400);
+        const fallbackText = platform === "threads" ? current.threads_draft : current.x_draft;
+        const textSnapshot = String(body.textSnapshot ?? fallbackText ?? "");
+        if (!textSnapshot.trim()) return json(req, { ok: false, error: "copy_text_required" }, 400);
+        if (Array.from(textSnapshot).length > 5000) return json(req, { ok: false, error: "copy_text_too_long" }, 400);
+
+        const copiedAt = date(body.copiedAt) || new Date().toISOString();
+        const deadline = current.application_deadline ? new Date(String(current.application_deadline)).valueOf() : 0;
+        if (deadline && Number.isFinite(deadline) && deadline <= new Date(copiedAt).valueOf()) {
+          return json(req, { ok: false, error: "締切済みのためコピー履歴を記録できません" }, 409);
+        }
+
+        const rawEventId = String(body.clientEventId || "");
+        const clientEventId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(rawEventId)
+          ? rawEventId
+          : crypto.randomUUID();
+        const draftType = TYPES.has(String(current.draft_type || "")) ? String(current.draft_type) : null;
+        const eventValue = {
+          client_event_id: clientEventId,
+          candidate_id: current.id,
+          platform,
+          draft_type: draftType,
+          relative_stage: copyStage(current.application_deadline, draftType, copiedAt),
+          text_snapshot: textSnapshot,
+          deadline_snapshot: current.application_deadline || null,
+          created_at: copiedAt,
+        };
+
+        let copyEvent: Record<string, any> | null = null;
+        const inserted = await db.from("command_center_card_copy_history").insert(eventValue).select("*").single();
+        if (inserted.error?.code === "23505") {
+          const existing = await db.from("command_center_card_copy_history").select("*")
+            .eq("client_event_id", clientEventId).single();
+          if (existing.error) throw existing.error;
+          copyEvent = existing.data;
+        } else {
+          if (inserted.error) throw inserted.error;
+          copyEvent = inserted.data;
+        }
+        const summary = await copySummaryFor(current.id);
+        return json(req, { ok: true, item: map(current, summary), copyEvent: mapCopyEvent(copyEvent || eventValue) });
+      }
 
       if (action === "generate") {
         const type = TYPES.has(String(body.draftType)) ? String(body.draftType) : "opening";

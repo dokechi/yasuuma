@@ -8,15 +8,73 @@
   const link=(url,text)=>url?'<a href="'+h(url)+'" target="_blank" rel="noopener">'+h(text)+'</a>':'未登録';
   const viewStatus=item=>item.isExpired?'expired':item.status;
 
+  const stageLabels={opening:'受付開始',before_deadline:'締切前',day_before:'前日',deadline_day:'当日',after_deadline:'締切後',general:'通常'};
+  X.copyDate=value=>{
+    if(!value)return'—';
+    const parsed=new Date(value);
+    if(Number.isNaN(parsed.valueOf()))return'—';
+    return new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(parsed);
+  };
+  X.tokyoDay=value=>{
+    const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(value));
+    const out={};parts.forEach(part=>{if(['year','month','day'].includes(part.type))out[part.type]=Number(part.value)});
+    return Date.UTC(out.year,out.month-1,out.day)/86400000;
+  };
+  X.copyMoment=item=>{
+    if(!item?.applicationDeadline)return{key:'general',label:'通常'};
+    const deadline=new Date(item.applicationDeadline);
+    if(Number.isNaN(deadline.valueOf()))return{key:'general',label:'通常'};
+    if(deadline.valueOf()<=Date.now())return{key:'after_deadline',label:'受付終了'};
+    const days=X.tokyoDay(deadline)-X.tokyoDay(new Date());
+    if(days===0)return{key:'deadline_day',label:'締切当日'};
+    if(days===1)return{key:'day_before',label:'締切前日'};
+    return{key:item.draftType==='opening'?'opening':'before_deadline',label:item.draftType==='opening'?'受付開始':'締切前'};
+  };
+  X.copyMeta=(item,platform)=>{
+    const value=item?.copySummary?.[platform]||{};
+    return{count:Number(value.count||0),lastAt:value.lastAt||null};
+  };
+  X.historyId=(id,platform)=>'xCopyHistory-'+String(id).replace(/[^a-z0-9_-]/gi,'')+'-'+platform;
+  X.copyHistoryPanel=(item,platform)=>{
+    const meta=X.copyMeta(item,platform);
+    const label=platform==='threads'?'Threads':'X';
+    if(!meta.count)return'<div class="x-copy-meta"><span>'+h(label)+'：未コピー</span></div>';
+    return'<div class="x-copy-meta"><span><b>'+h(label)+'：'+h(meta.count)+'回</b>・最終 '+h(X.copyDate(meta.lastAt))+'</span><button class="push-button small" type="button" data-xhistory="'+h(item.id)+'" data-platform="'+platform+'" aria-expanded="false">履歴を見る</button></div><div class="x-copy-history" id="'+h(X.historyId(item.id,platform))+'" hidden></div>';
+  };
+  X.history=async(id,platform,button)=>{
+    const panel=by(X.historyId(id,platform));
+    if(!panel)return;
+    if(panel.dataset.loaded==='true'){
+      const opening=panel.hidden;
+      panel.hidden=!opening;button.textContent=opening?'履歴を閉じる':'履歴を見る';button.setAttribute('aria-expanded',String(opening));return;
+    }
+    button.disabled=true;button.textContent='読込中...';
+    try{
+      const response=await fetch(X.api+'?history='+encodeURIComponent(id),{cache:'no-store',headers:authHeaders()});
+      if(response.status===401){authExpired();throw new Error('認証期限切れ')}
+      const data=await response.json();if(!response.ok||!data.ok)throw new Error(data.error||('HTTP '+response.status));
+      const events=(data.history||[]).filter(event=>event.platform===platform);
+      const item=X.state.items.find(value=>value.id===id);
+      const total=X.copyMeta(item,platform).count||events.length;
+      panel.innerHTML=events.length?events.map((event,index)=>{
+        const nth=Math.max(1,total-index);
+        return'<details class="x-copy-entry"><summary><b>'+h(nth)+'回目</b><span>'+h(X.copyDate(event.createdAt))+'</span><span>'+h(stageLabels[event.relativeStage]||'通常')+'</span></summary><pre>'+h(event.textSnapshot||'')+'</pre></details>';
+      }).join(''):'<div class="x-copy-empty">履歴はありません。</div>';
+      panel.dataset.loaded='true';panel.hidden=false;button.textContent='履歴を閉じる';button.setAttribute('aria-expanded','true');
+    }catch(error){toast(error.message||'履歴を読み込めませんでした','bad');button.textContent='履歴を見る'}
+    finally{button.disabled=false}
+  };
+  X.eventId=()=>crypto.randomUUID?crypto.randomUUID():'10000000-1000-4000-8000-100000000000'.replace(/[018]/g,char=>(Number(char)^crypto.getRandomValues(new Uint8Array(1))[0]&15>>Number(char)/4).toString(16));
+
   const topButton=by('xViewBtn');
   if(topButton?.firstElementChild)topButton.firstElementChild.textContent='カード投稿';
   const heading=document.querySelector('#xHub .x-head');
   if(heading)heading.innerHTML='<span>カード投稿.exe - X / THREADS DRAFT DESK</span><span>発見 → 公式確認 → 下書き → 人が投稿</span>';
   const intro=document.querySelector('#xHub .x-intro');
   if(intro)intro.innerHTML='<b>カード情報を、投稿できる直前まで整えます。</b> 公式確認を済ませ、必要な時だけ価値の一言を加えて、XとThreadsの文案を同時に作ります。最後の編集・コピー・投稿は人が行います。';
-  document.querySelectorAll('.status-panel').forEach(node=>{if(/^ver\s/i.test(node.textContent||''))node.textContent='ver 1.61'});
+  document.querySelectorAll('.status-panel').forEach(node=>{if(/^ver\s/i.test(node.textContent||''))node.textContent='ver 1.68'});
   const helpNote=document.querySelector('.help-note');
-  if(helpNote)helpNote.textContent=(helpNote.textContent||'').replace(/ver\s+[\d.]+/i,'ver 1.61');
+  if(helpNote)helpNote.textContent=(helpNote.textContent||'').replace(/ver\s+[\d.]+/i,'ver 1.68');
   const tabs=by('xTabs');
   if(tabs)tabs.innerHTML=Object.entries(labels).map(([key,label])=>'<button class="push-button small" data-x-tab="'+key+'">'+label+' <span id="xCount'+key+'">0</span></button>').join('')+'<span class="x-spacer"></span><button class="push-button small" id="xAdd">＋ 手入力</button>';
 
@@ -51,7 +109,13 @@
     if(!text)return'';
     const count=isX?(item.xWeightedLength??X.twitterLength(text)):(item.threadsLength??Array.from(text).length);
     const limit=isX?280:500;
-    return '<section class="x-draft '+platform+'"><div><b>'+h(isX?'X':'Threads')+'・'+h(types[item.draftType]||'投稿案')+'</b><span class="'+(count>limit?'over':'')+'">'+h(count)+' / '+limit+'</span></div><pre>'+h(text)+'</pre><button class="push-button small" type="button" data-xcopy="'+h(item.id)+'" data-platform="'+platform+'">'+h(isX?'X':'Threads')+'をコピー</button></section>';
+    const moment=X.copyMoment(item);
+    const stale=(moment.key==='deadline_day'||moment.key==='day_before')&&item.draftType==='opening';
+    const copyButton=item.deadlinePassed
+      ?'<button class="push-button small" type="button" disabled>受付終了</button>'
+      :'<button class="push-button small" type="button" data-xcopy="'+h(item.id)+'" data-platform="'+platform+'">'+h(isX?'X':'Threads')+'をコピー</button>';
+    const warning=stale?'<div class="x-copy-warning">'+h(moment.label)+'ですが、現在は受付開始文です。締切前文への更新を確認してください。</div>':'';
+    return '<section class="x-draft '+platform+'"><div><b>'+h(isX?'X':'Threads')+'・'+h(types[item.draftType]||'投稿案')+'</b><span class="x-copy-moment '+h(moment.key)+'">'+h(moment.label)+'</span><span class="'+(count>limit?'over':'')+'">'+h(count)+' / '+limit+'</span></div><pre>'+h(text)+'</pre><div class="x-copy-controls">'+copyButton+X.copyHistoryPanel(item,platform)+'</div>'+warning+'</section>';
   };
   X.actions=item=>{
     if(item.isExpired)return '<button class="push-button small" data-xs="rejected" data-id="'+h(item.id)+'">見送りにする</button>';
@@ -62,7 +126,7 @@
       const threadsDone=item.threadsPostedAt?'<span class="x-posted-mark">✓ Threads済み</span>':'<button class="push-button small" data-xposted="'+h(item.id)+'" data-platform="threads">Threadsを投稿済みにする</button>';
       return xDone+threadsDone+'<button class="push-button small" data-xs="draft" data-id="'+h(item.id)+'">修正へ</button>';
     }
-    if(item.status==='posted')return '<button class="push-button small" data-xcopy="'+h(item.id)+'" data-platform="x">Xを再コピー</button><button class="push-button small" data-xcopy="'+h(item.id)+'" data-platform="threads">Threadsを再コピー</button><button class="push-button small" data-xs="draft" data-id="'+h(item.id)+'">再利用</button>';
+    if(item.status==='posted')return (item.deadlinePassed?'<span class="x-posted-mark">受付終了</span>':'<button class="push-button small" data-xcopy="'+h(item.id)+'" data-platform="x">Xを再コピー</button><button class="push-button small" data-xcopy="'+h(item.id)+'" data-platform="threads">Threadsを再コピー</button>')+'<button class="push-button small" data-xs="draft" data-id="'+h(item.id)+'">再利用</button>';
     if(item.status==='rejected')return '<button class="push-button small" data-xs="candidate" data-id="'+h(item.id)+'">候補へ戻す</button>';
     return'';
   };
@@ -116,15 +180,21 @@
     }catch(error){toast(error.message||'作成できませんでした','bad');setStatus('入力待ち')}
   };
   X.clip=async(text,message,button)=>{
-    if(!text)return;
+    if(!text)return false;
     bump(button);
     try{await navigator.clipboard.writeText(text)}catch{const area=document.createElement('textarea');area.value=text;document.body.appendChild(area);area.select();document.execCommand('copy');area.remove()}
-    toast(message,'good');
+    toast(message,'good');return true;
   };
-  X.copy=(id,platform,button)=>{
+  X.copy=async(id,platform,button,textOverride)=>{
     const item=X.state.items.find(value=>value.id===id);
-    const text=platform==='threads'?item?.threadsDraft:item?.xDraft;
-    return X.clip(text,(platform==='threads'?'Threads':'X')+'の投稿文をコピーしました',button);
+    const text=textOverride??(platform==='threads'?item?.threadsDraft:item?.xDraft);
+    if(!text)return;
+    if(item?.deadlinePassed){toast('締切済みのためコピーできません','bad');return}
+    const copiedAt=new Date().toISOString();
+    const copied=await X.clip(text,(platform==='threads'?'Threads':'X')+'の投稿文をコピーしました',button);
+    if(!copied||!id||!item)return;
+    try{await X.patch({action:'copy',id,platform,textSnapshot:text,copiedAt,clientEventId:X.eventId()})}
+    catch(error){toast('コピーはできましたが、履歴を保存できませんでした','bad')}
   };
   X.publish=async(id,platform,button)=>{
     const label=platform==='threads'?'Threads':'X';
@@ -140,6 +210,7 @@
     document.querySelectorAll('[data-xcopy]').forEach(button=>button.onclick=()=>X.copy(button.dataset.xcopy,button.dataset.platform||'x',button));
     document.querySelectorAll('[data-xedit]').forEach(button=>button.onclick=()=>X.openEditor(X.state.items.find(item=>item.id===button.dataset.xedit)));
     document.querySelectorAll('[data-xposted]').forEach(button=>button.onclick=()=>X.publish(button.dataset.xposted,button.dataset.platform,button));
+    document.querySelectorAll('[data-xhistory]').forEach(button=>button.onclick=()=>X.history(button.dataset.xhistory,button.dataset.platform||'x',button));
     document.querySelectorAll('[data-wf-verify]').forEach(button=>button.onclick=()=>{const item=X.state.items.find(value=>String(value.id)===button.dataset.wfVerify);if(item)window.CCWorkflow?.runVerification(item,button)});
     document.querySelectorAll('[data-wf-exec]').forEach(button=>button.onclick=()=>{const item=X.state.items.find(value=>String(value.id)===button.dataset.wfExec);if(item)window.CCWorkflow?.recordExecution(item,button)});
     document.querySelectorAll('[data-wf-audit]').forEach(button=>button.onclick=()=>{const item=X.state.items.find(value=>String(value.id)===button.dataset.wfAudit);if(item)window.CCWorkflow?.audit(item,'pass',button)});
@@ -166,8 +237,8 @@
   by('xAdd').onclick=()=>X.openEditor(null);
   X.close=()=>modal.classList.remove('open');
   by('xeDraft').oninput=X.chars;by('xeThreadsDraft').oninput=X.chars;by('xClose').onclick=X.close;by('xeCancel').onclick=X.close;
-  by('xeCopyX').onclick=()=>X.clip(value('xeDraft'),'Xの投稿文をコピーしました',by('xeCopyX'));
-  by('xeCopyThreads').onclick=()=>X.clip(value('xeThreadsDraft'),'Threadsの投稿文をコピーしました',by('xeCopyThreads'));
+  by('xeCopyX').onclick=()=>X.copy(value('xeId'),'x',by('xeCopyX'),value('xeDraft'));
+  by('xeCopyThreads').onclick=()=>X.copy(value('xeId'),'threads',by('xeCopyThreads'),value('xeThreadsDraft'));
   by('xForm').onsubmit=async event=>{
     event.preventDefault();
     const id=value('xeId');
