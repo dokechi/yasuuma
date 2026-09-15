@@ -434,7 +434,9 @@
     const screenshots=list(payload.screenshot_requests);
     const sources=officialSources(payload);
     const reference=text(payload.design_reference_url||payload.draft_design?.reference_url);
+    const astraReviewHeader=text(payload.image_generation_copy_header);
     return [
+      ...(astraReviewHeader?[astraReviewHeader,'']:[]),
       '以下の確定原稿から、カルーセル画像を作成してください。',
       '',
       '【この入力の扱い】',
