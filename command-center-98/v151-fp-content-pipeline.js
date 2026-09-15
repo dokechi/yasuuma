@@ -220,6 +220,12 @@
   const stage=(label,value)=>'<span class="fp-stage '+escFp(value)+'"><small>'+escFp(label)+'</small><b>'+stageMark(value)+'</b></span>';
   const draftStatus=item=>{
     const quality=packageQuality(item);
+    const payload=item.payload||{};
+    if(payload.image_status==='published')return{label:'公開済み（履歴復元）',kind:'history'};
+    if(['revision_pending','needs_regeneration'].includes(payload.image_status))return{label:'画像改修待ち',kind:'blocked'};
+    if(payload.image_status==='partial')return{label:'画像制作の続き待ち',kind:'blocked'};
+    if(payload.workflow_lane==='hold'||['medium','weak'].includes(demandVerdict(payload)))return{label:'需要保留',kind:'blocked'};
+    if(payload.review_status==='needs_current_final_review'||payload.workflow_lane==='needs_current_final_review')return{label:'Astra再確認待ち',kind:'blocked'};
     if(legacyPublished(item))return{label:'旧基準で制作済み',kind:'history'};
     if(!quality.ready&&item.payload?.draft_status==='ready')return{label:'根拠の補完待ち',kind:'blocked'};
     if(quality.ready&&!preflightReady(item.payload||{}))return{label:'制作条件を選ぶ',kind:'ready'};
@@ -236,7 +242,12 @@
     const copyReady=quality.ready&&preflightReady(payload);
     return '<section class="fp-draft-actions" data-fp-draft-actions="'+escFp(item.id)+'">'
       +'<div class="fp-draft-status '+escFp(status.kind)+'"><b>'+escFp(status.label)+'</b><span>'
-      +(legacy?'制作済みの履歴です。現在の需要ゲートでは再利用しません。':quality.ready?'原稿・根拠・スクショ指示・投稿文を保存済み':escFp(quality.issues.join('／')))
+      +(payload.image_status==='published'?'画像制作・投稿済みの履歴です。再利用時は現行ルールで再確認します。'
+        :['revision_pending','needs_regeneration'].includes(payload.image_status)?'旧画像はありますが、修正版の再生成が残っています。'
+        :payload.image_status==='partial'?'画像は一部だけ作成済みです。原稿再確認後に続きから制作します。'
+        :payload.workflow_lane==='hold'?'中心疑問の需要が現行ゲート未達のため保留しています。'
+        :payload.review_status==='needs_current_final_review'?'原稿は保存済みです。gpt-6-astraの最終照合後に画像化できます。'
+        :legacy?'制作済みの履歴です。現在の需要ゲートでは再利用しません。':quality.ready?'原稿・根拠・スクショ指示・投稿文を保存済み':escFp(quality.issues.join('／')))
       +'</span></div><div class="fp-draft-buttons">'
       +'<button class="push-button fp-open-draft" data-fp-open="'+escFp(item.id)+'">原稿・需要・制作条件</button>'
       +'<button class="push-button fp-copy-images" data-fp-copy-package="'+escFp(item.id)+'" '+(copyReady?'':'disabled')+'>画像化用にコピー</button>'
@@ -250,13 +261,15 @@
     const quality=packageQuality(item);
     const verified=quality.ready?'pass':(payload.source_checked_at?'ready':'pending');
     const drafted=list(payload.draft_slides).length?(quality.ready?'pass':'ready'):'pending';
-    const steps=stage('発掘','pass')+stage('事実確認',verified)+stage('原稿',drafted)+stage('選択',chosen?'pass':'pending')+stage('画像',payload.image_status==='ready'?'pass':'pending');
+    const imageStep=['ready','complete','published'].includes(payload.image_status)?'pass':['partial','revision_pending','needs_regeneration'].includes(payload.image_status)?'ready':'pending';
+    const steps=stage('発掘','pass')+stage('事実確認',verified)+stage('原稿',drafted)+stage('選択',chosen?'pass':'pending')+stage('画像',imageStep);
     const structure=(list(payload.definitive_structure).length?list(payload.definitive_structure):list(payload.post_structure)).map(row=>'<li>'+escFp(typeof row==='string'?row:(row?.text||row?.title||JSON.stringify(row)))+'</li>').join('');
     const question=payload.reader_question||payload.question_lineage?.selected_question||payload.first_impression||payload.cover_idea||item.title||'';
     const reaction=payload.strong_reaction||payload.reaction_summary||item.reason||'';
     const hot=payload.hot_reason||item.reason||item.summary||'';
     const research=legacyPublished(item)?'旧基準で制作済み。履歴として保存':quality.ready?'元記事・該当コメント・一次情報・原稿を確認済み':(payload.research_status||(payload.source_checked_at?'原稿に必要な根拠を確認中':'追加調査待ち'));
-    return '<section class="fp-candidate" data-fp-panel="'+escFp(item.id)+'"><div class="fp-head"><b>'+contentLabel(item)+'投稿候補</b><span class="fp-signal">'+escFp(payload.engagement_label||'反応確認済み')+'</span><span class="fp-state">'+(legacyPublished(item)?'制作済み':quality.ready?'原稿あり':chosen?'調査中':'選択待ち')+'</span></div>'
+    const displayStatus=draftStatus(item);
+    return '<section class="fp-candidate" data-fp-panel="'+escFp(item.id)+'"><div class="fp-head"><b>'+contentLabel(item)+'投稿候補</b><span class="fp-signal">'+escFp(payload.engagement_label||'反応確認済み')+'</span><span class="fp-state">'+escFp(displayStatus.label)+'</span></div>'
       +'<div class="fp-question"><small>この投稿が答える疑問</small>'+escFp(question)+'</div>'
       +demandPanel(payload)
       +'<dl class="fp-grid"><dt>反応の核</dt><dd>'+escFp(reaction)+'</dd><dt>根拠コメント</dt><dd>'+evidenceComments(payload)+'</dd><dt>なぜ今か</dt><dd>'+escFp(hot)+'</dd><dt>投稿構成</dt><dd><ol>'+structure+'</ol></dd><dt>一次情報</dt><dd>'+sourceLinks(payload)+'</dd><dt>調査状態</dt><dd>'+escFp(research)+'</dd></dl>'
@@ -434,9 +447,7 @@
     const screenshots=list(payload.screenshot_requests);
     const sources=officialSources(payload);
     const reference=text(payload.design_reference_url||payload.draft_design?.reference_url);
-    const astraReviewHeader=text(payload.image_generation_copy_header);
     return [
-      ...(astraReviewHeader?[astraReviewHeader,'']:[]),
       '以下の確定原稿から、カルーセル画像を作成してください。',
       '',
       '【この入力の扱い】',
