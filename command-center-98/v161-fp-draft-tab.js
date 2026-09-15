@@ -20,10 +20,15 @@
     const prefix='task:'+TASK_ID+':';
     return String(item?.id||'').startsWith(prefix)?TASK_ID:'';
   };
-  const completed=item=>{
+  const visibleDraft=item=>{
     if(taskId(item)!==TASK_ID)return false;
     const payload=item?.payload||{};
     if(payload.content_type!=='fp_post_candidate'&&!['fp_psychology','fp_reaction'].includes(payload.category))return false;
+    return Array.isArray(payload.draft_slides)&&payload.draft_slides.length>0;
+  };
+  const completed=item=>{
+    if(!visibleDraft(item))return false;
+    const payload=item?.payload||{};
     const quality=window.__fpContentPipeline?.packageQuality;
     const legacy=window.__fpContentPipeline?.legacyPublished;
     if(typeof legacy==='function'&&legacy(item))return true;
@@ -59,19 +64,18 @@
   }
 
   function renderFpStats(data,items){
-    const copyReady=items.filter(item=>{
-      const issues=window.__fpContentPipeline?.preflightIssues;
-      return typeof issues!=='function'||issues(item.payload||{}).length===0;
-    }).length;
-    setText('kpiLabelCount','完成原稿');
+    const imageHistory=items.filter(item=>['published','ready','complete','partial','revision_pending','needs_regeneration'].includes(String(item.payload?.image_status||''))).length;
+    const reviewPending=items.filter(item=>item.payload?.review_status==='needs_current_final_review'||item.payload?.workflow_lane==='needs_current_final_review').length;
+    const onHold=items.filter(item=>item.payload?.workflow_lane==='hold'||['medium','weak'].includes(String(item.payload?.demand_evidence?.verdict||''))).length;
+    setText('kpiLabelCount','原稿総数');
     setText('kpiCount',items.length+'件');
-    setText('kpiLabelS','画像化可能');
-    setText('kpiS',copyReady+'件');
-    setText('kpiLabelImpact','選択済み');
-    setText('kpiImpact',items.filter(item=>item.reviewState==='accepted').length+'件');
+    setText('kpiLabelS','画像履歴あり');
+    setText('kpiS',imageHistory+'件');
+    setText('kpiLabelImpact','Astra再確認待ち');
+    setText('kpiImpact',reviewPending+'件');
     document.getElementById('kpiImpact')?.classList.remove('has-value');
-    setText('kpiLabelStored','このタスク');
-    setText('kpiStored',items.length+'件');
+    setText('kpiLabelStored','需要保留');
+    setText('kpiStored',onHold+'件');
     setText('agentCount',(data.agents?.connected??7)+'/'+(data.agents?.total??7));
     setText('generatedAt','更新 '+fmtUpdated(data.generatedAt));
   }
@@ -83,7 +87,7 @@
     setText('listCaption','ガルちゃん×FP原稿作成');
     setText('visibleCount',items.length+'件');
     const filter=document.getElementById('listFilter');
-    if(filter){filter.hidden=false;filter.innerHTML='<span><b>完成原稿のみ</b> · このタスク専用</span>'}
+    if(filter){filter.hidden=false;filter.innerHTML='<span><b>全原稿</b> · 完成／再確認待ち／画像改修／保留</span>'}
     renderFpStats(data,items);
     setBadge(items.length);
   }
@@ -93,7 +97,7 @@
     if(response.status===401){authExpired();throw new Error('認証の有効期限が切れました')}
     const data=await response.json();
     if(!response.ok||!data?.ok)throw new Error(data?.error||('HTTP '+response.status));
-    return {data,items:sortNewest((Array.isArray(data.items)?data.items:[]).filter(completed))};
+    return {data,items:sortNewest((Array.isArray(data.items)?data.items:[]).filter(visibleDraft))};
   }
 
   async function loadFp(){
@@ -105,18 +109,19 @@
     button.setAttribute('aria-pressed','true');
     const refresh=document.getElementById('refreshBtn');
     if(refresh)refresh.disabled=true;
-    setStatus('FP完成原稿を読み込み中...',true);
+    setStatus('FP原稿を読み込み中...',true);
     showLoading();
     try{
       const {data,items}=await fetchFpItems();
       if(app.view!=='fp')return;
       renderFpList(data,items);
-      setStatus('準備完了｜FP完成原稿 '+items.length+'件');
+      const ready=items.filter(completed).length;
+      setStatus('準備完了｜FP原稿 '+items.length+'件（完成・制作済み '+ready+'件を含む）');
     }catch(error){
       const host=document.getElementById('list');
-      if(host)host.innerHTML='<div class="empty"><b>FP完成原稿を取得できませんでした。</b><br><small>'+esc(error.message||error)+'</small><br><br><button class="push-button" onclick="load(\'fp\')">再試行</button></div>';
+      if(host)host.innerHTML='<div class="empty"><b>FP原稿を取得できませんでした。</b><br><small>'+esc(error.message||error)+'</small><br><br><button class="push-button" onclick="load(\'fp\')">再試行</button></div>';
       setStatus('通信エラー');
-      toast('FP完成原稿の読み込みに失敗しました','bad');
+      toast('FP原稿の読み込みに失敗しました','bad');
     }finally{
       app.busy=false;
       if(refresh)refresh.disabled=false;
@@ -147,6 +152,6 @@
   document.querySelectorAll('.status-bar .status-panel').forEach(el=>{if(/^ver\s/i.test(el.textContent.trim()))el.textContent='ver 1.61'});
   const helpNote=document.querySelector('#helpModal .help-note');
   if(helpNote)helpNote.textContent=helpNote.textContent.replace(/ver\s+[\d.]+/i,'ver 1.61');
-  window.__fpDraftTab={taskId:TASK_ID,completed,load:loadFp,refreshBadge};
+  window.__fpDraftTab={taskId:TASK_ID,visibleDraft,completed,load:loadFp,refreshBadge};
   setTimeout(refreshBadge,500);
 })();
