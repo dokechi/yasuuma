@@ -15,11 +15,10 @@
 
   function stripLegacyModelReview(result){
     let body=String(result||'');
-    // Compatibility for copies built from legacy Chat records that were once
-    // blocked only by Astra/model-execution evidence. The underlying carousel
-    // program is preserved; only the obsolete model-verification wrapper is removed.
+    // Compatibility for legacy Chat records. Preserve the established carousel
+    // program and its sources; remove only the obsolete model-verification wrapper.
     body=body.replace(/【画像制作前の最終確認が必要：この原稿はまだ完成扱いではありません】[\s\S]*?(?=【一次情報ID対応】)/,'');
-    body=body.replace(/【一次情報ID対応】\s*(?:[^\n]*\n)*/,'');
+    body=body.replace(/^【一次情報ID対応】\s*$/m,'');
     body=body.split('\n').filter(line=>!/(?:gpt-6-astra|Astra確認済み|Astra再確認待ち|Astra確認待ち|指定モデルでの最終照合|指定モデルの実行証跡|model_execution_unverified)/i.test(line)).join('\n');
     return body.replace(/^\s+/, '');
   }
