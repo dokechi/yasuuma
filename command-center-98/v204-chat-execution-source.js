@@ -10,15 +10,11 @@
   const style = document.createElement('style');
   style.id = 'cc-chat-execution-style';
   style.textContent = [
-    '.cc-chat-head-badge{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;margin:0 2px 0 0;padding:2px 7px;border:2px solid;border-color:#fff #000 #000 #fff;background:#000080;color:#fff;font-family:Tahoma,"MS UI Gothic",sans-serif;font-size:12px;line-height:16px;font-weight:900;letter-spacing:.04em;box-shadow:1px 1px #808080;white-space:nowrap}',
-    '.cc-chat-head-badge b{display:inline-block;padding:0 3px;background:#fff200;color:#000080;font-size:11px;line-height:14px}',
-    '.cc-chat-head-badge span{font-size:11px;letter-spacing:0}',
-    '.cc-chat-execution{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:9px 11px;border:2px solid #000080;background:#fff4ba;color:#00005d;box-sizing:border-box;overflow-wrap:anywhere}',
-    '.cc-chat-execution strong{font-size:16px;line-height:1.4;font-weight:900;letter-spacing:.02em}',
-    '.cc-chat-execution small{font-size:11px;line-height:1.5}',
-    '.reddit-card>.cc-chat-execution{margin:10px}',
-    '.cc-chat-execution+.task-origin{margin-bottom:10px}',
-    '@media(max-width:480px){.cc-chat-head-badge{padding:2px 5px}.cc-chat-head-badge span{display:none}.cc-chat-execution{gap:4px;padding:8px 9px}.cc-chat-execution strong{font-size:15px}.cc-chat-execution small{flex-basis:100%}}'
+    '.cc-chat-title{color:#a40000!important}',
+    '.cc-chat-title>a{color:inherit!important}',
+    '.cc-chat-head-badge{display:inline-block;vertical-align:1px;margin:0 8px 0 0;padding:1px 6px;border:1px solid #810000;background:#a40000;color:#fff;font-family:Tahoma,"MS UI Gothic",sans-serif;font-size:11px;line-height:1.4;font-weight:700;letter-spacing:.03em;white-space:nowrap}',
+    '.cc-item-summary>.cc-chat-title{overflow-wrap:anywhere}',
+    '@media(max-width:480px){.cc-chat-head-badge{margin-right:6px;padding:1px 5px}}'
   ].join('');
   document.head.appendChild(style);
 
@@ -33,8 +29,8 @@
     };
   }
 
-  // Main cards are rendered from cardHtml. Inject the badge into the title row so
-  // the execution source is visible before opening details.
+  // Cover the original card render. Navigation later creates a new, always-visible
+  // summary heading; refresh() decorates that heading instead of the hidden header.
   if (typeof cardHtml === 'function') {
     const originalCardHtml = cardHtml;
     cardHtml = function (item) {
@@ -67,10 +63,9 @@
     const records = new Map((reddit?.state?.items || []).map(item => [String(item.id), item]));
     document.querySelectorAll('#redditBody .reddit-card').forEach(function (card) {
       const control = card.querySelector('[data-r-edit]');
-      const item = control ? records.get(control.getAttribute('data-r-edit')) : null;
-      if (api.isChat(item) && !card.querySelector('[data-cc-chat-execution]')) {
-        card.insertAdjacentHTML('afterbegin', api.badgeHtml(item));
-      }
+      const id = card.dataset.ccItemId || control?.getAttribute('data-r-edit');
+      const item = records.get(String(id));
+      api.ensureThreadHeadBadge(card, item);
     });
   };
 
@@ -140,38 +135,42 @@
 
   function headBadgeHtml(item) {
     if (!isChat(item)) return '';
-    return '<span class="cc-chat-head-badge" data-cc-chat-head="chat" title="Chat登録タスクから生成"><b>CHAT</b><span>チャット実行</span></span>';
+    return '<span class="cc-chat-head-badge" data-cc-chat-head="chat" title="チャットから実行" aria-label="チャットから実行">CHAT</span>';
   }
 
-  function badgeHtml(item) {
-    if (!isChat(item)) return '';
-    return '<div class="cc-chat-execution" data-cc-chat-execution="chat"><strong>チャットから実行</strong><small>Chat登録タスクの候補</small></div>';
-  }
+  function badgeHtml(item) { return headBadgeHtml(item); }
 
   function injectThreadHeadBadge(html, item) {
     if (typeof html !== 'string' || !isChat(item) || html.includes('data-cc-chat-head=')) return html;
-    const badge = headBadgeHtml(item);
-    if (!badge) return html;
-    if (/<span class="thread-title">/i.test(html)) {
-      return html.replace(/(<span class="thread-title">)/i, badge + '$1');
+    return html.replace(/(<(?:span|b)\b[^>]*class="[^"]*\b(?:thread-title|reddit-card-title)\b[^"]*"[^>]*>)/i, function (tag) {
+      return tag.replace(/class="([^"]*)"/, 'class="$1 cc-chat-title"') + headBadgeHtml(item);
+    });
+  }
+
+  function decorateTitle(title, item) {
+    if (!title || !isChat(item)) return;
+    title.classList.add('cc-chat-title');
+    if (!title.querySelector('[data-cc-chat-head]')) {
+      title.insertAdjacentHTML('afterbegin', headBadgeHtml(item));
     }
-    if (/<div class="thread-head">/i.test(html)) {
-      return html.replace(/(<div class="thread-head">)/i, '$1' + badge);
-    }
-    return html;
   }
 
   function ensureThreadHeadBadge(card, item) {
-    if (!card || !isChat(item) || card.querySelector('[data-cc-chat-head]')) return;
-    const title = card.querySelector('.thread-title');
-    const head = card.querySelector('.thread-head');
-    if (title) title.insertAdjacentHTML('beforebegin', headBadgeHtml(item));
-    else if (head) head.insertAdjacentHTML('afterbegin', headBadgeHtml(item));
+    if (!card || !isChat(item)) return;
+    // v167 moves the old header inside closed <details> and creates this summary.
+    // A badge anywhere in the card does NOT mean its visible title is decorated.
+    const title = card.querySelector(':scope > .cc-item > .cc-item-summary > strong')
+      || card.querySelector('.thread-title, .reddit-card-title');
+    if (!title) return;
+    decorateTitle(title, item);
+    // Keep a single label at the visible title, not a second one in hidden details.
+    card.querySelectorAll('[data-cc-chat-head], [data-cc-chat-execution]').forEach(function (badge) {
+      if (!title.contains(badge)) badge.remove();
+    });
   }
 
   function injectArticleBadge(html, item) {
-    if (typeof html !== 'string' || !isChat(item) || html.includes('data-cc-chat-execution=')) return html;
-    return html.replace(/(<article\b[^>]*>)/i, '$1' + badgeHtml(item));
+    return injectThreadHeadBadge(html, item);
   }
 
   // Creation only; never use this helper to replace an existing candidate payload.
@@ -200,8 +199,8 @@
   }
 
   return {
-    version: '204.3', provenance, isChat, usesSharedRuleId,
-    headBadgeHtml, badgeHtml, injectThreadHeadBadge, ensureThreadHeadBadge,
+    version: '204.4', provenance, isChat, usesSharedRuleId,
+    headBadgeHtml, badgeHtml, injectThreadHeadBadge, decorateTitle, ensureThreadHeadBadge,
     injectArticleBadge, stampNewCandidate, taskIds: TASK_IDS
   };
 });
