@@ -163,6 +163,7 @@
       && p.draft_status === 'blocked' && p.review_status === 'needs_current_final_review'
       && p.blocked_reason === 'model_execution_unverified' && p.research_status === 'verified';
     if (!candidate || !quality) return { reviewOnly: false, allowed: false, issues: [] };
+    if (!['S', 'A'].includes(item.priority) || !(Number(item.score) >= 80 && Number(item.score) <= 100)) issues.push('S/A判定の原稿ではありません');
     issues.push(...list(quality.issues).filter(issue => issue !== '完成原稿が未確定'));
     if (list(p.missing_evidence).length) issues.push('未解決の根拠不足があります');
     if (list(p.public_leak_issues).length) issues.push('公開原稿に内部情報が残っています');
@@ -171,6 +172,7 @@
     if (slides.length < 6 || slides.length > 8) issues.push('6〜8枚のページ別原稿が必要です');
     if (slides.some((slide, i) => Number(slide.page) !== i + 1 || !text(slide.headline) || !text(slide.body) || !text(slide.visual_mode) || !text(slide.visual))) issues.push('ページ順またはページ別原稿・制作指示が不足しています');
     if (!sources.length || sources.some(source => !text(source.id) || !/^https?:\/\//.test(text(source.url)) || !text(source.claim) || !text(source.checked_at))) issues.push('確認日と主張を含む一次情報が必要です');
+    if (sources.some(source => /(?:girlschannel(?:\.net)?|ガールズ[ちチ]ゃんねる|ガルちゃん)/i.test([source.url, source.label, source.title, source.claim, source.note].filter(Boolean).join(' ')))) issues.push('一次情報に内部調査元が混入しています');
     const ids = new Set(sources.map(source => text(source.id)));
     if (slides.some(slide => list(slide.source_refs).some(id => !ids.has(text(id))))) issues.push('ページの根拠IDに対応する一次情報がありません');
     if (!text(p.production_spec?.size) || !text(p.production_spec?.ratio)) issues.push('画像サイズ・比率が未保存です');
@@ -207,5 +209,5 @@
     ].join('\n');
     return header + '\n' + body;
   }
-  return { version: '206.1', isChat, policy, build };
+  return { version: '206.2', isChat, policy, build };
 });
