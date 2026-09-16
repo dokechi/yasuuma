@@ -2,6 +2,8 @@
   if(typeof API==='undefined'||typeof load!=='function'||typeof authHeaders!=='function')return;
 
   const TASK_ID='6a9e5826d4888191a4d82a643e6d5adf';
+  const CHAT_TASK_ID='6aa9ee1043388191a2eac3bb2702092a';
+  const TASK_IDS=new Set([TASK_ID,CHAT_TASK_ID]);
   const tabs=document.getElementById('viewTabs');
   if(!tabs||document.getElementById('fpDraftViewBtn'))return;
 
@@ -17,11 +19,11 @@
 
   const taskId=item=>{
     if(typeof signalTaskId==='function')return signalTaskId(item);
-    const prefix='task:'+TASK_ID+':';
-    return String(item?.id||'').startsWith(prefix)?TASK_ID:'';
+    const match=String(item?.id||'').match(/^(?:sns:)*task:([a-zA-Z0-9-]+):/);
+    return match?match[1]:'';
   };
   const visibleDraft=item=>{
-    if(taskId(item)!==TASK_ID)return false;
+    if(!TASK_IDS.has(taskId(item)))return false;
     const payload=item?.payload||{};
     if(payload.content_type!=='fp_post_candidate'&&!['fp_psychology','fp_reaction'].includes(payload.category))return false;
     return Array.isArray(payload.draft_slides)&&payload.draft_slides.length>0;
@@ -152,6 +154,6 @@
   document.querySelectorAll('.status-bar .status-panel').forEach(el=>{if(/^ver\s/i.test(el.textContent.trim()))el.textContent='ver 1.61'});
   const helpNote=document.querySelector('#helpModal .help-note');
   if(helpNote)helpNote.textContent=helpNote.textContent.replace(/ver\s+[\d.]+/i,'ver 1.61');
-  window.__fpDraftTab={taskId:TASK_ID,visibleDraft,completed,load:loadFp,refreshBadge};
+  window.__fpDraftTab={taskId:TASK_ID,chatTaskId:CHAT_TASK_ID,visibleDraft,completed,load:loadFp,refreshBadge};
   setTimeout(refreshBadge,500);
 })();
