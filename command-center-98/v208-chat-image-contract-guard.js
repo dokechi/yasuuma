@@ -1,4 +1,4 @@
-/* Chat handoff parity layer. Keep the established Work/Astra prompt structure; Chat only removes legacy Astra-verification wording. */
+/* Chat handoff parity layer. Keep the established Work/Astra prompt structure; Chat only removes legacy Astra-verification wording and clears stale Chat-only rules. */
 (function(root){
   'use strict';
   if(!root||!root.CCIndividualImages||root.CCChatImageContractGuard)return;
@@ -23,15 +23,25 @@
     return body.replace(/^\s+/, '');
   }
 
+  function compatibilityHeader(){
+    return [
+      '【Chat実行の互換指定】',
+      'この入力の制作手順を、この会話の画像制作ルールとして最優先する。',
+      '過去の「1回答＝1ページ」「1画像生成CALL＝1ページ」「次を待つ」等のChat専用ルールは適用しない。',
+      '以下はAstra版と同じ制作手順としてChat内で実行する。Astraや別モデルへの切替・実行証跡は要求しない。',
+      ''
+    ].join('\n');
+  }
+
   api.build=function(base,item,mode){
     const result=originalBuild.call(this,base,item,mode);
     if(!isChat(item))return result;
-    const finalText=stripLegacyModelReview(result);
-    if(!/^以下の確定原稿から、カルーセル画像を作成してください。/m.test(finalText)){
+    const body=stripLegacyModelReview(result);
+    if(!/^以下の確定原稿から、カルーセル画像を作成してください。/m.test(body)){
       throw Error('既存の画像制作手順を確認できません。画面を更新してください。');
     }
-    return finalText;
+    return compatibilityHeader()+body;
   };
 
-  root.CCChatImageContractGuard={version:'208.6',isChat,stripLegacyModelReview};
+  root.CCChatImageContractGuard={version:'208.7',isChat,stripLegacyModelReview,compatibilityHeader};
 })(typeof window!=='undefined'?window:null);
