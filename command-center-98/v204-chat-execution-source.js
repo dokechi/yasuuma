@@ -17,7 +17,7 @@
       const html = original.apply(this, arguments);
       if (!api.isChat(item)) return html;
       // The original task ID is a shared routing/rules ID, not the Chat executor.
-      return api.badgeHtml(item) + String(html).replace('生成元タスク：', '参照ルール：');
+      return api.badgeHtml(item) + (api.usesSharedRuleId(item) ? String(html).replace('生成元タスク：', '参照ルール：') : String(html));
     };
   }
   const reddit = root.CCReddit;
@@ -40,7 +40,7 @@
       const body = card.querySelector('.thread-body') || card;
       body.insertAdjacentHTML('afterbegin', api.badgeHtml(item));
       const origin = body.querySelector('.task-origin');
-      if (origin && origin.firstChild && origin.firstChild.nodeType === 3) {
+      if (api.usesSharedRuleId(item) && origin && origin.firstChild && origin.firstChild.nodeType === 3) {
         origin.firstChild.nodeValue = origin.firstChild.nodeValue.replace('生成元タスク：', '参照ルール：');
       }
     });
@@ -68,7 +68,7 @@
       const entry = queue.shift(), value = entry.value;
       if (!value || typeof value !== 'object' || seen.has(value)) continue;
       seen.add(value);
-      const source = value.execution_source ?? value.executionSource;
+      const source = value.execution_source ?? value.executionSource ?? value.execution_channel ?? value.executionChannel;
       if (typeof source === 'string' && source.trim()) {
         return {
           source: source.trim().toLowerCase(),
@@ -83,9 +83,17 @@
     return { source: null, executionTaskId: null, runnerKey: null };
   }
   function isChat(item) { return provenance(item).source === 'chat'; }
+  function usesSharedRuleId(item) {
+    if (!isChat(item)) return false;
+    const p = item?.payload || {};
+    const explicit = [item?.taskId, item?.task_id, item?.sourceTaskId, item?.source_task_id, p.task_id, p.taskId, p.source_task_id];
+    const id = explicit.find(v => typeof v === 'string' && /^[a-zA-Z0-9-]+$/.test(v));
+    const match = String(item?.id || '').match(/^(?:sns:)*task:([a-zA-Z0-9-]+):/);
+    return Object.values(TASK_IDS).includes(id || (match ? match[1] : ''));
+  }
   function badgeHtml(item) {
     if (!isChat(item)) return '';
-    return '<div class="cc-chat-execution" data-cc-chat-execution="chat"><strong>チャットから実行</strong><small>Chatで調査・作成した候補</small></div>';
+    return '<div class="cc-chat-execution" data-cc-chat-execution="chat"><strong>チャットから実行</strong><small>チャット登録タスクの候補</small></div>';
   }
   function injectArticleBadge(html, item) {
     if (typeof html !== 'string' || !isChat(item) || html.includes('data-cc-chat-execution=')) return html;
@@ -115,5 +123,5 @@
       })
     };
   }
-  return { version: '204.1', provenance, isChat, badgeHtml, injectArticleBadge, stampNewCandidate, taskIds: TASK_IDS };
+  return { version: '204.2', provenance, isChat, usesSharedRuleId, badgeHtml, injectArticleBadge, stampNewCandidate, taskIds: TASK_IDS };
 });
