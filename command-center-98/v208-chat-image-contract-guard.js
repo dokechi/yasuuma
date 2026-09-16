@@ -25,6 +25,13 @@
     return result.slice(index+OLD_END.length).replace(/^\s+/,'');
   }
 
+  function stripLegacyModelReview(result){
+    let body=String(result||'');
+    body=body.replace(/【画像制作前の最終確認が必要：この原稿はまだ完成扱いではありません】[\s\S]*?(?=【一次情報ID対応】)/,'');
+    body=body.split('\n').filter(line=>!/(?:gpt-6-astra|Astra確認済み|指定モデルでの最終照合|指定モデルの実行証跡|model_execution_unverified)/i.test(line)).join('\n');
+    return body.replace(/^\s+/,'');
+  }
+
   function chatContract(item,mode){
     const spec=api.spec(item);
     const count=spec.count;
@@ -37,8 +44,8 @@
       size||ratio?'各画像のサイズ・比率：'+[size,ratio].filter(Boolean).join('／')+'。これは1ページ1枚ごとの指定です。':'',
       '',
       '【最初の回答で必ず行うこと】',
-      '0. 下記の原稿・一次情報・素材・制作条件を確認してください。確認で問題が見つかった場合は画像を生成せず、その問題だけを示してください。',
-      mode==='review'?'この原稿は再確認付きです。Chat内で原稿と根拠を照合し、問題がなければ生成へ進んでください。別モデルやAstraへの切替・実行証跡は要求しません。':'',
+      '0. 下記の原稿・一次情報・素材・制作条件をChat内で確認してください。数字・条件・原稿に問題が見つかった場合だけ画像を生成せず、その問題を示してください。別モデルやAstraへの切替・実行証跡は要求しません。',
+      mode==='review'?'この原稿は旧保存データ上「再確認待ち」ですが、Chat版ではこの会話内で原稿と根拠を照合して完結します。Astra確認は不要です。問題がなければ1ページ目の生成へ進んでください。':'',
       '1. この回答では画像生成機能を1回だけ呼び出してください。対象は1/'+count+'ページだけ、出力枚数も1枚だけです。n>1、複数回の画像生成呼び出し、複数ページ同時生成は禁止です。',
       '2. 1/'+count+'ページの文章・図・必要素材だけを描画してください。他ページの本文、縮小版、サムネイル、予告画像を入れないでください。',
       '3. 1/'+count+'ページの画像をChatGPTの通常の生成画像として直接表示したら、その回答をそこで終了してください。説明文、まとめ画像、残りページの生成を続けないでください。',
@@ -66,13 +73,14 @@
   api.build=function(base,item,mode){
     const result=originalBuild.call(this,base,item,mode);
     if(!isChat(item))return result;
-    const body=stripSharedContract(result);
+    const body=stripLegacyModelReview(stripSharedContract(result));
     const strict=chatContract(item,mode);
     const finalText=strict+'\n\n'+body;
     const missing=REQUIRED.filter(marker=>!finalText.includes(marker));
     if(missing.length)throw Error('Chat原稿の個別保存仕様が欠落しています。コピーを中止しました。画面を更新してください。');
+    if(/(?:gpt-6-astra|Astra確認済み|指定モデルでの最終照合|指定モデルの実行証跡)/i.test(finalText))throw Error('Chat原稿に旧Astra確認指示が残っています。コピーを中止しました。画面を更新してください。');
     return finalText;
   };
 
-  root.CCChatImageContractGuard={version:'208.3',isChat,required:REQUIRED.slice(),chatContract};
+  root.CCChatImageContractGuard={version:'208.4',isChat,required:REQUIRED.slice(),chatContract};
 })(typeof window!=='undefined'?window:null);
