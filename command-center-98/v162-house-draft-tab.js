@@ -2,6 +2,8 @@
   if(typeof API==='undefined'||typeof load!=='function'||typeof authHeaders!=='function')return;
 
   const TASK_ID='6aa77eb5ce7881919d8dc62554833b60';
+  const CHAT_TASK_ID='6aa9edd177fc8191a1e4b665930ee071';
+  const TASK_IDS=new Set([TASK_ID,CHAT_TASK_ID]);
   const tabs=document.getElementById('viewTabs');
   if(!tabs||document.getElementById('houseDraftViewBtn'))return;
 
@@ -17,17 +19,27 @@
 
   const taskId=item=>{
     if(typeof signalTaskId==='function')return signalTaskId(item);
-    const prefix='task:'+TASK_ID+':';
-    return String(item?.id||'').startsWith(prefix)?TASK_ID:'';
+    const match=String(item?.id||'').match(/^(?:sns:)*task:([a-zA-Z0-9-]+):/);
+    return match?match[1]:'';
   };
   const completed=item=>{
-    if(taskId(item)!==TASK_ID)return false;
+    if(!TASK_IDS.has(taskId(item)))return false;
     const payload=item?.payload||{};
     if(payload.content_type!=='house_post_candidate'&&payload.category!=='house_living')return false;
     const quality=window.__carouselContentPipeline?.packageQuality;
     return typeof quality==='function'
       ?quality(item).ready
       :payload.draft_status==='ready'&&Array.isArray(payload.draft_slides)&&payload.draft_slides.length>=5;
+  };
+  // A model-only pending Chat draft is visible for comparison, never counted as complete.
+  const visibleDraft=item=>{
+    if(completed(item))return true;
+    if(taskId(item)!==CHAT_TASK_ID)return false;
+    const p=item?.payload||{};
+    return (p.content_type==='house_post_candidate'||p.category==='house_living')
+      &&p.draft_status==='blocked'&&p.review_status==='needs_current_final_review'
+      &&p.blocked_reason==='model_execution_unverified'&&p.visibility_status==='visible'
+      &&Array.isArray(p.draft_slides)&&p.draft_slides.length>0;
   };
   const newestTime=item=>{
     const values=[item?.lastSeen,item?.occurredAt,item?.detectedAt,item?.createdAt,item?.updatedAt,item?.payload?.occurred_at,item?.payload?.detected_at,item?.payload?.created_at,item?.payload?.updated_at];
@@ -59,18 +71,19 @@
 
   function renderStats(data,items){
     const copyReady=items.filter(item=>{
+      if(!completed(item))return false;
       const issues=window.__carouselContentPipeline?.preflightIssues;
       return typeof issues!=='function'||issues(item.payload||{}).length===0;
     }).length;
-    setText('kpiLabelCount','家の完成原稿');
+    setText('kpiLabelCount','家の原稿');
     setText('kpiCount',items.length+'件');
     setText('kpiLabelS','画像化可能');
     setText('kpiS',copyReady+'件');
     setText('kpiLabelImpact','選択済み');
     setText('kpiImpact',items.filter(item=>item.reviewState==='accepted').length+'件');
     document.getElementById('kpiImpact')?.classList.remove('has-value');
-    setText('kpiLabelStored','家候補');
-    setText('kpiStored',items.length+'件');
+    setText('kpiLabelStored','再確認待ち');
+    setText('kpiStored',items.filter(item=>!completed(item)).length+'件');
     setText('agentCount',(data.agents?.connected??7)+'/'+(data.agents?.total??7));
     setText('generatedAt','更新 '+fmtUpdated(data.generatedAt));
   }
@@ -79,10 +92,10 @@
     app.data=data;
     app.items=items;
     renderList();
-    setText('listCaption','ガルちゃん×家｜完成原稿');
+    setText('listCaption','ガルちゃん×家｜原稿');
     setText('visibleCount',items.length+'件');
     const filter=document.getElementById('listFilter');
-    if(filter){filter.hidden=false;filter.innerHTML='<span><b>家づくりの完成原稿</b> · 新しい候補が上</span>'}
+    if(filter){filter.hidden=false;filter.innerHTML='<span><b>家づくりの原稿</b> · 完成／Chat再確認待ち · 新しい候補が上</span>'}
     renderStats(data,items);
     setBadge(items.length);
   }
@@ -92,7 +105,7 @@
     if(response.status===401){authExpired();throw new Error('認証の有効期限が切れました')}
     const data=await response.json();
     if(!response.ok||!data?.ok)throw new Error(data?.error||('HTTP '+response.status));
-    return {data,items:sortNewest((Array.isArray(data.items)?data.items:[]).filter(completed))};
+    return {data,items:sortNewest((Array.isArray(data.items)?data.items:[]).filter(visibleDraft))};
   }
 
   async function loadHouse(){
@@ -104,18 +117,18 @@
     button.setAttribute('aria-pressed','true');
     const refresh=document.getElementById('refreshBtn');
     if(refresh)refresh.disabled=true;
-    setStatus('家の完成原稿を読み込み中...',true);
+    setStatus('家の原稿を読み込み中...',true);
     showLoading();
     try{
       const {data,items}=await fetchHouseItems();
       if(app.view!=='house')return;
       renderHouseList(data,items);
-      setStatus('準備完了｜家の完成原稿 '+items.length+'件');
+      setStatus('準備完了｜家の原稿 '+items.length+'件（完成 '+items.filter(completed).length+'件）');
     }catch(error){
       const host=document.getElementById('list');
-      if(host)host.innerHTML='<div class="empty"><b>家の完成原稿を取得できませんでした。</b><br><small>'+esc(error.message||error)+'</small><br><br><button class="push-button" onclick="load(\'house\')">再試行</button></div>';
+      if(host)host.innerHTML='<div class="empty"><b>家の原稿を取得できませんでした。</b><br><small>'+esc(error.message||error)+'</small><br><br><button class="push-button" onclick="load(\'house\')">再試行</button></div>';
       setStatus('通信エラー');
-      toast('家の完成原稿の読み込みに失敗しました','bad');
+      toast('家の原稿の読み込みに失敗しました','bad');
     }finally{
       app.busy=false;
       if(refresh)refresh.disabled=false;
@@ -145,6 +158,6 @@
   document.querySelectorAll('.status-bar .status-panel').forEach(el=>{if(/^ver\s/i.test(el.textContent.trim()))el.textContent='ver 1.62'});
   const helpNote=document.querySelector('#helpModal .help-note');
   if(helpNote)helpNote.textContent=helpNote.textContent.replace(/ver\s+[\d.]+/i,'ver 1.62');
-  window.__houseDraftTab={taskId:TASK_ID,completed,load:loadHouse,refreshBadge};
+  window.__houseDraftTab={taskId:TASK_ID,chatTaskId:CHAT_TASK_ID,visibleDraft,completed,load:loadHouse,refreshBadge};
   setTimeout(refreshBadge,650);
 })();
