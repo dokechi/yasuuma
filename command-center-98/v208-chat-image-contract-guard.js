@@ -33,7 +33,7 @@
     return [
       '【Chat版の最優先出力契約：1回答＝1ページ＝保存可能な画像1枚】',
       'この原稿は全'+count+'ページですが、1回のアシスタント回答で複数ページを生成してはいけません。',
-      '完成条件は「全'+count+'ページが、ChatGPT上でそれぞれ個別に開いて保存できる、独立した通常の生成画像として別々の回答に存在すること」です。',
+      '完成条件は「全'+count+'ページが、ChatGPT上でそれぞれ個別に開いて保存できる、個別保存可能な通常の生成画像として別々の回答に存在すること」です。',
       size||ratio?'各画像のサイズ・比率：'+[size,ratio].filter(Boolean).join('／')+'。これは1ページ1枚ごとの指定です。':'',
       '',
       '【最初の回答で必ず行うこと】',
@@ -74,5 +74,5 @@
     return finalText;
   };
 
-  root.CCChatImageContractGuard={version:'208.2',isChat,required:REQUIRED.slice(),chatContract};
+  root.CCChatImageContractGuard={version:'208.3',isChat,required:REQUIRED.slice(),chatContract};
 })(typeof window!=='undefined'?window:null);
