@@ -113,25 +113,15 @@
   const timeValue=value=>{const result=value?new Date(value).getTime():0;return Number.isFinite(result)?result:0};
   const itemTime=item=>item?.updatedAt||item?.lastSeen||item?.detectedAt||item?.createdAt||item?.applicationDeadline||null;
   const newest=(items,getTime=itemTime)=>[...(items||[])].sort((a,b)=>timeValue(getTime(b))-timeValue(getTime(a)));
-  const GAL_TASK_ID='6a9e5826d4888191a4d82a643e6d5adf';
-  const HOUSE_TASK_ID='6aa77eb5ce7881919d8dc62554833b60';
-  const galTaskId=item=>{
-    if(typeof signalTaskId==='function')return signalTaskId(item);
-    const prefix='task:'+GAL_TASK_ID+':';
-    return String(item?.id||'').startsWith(prefix)?GAL_TASK_ID:'';
-  };
+  // HOME must follow the current content type, not a historical task id.
+  // This keeps the feed current even when the generating task is replaced.
   const isGalItem=item=>{
     const payload=item?.payload||{};
-    return galTaskId(item)===GAL_TASK_ID&&(payload.content_type==='fp_post_candidate'||['fp_psychology','fp_reaction'].includes(payload.category));
-  };
-  const houseTaskId=item=>{
-    if(typeof signalTaskId==='function')return signalTaskId(item);
-    const prefix='task:'+HOUSE_TASK_ID+':';
-    return String(item?.id||'').startsWith(prefix)?HOUSE_TASK_ID:'';
+    return payload.content_type==='fp_post_candidate';
   };
   const isHouseItem=item=>{
     const payload=item?.payload||{};
-    return houseTaskId(item)===HOUSE_TASK_ID&&(payload.content_type==='house_post_candidate'||payload.category==='house_living');
+    return payload.content_type==='house_post_candidate';
   };
   const isCompletedGal=item=>{
     if(!isGalItem(item))return false;
@@ -147,10 +137,14 @@
     const payload=item?.payload||{};
     return payload.draft_status==='ready'&&Array.isArray(payload.draft_slides)&&payload.draft_slides.length>=5;
   };
-  const galItemTime=item=>[
-    item?.lastSeen,item?.occurredAt,item?.detectedAt,item?.createdAt,item?.updatedAt,
-    item?.payload?.occurred_at,item?.payload?.detected_at,item?.payload?.created_at,item?.payload?.updated_at
-  ].find(value=>timeValue(value))||null;
+  const galItemTime=item=>{
+    const values=[
+      item?.lastSeen,item?.occurredAt,item?.detectedAt,item?.createdAt,item?.updatedAt,
+      item?.payload?.occurred_at,item?.payload?.detected_at,item?.payload?.created_at,item?.payload?.updated_at
+    ].filter(value=>timeValue(value));
+    if(!values.length)return null;
+    return values.sort((a,b)=>timeValue(b)-timeValue(a))[0];
+  };
   const galTitle=item=>item?.payload?.post_title||item?.payload?.draft_title||item?.payload?.draft_cover||item?.title||'投稿原稿';
   const galStatus=item=>{
     const issues=window.__fpContentPipeline?.preflightIssues;
