@@ -22,7 +22,12 @@
 
   function removeQueueTab(){
     const queue=tabs?.querySelector('button[data-sourcing-sub="queue"]');
-    queue?.remove();
+    if(queue){
+      queue.hidden=true;
+      queue.style.display='none';
+      queue.setAttribute('aria-hidden','true');
+      queue.tabIndex=-1;
+    }
     const product=tabs?.querySelector('.sourcing-tab-group.product');
     if(product){
       ['hold','purchases','miss'].forEach(sub=>{
