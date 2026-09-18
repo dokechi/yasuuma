@@ -112,6 +112,9 @@
     if(sourcingApp.sub!=='discoveries')return;
     const caption=host.querySelector('.sourcing-caption b');
     if(caption&&(caption.textContent||'').trim()==='店の発見')caption.textContent='新しい仕入れ先候補';
+    host.querySelectorAll('.domain-tag').forEach(tag=>{
+      if((tag.textContent||'').trim()==='店の発見')tag.textContent='仕入れ先候補';
+    });
     const note=host.querySelector('.purchase-note');
     if(note&&/安い店を見つけた記録/.test(note.textContent||'')){
       note.textContent='まだ仕入れ先台帳に定着していない候補店です。商品が決まった時点で仕入れ候補として判断します。';
@@ -130,6 +133,12 @@
     });
     const caption=host.querySelector('.sourcing-caption b');
     if(caption&&(caption.textContent||'').trim()==='見送り')caption.textContent='追跡終了';
+    if(sourcingApp.sub==='miss'){
+      const empty=host.querySelector('.empty');
+      if(empty&&/今は見当違い|見送り/.test(empty.textContent||'')){
+        empty.innerHTML='<b>追跡終了はまだありません。</b><br><small>もう追わないと判断した商品がここに残ります。</small>';
+      }
+    }
     host.querySelectorAll('.supplier-table th').forEach(th=>{
       if((th.textContent||'').trim()==='見送り')th.textContent='追跡終了';
     });
