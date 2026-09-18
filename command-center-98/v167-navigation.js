@@ -9,7 +9,7 @@
   const regularViews=['active','history','accepted','rejected','saved','events'];
   const names={all:'すべての情報',money:'FP・家計',subsidy:'補助金',company:'会社',ai:'AI',deal:'お得',sns:'SNS候補'};
   const statusNames={active:'未確認',history:'確認済み',accepted:'採用',rejected:'却下',saved:'保存済み',events:'タスク結果'};
-  const deskNames={x:'カード投稿',fp:'お金投稿',house:'家投稿',sourcing:'仕入れ',reddit:'海外差'};
+  const deskNames={x:'カード投稿',fp:'お金投稿',house:'家投稿',listed:'上場',sourcing:'仕入れ',reddit:'海外差'};
   const openItems=new Map();
   let signature='', serial=0;
   const time=item=>[item?.lastSeen,item?.occurredAt,item?.detectedAt,item?.createdAt,item?.updatedAt].find(v=>Number.isFinite(Date.parse(v)));
@@ -68,7 +68,7 @@
     by('ccPageTitle').textContent=name;
     by('ccPageDescription').textContent=generic
       ? (view==='events'?(names[app.domain]||'すべての情報')+'の保存結果':statusNames[view]+' · 新しい情報から表示')
-      : {x:'新着から候補を選び、原稿を確認できます。',fp:'お金の投稿原稿を、新しいものから確認できます。',house:'家の投稿原稿を、新しいものから確認できます。',sourcing:'候補・調査・購入履歴を切り替えて確認できます。',reddit:'海外との価格差と投稿候補を確認できます。'}[view]||'';
+      : {x:'新着から候補を選び、原稿を確認できます。',fp:'お金の投稿原稿を、新しいものから確認できます。',house:'家の投稿原稿を、新しいものから確認できます。',listed:'上場企業の投稿原稿を、新しいものから確認できます。',sourcing:'候補・調査・購入履歴を切り替えて確認できます。',reddit:'海外との価格差と投稿候補を確認できます。'}[view]||'';
     document.title=home?'司令塔':name+'｜司令塔';
     if(['fp','house'].includes(view))by('listCaption').textContent='完成原稿';
     const target=home?'home':{x:'x',fp:'fp-draft',house:'house-draft',sourcing:'sourcing-queue'}[view]||'more';
