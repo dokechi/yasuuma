@@ -90,10 +90,21 @@
     w.__ccChatEditorialInstalled = true;
     const rows = new Map();
     const button = d.createElement('button');
-    button.id='careerDraftViewBtn';button.type='button';button.className='push-button small';button.dataset.view='career';button.textContent='大手企業';button.setAttribute('aria-label','大手企業のChat原稿');
+    button.id='careerDraftViewBtn';button.type='button';button.className='push-button small';button.dataset.view='career';button.textContent='上場';button.setAttribute('aria-label','上場企業のChat原稿');
     const saved=tabs.querySelector('[data-view="saved"]');
     if(saved)tabs.insertBefore(button,saved);else tabs.appendChild(button);
-    const style=d.createElement('style');style.textContent='.cce-tools{margin:12px 0}.cce-internal{margin:12px 0;padding:12px;border:1px solid #9ca3af;background:#f8fafc}.cce-internal p{white-space:pre-wrap}.cce-scroll{overflow:auto}.cce-internal table{border-collapse:collapse;min-width:680px;width:100%}.cce-internal th,.cce-internal td{padding:8px;border:1px solid #cbd5e1;text-align:left;vertical-align:top;white-space:pre-wrap}.cce-internal dd{white-space:pre-wrap}.cce-dialog{width:min(960px,92vw);max-height:90vh;overflow:auto;background:#fff;color:#111;padding:20px}.cce-dialog pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}.cce-dialog textarea{width:98%;height:55vh}.cce-dialog::backdrop{background:#0008}#careerDraftViewBtn{min-width:90px;background:#e6ebf5}';d.head.appendChild(style);
+    const addLauncher=selector=>{
+      const host=d.querySelector(selector);
+      if(!host||host.querySelector('[data-cce-career]'))return;
+      const launch=d.createElement('button');
+      launch.type='button';launch.className='home-launcher-card';launch.dataset.cceCareer='1';
+      launch.innerHTML='<b>上場</b><span>上場企業の原稿</span>';
+      const ai=host.querySelector('[data-home-domain="ai"]');
+      if(ai)host.insertBefore(launch,ai);else host.appendChild(launch);
+    };
+    addLauncher('#homeLauncher .home-launcher-grid');
+    addLauncher('#ccMore .home-launcher-grid');
+    const style=d.createElement('style');style.textContent='.cce-tools{margin:12px 0}.cce-internal{margin:12px 0;padding:12px;border:1px solid #9ca3af;background:#f8fafc}.cce-internal p{white-space:pre-wrap}.cce-scroll{overflow:auto}.cce-internal table{border-collapse:collapse;min-width:680px;width:100%}.cce-internal th,.cce-internal td{padding:8px;border:1px solid #cbd5e1;text-align:left;vertical-align:top;white-space:pre-wrap}.cce-internal dd{white-space:pre-wrap}.cce-dialog{width:min(960px,92vw);max-height:90vh;overflow:auto;background:#fff;color:#111;padding:20px}.cce-dialog pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}.cce-dialog textarea{width:98%;height:55vh}.cce-dialog::backdrop{background:#0008}#careerDraftViewBtn{min-width:70px;background:#e6ebf5}#homeLauncher [data-cce-career],#ccMore [data-cce-career]{background:#e8e6f5}';d.head.appendChild(style);
     const oldCard=cardHtml;
     cardHtml=function(row,index){
       let html=oldCard.apply(this,arguments);
@@ -110,7 +121,7 @@
       el.querySelector('[data-copy]').onclick=async()=>{const feedback=el.querySelector('[data-feedback]');try{const text=bundle(row);try{await w.navigator.clipboard.writeText(text);feedback.textContent='公開用コピーを作成しました。内部調査情報は含めていません。';}catch(_){feedback.textContent='クリップボードを使えないため、下の公開用テキストを選択してコピーしてください。';const area=d.createElement('textarea');area.readOnly=true;area.value=text;el.appendChild(area);area.focus();area.select();}}catch(e){feedback.textContent='コピー保留：'+e.message;}};
       el.showModal();
     }
-    d.addEventListener('click',e=>{const b=e.target.closest && e.target.closest('[data-cce-open]');if(b){const row=rows.get(b.dataset.cceOpen);if(row)dialog(row);}});
+    d.addEventListener('click',e=>{const launch=e.target.closest&&e.target.closest('[data-cce-career]');if(launch){e.preventDefault();load('career');return;}const b=e.target.closest && e.target.closest('[data-cce-open]');if(b){const row=rows.get(b.dataset.cceOpen);if(row)dialog(row);}});
     const setText=(id,value)=>{const el=d.getElementById(id);if(el)el.textContent=value;};
     async function loadCareer(){
       if(app.busy)return;app.busy=true;app.view='career';app.domain='all';app.rank='all';
@@ -121,7 +132,7 @@
       d.getElementById('homeViewBtn')?.classList.remove('selected');
       d.getElementById('homeViewBtn')?.setAttribute('aria-pressed','false');
       setSelected('#viewTabs button[data-view]','view','career');const refresh=d.getElementById('refreshBtn');if(refresh)refresh.disabled=true;
-      setStatus('大手企業のChat原稿を読み込み中...',true);showLoading();
+      setStatus('上場企業のChat原稿を読み込み中...',true);showLoading();
       try{
         const response=await w.fetch(API+'?view=history',{cache:'no-store',headers:authHeaders()});
         if(response.status===401){if(typeof authExpired==='function')authExpired();throw new Error('認証の有効期限が切れました');}
@@ -129,10 +140,10 @@
         if(!response.ok || data.ok===false)throw new Error(data.error||('HTTP '+response.status));
         if(app.view!=='career')return;
         const all=unwrap(data);app.data=data;app.items=all.filter(r=>lane(r)==='career' && arr(payload(r).draft_slides).length).sort((a,b)=>Date.parse(b.updatedAt||b.lastSeen||0)-Date.parse(a.updatedAt||a.lastSeen||0));
-        renderList();setText('listCaption','大手企業｜Chat原稿');setText('visibleCount',app.items.length+'件');
+        renderList();setText('listCaption','上場｜Chat原稿');setText('visibleCount',app.items.length+'件');
         const filter=d.getElementById('listFilter');if(filter){filter.hidden=false;filter.textContent='2本の需要 → 公式根拠 → 今日できる1件・1問。'+(Number(data.storedCount)>all.length?'一覧はAPI取得範囲内です。古い原稿は「タスク結果」でも確認してください。':'');}
-        if(!app.items.length)d.getElementById('list').innerHTML='<div class="empty"><b>大手企業の保存済みChat原稿はまだありません。</b><p>新規レーンです。実際の調査で合格した原稿が保存されると、ここに表示されます。</p></div>';
-        setText('kpiLabelCount','大手企業の原稿');setText('kpiCount',app.items.length+'件');setText('kpiLabelS','編集照合済み');setText('kpiS',app.items.filter(r=>!issues(r).length).length+'件');setText('kpiLabelImpact','採用済み');setText('kpiImpact',app.items.filter(r=>r.reviewState==='accepted').length+'件');setText('kpiLabelStored','要確認');setText('kpiStored',app.items.filter(r=>issues(r).length).length+'件');setStatus('準備完了｜大手企業の原稿');
+        if(!app.items.length)d.getElementById('list').innerHTML='<div class="empty"><b>上場の保存済みChat原稿はまだありません。</b><p>新規レーンです。実際の調査で合格した原稿が保存されると、ここに表示されます。</p></div>';
+        setText('kpiLabelCount','上場の原稿');setText('kpiCount',app.items.length+'件');setText('kpiLabelS','編集照合済み');setText('kpiS',app.items.filter(r=>!issues(r).length).length+'件');setText('kpiLabelImpact','採用済み');setText('kpiImpact',app.items.filter(r=>r.reviewState==='accepted').length+'件');setText('kpiLabelStored','要確認');setText('kpiStored',app.items.filter(r=>issues(r).length).length+'件');setStatus('準備完了｜上場の原稿');
       }catch(e){d.getElementById('list').innerHTML='<div class="empty">取得失敗：'+esc(e.message)+'<br>更新ボタンから再試行してください。</div>';setStatus('通信エラー');}finally{app.busy=false;if(refresh)refresh.disabled=false;}
     }
     const previousLoad=load;
