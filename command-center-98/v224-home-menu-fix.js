@@ -1,7 +1,5 @@
 (()=>{
   if(window.CCHomeMenuFixV224)return;
-  const H=window.CCHome;
-  if(!H)return;
 
   function close(){
     try{
@@ -16,36 +14,17 @@
     }
   }
 
-  const previousShow=H.show;
-  if(typeof previousShow==='function'){
-    H.show=function(){
-      close();
-      const out=previousShow.apply(this,arguments);
-      close();
-      requestAnimationFrame(close);
-      return out;
-    };
-  }
-
-  // HOME上の操作へ移った時点で、デスクトップメニューは必ず閉じる。
+  // HOMEや主要画面へ切り替える「その瞬間」だけ閉じる。
+  // メニューを開いた後は監視・自動クローズしない。
   document.addEventListener('click',event=>{
-    if(!H.active)return;
-    if(event.target.closest('#menuBar .menu-wrap'))return;
-    if(event.target.closest('#commandHome,#ccPrimaryNav,#ccDestination,#ccMore,.home-mobile-nav')){
-      close();
-    }
+    const nav=event.target.closest(
+      '#ccPrimaryNav button, .home-mobile-nav button, #homeViewBtn, [data-home-action="home"]'
+    );
+    if(nav)close();
   },true);
 
-  // HOMEが表示されたまま再描画されても、開きっぱなしを残さない。
-  const home=document.getElementById('commandHome');
-  if(home){
-    const observer=new MutationObserver(()=>{
-      if(H.active)close();
-    });
-    observer.observe(home,{childList:true,subtree:true});
-  }
+  // 初期表示時に前回の開きっぱなしだけ掃除する。
+  close();
 
-  if(H.active)close();
-
-  window.CCHomeMenuFixV224={version:'224.1',close};
+  window.CCHomeMenuFixV224={version:'224.2',close};
 })();
