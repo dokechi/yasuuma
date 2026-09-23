@@ -5,8 +5,8 @@ const base={
  generation_version:A.VERSION,design_version:A.DESIGN_VERSION,research_version:A.RESEARCH_VERSION,research_started_at:now,
  community_research:{required:true,status:'strict'},
  research_threads:[
-  {url:'https://girlschannel.net/topics/1001/',title:'A',published_at:'2026-09-20T00:00:00Z',checked_at:now,checked_scope:'1-250',total_comments:250,comments:[{comment_no:10,summary:'疑問',plus:null,minus:null}]},
-  {url:'https://girlschannel.net/topics/1002/',title:'B',published_at:'2026-09-15T00:00:00Z',checked_at:now,checked_scope:'1-220',total_comments:220,comments:[{comment_no:11,summary:'反論'}]}
+  {url:'https://girlschannel.net/topics/1001/',title:'A',published_at:'2026-09-20T00:00:00Z',checked_at:now,checked_scope:'1-250',total_comments:250,comments:[{comment_no:10,summary:'疑問',direct_url:'https://girlschannel.net/comment/10/',plus:null,minus:null}]},
+  {url:'https://girlschannel.net/topics/1002/',title:'B',published_at:'2026-09-15T00:00:00Z',checked_at:now,checked_scope:'1-220',total_comments:220,comments:[{comment_no:11,summary:'反論',direct_url:'https://girlschannel.net/comment/11/',plus:null,minus:null}]}
  ],
  draft_status:'ready',draft_revision:'r1',content_lock:{locked:true,draft_revision:'r1',locked_at:now},page_count_reason:'内容上2ページ',
  adaptive_design:{mode:'adaptive',decision_basis:'数字比較を主役にする',visual_language:'white/neutral/data-first'},
