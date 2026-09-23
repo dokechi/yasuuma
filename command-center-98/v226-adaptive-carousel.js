@@ -349,7 +349,9 @@
       if (!careerId || !dialog || dialog.dataset.adaptiveV226==='1') return;
       const item=lookup(careerId); if(!item || !adaptive(item)) return;
       dialog.dataset.adaptiveV226='1'; dialog.dataset.adaptiveId=careerId;
-      const q=quality(item,null), pf=screenshotIssues(payloadOf(item));\n      const editorialIssues = typeof root.CCChatEditorial?.issues === 'function' ? arr(root.CCChatEditorial.issues(item)) : [];\n      const issues=[...q.issues,...pf,...editorialIssues];
+      const q=quality(item,null), pf=screenshotIssues(payloadOf(item));
+      const editorialIssues = typeof root.CCChatEditorial?.issues === 'function' ? arr(root.CCChatEditorial.issues(item)) : [];
+      const issues=[...q.issues,...pf,...editorialIssues];
       const copyButton=dialog.querySelector('[data-copy]'); if(copyButton){copyButton.disabled=issues.length>0;copyButton.title=issues.join('／');copyButton.textContent='LOCK済み原稿を画像化用にコピー';}
       const note=doc.createElement('section'); note.className='cce-internal'; note.dataset.adaptiveNotice='1'; note.innerHTML=issues.length?'<b>適応型仕様：画像化保留</b><p>'+esc(issues.join('／'))+'</p>':'<b>適応型仕様：画像化可能</b><p>お金Chat専用の14日需要ゲート、ページ設計、一次情報、原稿LOCK、適応型デザインを確認済み。</p>';
       dialog.querySelector('h3')?.insertAdjacentElement('beforebegin',note);
