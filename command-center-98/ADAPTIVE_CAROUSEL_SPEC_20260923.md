@@ -557,3 +557,24 @@ required screenshotがすべて取得済み、またはrequired screenshotが0�
 - asset_status=`ready_for_image_generation`
 
 この状態と `screenshot_decisions / acquisition_status / acquisition_ref` が一致しない場合、画像化handoffを停止する。
+
+
+## 家Chat 品質ゲート補強 v3.1
+
+家ChatのLOCK対象へ需要調査の追跡情報も含める。
+
+追加で `content_lock.snapshot` に保持する。
+
+- research_started_at
+- community_research
+- research_threads
+- demand_evidence
+
+これにより、LOCK後にコメント要約、direct URL、反応数、strict/background構成、需要判定等だけを書き換えた場合も変更として検知する。
+
+変更時は以下をすべてやり直す。
+
+1. draft_revision更新
+2. content_lock.snapshot再作成
+3. final_review再実行
+4. final_review.reviewed_snapshotを新LOCK snapshotへ更新
