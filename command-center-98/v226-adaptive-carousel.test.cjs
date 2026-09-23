@@ -295,7 +295,6 @@ const houseSynthesisWithoutPrimary=structuredClone(house);
 houseSynthesisWithoutPrimary.draft_slides[0].source_refs=[];
 houseSynthesisWithoutPrimary.draft_slides[0].page_contract.source_refs=[];
 houseSynthesisWithoutPrimary.draft_slides[0].page_contract.primary_evidence_required=false;
-houseSynthesisWithoutPrimary.draft_slides[0].page_contract.evidence_note='synthesisだけで構成し事実主張なし';
 houseSynthesisWithoutPrimary.page_reflections[0].primary_source_refs=[];
 houseSynthesisWithoutPrimary.page_reflections[0].note='このページは需要の統合だけで一次情報を要しない';
 houseSynthesisWithoutPrimary.content_lock.snapshot=A.lockSnapshot(houseSynthesisWithoutPrimary);
