@@ -15,8 +15,8 @@ const base={
  content_type:'fp_post_candidate',
  community_research:{required:true,status:'strict',window_days:14,min_topics:2,min_comments_per_topic:200},
  research_threads:[
-  {url:'https://girlschannel.net/topics/1001/',title:'A',published_at:'2026-09-20T00:00:00Z',checked_at:now,checked_scope:'1-250',total_comments:250,related_to_question:true,comments:[{comment_no:10,summary:'疑問',direct_url:'https://girlschannel.net/topics/1001/#comment-10',plus:null,minus:null}]},
-  {url:'https://girlschannel.net/topics/1002/',title:'B',published_at:'2026-09-15T00:00:00Z',checked_at:now,checked_scope:'1-220',total_comments:220,related_to_question:true,comments:[{comment_no:11,summary:'反論',direct_url:'https://girlschannel.net/topics/1002/#comment-11',plus:null,minus:null}]}
+  {url:'https://girlschannel.net/topics/1001/',title:'A',published_at:'2026-09-20T00:00:00Z',checked_at:now,checked_scope:'1-250',total_comments:250,related_to_question:true,comments:[{comment_no:10,summary:'疑問',direct_url:'https://girlschannel.net/comment/1001/10/',plus:null,minus:null}]},
+  {url:'https://girlschannel.net/topics/1002/',title:'B',published_at:'2026-09-15T00:00:00Z',checked_at:now,checked_scope:'1-220',total_comments:220,related_to_question:true,comments:[{comment_no:11,summary:'反論',direct_url:'https://girlschannel.net/comment/1002/11/',plus:null,minus:null}]}
  ],
  draft_status:'ready',
  draft_revision:'r1',
@@ -67,8 +67,12 @@ one.research_threads=one.research_threads.slice(0,1);
 assert.match(A.strictCommunityIssues(one).join(' '),/別トピック2本/);
 
 const badCommentUrl=structuredClone(base);
-badCommentUrl.research_threads[0].comments[0].direct_url='https://girlschannel.net/topics/9999/#comment-10';
+badCommentUrl.research_threads[0].comments[0].direct_url='https://girlschannel.net/comment/9999/10/';
 assert.match(A.strictCommunityIssues(badCommentUrl).join(' '),/別トピックを指している/);
+
+const wrongCommentNo=structuredClone(base);
+wrongCommentNo.research_threads[0].comments[0].direct_url='https://girlschannel.net/comment/1001/99/';
+assert.match(A.strictCommunityIssues(wrongCommentNo).join(' '),/別コメント番号を指している/);
 
 const missingReaction=structuredClone(base);
 delete missingReaction.research_threads[0].comments[0].plus;
@@ -102,7 +106,7 @@ unresolved.final_review.unresolved_items=['check'];
 assert.match(A.finalReviewIssues(unresolved).join(' '),/未解決事項/);
 
 const quote=structuredClone(base);
-quote.draft_sources.push({id:'ugc1',label:'GirlsChannel comment',url:'https://girlschannel.net/topics/1001/#comment-10',claim:'体験談',checked_at:now,source_type:'community'});
+quote.draft_sources.push({id:'ugc1',label:'GirlsChannel comment',url:'https://girlschannel.net/comment/1001/10/',claim:'体験談',checked_at:now,source_type:'community'});
 quote.draft_slides[0].page_contract.direct_quote=true;
 quote.draft_slides[0].page_contract.source_refs=['s1','ugc1'];
 quote.draft_slides[0].source_refs=['s1','ugc1'];
