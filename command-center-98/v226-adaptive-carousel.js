@@ -380,12 +380,16 @@
       ['extracted','transformed'].forEach(key=>{if(!str(row[key]))issues.push(`家Chat ${page}ページ目のpage_reflection.${key}が未保存`);});
       ['extension','note'].forEach(key=>{if(!Object.prototype.hasOwnProperty.call(row,key))issues.push(`家Chat ${page}ページ目のpage_reflection.${key}キーが未保存`);});
 
+      const validThreadIds=new Set();
       arr(row.thread_refs).forEach((ref,refIndex)=>{
         const threadId=str(ref?.thread_id), commentNo=ref?.comment_no;
         const thread=threadMap.get(threadId);
         if(!threadId||!thread) issues.push(`家Chat ${page}ページ目のthread_ref${refIndex+1}が実在research_threadを指していない`);
         else if(commentNo==null||!arr(thread.comments).some(comment=>String(comment?.comment_no)===String(commentNo))) issues.push(`家Chat ${page}ページ目のthread_ref${refIndex+1}が実在コメントを指していない`);
+        else validThreadIds.add(threadId);
       });
+      if(str(row.origin)==='synthesis'&&validThreadIds.size<2) issues.push(`家Chat ${page}ページ目のsynthesis反映には別トピック2本の実コメント参照が必要`);
+      if(str(row.origin)==='comment_structure'&&validThreadIds.size<1) issues.push(`家Chat ${page}ページ目のcomment_structureに実コメント参照がない`);
 
       arr(row.primary_source_refs).forEach(ref=>{
         const source=sourceMap.get(str(ref));
@@ -399,6 +403,7 @@
       }else if(c.primary_evidence_required===false && !arr(row.primary_source_refs).length && !str(row.note)){
         issues.push(`家Chat ${page}ページ目は一次情報不要の理由をpage_reflection.noteへ保存する`);
       }
+      if(str(row.origin)==='primary_research'&&c.primary_evidence_required!==true) issues.push(`家Chat ${page}ページ目はprimary_researchなのでprimary_evidence_required=trueが必要`);
     });
 
     const action=p.executable_action||{};
@@ -410,6 +415,8 @@
     });
     const actionPage=slides.find(slide=>Number(slide?.page)===Number(action.public_page));
     if(Number.isInteger(Number(action.public_page))&&!actionPage) issues.push('家Chat executable_action.public_pageが実在ページを指していない');
+    const lastPage=Math.max(0,...slides.map(slide=>Number(slide?.page)||0));
+    if(Number.isInteger(Number(action.public_page))&&Number(action.public_page)!==lastPage) issues.push('家Chat executable_action.public_pageは最終ページを指定する');
     if(actionPage&&str(action.public_copy)&&!str(actionPage?.page_contract?.display_copy).includes(str(action.public_copy))){
       issues.push('家Chat executable_action.public_copyが指定ページのdisplay_copyに含まれていない');
     }
@@ -448,6 +455,8 @@
         const status=str(row?.acquisition_status);
         if(!['acquired','user_provided'].includes(status)) issues.push(`${row?.label || '必須スクショ'}が未取得`);
         if(['acquired','user_provided'].includes(status)&&!str(row?.acquisition_ref)) issues.push(`${row?.label || '必須スクショ'}の取得参照が未保存`);
+        if(decision==='assistant'&&status==='user_provided') issues.push(`${row?.label || '必須スクショ'}の担当と取得状態が矛盾している`);
+        if(decision==='user'&&status==='acquired') issues.push(`${row?.label || '必須スクショ'}の担当と取得状態が矛盾している`);
       }
     });
     return [...new Set(issues)];
