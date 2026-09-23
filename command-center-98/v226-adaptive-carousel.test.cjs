@@ -278,6 +278,10 @@ const houseStrictThreadBadComment=structuredClone(house);
 houseStrictThreadBadComment.research_threads[0].comments.push({comment_no:13,summary:'URL不整合',direct_url:'https://girlschannel.net/comment/9999/13/',plus:null,minus:null,reply_to:null});
 assert.equal(A.strictThreadEligible(houseStrictThreadBadComment,houseStrictThreadBadComment.research_threads[0]),false);
 
+const houseResearchChangedAfterLock=structuredClone(house);
+houseResearchChangedAfterLock.research_threads[0].comments[0].summary='LOCK後に需要根拠を書き換え';
+assert.match(A.lockIssues(houseResearchChangedAfterLock).join(' '),/LOCK後に原稿内容が変更されている/);
+
 const houseReviewSnapshotMissing=structuredClone(house);
 delete houseReviewSnapshotMissing.final_review.reviewed_snapshot;
 assert.match(A.finalReviewIssues(houseReviewSnapshotMissing).join(' '),/reviewed_snapshotが未保存/);
