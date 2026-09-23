@@ -243,6 +243,10 @@ assert.deepEqual(A.finalReviewIssues(house),[]);
 assert.deepEqual(A.designIssues(house),[]);
 assert.deepEqual(A.houseSpecificIssues(house),[]);
 assert.equal(A.quality({payload:house,title:'house'},()=>({ready:true,issues:[]})).ready,true);
+const houseHandoff=A.buildHandoff({payload:house,title:'house'});
+assert.match(houseHandoff,/1080×1440/);
+assert.match(houseHandoff,/現在ページ／総ページ数/);
+assert.match(houseHandoff,/家Chatでは需要調査コメントを公開面へ直接引用しない/);
 
 const houseNoSynthesis=structuredClone(house);
 delete houseNoSynthesis.synthesis;
