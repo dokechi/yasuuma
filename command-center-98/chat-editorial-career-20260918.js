@@ -46,8 +46,7 @@
     add(p.demand_evidence && p.demand_evidence.verdict === 'strong','中心疑問の需要strong');
     add(Number(row.score) >= 80,'S/A評価80点以上');
     const slides = arr(p.draft_slides), reflections = arr(p.page_reflections);
-    const adaptive = p.generation_version === 'adaptive-carousel-v1-20260923' || p.design_version === 'adaptive-visual-v1' || p.adaptive_design?.mode === 'adaptive';
-    add((adaptive ? slides.length >= 1 : (slides.length >= 6 && slides.length <= 8)) && slides.every((s,i)=>s.page===i+1 && s.headline && s.body), adaptive ? '完成原稿・ページ順' : '完成原稿6〜8枚・ページ順');
+    add(slides.length >= 6 && slides.length <= 8 && slides.every((s,i)=>s.page===i+1 && s.headline && s.body),'完成原稿6〜8枚・ページ順');
     const sourceIds=new Set(arr(p.draft_sources).map(s=>s.id));
     add(slides.every(s=>arr(s.source_refs).every(id=>sourceIds.has(id))),'各ページの一次情報参照');
     add(slides.every(s => reflections.some(r => r.page === s.page && r.origin && r.extracted && r.transformed)),'全ページの反映表');
