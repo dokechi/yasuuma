@@ -320,7 +320,7 @@ assert.match(A.houseSpecificIssues(houseActionNotFinal).join(' '),/public_page�
 
 const houseNoFinalCheckedAt=structuredClone(house);
 delete houseNoFinalCheckedAt.final_review.checked_at;
-assert.match(A.houseSpecificIssues(houseNoFinalCheckedAt).join(' '),/final_review\.checked_atが未保存/);
+assert.match(A.finalReviewIssues(houseNoFinalCheckedAt).join(' '),/final_review\.checked_atが未保存/);
 
 const houseSynthesisWithoutPrimary=structuredClone(house);
 houseSynthesisWithoutPrimary.draft_slides[0].source_refs=[];
@@ -329,8 +329,10 @@ houseSynthesisWithoutPrimary.draft_slides[0].page_contract.primary_evidence_requ
 houseSynthesisWithoutPrimary.page_reflections[0].primary_source_refs=[];
 houseSynthesisWithoutPrimary.page_reflections[0].note='このページは需要の統合だけで一次情報を要しない';
 houseSynthesisWithoutPrimary.content_lock.snapshot=A.lockSnapshot(houseSynthesisWithoutPrimary);
+houseSynthesisWithoutPrimary.final_review.reviewed_snapshot=structuredClone(houseSynthesisWithoutPrimary.content_lock.snapshot);
 assert.deepEqual(A.sourceIssues(houseSynthesisWithoutPrimary),[]);
 assert.deepEqual(A.houseSpecificIssues(houseSynthesisWithoutPrimary),[]);
+assert.deepEqual(A.finalReviewIssues(houseSynthesisWithoutPrimary),[]);
 assert.equal(A.quality({payload:houseSynthesisWithoutPrimary,title:'house'},()=>({ready:true,issues:[]})).ready,true);
 
 const housePrimaryResearchWithoutPrimary=structuredClone(house);
