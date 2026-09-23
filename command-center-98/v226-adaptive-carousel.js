@@ -30,6 +30,25 @@
   const str = value => String(value ?? '').trim();
   const esc = value => str(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const safeUrl = value => { try { const u = new URL(str(value)); return ['http:','https:'].includes(u.protocol) ? u.href : ''; } catch (_) { return ''; } };
+  const INTERNAL_DEMAND_SOURCE=/(?:ガールズ[ちチ]ゃんねる|ガールズチャンネル|ガルちゃん|がるちゃん|girlschannel(?:\.net)?)/i;
+  const PRIMARY_SOURCE_TYPES=new Set(['primary','official','government','law','regulator','ministry','municipality','official_company','official_organization','official_institution','public_statistics','issuer_official','manufacturer_official','financial_institution_official','institution_official']);
+  const isPrimarySource = source => PRIMARY_SOURCE_TYPES.has(str(source?.source_type).toLowerCase());
+  const stableStringify = value => {
+    if (value === null || typeof value !== 'object') return JSON.stringify(value);
+    if (Array.isArray(value)) return '['+value.map(stableStringify).join(',')+']';
+    return '{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+stableStringify(value[key])).join(',')+'}';
+  };
+  const lockSnapshot = p => ({
+    post_title:p.post_title??null,
+    draft_title:p.draft_title??null,
+    draft_cover:p.draft_cover??null,
+    caption:p.caption??p.draft_caption??p.post_caption??null,
+    page_count_reason:p.page_count_reason??null,
+    question_lineage:p.question_lineage??null,
+    premise_checks:arr(p.premise_checks),
+    draft_slides:arr(p.draft_slides),
+    draft_sources:arr(p.draft_sources)
+  });
   const payloadOf = value => value && value.payload && typeof value.payload === 'object' ? value.payload : (value && typeof value === 'object' ? value : {});
   const hasAdaptiveMarkers = value => {
     const p = payloadOf(value);
@@ -86,8 +105,6 @@
   };
   const girlsTopicKey = value => girlsCommentInfo(value).topicKey;
   const millis = value => { const n = Date.parse(str(value)); return Number.isFinite(n) ? n : 0; };
-  const researchStart = p => p.research_started_at || p.execution_audit?.started_at || p.started_at || p.source_checked_at || '';
-
   function strictCommunityIssues(value) {
     const p = payloadOf(value), issues = [];
     if (!adaptive(p) || !communityRequired(p)) return issues;
@@ -97,8 +114,8 @@
     if (Number(research.window_days) !== WINDOW_DAYS) issues.push(`ガルちゃんstrict期間は${WINDOW_DAYS}日で保存する`);
     if (Number(research.min_topics) !== MIN_TOPICS) issues.push(`ガルちゃんstrictは別トピック${MIN_TOPICS}本以上`);
     if (Number(research.min_comments_per_topic) !== MIN_COMMENTS) issues.push(`ガルちゃんstrictは各トピック${MIN_COMMENTS}コメント以上`);
-    const start = millis(researchStart(p));
-    if (!start) issues.push('需要調査の開始日時が未保存');
+    const start = millis(p.research_started_at);
+    if (!str(p.research_started_at) || !start) issues.push('research_started_atが未保存または不正');
     const byKey = new Map();
     for (const thread of arr(p.research_threads)) {
       const key = girlsTopicKey(thread?.url);
@@ -149,7 +166,7 @@
     slides.forEach((slide, index) => {
       const page = Number(slide?.page) || index + 1;
       const c = slide?.page_contract || {};
-      const requiredKeys = ['reader_question','answer','visual_subject','visual_type','evidence','calculation','required_assets','display_copy','source_refs','source_type','status'];
+      const requiredKeys = ['reader_question','answer','visual_subject','visual_type','evidence','calculation_required','calculation','required_assets','display_copy','source_refs','source_type','status'];
       const absent = requiredKeys.filter(key => !Object.prototype.hasOwnProperty.call(c,key) && !(key === 'source_refs' && Object.prototype.hasOwnProperty.call(slide,'source_refs')));
       if (absent.length) issues.push(`${page}ページ目の画面設計キーが不足: ${absent.join(', ')}`);
       const missingText = ['reader_question','answer','visual_subject','visual_type','display_copy','source_type','status'].filter(key => !str(c[key]));
@@ -163,14 +180,24 @@
           issues.push(`${page}ページ目の素材${assetIndex+1}に証拠種別が未保存`);
           return;
         }
+        if (!Object.prototype.hasOwnProperty.call(asset,'is_evidence') || typeof asset.is_evidence !== 'boolean') {
+          issues.push(`${page}ページ目の素材${assetIndex+1}にis_evidence=true/falseが未保存`);
+        }
         if (asset.is_evidence === true && ['generated_illustration','generated_photorealistic_image','simulation','diagram'].includes(str(asset.asset_type))) {
           issues.push(`${page}ページ目の生成・説明用素材を実物証拠として扱わない`);
         }
       });
+      if (typeof c.calculation_required !== 'boolean') issues.push(`${page}ページ目のcalculation_required=true/falseが未保存`);
       const calc = c.calculation;
-      if (calc && typeof calc === 'object' && Object.keys(calc).length) {
+      if (c.calculation_required === true) {
+        if (!calc || typeof calc !== 'object' || !Object.keys(calc).length) issues.push(`${page}ページ目は計算必須なのにcalculationが未保存`);
+        else {
+          const calcMissing = ['inputs','formula','unit','result','rounding'].filter(key => !Object.prototype.hasOwnProperty.call(calc,key) || calc[key] === '' || calc[key] == null);
+          if (calcMissing.length) issues.push(`${page}ページ目の計算条件が不足: ${calcMissing.join(', ')}`);
+        }
+      } else if (c.calculation_required === false && calc && typeof calc === 'object' && Object.keys(calc).length) {
         const calcMissing = ['inputs','formula','unit','result','rounding'].filter(key => !Object.prototype.hasOwnProperty.call(calc,key) || calc[key] === '' || calc[key] == null);
-        if (calcMissing.length) issues.push(`${page}ページ目の計算条件が不足: ${calcMissing.join(', ')}`);
+        if (calcMissing.length) issues.push(`${page}ページ目の任意計算データが不完全: ${calcMissing.join(', ')}`);
       }
       if (c.direct_quote === true) {
         const quote = c.quote_source || {};
@@ -194,7 +221,8 @@
     if (!lockedRevision || !currentRevision) issues.push('LOCK対象の原稿版が未保存');
     else if (lockedRevision !== currentRevision) issues.push('LOCK後に原稿版が変更されている');
     if (!str(lock.locked_at)) issues.push('原稿LOCK日時が未保存');
-    if (str(lock.content_hash) && str(p.content_hash) && str(lock.content_hash) !== str(p.content_hash)) issues.push('LOCK後に原稿内容ハッシュが変わっている');
+    if (!lock.snapshot || typeof lock.snapshot !== 'object' || Array.isArray(lock.snapshot)) issues.push('LOCK時のcontent snapshotが未保存');
+    else if (stableStringify(lock.snapshot) !== stableStringify(lockSnapshot(p))) issues.push('LOCK後に原稿内容が変更されている');
     return [...new Set(issues)];
   }
 
@@ -240,11 +268,13 @@
       if (!str(source?.source_type)) issues.push(`出典${index+1}: source_typeが未保存`);
       if (!str(source?.checked_at)) issues.push(`出典${index+1}: checked_atが未保存`);
     });
+    if (!sources.some(isPrimarySource)) issues.push('一次情報source_typeの出典が1件もない');
     arr(p.draft_slides).forEach((slide,index) => {
       const page = Number(slide?.page) || index + 1;
       const c = slide?.page_contract || {};
       const refs = arr(c.source_refs || slide?.source_refs).map(str).filter(Boolean);
       refs.forEach(ref => { if (!sourceMap.has(ref)) issues.push(`${page}ページ目: 不明なsource_ref ${ref}`); });
+      const used = refs.map(ref => sourceMap.get(ref)).filter(Boolean);
       if (c.direct_quote === true) {
         const quoteRef=str(c.quote_source?.source_ref);
         if (!quoteRef || !sourceMap.has(quoteRef)) issues.push(`${page}ページ目: 直接引用のsource_refがdraft_sourcesに存在しない`);
@@ -252,11 +282,35 @@
         const display=str(c.display_copy).replace(/\s+/g,' ');
         if (quoteText && !display.includes(quoteText)) issues.push(`${page}ページ目: 直接引用文がdisplay_copyに含まれていない`);
       }
-      const used = refs.map(ref => sourceMap.get(ref)).filter(Boolean);
       const communityOnly = used.length && used.every(source => ['community','individual_experience'].includes(str(source?.source_type)));
       if (communityOnly && !['quote','community_voice'].includes(str(c.visual_type))) {
         issues.push(`${page}ページ目: UGC/個人体験だけを事実の根拠にしない`);
       }
+      const exemptPrimary = c.direct_quote === true || ['quote','community_voice'].includes(str(c.visual_type));
+      if (!exemptPrimary && !used.some(isPrimarySource)) issues.push(`${page}ページ目: 一次情報のsource_refがない`);
+    });
+    return [...new Set(issues)];
+  }
+
+  function publicOutputIssues(value) {
+    const p=payloadOf(value), issues=[];
+    if (!adaptive(p)) return issues;
+    const comments=[
+      ...arr(p.source_comments),
+      ...arr(p.research_threads).flatMap(thread=>arr(thread?.comments))
+    ];
+    arr(p.draft_slides).forEach((slide,index)=>{
+      const page=Number(slide?.page)||index+1,c=slide?.page_contract||{},copy=str(c.display_copy);
+      if (!copy || c.direct_quote === true) return;
+      if (INTERNAL_DEMAND_SOURCE.test(copy)) issues.push(`${page}ページ目: display_copyに内部需要調査元が混入`);
+      comments.forEach(comment=>{
+        const no=str(comment?.comment_no);
+        if(no&&new RegExp(`(?:コメント|comment|コメ|#|＃)\\s*(?:No\\.?\\s*)?${no}(?!\\d)`,'i').test(copy)) issues.push(`${page}ページ目: display_copyにコメント番号が混入`);
+        [['plus','プラス|高評価|賛成'],['minus','マイナス|低評価|反対']].forEach(([key,label])=>{
+          const value=str(comment?.[key]);
+          if(value&&Number(value)!==0&&new RegExp(`(?:${label}|反応数|評価数|いいね数)\\s*[:：]?\\s*[+＋\\-−]?\\s*${value}(?![\\d,])`,'i').test(copy)) issues.push(`${page}ページ目: display_copyに掲示板反応数が混入`);
+        });
+      });
     });
     return [...new Set(issues)];
   }
@@ -279,7 +333,7 @@
     const base = typeof baseQuality === 'function' ? baseQuality(value) : {ready:true,issues:[]};
     const ignored = new Set(['ページ別原稿が不足']);
     const issues = arr(base?.issues).filter(issue => !ignored.has(str(issue)));
-    issues.push(...strictCommunityIssues(p), ...pageContractIssues(p), ...sourceIssues(p), ...lockIssues(p), ...finalReviewIssues(p), ...designIssues(p));
+    issues.push(...strictCommunityIssues(p), ...pageContractIssues(p), ...sourceIssues(p), ...publicOutputIssues(p), ...lockIssues(p), ...finalReviewIssues(p), ...designIssues(p));
     if (p.draft_status !== 'ready') issues.push('完成原稿が未確定');
     return {ready:[...new Set(issues)].length === 0, issues:[...new Set(issues)]};
   }
@@ -310,6 +364,7 @@
       `このページの答え: ${str(c.answer)}`,
       `見せる対象: ${str(c.visual_subject)}`,
       `表現: ${str(c.visual_type)}`,
+      `計算必須: ${c.calculation_required === true ? 'true' : 'false'}`,
       arr(c.required_assets).length ? `必要素材: ${arr(c.required_assets).map(x=>typeof x==='string'?x:(x?.label||x?.asset_type||JSON.stringify(x))).join('／')}` : '',
       str(c.evidence_note) ? `根拠メモ: ${str(c.evidence_note)}` : '',
       arr(c.source_refs || slide?.source_refs).length ? `source_refs: ${arr(c.source_refs || slide?.source_refs).join(', ')}` : '',
@@ -482,5 +537,5 @@
     doc.querySelectorAll('[data-fp-modal]').forEach(refreshFpModal);
   }
 
-  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,LEGACY_MONEY_VERSION,LEGACY_MONEY_RESEARCH_VERSION,LEGACY_MONEY_DESIGN_VERSION,TASK_IDS,MONEY_CHAT_TASK_ID,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,moneyChatScope,adaptive,communityRequired,girlsCommentInfo,girlsTopicKey,strictCommunityIssues,pageContractIssues,sourceIssues,lockIssues,finalReviewIssues,designIssues,screenshotIssues,quality,preflightIssues,buildHandoff,install};
+  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,LEGACY_MONEY_VERSION,LEGACY_MONEY_RESEARCH_VERSION,LEGACY_MONEY_DESIGN_VERSION,TASK_IDS,MONEY_CHAT_TASK_ID,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,moneyChatScope,adaptive,communityRequired,girlsCommentInfo,girlsTopicKey,lockSnapshot,strictCommunityIssues,pageContractIssues,sourceIssues,publicOutputIssues,lockIssues,finalReviewIssues,designIssues,screenshotIssues,quality,preflightIssues,buildHandoff,install};
 });
