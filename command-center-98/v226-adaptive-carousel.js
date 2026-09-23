@@ -47,21 +47,25 @@
     }
     const threads = [...byKey.values()];
     if (threads.length < MIN_TOPICS) issues.push(`ガルちゃんの別トピック${MIN_TOPICS}本が未確認`);
-    for (const thread of threads.slice(0, MIN_TOPICS)) {
-      const title = str(thread?.title) || str(thread?.url) || 'トピック';
+    const evaluated = threads.map(thread => {
+      const rowIssues = [], title = str(thread?.title) || str(thread?.url) || 'トピック';
       const published = millis(thread?.published_at);
-      if (!published) issues.push(`${title}: 公開日時が未確認`);
-      else if (start && (published > start || start - published > WINDOW_DAYS * 86400000)) issues.push(`${title}: 調査開始時点で直近${WINDOW_DAYS}日外`);
-      if (!Number.isFinite(Number(thread?.total_comments))) issues.push(`${title}: 総コメント数が未確認`);
-      else if (Number(thread.total_comments) < MIN_COMMENTS) issues.push(`${title}: 総コメント数${MIN_COMMENTS}件未満`);
-      if (!str(thread?.checked_at) || !str(thread?.checked_scope)) issues.push(`${title}: 実読範囲または確認日時が未保存`);
+      if (!published) rowIssues.push(`${title}: 公開日時が未確認`);
+      else if (start && (published > start || start - published > WINDOW_DAYS * 86400000)) rowIssues.push(`${title}: 調査開始時点で直近${WINDOW_DAYS}日外`);
+      if (!Number.isFinite(Number(thread?.total_comments))) rowIssues.push(`${title}: 総コメント数が未確認`);
+      else if (Number(thread.total_comments) < MIN_COMMENTS) rowIssues.push(`${title}: 総コメント数${MIN_COMMENTS}件未満`);
+      if (!str(thread?.checked_at) || !str(thread?.checked_scope)) rowIssues.push(`${title}: 実読範囲または確認日時が未保存`);
       const comments = arr(thread?.comments);
-      if (!comments.some(c => c?.comment_no != null && str(c?.summary))) issues.push(`${title}: 追跡可能な実コメントが未保存`);
-      comments.forEach(c => {
-        if (c?.comment_no == null || !str(c?.summary)) return;
-        if (c.plus === undefined) c.plus = null;
-        if (c.minus === undefined) c.minus = null;
-      });
+      const trackable = comments.some(c => c?.comment_no != null && str(c?.summary) && safeUrl(c?.direct_url));
+      if (!trackable) rowIssues.push(`${title}: 追跡可能な実コメントと直URLが未保存`);
+      const missingReactions = comments.filter(c => c?.comment_no != null && str(c?.summary)).some(c => !Object.prototype.hasOwnProperty.call(c,'plus') || !Object.prototype.hasOwnProperty.call(c,'minus'));
+      if (missingReactions) rowIssues.push(`${title}: 取得不能な反応数はnullとして明示する`);
+      return { thread, issues: rowIssues };
+    });
+    const valid = evaluated.filter(row => row.issues.length === 0);
+    if (valid.length < MIN_TOPICS) {
+      issues.push(`直近${WINDOW_DAYS}日・各${MIN_COMMENTS}件以上・実読済みの別トピック${MIN_TOPICS}本が揃っていない`);
+      evaluated.forEach(row => issues.push(...row.issues));
     }
     return [...new Set(issues)];
   }
