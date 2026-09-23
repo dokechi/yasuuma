@@ -91,16 +91,151 @@ Nodeの回帰テストは `node command-center-98/chat-execution-source.test.cjs
 有効化の合格条件: 予約起動→共通ルール/過去履歴参照→実データで調査→検証→原稿保存→司令塔の同じ欄で実行元表示。現在は未達。
 
 
-## 2026-09-23 適応型カルーセル仕様
+## 2026-09-23 お金Chat専用｜制約された適応型カルーセル仕様
 
-実行時は `public.command_center_tasks.task_prompt` の末尾にある `【適応型カルーセル共通仕様｜2026-09-23】` を旧デザイン選択・旧ページ固定ルールより優先する。
+この節は **お金のChat実行だけ** に適用する。今回の改修では、Workのtask_prompt・Workの予約・Work候補・家・海外格差・上場の仕様を変更しない。この仕様を `public.command_center_tasks.task_prompt` へ書き戻さない。Workから読む既存ルールはread-onlyの基礎ルールとして継承し、以下のChat専用ルールをお金候補にだけ追加適用する。
 
-- 家・お金・上場のガールズちゃんねる需要調査は、従来の「直近72時間」を廃止し、**調査開始時点から直近14日以内**をstrict条件とする。
-- strict条件は、**別トピック2本以上、各トピック総コメント200件以上**。2本合計200件ではない。
-- トピック公開日時、確認日時、確認範囲、総コメント数、追跡可能な実コメントを保存する。取得できないコメント番号・プラス・マイナス等はnullとし、推測しない。
-- strict条件が揃わない場合は完成原稿へ進めない。期間を勝手に延長してstrict合格と扱わない。
-- 海外格差はこのガルちゃんゲートを強制せず、既存の海外需要調査と同一条件比較を維持する。
-- 新規adaptive候補は固定3配色・固定デザインの選択を完成条件にしない。各ページの現象、証拠、数字、写真/資料の役割から視覚設計を決める。
-- 各ページにpage_contract、投稿全体にpage_count_reason / adaptive_design / content_lock / generation_version / research_version / design_versionを保存する。
-- 原稿LOCK後は画像化側で文言・数字・条件・出典を変更しない。収まらない場合はlayout_overflowとして原稿工程へ戻す。
-- 旧候補・旧投稿は従来フィールドを保持し、再表示可能なままにする。
+新規のお金Chat adaptive候補には最低限、次を保存する。
+
+- `adaptive_scope: "money_chat"`
+- `execution_source: "chat"`
+- `runner_key: "chat-money-v1"`
+- `generation_version: "adaptive-carousel-v1-20260923-money-chat"`
+- `research_version: "community-14d-money-chat-v1"`
+- `design_version: "adaptive-visual-money-chat-v1"`
+- `adaptive_design.mode: "adaptive"`
+- `community_research.required: true`
+- `community_research.status: "strict"`
+- `community_research.window_days: 14`
+
+### 需要調査｜ガールズちゃんねるstrict条件
+
+ガールズちゃんねるは「事実の一次情報」ではなく、中心疑問・需要・反論・当事者感覚を発見するためのコミュニティ調査として扱う。
+
+strict合格は次をすべて満たした場合だけ。
+
+1. 調査開始日時 `research_started_at` を保存する。
+2. トピック公開日時と調査開始日時の差が **14日以内**。公開日時を取得できないトピックを14日以内と推測しない。
+3. 中心疑問に関連する **別トピック2本以上** を実読し、各トピックに `related_to_question: true` を保存する。
+4. **各トピックが200コメント以上**。2本合計200件ではない。
+5. 各トピックで `checked_at` / `checked_scope` / `total_comments` を保存する。
+6. 各トピックに、追跡可能な実コメントを少なくとも1件保存する。コメント番号、要約、plus、minusを持ち、反応数が取得できない場合は **null**。推測値で埋めない。
+7. 支持意見だけでなく、反論・疑問・少数意見を読み、中心疑問がどこで割れているかを抽出する。
+
+strict条件を満たせない場合は `community_research.status="strict_insufficient"` とし、完成原稿・画像化へ進めない。別題材へ移るか保留する。
+
+期間を14日より広げた調査を行った場合は、strict結果とは別に `expanded=true` と拡張条件を保存する。拡張調査をstrict合格として扱わない。
+
+### コミュニティと一次情報を分離する
+
+ガルちゃん/SNS/口コミの主張を、制度・金額・条件・期限の事実根拠として使わない。
+
+- コミュニティ: 何を調べる価値があるか、普通の人が何に引っかかったか
+- 一次情報: 何が事実か
+- 計算: 条件を固定したとき、答えがいくらになるか
+
+事実確認は既存のお金ルールに従い、官公庁・法令・制度運営元・企業公式・公的統計等を優先する。取得できない事実を推測で補完しない。
+
+数値テーマは、入力条件・計算式・単位・結果・丸め方を保存する。検索で見つけた計算結果だけを転載しない。
+
+### 調査から画像化までの順序
+
+**調査 → 画面設計と文章調整 → 原稿確定 → LOCK → 画像化 → LOCK原稿との照合**
+
+原稿LOCK後は、画像化工程で文章・数字・単位・試算条件・出典・引用文を変更しない。文字が収まらない場合は `layout_overflow` として原稿/画面設計工程へ戻す。画像側で勝手に要約・言い換え・削除・追加・再丸めしない。
+
+### ページ契約
+
+ページ数を6枚/7枚に固定しない。題材を説明するのに必要な枚数を採用し、`page_count_reason` を保存する。枚数を埋めるためのページを追加しない。
+
+各 `draft_slides[].page_contract` には最低限、次を保存する。
+
+- `reader_question`
+- `answer`
+- `visual_subject`
+- `visual_type`
+- `evidence`
+- `calculation`（不要ならnull。使う場合はinputs/formula/unit/result/rounding）
+- `required_assets`
+- `display_copy`
+- `source_refs`
+- `source_type`
+- `status: "ready"`
+
+比較・変化・分解・実演は思考補助であり強制テンプレートではない。1ページ1現象を基本にし、そのページで「何を見れば答えが分かるか」を先に決める。
+
+### 写真・画像・証拠の区別
+
+`required_assets` で画像種別を明示する。
+
+- `user_photo`
+- `official_photo`
+- `primary_source_screenshot`
+- `verified_real_photo`
+- `generated_illustration`
+- `generated_photorealistic_image`
+- `simulation`
+- `diagram`
+
+実写写真とAI生成の写実画像を混同しない。生成画像、説明用再現、simulation、diagramを「実物の証拠」として扱わない。
+
+### 当事者コメント
+
+匿名コメントから確認できるのは原則として本人の申告まで。プラス数は体験の真偽を保証しない。
+
+当事者コメントを直接使う場合は、そのページの問いに直接答え、本人が該当経験を申告し、理由・体験が具体的で、相対的な支持も確認できるものを優先する。条件一致がない場合はコメントを捏造せず、ページ自体を再構成する。
+
+需要調査として要約する場合は媒体名を公開原稿へ前面に出さなくてよいが、内部の反映元対応表には必ず残す。原文を直接引用する場合は、出典・コメント番号等の識別情報を削除しない。
+
+### 適応型デザイン
+
+新規のお金Chat候補は、固定3配色・固定デザインの選択を完成条件にしない。旧候補に保存済みのデザイン選択値は後方互換のため保持し、新方式で上書きしない。
+
+デザインは題材、数字、一次資料、実写写真、比較構造、当事者コメント等から決める。
+
+- 写真自体が情報 → 写真主体
+- 数字・比較 → 数字/表/グラフ主体
+- 一次資料に価値 → 原典スクリーンショット主体
+- 当事者の判断 → コメント/具体場面主体
+
+意味のないグラデーション、過剰な角丸カード、アイコン、影、パステル、均等配置、何でもカード化を目的なく追加しない。「きれい」より理解速度を優先する。
+
+Apple / Carbon / Fluent / Primer等は固定テンプレートではない。利用した場合は `design_system_usage` に、`usage_type`、`source_url`、実際に使ったassets/components/tokens、`implementation_method` を保存する。公式部品を使わず雰囲気だけ参照したものを「公式準拠」と呼ばない。
+
+### 表紙・ページ進行・原稿モデル
+
+表紙は議題名ではなく、**読者の問題 + 答えの一部 + 続きを見る理由** を置く。
+
+ページ間は「疑問 → 答える → その答えから次の疑問が自然に発生する」で進める。引き延ばしのための未回答ページは作らない。
+
+Michael / Marina / Ben / Chris Do 型は固定テンプレートではなく、題材に最も自然な認知の進み方を選ぶための思考モデルとして利用する。
+
+### 完成判定
+
+`draft_status="ready"` にする前に、最低限次を確認する。
+
+- strict 14日・別トピック2本・各200コメント以上を満たす
+- 取得不能値を推測で埋めていない
+- コミュニティ情報を事実の一次根拠にしていない
+- 数値テーマの再計算条件が保存されている
+- 全ページにpage_contractがある
+- 仮枠、TBD、ダミーコメント、ダミー出典が残っていない
+- `content_lock.locked=true`、`draft_revision`、`locked_at` がある
+- adaptive designの判断理由が保存されている
+- 原稿LOCK後の画像化で文言変更を許可していない
+
+資料不足、当事者コメントなし、文字オーバーフロー等がある場合は、空欄・仮枠の完成画像を作らず、保留またはページ再構成へ戻す。
+
+### スコープ保証
+
+この改修は **お金Chatだけ**。
+
+- Work: 変更しない
+- Work task_prompt: 変更しない
+- Work schedule: 変更しない
+- Work候補: 変更しない
+- 家Chat: 変更しない
+- 海外格差Chat: 変更しない
+- 上場: 変更しない
+
+UIの適応型guardも `adaptive_scope="money_chat"`、または `execution_source="chat"` かつお金のrunner/task IDが一致した候補にだけ適用する。これ以外は従来処理へフォールバックする。
