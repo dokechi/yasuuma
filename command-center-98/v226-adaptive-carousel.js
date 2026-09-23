@@ -20,6 +20,7 @@
     overseas:'6a8d6888e41881919edb9fb44422a622',
     career:'6aaca7d36874819181caec8ba014556e'
   };
+  const MONEY_CHAT_TASK_ID = '6aa9ee1043388191a2eac3bb2702092a';
   const COMMUNITY_LANES = new Set(['money','house','career']);
   const WINDOW_DAYS = 14;
   const MIN_TOPICS = 2;
@@ -61,11 +62,12 @@
   };
   const moneyChatScope = value => {
     const p = payloadOf(value);
-    if (str(p.execution_source).toLowerCase() !== 'chat') return false;
+    const channel=str(p.execution_source || p.execution_channel).toLowerCase();
+    if (channel !== 'chat') return false;
     const ids=[p.logical_task_id,p.source_task_id,p.task_id,p.taskId].map(str);
     const scope=str(p.adaptive_scope).toLowerCase();
     const runner=str(p.runner_key);
-    return ids.includes(TASK_IDS.money) || ['money','money_chat'].includes(scope) || runner==='chat-money-v1';
+    return ids.includes(MONEY_CHAT_TASK_ID) || ids.includes(TASK_IDS.money) || ['money','money_chat'].includes(scope) || runner==='chat-money-v1';
   };
   const adaptive = value => hasAdaptiveMarkers(value) && moneyChatScope(value);
   const communityRequired = value => adaptive(value) && lane(value) === 'money';
@@ -109,7 +111,11 @@
       const trackable=arr(thread?.comments).filter(c=>c?.comment_no!=null&&str(c?.summary));
       if (!trackable.length) rowIssues.push(`${title}: 追跡可能な実コメントが未保存`);
       if (!trackable.some(c=>safeUrl(c?.direct_url))) rowIssues.push(`${title}: 実コメントの直URLが未保存`);
+      const topicKey=girlsTopicKey(thread?.url);
       trackable.forEach(c=>{
+        const directKey=girlsTopicKey(c?.direct_url);
+        if (!directKey) rowIssues.push(`${title}: コメント${c.comment_no}の直URLがGirlsChannelトピックURLではない`);
+        else if (topicKey && directKey !== topicKey) rowIssues.push(`${title}: コメント${c.comment_no}の直URLが別トピックを指している`);
         if (!Object.prototype.hasOwnProperty.call(c,'plus')) rowIssues.push(`${title}: コメント${c.comment_no}のplusは未取得ならnullで保存する`);
         if (!Object.prototype.hasOwnProperty.call(c,'minus')) rowIssues.push(`${title}: コメント${c.comment_no}のminusは未取得ならnullで保存する`);
       });
@@ -163,6 +169,7 @@
         if (!str(quote.source_ref) || !str(quote.quote_text) || (!str(quote.identifier) && quote.comment_no == null)) {
           issues.push(`${page}ページ目の直接引用に出典・識別情報が不足`);
         }
+        if (!str(quote.public_attribution)) issues.push(`${page}ページ目の直接引用に公開用出典表記が未保存`);
       }
       const visible = [slide?.headline,slide?.body,c.display_copy].map(str).join(' ');
       if (str(p.draft_status) === 'ready' && placeholder.test(visible)) issues.push(`${page}ページ目に仮枠・プレースホルダーが残っている`);
@@ -174,10 +181,26 @@
     const p = payloadOf(value), issues = [];
     if (!adaptive(p)) return issues;
     const lock = p.content_lock || {};
+    const currentRevision=str(p.draft_revision), lockedRevision=str(lock.draft_revision);
     if (lock.locked !== true) issues.push('確定原稿がLOCKされていない');
-    if (!str(lock.draft_revision || p.draft_revision)) issues.push('LOCK対象の原稿版が未保存');
+    if (!lockedRevision || !currentRevision) issues.push('LOCK対象の原稿版が未保存');
+    else if (lockedRevision !== currentRevision) issues.push('LOCK後に原稿版が変更されている');
     if (!str(lock.locked_at)) issues.push('原稿LOCK日時が未保存');
-    return issues;
+    if (str(lock.content_hash) && str(p.content_hash) && str(lock.content_hash) !== str(p.content_hash)) issues.push('LOCK後に原稿内容ハッシュが変わっている');
+    return [...new Set(issues)];
+  }
+
+  function finalReviewIssues(value) {
+    const p = payloadOf(value), issues = [];
+    if (!adaptive(p)) return issues;
+    const review=p.final_review || {};
+    if (str(review.status) !== 'passed') issues.push('最終照合がpassedではない');
+    if (!str(review.checked_revision)) issues.push('最終照合対象の原稿版が未保存');
+    else if (str(p.draft_revision) && str(review.checked_revision) !== str(p.draft_revision)) issues.push('最終照合後に原稿版が変更されている');
+    if (arr(review.unresolved_items).length) issues.push('最終照合に未解決事項が残っている');
+    if (!Array.isArray(p.missing_evidence)) issues.push('missing_evidenceが配列で保存されていない');
+    else if (p.missing_evidence.length) issues.push('未解決の根拠不足が残っている');
+    return [...new Set(issues)];
   }
 
   function designIssues(value) {
@@ -241,7 +264,7 @@
     const base = typeof baseQuality === 'function' ? baseQuality(value) : {ready:true,issues:[]};
     const ignored = new Set(['ページ別原稿が不足']);
     const issues = arr(base?.issues).filter(issue => !ignored.has(str(issue)));
-    issues.push(...strictCommunityIssues(p), ...pageContractIssues(p), ...sourceIssues(p), ...lockIssues(p), ...designIssues(p));
+    issues.push(...strictCommunityIssues(p), ...pageContractIssues(p), ...sourceIssues(p), ...lockIssues(p), ...finalReviewIssues(p), ...designIssues(p));
     if (p.draft_status !== 'ready') issues.push('完成原稿が未確定');
     return {ready:[...new Set(issues)].length === 0, issues:[...new Set(issues)]};
   }
@@ -259,19 +282,23 @@
   const draftCaption = p => str(p.caption || p.draft_caption || p.post_caption);
 
   function pageText(slide, index, total) {
-    const c = slide?.page_contract || {};
+    const c = slide?.page_contract || {}, quote=c.quote_source||{};
     return [
       `【${Number(slide?.page)||index+1}/${total}】`,
-      str(slide?.headline || slide?.title || slide?.heading),
-      str(slide?.body || slide?.text || slide?.copy),
+      '【画像に表示するLOCK済み文】',
+      str(c.display_copy),
+      c.direct_quote===true && str(quote.public_attribution) ? `出典表記: ${str(quote.public_attribution)}` : '',
+      '【制作内部情報｜画像内に文字として載せない】',
+      str(slide?.headline || slide?.title || slide?.heading) ? `legacy_headline: ${str(slide?.headline || slide?.title || slide?.heading)}` : '',
+      str(slide?.body || slide?.text || slide?.copy) ? `legacy_body: ${str(slide?.body || slide?.text || slide?.copy)}` : '',
       `読者の疑問: ${str(c.reader_question)}`,
       `このページの答え: ${str(c.answer)}`,
       `見せる対象: ${str(c.visual_subject)}`,
       `表現: ${str(c.visual_type)}`,
-      `表示文: ${str(c.display_copy)}`,
       arr(c.required_assets).length ? `必要素材: ${arr(c.required_assets).map(x=>typeof x==='string'?x:(x?.label||x?.asset_type||JSON.stringify(x))).join('／')}` : '',
       str(c.evidence_note) ? `根拠メモ: ${str(c.evidence_note)}` : '',
-      arr(c.source_refs || slide?.source_refs).length ? `source_refs: ${arr(c.source_refs || slide?.source_refs).join(', ')}` : ''
+      arr(c.source_refs || slide?.source_refs).length ? `source_refs: ${arr(c.source_refs || slide?.source_refs).join(', ')}` : '',
+      c.direct_quote===true ? `引用source_ref: ${str(quote.source_ref)} / 識別: ${str(quote.identifier || quote.comment_no)}` : ''
     ].filter(Boolean).join('\n');
   }
 
@@ -294,7 +321,15 @@
     const q = quality(item, null), pf = screenshotIssues(p);
     const issues = [...q.issues, ...pf];
     if (issues.length) throw new Error('画像化保留: ' + [...new Set(issues)].join('／'));
-    const slides = arr(p.draft_slides), sources = arr(p.draft_sources).filter(s => !['community','individual_experience'].includes(str(s?.source_type)) && !/girlschannel|ガルちゃん|ガールズちゃんねる/i.test([sourceUrl(s),s?.label,s?.title].filter(Boolean).join(' ')));
+    const slides = arr(p.draft_slides);
+    const quoteRefs=new Set(slides.filter(slide=>slide?.page_contract?.direct_quote===true).flatMap(slide=>{
+      const c=slide?.page_contract||{}, quote=c.quote_source||{};
+      return [...arr(c.source_refs||slide?.source_refs),str(quote.source_ref)].map(str).filter(Boolean);
+    }));
+    const sources = arr(p.draft_sources).filter(source => {
+      const community=['community','individual_experience'].includes(str(source?.source_type)) || /girlschannel|ガルちゃん|ガールズちゃんねる/i.test([sourceUrl(source),source?.label,source?.title].filter(Boolean).join(' '));
+      return !community || quoteRefs.has(str(source?.id));
+    });
     const lock = p.content_lock || {};
     return [
       '以下のLOCK済み確定原稿からカルーセル画像を作成してください。',
@@ -304,6 +339,7 @@
       `draft_revision: ${str(lock.draft_revision || p.draft_revision)}`,
       `locked_at: ${str(lock.locked_at)}`,
       '・LOCK後の文章、数字、単位、条件、出典、引用文を画像生成側で要約・言い換え・削除・追加・丸め直ししない。',
+      '・各ページで画像に文字として載せてよいのは「画像に表示するLOCK済み文」と、直接引用ページの「出典表記」だけ。reader_question / answer / visual_subject / visual_type / source_refs / legacy_headline / legacy_body 等の制作内部情報は描画しない。',
       '・文字が収まらない場合は勝手に原稿を変えず、layout_overflowとして該当ページを示して原稿・画面設計工程へ戻す。',
       '・画像化後、全ページをLOCK済み原稿と照合し、不一致が1つでもあれば完成扱いにしない。',
       '',
@@ -431,5 +467,5 @@
     doc.querySelectorAll('[data-fp-modal]').forEach(refreshFpModal);
   }
 
-  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,LEGACY_MONEY_VERSION,LEGACY_MONEY_RESEARCH_VERSION,LEGACY_MONEY_DESIGN_VERSION,TASK_IDS,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,moneyChatScope,adaptive,communityRequired,girlsTopicKey,strictCommunityIssues,pageContractIssues,sourceIssues,lockIssues,designIssues,screenshotIssues,quality,preflightIssues,buildHandoff,install};
+  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,LEGACY_MONEY_VERSION,LEGACY_MONEY_RESEARCH_VERSION,LEGACY_MONEY_DESIGN_VERSION,TASK_IDS,MONEY_CHAT_TASK_ID,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,moneyChatScope,adaptive,communityRequired,girlsTopicKey,strictCommunityIssues,pageContractIssues,sourceIssues,lockIssues,finalReviewIssues,designIssues,screenshotIssues,quality,preflightIssues,buildHandoff,install};
 });
