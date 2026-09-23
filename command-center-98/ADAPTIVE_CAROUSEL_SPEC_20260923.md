@@ -276,3 +276,72 @@ TBD、仮コメント、仮画像、ダミー出典、仮数字、空欄を残�
 - 仮枠なし
 
 不足が1つでもあれば `draft_status="blocked"` とする。
+
+
+## 品質ゲート補強 v2
+
+お金Chatのready判定では、追加で以下を必須とする。
+
+### research_started_at
+
+strict14日の基準時刻は `payload.research_started_at` のみ。
+`execution_audit.started_at`、`started_at`、`source_checked_at` などで代替しない。
+
+### 一次情報
+
+`draft_sources` に最低1件、一次情報系 `source_type` を持つ出典を必須とする。
+
+主な許可値:
+
+- primary
+- official
+- government
+- law
+- regulator
+- ministry
+- municipality
+- official_company
+- official_organization
+- official_institution
+- public_statistics
+- issuer_official
+- manufacturer_official
+- financial_institution_official
+- institution_official
+
+direct quote / community voice を除く各ページも、`source_refs` から最低1件の一次情報へ辿れること。
+
+### required_assets
+
+各素材は `asset_type` に加えて `is_evidence:true/false` を必須とする。
+生成画像、simulation、diagramは実物証拠として `is_evidence=true` にしない。
+
+### calculation_required
+
+各ページに `calculation_required:true/false` を必須とする。
+
+独自計算・比較・シミュレーションで得た数値を表示するページは true。
+trueの場合は `calculation={inputs,formula,unit,result,rounding}` が必須。
+
+### display_copy公開漏れ
+
+画像表示の正本は `page_contract.display_copy`。
+直接引用ページを除き、需要調査元の名称/URL、コメント番号、プラス・マイナス等の内部反応数を含めない。
+
+### LOCK snapshot
+
+revision一致だけではLOCK済みと扱わない。
+
+`content_lock.snapshot` に次のLOCK時点のdeep copyを保存し、現在値と完全一致させる。
+
+- post_title
+- draft_title
+- draft_cover
+- caption
+- page_count_reason
+- question_lineage
+- premise_checks
+- draft_slides
+- draft_sources
+
+本文、数字、計算、source_refs、引用、出典等がLOCK後に変わった場合はrevision更新、snapshot再作成、final_review再実行が必要。
