@@ -245,6 +245,13 @@
       const c = slide?.page_contract || {};
       const refs = arr(c.source_refs || slide?.source_refs).map(str).filter(Boolean);
       refs.forEach(ref => { if (!sourceMap.has(ref)) issues.push(`${page}ページ目: 不明なsource_ref ${ref}`); });
+      if (c.direct_quote === true) {
+        const quoteRef=str(c.quote_source?.source_ref);
+        if (!quoteRef || !sourceMap.has(quoteRef)) issues.push(`${page}ページ目: 直接引用のsource_refがdraft_sourcesに存在しない`);
+        const quoteText=str(c.quote_source?.quote_text).replace(/\s+/g,' ');
+        const display=str(c.display_copy).replace(/\s+/g,' ');
+        if (quoteText && !display.includes(quoteText)) issues.push(`${page}ページ目: 直接引用文がdisplay_copyに含まれていない`);
+      }
       const used = refs.map(ref => sourceMap.get(ref)).filter(Boolean);
       const communityOnly = used.length && used.every(source => ['community','individual_experience'].includes(str(source?.source_type)));
       if (communityOnly && !['quote','community_voice'].includes(str(c.visual_type))) {
