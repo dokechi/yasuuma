@@ -55,6 +55,10 @@
       draft_sources:arr(p.draft_sources)
     };
     if (str(p.content_type)==='house_post_candidate' || str(p.category)==='house_living' || str(p.adaptive_scope)==='house_chat') {
+      snapshot.research_started_at=p.research_started_at??null;
+      snapshot.community_research=p.community_research??null;
+      snapshot.research_threads=arr(p.research_threads);
+      snapshot.demand_evidence=p.demand_evidence??null;
       snapshot.synthesis=p.synthesis??null;
       snapshot.page_reflections=arr(p.page_reflections);
       snapshot.executable_action=p.executable_action??null;
