@@ -67,15 +67,18 @@ page_contract = {
   answer,
   visual_subject,
   visual_type,
+  evidence,
   evidence_note,
   calculation,
   required_assets,
   display_copy,
-  source_refs
+  source_refs,
+  source_type,
+  status
 }
 ```
 
-投稿全体に `page_count_reason` を保存する。ページ数は内容で決め、枚数合わせをしない。
+投稿全体に `page_count_reason` を保存する。ページ数は内容で決め、枚数合わせをしない。`status` は完成ページのみ `ready`。`required_assets` は配列で、各素材に `asset_type` と `is_evidence` を持たせる。計算不要のページでも `calculation:null` としてキーを保持する。
 
 ## 適応型デザイン
 
@@ -175,3 +178,11 @@ TBD、仮コメント、仮画像、ダミー出典、仮数字、空欄を残�
 - `chat-editorial-career-20260918.js`: adaptive候補では固定6〜8枚条件を解除。
 - `app-v130.html`: v226を読込。
 - `public.command_center_tasks`: 4領域のtask_promptへ本仕様を追加。
+
+
+## 2026-09-23 実装後の補足
+
+- v226 は4レーン（お金・家・海外・上場）を task_id / content_type / category から識別する。
+- strict 14日ゲートはお金・家・上場だけに適用し、海外は適用外。
+- `draft_sources` は最低限 id / label または title / url / claim / checked_at / source_type を保持し、各ページの source_refs と照合する。
+- 上場の既存 editorial_review / final_review 等の固有ゲートは維持し、adaptive handoff でも迂回しない。
