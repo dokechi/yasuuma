@@ -136,7 +136,7 @@
     if(thread?.related_to_question!==true||Number(thread?.total_comments)<MIN_COMMENTS||!str(thread?.checked_at)||!str(thread?.checked_scope)) return false;
     const topicKey=girlsTopicKey(thread?.url), comments=arr(thread?.comments).filter(c=>c?.comment_no!=null&&str(c?.summary));
     if(!topicKey||!comments.length) return false;
-    return comments.some(c=>{
+    return comments.every(c=>{
       if(!Object.prototype.hasOwnProperty.call(c,'plus')||!Object.prototype.hasOwnProperty.call(c,'minus')) return false;
       const info=girlsCommentInfo(c?.direct_url);
       return !!info.topicKey && info.topicKey===topicKey && (!info.commentNo||String(c.comment_no)===info.commentNo);
@@ -413,7 +413,8 @@
       if(str(row.origin)==='synthesis'){
         if(validThreadIds.size<2) issues.push(`家Chat ${page}ページ目のsynthesis反映には別トピック2本の実コメント参照が必要`);
         const strictReferenced=[...validThreadIds].filter(id=>strictEligibleThreadIds.has(id));
-        if(strictReferenced.length<2) issues.push(`家Chat ${page}ページ目のsynthesisはstrict14日適格トピック2本を参照する`);
+        const strictTopicKeys=new Set(strictReferenced.map(id=>girlsTopicKey(threadMap.get(id)?.url)).filter(Boolean));
+        if(strictReferenced.length<2||strictTopicKeys.size<2) issues.push(`家Chat ${page}ページ目のsynthesisはstrict14日適格の別トピック2本を参照する`);
       }
       if(str(row.origin)==='comment_structure'&&validThreadIds.size<1) issues.push(`家Chat ${page}ページ目のcomment_structureに実コメント参照がない`);
 
