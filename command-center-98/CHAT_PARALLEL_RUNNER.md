@@ -107,6 +107,8 @@ Nodeの回帰テストは `node command-center-98/chat-execution-source.test.cjs
 - `community_research.required: true`
 - `community_research.status: "strict"`
 - `community_research.window_days: 14`
+- `community_research.min_topics: 2`
+- `community_research.min_comments_per_topic: 200`
 
 ### 需要調査｜ガールズちゃんねるstrict条件
 
@@ -119,7 +121,7 @@ strict合格は次をすべて満たした場合だけ。
 3. 中心疑問に関連する **別トピック2本以上** を実読し、各トピックに `related_to_question: true` を保存する。
 4. **各トピックが200コメント以上**。2本合計200件ではない。
 5. 各トピックで `checked_at` / `checked_scope` / `total_comments` を保存する。
-6. 各トピックに、追跡可能な実コメントを少なくとも1件保存する。コメント番号、要約、plus、minusを持ち、反応数が取得できない場合は **null**。推測値で埋めない。
+6. 各トピックに、追跡可能な実コメントを少なくとも1件保存する。コメント番号、要約、コメント直URL（`direct_url`）、plus、minusを持ち、反応数が取得できない場合は **null**。推測値で埋めない。
 7. 支持意見だけでなく、反論・疑問・少数意見を読み、中心疑問がどこで割れているかを抽出する。
 
 strict条件を満たせない場合は `community_research.status="strict_insufficient"` とし、完成原稿・画像化へ進めない。別題材へ移るか保留する。
