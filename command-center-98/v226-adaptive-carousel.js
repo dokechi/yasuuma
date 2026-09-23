@@ -130,6 +130,18 @@
   };
   const girlsTopicKey = value => girlsCommentInfo(value).topicKey;
   const millis = value => { const n = Date.parse(str(value)); return Number.isFinite(n) ? n : 0; };
+  const strictThreadEligible = (p, thread) => {
+    const start=millis(p?.research_started_at), published=millis(thread?.published_at);
+    if(!start||!published||published>start||start-published>WINDOW_DAYS*86400000) return false;
+    if(thread?.related_to_question!==true||Number(thread?.total_comments)<MIN_COMMENTS||!str(thread?.checked_at)||!str(thread?.checked_scope)) return false;
+    const topicKey=girlsTopicKey(thread?.url), comments=arr(thread?.comments).filter(c=>c?.comment_no!=null&&str(c?.summary));
+    if(!topicKey||!comments.length) return false;
+    return comments.some(c=>{
+      if(!Object.prototype.hasOwnProperty.call(c,'plus')||!Object.prototype.hasOwnProperty.call(c,'minus')) return false;
+      const info=girlsCommentInfo(c?.direct_url);
+      return !!info.topicKey && info.topicKey===topicKey && (!info.commentNo||String(c.comment_no)===info.commentNo);
+    });
+  };
   function strictCommunityIssues(value) {
     const p = payloadOf(value), issues = [];
     if (!adaptive(p) || !communityRequired(p)) return issues;
@@ -260,6 +272,14 @@
     if (str(review.status) !== 'passed') issues.push('最終照合がpassedではない');
     if (!str(review.checked_revision)) issues.push('最終照合対象の原稿版が未保存');
     else if (str(p.draft_revision) && str(review.checked_revision) !== str(p.draft_revision)) issues.push('最終照合後に原稿版が変更されている');
+    if(lane(p)==='house'){
+      const lock=p.content_lock||{};
+      if(!str(review.checked_at)) issues.push('家Chat final_review.checked_atが未保存');
+      const checkedAt=millis(review.checked_at), lockedAt=millis(lock.locked_at);
+      if(checkedAt&&lockedAt&&checkedAt<lockedAt) issues.push('家Chat final_reviewが原稿LOCKより前に実行されている');
+      if(!review.reviewed_snapshot||typeof review.reviewed_snapshot!=='object'||Array.isArray(review.reviewed_snapshot)) issues.push('家Chat final_review.reviewed_snapshotが未保存');
+      else if(!lock.snapshot||stableStringify(review.reviewed_snapshot)!==stableStringify(lock.snapshot)) issues.push('家Chat final_reviewが現在のLOCK snapshotを照合していない');
+    }
     if (arr(review.unresolved_items).length) issues.push('最終照合に未解決事項が残っている');
     if (!Array.isArray(p.missing_evidence)) issues.push('missing_evidenceが配列で保存されていない');
     else if (p.missing_evidence.length) issues.push('未解決の根拠不足が残っている');
@@ -349,6 +369,7 @@
     if (str(p.editor_contract_version)!=='chat-editorial-v1-20260918') issues.push('家Chatのeditor_contract_versionが未保存または不一致');
 
     const threads=arr(p.research_threads), threadMap=new Map(), sourceMap=new Map(arr(p.draft_sources).map(source=>[str(source?.id),source]));
+    const strictEligibleThreadIds=new Set(threads.filter(thread=>strictThreadEligible(p,thread)).map(thread=>str(thread?.id)).filter(Boolean));
     threads.forEach((thread,index)=>{
       const id=str(thread?.id);
       if(!id) issues.push(`家Chat research_threads[${index+1}].idが未保存`);
@@ -389,7 +410,11 @@
         else if(commentNo==null||!arr(thread.comments).some(comment=>String(comment?.comment_no)===String(commentNo))) issues.push(`家Chat ${page}ページ目のthread_ref${refIndex+1}が実在コメントを指していない`);
         else validThreadIds.add(threadId);
       });
-      if(str(row.origin)==='synthesis'&&validThreadIds.size<2) issues.push(`家Chat ${page}ページ目のsynthesis反映には別トピック2本の実コメント参照が必要`);
+      if(str(row.origin)==='synthesis'){
+        if(validThreadIds.size<2) issues.push(`家Chat ${page}ページ目のsynthesis反映には別トピック2本の実コメント参照が必要`);
+        const strictReferenced=[...validThreadIds].filter(id=>strictEligibleThreadIds.has(id));
+        if(strictReferenced.length<2) issues.push(`家Chat ${page}ページ目のsynthesisはstrict14日適格トピック2本を参照する`);
+      }
       if(str(row.origin)==='comment_structure'&&validThreadIds.size<1) issues.push(`家Chat ${page}ページ目のcomment_structureに実コメント参照がない`);
 
       arr(row.primary_source_refs).forEach(ref=>{
@@ -421,6 +446,19 @@
     if(actionPage&&str(action.public_copy)&&!str(actionPage?.page_contract?.display_copy).includes(str(action.public_copy))){
       issues.push('家Chat executable_action.public_copyが指定ページのdisplay_copyに含まれていない');
     }
+    if(str(action.public_copy)){
+      const normalizeAction=v=>str(v).normalize('NFKC').replace(/[\s　、。,.!?！？「」『』（）()：:・／\/\-]/g,'');
+      const publicNorm=normalizeAction(action.public_copy);
+      if(publicNorm.length<10) issues.push('家Chat executable_action.public_copyが短すぎて具体行動になっていない');
+      ['where','check'].forEach(key=>{
+        const term=normalizeAction(action[key]);
+        if(term&&!publicNorm.includes(term)) issues.push(`家Chat executable_action.public_copyに${key}の内容が反映されていない`);
+      });
+      const what=normalizeAction(action.what), decision=normalizeAction(action.decision);
+      if((what||decision)&&!((what&&publicNorm.includes(what))||(decision&&publicNorm.includes(decision)))){
+        issues.push('家Chat executable_action.public_copyにwhatまたはdecisionの内容が反映されていない');
+      }
+    }
 
     const review=p.editorial_review||{};
     if(str(review.version)!=='chat-editorial-v1-20260918') issues.push('家Chat editorial_review.versionが未保存または不一致');
@@ -432,8 +470,6 @@
       const value=review.checks?.[key];
       if(!(value===true||['passed','pass'].includes(str(value).toLowerCase()))) issues.push(`家Chat editorial_review.checks.${key}がpassedではない`);
     });
-
-    if(!str(p.final_review?.checked_at)) issues.push('家Chat final_review.checked_atが未保存');
 
     const spec=p.production_spec||{};
     const size=str(spec.size).replace(/[×Ｘ]/g,'x').replace(/\s+/g,'').toLowerCase();
@@ -447,8 +483,8 @@
   function screenshotIssues(value) {
     const p = payloadOf(value), issues = [];
     if (!adaptive(p)) return issues;
-    const decisions = p.screenshot_decisions || {};
-    arr(p.screenshot_requests).forEach(row => {
+    const decisions = p.screenshot_decisions || {}, rows=arr(p.screenshot_requests);
+    rows.forEach(row => {
       const decision = str(decisions[row?.id]);
       const allowed = row?.required ? ['assistant','user'] : ['assistant','user','skip'];
       if (!allowed.includes(decision)) issues.push(`${row?.label || 'スクショ'}の扱いを決める`);
@@ -460,6 +496,24 @@
         if(decision==='user'&&status==='acquired') issues.push(`${row?.label || '必須スクショ'}の担当と取得状態が矛盾している`);
       }
     });
+    if(lane(p)==='house'){
+      const required=rows.filter(row=>row?.required===true);
+      const pending=required.some(row=>{
+        const decision=str(decisions[row?.id]), status=str(row?.acquisition_status);
+        return !['assistant','user'].includes(decision)
+          || !['acquired','user_provided'].includes(status)
+          || !str(row?.acquisition_ref)
+          || (decision==='assistant'&&status!=='acquired')
+          || (decision==='user'&&status!=='user_provided');
+      });
+      if(pending){
+        if(p.image_ready!==false) issues.push('家Chat 必須素材未取得時はimage_ready=falseにする');
+        if(str(p.asset_status)!=='awaiting_screenshot') issues.push('家Chat 必須素材未取得時はasset_status=awaiting_screenshotにする');
+      }else{
+        if(p.image_ready!==true) issues.push('家Chat 素材準備完了時はimage_ready=trueにする');
+        if(str(p.asset_status)!=='ready_for_image_generation') issues.push('家Chat 素材準備完了時はasset_status=ready_for_image_generationにする');
+      }
+    }
     return [...new Set(issues)];
   }
 
@@ -687,5 +741,5 @@
     doc.querySelectorAll('[data-fp-modal]').forEach(refreshFpModal);
   }
 
-  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,LEGACY_MONEY_VERSION,LEGACY_MONEY_RESEARCH_VERSION,LEGACY_MONEY_DESIGN_VERSION,HOUSE_VERSION,HOUSE_RESEARCH_VERSION,HOUSE_DESIGN_VERSION,TASK_IDS,MONEY_CHAT_TASK_ID,HOUSE_CHAT_TASK_ID,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,moneyChatScope,houseChatScope,adaptiveChatScope,adaptive,communityRequired,girlsCommentInfo,girlsTopicKey,lockSnapshot,strictCommunityIssues,pageContractIssues,sourceIssues,publicOutputIssues,lockIssues,finalReviewIssues,designIssues,houseSpecificIssues,screenshotIssues,quality,preflightIssues,productionText,buildHandoff,install};
+  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,LEGACY_MONEY_VERSION,LEGACY_MONEY_RESEARCH_VERSION,LEGACY_MONEY_DESIGN_VERSION,HOUSE_VERSION,HOUSE_RESEARCH_VERSION,HOUSE_DESIGN_VERSION,TASK_IDS,MONEY_CHAT_TASK_ID,HOUSE_CHAT_TASK_ID,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,moneyChatScope,houseChatScope,adaptiveChatScope,adaptive,communityRequired,girlsCommentInfo,girlsTopicKey,strictThreadEligible,lockSnapshot,strictCommunityIssues,pageContractIssues,sourceIssues,publicOutputIssues,lockIssues,finalReviewIssues,designIssues,houseSpecificIssues,screenshotIssues,quality,preflightIssues,productionText,buildHandoff,install};
 });
