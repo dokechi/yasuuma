@@ -71,13 +71,20 @@
   };
   const adaptive = value => hasAdaptiveMarkers(value) && moneyChatScope(value);
   const communityRequired = value => adaptive(value) && lane(value) === 'money';
-  const girlsTopicKey = value => {
+  const girlsCommentInfo = value => {
     try {
       const u = new URL(str(value));
-      const match = /girlschannel\.net$/i.test(u.hostname) && u.pathname.match(/^\/topics\/(?:amp\/)?(\d+)/);
-      return match ? 'girlschannel:' + match[1] : '';
-    } catch (_) { return ''; }
+      if (!/girlschannel\.net$/i.test(u.hostname)) return {topicKey:'',commentNo:''};
+      let match=u.pathname.match(/^\/comment\/(\d+)\/(\d+)\/?$/);
+      if (match) return {topicKey:'girlschannel:'+match[1],commentNo:match[2]};
+      match=u.pathname.match(/^\/topics\/(?:amp\/)?(\d+)/);
+      if (!match) return {topicKey:'',commentNo:''};
+      const hashMatch=str(u.hash).match(/(?:comment[-_=]?|^#)(\d+)/i);
+      const queryMatch=str(u.searchParams?.get?.('comment')).match(/(\d+)/);
+      return {topicKey:'girlschannel:'+match[1],commentNo:(hashMatch?.[1]||queryMatch?.[1]||'')};
+    } catch (_) { return {topicKey:'',commentNo:''}; }
   };
+  const girlsTopicKey = value => girlsCommentInfo(value).topicKey;
   const millis = value => { const n = Date.parse(str(value)); return Number.isFinite(n) ? n : 0; };
   const researchStart = p => p.research_started_at || p.execution_audit?.started_at || p.started_at || p.source_checked_at || '';
 
@@ -113,9 +120,10 @@
       if (!trackable.some(c=>safeUrl(c?.direct_url))) rowIssues.push(`${title}: 実コメントの直URLが未保存`);
       const topicKey=girlsTopicKey(thread?.url);
       trackable.forEach(c=>{
-        const directKey=girlsTopicKey(c?.direct_url);
-        if (!directKey) rowIssues.push(`${title}: コメント${c.comment_no}の直URLがGirlsChannelトピックURLではない`);
+        const directInfo=girlsCommentInfo(c?.direct_url), directKey=directInfo.topicKey;
+        if (!directKey) rowIssues.push(`${title}: コメント${c.comment_no}の直URLがGirlsChannelコメントURLではない`);
         else if (topicKey && directKey !== topicKey) rowIssues.push(`${title}: コメント${c.comment_no}の直URLが別トピックを指している`);
+        if (directInfo.commentNo && String(c.comment_no) !== directInfo.commentNo) rowIssues.push(`${title}: コメント${c.comment_no}の直URLが別コメント番号を指している`);
         if (!Object.prototype.hasOwnProperty.call(c,'plus')) rowIssues.push(`${title}: コメント${c.comment_no}のplusは未取得ならnullで保存する`);
         if (!Object.prototype.hasOwnProperty.call(c,'minus')) rowIssues.push(`${title}: コメント${c.comment_no}のminusは未取得ならnullで保存する`);
       });
@@ -467,5 +475,5 @@
     doc.querySelectorAll('[data-fp-modal]').forEach(refreshFpModal);
   }
 
-  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,LEGACY_MONEY_VERSION,LEGACY_MONEY_RESEARCH_VERSION,LEGACY_MONEY_DESIGN_VERSION,TASK_IDS,MONEY_CHAT_TASK_ID,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,moneyChatScope,adaptive,communityRequired,girlsTopicKey,strictCommunityIssues,pageContractIssues,sourceIssues,lockIssues,finalReviewIssues,designIssues,screenshotIssues,quality,preflightIssues,buildHandoff,install};
+  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,LEGACY_MONEY_VERSION,LEGACY_MONEY_RESEARCH_VERSION,LEGACY_MONEY_DESIGN_VERSION,TASK_IDS,MONEY_CHAT_TASK_ID,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,moneyChatScope,adaptive,communityRequired,girlsCommentInfo,girlsTopicKey,strictCommunityIssues,pageContractIssues,sourceIssues,lockIssues,finalReviewIssues,designIssues,screenshotIssues,quality,preflightIssues,buildHandoff,install};
 });
