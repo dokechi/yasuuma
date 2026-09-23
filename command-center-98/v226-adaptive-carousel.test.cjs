@@ -190,16 +190,98 @@ assert.equal(A.adaptive(work),false);
 assert.equal(A.communityRequired(work),false);
 assert.deepEqual(A.preflightIssues(work,()=>['work-base-rule']),['work-base-rule']);
 
-for(const name of ['house','career']){
- const p=structuredClone(base);
- p.adaptive_scope=name+'_chat';
- p.runner_key=name==='house'?'chat-house-v1':'chat-career-v1';
- p.source_task_id=A.TASK_IDS[name];
- assert.equal(A.lane(p),name);
- assert.equal(A.moneyChatScope(p),false);
- assert.equal(A.adaptive(p),false);
- assert.equal(A.communityRequired(p),false);
-}
+const career=structuredClone(base);
+career.adaptive_scope='career_chat';
+career.runner_key='chat-career-v1';
+career.source_task_id=A.TASK_IDS.career;
+assert.equal(A.lane(career),'career');
+assert.equal(A.moneyChatScope(career),false);
+assert.equal(A.houseChatScope(career),false);
+assert.equal(A.adaptive(career),false);
+assert.equal(A.communityRequired(career),false);
+
+const house=structuredClone(base);
+house.adaptive_scope='house_chat';
+house.runner_key='chat-house-v1';
+house.source_task_id=A.HOUSE_CHAT_TASK_ID;
+house.origin_task_id=A.TASK_IDS.house;
+house.generation_version=A.HOUSE_VERSION;
+house.research_version=A.HOUSE_RESEARCH_VERSION;
+house.design_version=A.HOUSE_DESIGN_VERSION;
+house.category='house_living';
+house.content_type='house_post_candidate';
+house.editor_contract_version='chat-editorial-v1-20260918';
+house.production_spec={size:'1080×1440',ratio:'3:4'};
+house.synthesis={a_need:'Aの困りごと',b_need:'Bの疑問',connection:'同じ生活動線',derived_question:'どちらを優先する？',derivation_note:'2本を統合して導出'};
+house.page_reflections=house.draft_slides.map((slide,index)=>({
+ page:slide.page,origin:index===0?'synthesis':'primary_research',
+ thread_refs:index===0?[{thread_id:'A',comment_no:10},{thread_id:'B',comment_no:11}]:[],
+ extracted:'困りごとまたは一次資料から抽出',
+ transformed:'公開用の判断材料へ変換',
+ primary_source_refs:['s1'],
+ extension:null,
+ note:''
+}));
+house.executable_action={what:'図面を測る',where:'洗面脱衣',check:'有効幅',decision:'必要寸法を満たすか',barrier:'変更不能なら',fallback:'別配置を比較'};
+house.editorial_review={
+ version:'chat-editorial-v1-20260918',status:'passed',checked_at:now,unresolved_items:[],
+ checks:{two_threads:'passed',source_trace:'passed',public_separation:'passed',primary_alignment:'passed',practical_options:'passed',executable_action:'passed',cross_page_consistency:'passed',voice:'passed'}
+};
+house.content_lock={locked:true,draft_revision:'r1',locked_at:now,snapshot:A.lockSnapshot(house)};
+
+assert.equal(A.lane(house),'house');
+assert.equal(A.moneyChatScope(house),false);
+assert.equal(A.houseChatScope(house),true);
+assert.equal(A.adaptive(house),true);
+assert.equal(A.communityRequired(house),true);
+assert.deepEqual(A.strictCommunityIssues(house),[]);
+assert.deepEqual(A.pageContractIssues(house),[]);
+assert.deepEqual(A.sourceIssues(house),[]);
+assert.deepEqual(A.publicOutputIssues(house),[]);
+assert.deepEqual(A.lockIssues(house),[]);
+assert.deepEqual(A.finalReviewIssues(house),[]);
+assert.deepEqual(A.designIssues(house),[]);
+assert.deepEqual(A.houseSpecificIssues(house),[]);
+assert.equal(A.quality({payload:house,title:'house'},()=>({ready:true,issues:[]})).ready,true);
+
+const houseNoSynthesis=structuredClone(house);
+delete houseNoSynthesis.synthesis;
+assert.match(A.houseSpecificIssues(houseNoSynthesis).join(' '),/synthesis\.a_need/);
+
+const houseMissingReflection=structuredClone(house);
+houseMissingReflection.page_reflections=houseMissingReflection.page_reflections.slice(0,1);
+assert.match(A.houseSpecificIssues(houseMissingReflection).join(' '),/page_reflectionsが全ページ分/);
+
+const houseNoAction=structuredClone(house);
+delete houseNoAction.executable_action.fallback;
+assert.match(A.houseSpecificIssues(houseNoAction).join(' '),/executable_action\.fallback/);
+
+const houseReviewFail=structuredClone(house);
+houseReviewFail.editorial_review.checks.cross_page_consistency='pending';
+assert.match(A.houseSpecificIssues(houseReviewFail).join(' '),/cross_page_consistencyがpassedではない/);
+
+const houseWrongSize=structuredClone(house);
+houseWrongSize.production_spec.size='1080×1350';
+assert.match(A.houseSpecificIssues(houseWrongSize).join(' '),/1080×1440/);
+
+const houseQuote=structuredClone(house);
+houseQuote.draft_slides[0].page_contract.direct_quote=true;
+assert.match(A.houseSpecificIssues(houseQuote).join(' '),/直接引用しない/);
+
+const houseWork=structuredClone(house);
+houseWork.execution_source='work';
+houseWork.execution_channel='work';
+houseWork.adaptive_scope='';
+houseWork.runner_key='work-house-v1';
+houseWork.source_task_id=A.TASK_IDS.house;
+assert.equal(A.houseChatScope(houseWork),false);
+assert.equal(A.adaptive(houseWork),false);
+
+const oldHouse={
+ execution_channel:'chat',execution_source:'chat',source_task_id:A.HOUSE_CHAT_TASK_ID,
+ category:'house_living',content_type:'house_post_candidate',draft_status:'ready'
+};
+assert.equal(A.adaptive(oldHouse),false);
 
 const overseas=structuredClone(base);
 overseas.adaptive_scope='overseas_chat';
@@ -219,4 +301,4 @@ assert.match(handoff,/layout_overflow/);
 assert.match(handoff,/制作内部情報｜画像内に文字として載せない/);
 assert.doesNotMatch(handoff,/girlschannel/);
 
-console.log('v226 money Chat hardened quality-gate tests passed');
+console.log('v226 money + house Chat hardened quality-gate tests passed');
