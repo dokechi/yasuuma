@@ -8,10 +8,18 @@
   api.install(root);
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
-  const VERSION = 'adaptive-carousel-v1-20260923-money-chat';
-  const RESEARCH_VERSION = 'community-14d-money-chat-v1';
-  const DESIGN_VERSION = 'adaptive-visual-money-chat-v1';
-  const MONEY_TASK_ID = '6a9e5826d4888191a4d82a643e6d5adf';
+  const VERSION = 'adaptive-carousel-v1-20260923';
+  const RESEARCH_VERSION = 'community-14d-v1';
+  const DESIGN_VERSION = 'adaptive-visual-v1';
+  const LEGACY_MONEY_VERSION = 'adaptive-carousel-v1-20260923-money-chat';
+  const LEGACY_MONEY_DESIGN_VERSION = 'adaptive-visual-money-chat-v1';
+  const TASK_IDS = {
+    money:'6a9e5826d4888191a4d82a643e6d5adf',
+    house:'6aa77eb5ce7881919d8dc62554833b60',
+    overseas:'6a8d6888e41881919edb9fb44422a622',
+    career:'6aaca7d36874819181caec8ba014556e'
+  };
+  const COMMUNITY_LANES = new Set(['money','house','career']);
   const WINDOW_DAYS = 14;
   const MIN_TOPICS = 2;
   const MIN_COMMENTS = 200;
@@ -23,17 +31,35 @@
   const payloadOf = value => value && value.payload && typeof value.payload === 'object' ? value.payload : (value && typeof value === 'object' ? value : {});
   const hasAdaptiveMarkers = value => {
     const p = payloadOf(value);
-    return str(p.generation_version) === VERSION || str(p.design_version) === DESIGN_VERSION || str(p.adaptive_design?.mode) === 'adaptive';
+    return [VERSION,LEGACY_MONEY_VERSION].includes(str(p.generation_version))
+      || [DESIGN_VERSION,LEGACY_MONEY_DESIGN_VERSION].includes(str(p.design_version))
+      || str(p.adaptive_design?.mode) === 'adaptive';
   };
-  const moneyChatScope = value => {
+  const lane = value => {
     const p = payloadOf(value);
-    if (str(p.adaptive_scope) === 'money_chat') return true;
-    if (str(p.execution_source).toLowerCase() !== 'chat') return false;
-    if (str(p.runner_key) === 'chat-money-v1') return true;
-    return [p.logical_task_id,p.source_task_id,p.task_id,p.taskId].some(id => str(id) === MONEY_TASK_ID);
+    const ids=[p.logical_task_id,p.source_task_id,p.task_id,p.taskId].map(str);
+    for(const [name,id] of Object.entries(TASK_IDS)) if(ids.includes(id)) return name;
+    const scope=str(p.adaptive_scope).toLowerCase();
+    if(['money','money_chat'].includes(scope)) return 'money';
+    if(['house','house_chat'].includes(scope)) return 'house';
+    if(['overseas','overseas_chat','cheaper_in_japan'].includes(scope)) return 'overseas';
+    if(['career','career_large','listed','listed_company'].includes(scope)) return 'career';
+    const runner=str(p.runner_key);
+    if(runner==='chat-money-v1') return 'money';
+    if(runner==='chat-house-v1') return 'house';
+    if(runner==='chat-overseas-v1') return 'overseas';
+    const type=str(p.content_type);
+    if(type==='fp_post_candidate') return 'money';
+    if(type==='house_post_candidate') return 'house';
+    if(type==='career_post_candidate') return 'career';
+    if(['cheaper_in_japan','reddit_price_gap','overseas_price_gap'].includes(type)) return 'overseas';
+    const category=str(p.category);
+    if(category==='fp_psychology') return 'money';
+    if(category==='career_large') return 'career';
+    return '';
   };
-  const adaptive = value => hasAdaptiveMarkers(value) && moneyChatScope(value);
-  const communityRequired = value => adaptive(value) && payloadOf(value)?.community_research?.required === true;
+  const adaptive = value => hasAdaptiveMarkers(value) && !!lane(value);
+  const communityRequired = value => adaptive(value) && COMMUNITY_LANES.has(lane(value));
   const girlsTopicKey = value => {
     try {
       const u = new URL(str(value));
@@ -46,11 +72,13 @@
 
   function strictCommunityIssues(value) {
     const p = payloadOf(value), issues = [];
-    if (!adaptive(p)) return issues;
+    if (!adaptive(p) || !communityRequired(p)) return issues;
     const research = p.community_research || {};
-    if (research.required !== true) issues.push('お金Chatではガルちゃん需要調査が必須');
+    if (research.required !== true) issues.push('この領域ではガルちゃん需要調査が必須');
     if (str(research.status) !== 'strict') issues.push('ガルちゃん需要調査がstrict合格ではない');
     if (Number(research.window_days) !== WINDOW_DAYS) issues.push(`ガルちゃんstrict期間は${WINDOW_DAYS}日で保存する`);
+    if (Number(research.min_topics) !== MIN_TOPICS) issues.push(`ガルちゃんstrictは別トピック${MIN_TOPICS}本以上`);
+    if (Number(research.min_comments_per_topic) !== MIN_COMMENTS) issues.push(`ガルちゃんstrictは各トピック${MIN_COMMENTS}コメント以上`);
     const start = millis(researchStart(p));
     if (!start) issues.push('需要調査の開始日時が未保存');
     const byKey = new Map();
@@ -60,26 +88,30 @@
     }
     const threads = [...byKey.values()];
     if (threads.length < MIN_TOPICS) issues.push(`ガルちゃんの別トピック${MIN_TOPICS}本が未確認`);
-    for (const thread of threads.slice(0, MIN_TOPICS)) {
-      const title = str(thread?.title) || str(thread?.url) || 'トピック';
-      if (thread?.related_to_question !== true) issues.push(`${title}: 中心疑問との関連確認が未保存`);
-      const published = millis(thread?.published_at);
-      if (!published) issues.push(`${title}: 公開日時が未確認`);
-      else if (start && (published > start || start - published > WINDOW_DAYS * 86400000)) issues.push(`${title}: 調査開始時点で直近${WINDOW_DAYS}日外`);
-      if (!Number.isFinite(Number(thread?.total_comments))) issues.push(`${title}: 総コメント数が未確認`);
-      else if (Number(thread.total_comments) < MIN_COMMENTS) issues.push(`${title}: 総コメント数${MIN_COMMENTS}件未満`);
-      if (!str(thread?.checked_at) || !str(thread?.checked_scope)) issues.push(`${title}: 実読範囲または確認日時が未保存`);
-      const comments = arr(thread?.comments);
-      const trackable = comments.filter(c => c?.comment_no != null && str(c?.summary));
-      if (!trackable.length) issues.push(`${title}: 追跡可能な実コメントが未保存`);
-      trackable.forEach(c => {
-        if (!Object.prototype.hasOwnProperty.call(c,'plus')) issues.push(`${title}: コメント${c.comment_no}のplusは未取得ならnullで保存する`);
-        if (!Object.prototype.hasOwnProperty.call(c,'minus')) issues.push(`${title}: コメント${c.comment_no}のminusは未取得ならnullで保存する`);
+    const evaluated = threads.map(thread => {
+      const rowIssues=[], title=str(thread?.title)||str(thread?.url)||'トピック';
+      if (thread?.related_to_question !== true) rowIssues.push(`${title}: 中心疑問との関連確認が未保存`);
+      const published=millis(thread?.published_at);
+      if (!published) rowIssues.push(`${title}: 公開日時が未確認`);
+      else if (start && (published > start || start - published > WINDOW_DAYS*86400000)) rowIssues.push(`${title}: 調査開始時点で直近${WINDOW_DAYS}日外`);
+      if (!Number.isFinite(Number(thread?.total_comments))) rowIssues.push(`${title}: 総コメント数が未確認`);
+      else if (Number(thread.total_comments) < MIN_COMMENTS) rowIssues.push(`${title}: 総コメント数${MIN_COMMENTS}件未満`);
+      if (!str(thread?.checked_at) || !str(thread?.checked_scope)) rowIssues.push(`${title}: 実読範囲または確認日時が未保存`);
+      const trackable=arr(thread?.comments).filter(c=>c?.comment_no!=null&&str(c?.summary));
+      if (!trackable.length) rowIssues.push(`${title}: 追跡可能な実コメントが未保存`);
+      if (!trackable.some(c=>safeUrl(c?.direct_url))) rowIssues.push(`${title}: 実コメントの直URLが未保存`);
+      trackable.forEach(c=>{
+        if (!Object.prototype.hasOwnProperty.call(c,'plus')) rowIssues.push(`${title}: コメント${c.comment_no}のplusは未取得ならnullで保存する`);
+        if (!Object.prototype.hasOwnProperty.call(c,'minus')) rowIssues.push(`${title}: コメント${c.comment_no}のminusは未取得ならnullで保存する`);
       });
+      return {thread,issues:rowIssues};
+    });
+    const valid=evaluated.filter(row=>row.issues.length===0);
+    if(valid.length<MIN_TOPICS){
+      issues.push(`直近${WINDOW_DAYS}日・各${MIN_COMMENTS}件以上・実読済みの別トピック${MIN_TOPICS}本が揃っていない`);
+      evaluated.forEach(row=>issues.push(...row.issues));
     }
-    if (research.expanded === true || str(research.expanded_status)) {
-      issues.push('拡張調査をstrict合格として完成原稿に使用しない');
-    }
+    if (research.expanded === true || str(research.expanded_status)) issues.push('拡張調査をstrict合格として完成原稿に使用しない');
     return [...new Set(issues)];
   }
 
@@ -353,7 +385,7 @@
       const editorialIssues = typeof root.CCChatEditorial?.issues === 'function' ? arr(root.CCChatEditorial.issues(item)) : [];
       const issues=[...q.issues,...pf,...editorialIssues];
       const copyButton=dialog.querySelector('[data-copy]'); if(copyButton){copyButton.disabled=issues.length>0;copyButton.title=issues.join('／');copyButton.textContent='LOCK済み原稿を画像化用にコピー';}
-      const note=doc.createElement('section'); note.className='cce-internal'; note.dataset.adaptiveNotice='1'; note.innerHTML=issues.length?'<b>適応型仕様：画像化保留</b><p>'+esc(issues.join('／'))+'</p>':'<b>適応型仕様：画像化可能</b><p>お金Chat専用の14日需要ゲート、ページ設計、一次情報、原稿LOCK、適応型デザインを確認済み。</p>';
+      const note=doc.createElement('section'); note.className='cce-internal'; note.dataset.adaptiveNotice='1'; note.innerHTML=issues.length?'<b>適応型仕様：画像化保留</b><p>'+esc(issues.join('／'))+'</p>':'<b>適応型仕様：画像化可能</b><p>適用領域の14日需要ゲート（海外は対象外）、ページ設計、一次情報、原稿LOCK、適応型デザインを確認済み。</p>';
       dialog.querySelector('h3')?.insertAdjacentElement('beforebegin',note);
     }
     doc.addEventListener('click', async event => {
@@ -390,5 +422,5 @@
     doc.querySelectorAll('[data-fp-modal]').forEach(refreshFpModal);
   }
 
-  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,MONEY_TASK_ID,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,moneyChatScope,adaptive,communityRequired,girlsTopicKey,strictCommunityIssues,pageContractIssues,sourceIssues,lockIssues,designIssues,screenshotIssues,quality,preflightIssues,buildHandoff,install};
+  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,TASK_IDS,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,adaptive,communityRequired,girlsTopicKey,strictCommunityIssues,pageContractIssues,sourceIssues,lockIssues,designIssues,screenshotIssues,quality,preflightIssues,buildHandoff,install};
 });
