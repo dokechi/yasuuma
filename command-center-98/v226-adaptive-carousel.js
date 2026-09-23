@@ -148,7 +148,8 @@
     const usage = p.design_system_usage;
     if (usage && /^official_/.test(str(usage.usage_type))) {
       if (!safeUrl(usage.source_url)) issues.push('公式Design Systemの参照URLが未保存');
-      const used = [...arr(usage.official_assets_used), ...arr(usage.components_used), ...arr(usage.tokens_used)];\n      if (!used.length) issues.push('公式準拠で使用した部品・設定が未記録');
+      const used = [...arr(usage.official_assets_used), ...arr(usage.components_used), ...arr(usage.tokens_used)];
+      if (!used.length) issues.push('公式準拠で使用した部品・設定が未記録');
     }
     return issues;
   }
