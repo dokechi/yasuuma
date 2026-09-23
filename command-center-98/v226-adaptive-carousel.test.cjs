@@ -264,7 +264,19 @@ houseBackgroundSynthesis.research_threads.push(
  {id:'oldB',url:'https://girlschannel.net/topics/2002/',title:'oldB',published_at:'2026-08-02T00:00:00Z',checked_at:now,checked_scope:'1-300',total_comments:300,related_to_question:true,comments:[{comment_no:22,summary:'古い補助B',direct_url:'https://girlschannel.net/comment/2002/22/',plus:null,minus:null,reply_to:null}]}
 );
 houseBackgroundSynthesis.page_reflections[0].thread_refs=[{thread_id:'oldA',comment_no:21},{thread_id:'oldB',comment_no:22}];
-assert.match(A.houseSpecificIssues(houseBackgroundSynthesis).join(' '),/strict14日適格トピック2本/);
+assert.match(A.houseSpecificIssues(houseBackgroundSynthesis).join(' '),/strict14日適格の別トピック2本/);
+
+const houseDuplicateTopicSynthesis=structuredClone(house);
+houseDuplicateTopicSynthesis.research_threads.push({
+ id:'A2',url:'https://girlschannel.net/topics/1001/',title:'A duplicate',published_at:'2026-09-20T00:00:00Z',checked_at:now,checked_scope:'1-250',total_comments:250,related_to_question:true,
+ comments:[{comment_no:12,summary:'同じトピックの別コメント',direct_url:'https://girlschannel.net/comment/1001/12/',plus:null,minus:null,reply_to:null}]
+});
+houseDuplicateTopicSynthesis.page_reflections[0].thread_refs=[{thread_id:'A',comment_no:10},{thread_id:'A2',comment_no:12}];
+assert.match(A.houseSpecificIssues(houseDuplicateTopicSynthesis).join(' '),/strict14日適格の別トピック2本/);
+
+const houseStrictThreadBadComment=structuredClone(house);
+houseStrictThreadBadComment.research_threads[0].comments.push({comment_no:13,summary:'URL不整合',direct_url:'https://girlschannel.net/comment/9999/13/',plus:null,minus:null,reply_to:null});
+assert.equal(A.strictThreadEligible(houseStrictThreadBadComment,houseStrictThreadBadComment.research_threads[0]),false);
 
 const houseReviewSnapshotMissing=structuredClone(house);
 delete houseReviewSnapshotMissing.final_review.reviewed_snapshot;
