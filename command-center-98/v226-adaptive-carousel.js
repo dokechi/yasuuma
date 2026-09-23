@@ -12,6 +12,7 @@
   const RESEARCH_VERSION = 'community-14d-v1';
   const DESIGN_VERSION = 'adaptive-visual-v1';
   const LEGACY_MONEY_VERSION = 'adaptive-carousel-v1-20260923-money-chat';
+  const LEGACY_MONEY_RESEARCH_VERSION = 'community-14d-money-chat-v1';
   const LEGACY_MONEY_DESIGN_VERSION = 'adaptive-visual-money-chat-v1';
   const TASK_IDS = {
     money:'6a9e5826d4888191a4d82a643e6d5adf',
@@ -58,8 +59,16 @@
     if(category==='career_large') return 'career';
     return '';
   };
-  const adaptive = value => hasAdaptiveMarkers(value) && !!lane(value);
-  const communityRequired = value => adaptive(value) && COMMUNITY_LANES.has(lane(value));
+  const moneyChatScope = value => {
+    const p = payloadOf(value);
+    if (str(p.execution_source).toLowerCase() !== 'chat') return false;
+    const ids=[p.logical_task_id,p.source_task_id,p.task_id,p.taskId].map(str);
+    const scope=str(p.adaptive_scope).toLowerCase();
+    const runner=str(p.runner_key);
+    return ids.includes(TASK_IDS.money) || ['money','money_chat'].includes(scope) || runner==='chat-money-v1';
+  };
+  const adaptive = value => hasAdaptiveMarkers(value) && moneyChatScope(value);
+  const communityRequired = value => adaptive(value) && lane(value) === 'money';
   const girlsTopicKey = value => {
     try {
       const u = new URL(str(value));
@@ -74,7 +83,7 @@
     const p = payloadOf(value), issues = [];
     if (!adaptive(p) || !communityRequired(p)) return issues;
     const research = p.community_research || {};
-    if (research.required !== true) issues.push('この領域ではガルちゃん需要調査が必須');
+    if (research.required !== true) issues.push('お金Chatではガルちゃん需要調査が必須');
     if (str(research.status) !== 'strict') issues.push('ガルちゃん需要調査がstrict合格ではない');
     if (Number(research.window_days) !== WINDOW_DAYS) issues.push(`ガルちゃんstrict期間は${WINDOW_DAYS}日で保存する`);
     if (Number(research.min_topics) !== MIN_TOPICS) issues.push(`ガルちゃんstrictは別トピック${MIN_TOPICS}本以上`);
@@ -385,7 +394,7 @@
       const editorialIssues = typeof root.CCChatEditorial?.issues === 'function' ? arr(root.CCChatEditorial.issues(item)) : [];
       const issues=[...q.issues,...pf,...editorialIssues];
       const copyButton=dialog.querySelector('[data-copy]'); if(copyButton){copyButton.disabled=issues.length>0;copyButton.title=issues.join('／');copyButton.textContent='LOCK済み原稿を画像化用にコピー';}
-      const note=doc.createElement('section'); note.className='cce-internal'; note.dataset.adaptiveNotice='1'; note.innerHTML=issues.length?'<b>適応型仕様：画像化保留</b><p>'+esc(issues.join('／'))+'</p>':'<b>適応型仕様：画像化可能</b><p>適用領域の14日需要ゲート（海外は対象外）、ページ設計、一次情報、原稿LOCK、適応型デザインを確認済み。</p>';
+      const note=doc.createElement('section'); note.className='cce-internal'; note.dataset.adaptiveNotice='1'; note.innerHTML=issues.length?'<b>適応型仕様：画像化保留</b><p>'+esc(issues.join('／'))+'</p>':'<b>適応型仕様：画像化可能</b><p>お金Chat専用の14日需要ゲート、ページ設計、一次情報、原稿LOCK、適応型デザインを確認済み。</p>';
       dialog.querySelector('h3')?.insertAdjacentElement('beforebegin',note);
     }
     doc.addEventListener('click', async event => {
@@ -422,5 +431,5 @@
     doc.querySelectorAll('[data-fp-modal]').forEach(refreshFpModal);
   }
 
-  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,TASK_IDS,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,adaptive,communityRequired,girlsTopicKey,strictCommunityIssues,pageContractIssues,sourceIssues,lockIssues,designIssues,screenshotIssues,quality,preflightIssues,buildHandoff,install};
+  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,LEGACY_MONEY_VERSION,LEGACY_MONEY_RESEARCH_VERSION,LEGACY_MONEY_DESIGN_VERSION,TASK_IDS,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,moneyChatScope,adaptive,communityRequired,girlsTopicKey,strictCommunityIssues,pageContractIssues,sourceIssues,lockIssues,designIssues,screenshotIssues,quality,preflightIssues,buildHandoff,install};
 });
