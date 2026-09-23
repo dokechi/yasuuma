@@ -439,3 +439,64 @@ LOCK後に変更があればrevision更新・snapshot再作成・final_review再
 ### 完了条件
 
 `editorial_review` と `final_review` が両方passed、missing_evidence=[]、strict14日、一次情報、page_contract、adaptive_design、LOCK snapshot、家固有契約がすべて揃った場合だけready。
+
+
+## 家Chat 品質ゲート補強 v2
+
+家Chatのsource traceと画像素材準備を追加で厳格化する。
+
+### research_threadsのID
+
+- 各threadに一意の `id`
+- 各commentに `reply_to` キー（返信元なしはnull）
+- `page_reflections.thread_refs` は実在thread/commentのみ
+- synthesisページは別トピック2本以上の実コメント参照
+- comment_structureページは最低1件の実コメント参照
+
+### synthesisと中心疑問
+
+`synthesis.derived_question` と `question_lineage.selected_question` は、空白・句読点を除いて一致させる。
+途中で別テーマへ切り替わった候補はreadyにしない。
+
+### primary_evidence_required
+
+家Chatの各page_contractに `primary_evidence_required:true/false` を必須とする。
+
+true:
+- page_reflection.primary_source_refsを最低1件
+- draft_sourcesに実在
+- 一次情報source_type
+- 同ページのpage_contract.source_refsにも存在
+
+false:
+- synthesis/comment_structure/editorial_extension等で事実主張や数値を示さないページに使用可能
+- primary_source_refsが空の場合はpage_reflection.noteへ一次情報不要理由を保存
+- 無関係な一次情報を埋め合わせで紐付けない
+
+`origin="primary_research"` は必ず `primary_evidence_required=true`。
+
+### executable_actionの公開反映
+
+既存の `what/where/check/decision/barrier/fallback` に加え、
+
+- `public_page`
+- `public_copy`
+
+を必須とする。
+
+`public_page` は最終ページ。
+`public_copy` はそのページの `display_copy` に実際に含まれる文。
+
+### final_review
+
+家Chatでは `final_review.checked_at` も必須。
+
+### required screenshot
+
+required=trueのscreenshot_requestは担当決定だけでは画像化可能にしない。
+
+- assistant取得: `acquisition_status="acquired"`
+- user提供: `acquisition_status="user_provided"`
+- `acquisition_ref` 必須
+
+pending / failed / 未取得 / refなしの場合は画像化handoffを停止する。
