@@ -345,3 +345,97 @@ revision一致だけではLOCK済みと扱わない。
 - draft_sources
 
 本文、数字、計算、source_refs、引用、出典等がLOCK後に変わった場合はrevision更新、snapshot再作成、final_review再実行が必要。
+
+
+## 家Chat 適応型カルーセル追加
+
+対象は `家｜チャットから実行` の新規候補のみ。
+
+- Chat task_id: `6aa9edd177fc8191a1e4b665930ee071`
+- 参照元Work task_id: `6aa77eb5ce7881919d8dc62554833b60`
+- generation_version: `adaptive-carousel-v1-20260923-house-chat`
+- research_version: `community-14d-house-chat-v1`
+- design_version: `adaptive-visual-house-chat-v1`
+
+Work版は読み取り専用。Workのtask_prompt、スケジュール、有効無効、保存済み結果を変更しない。
+
+### strict需要ゲート
+
+- research_started_atを基準に14日以内
+- 関連する別トピック2本以上
+- 各トピック200コメント以上
+- 本文・コメント実読
+- topic ID / comment No. が一致する実コメントURL
+- 取得不能値はnull、推測禁止
+
+14日外の過去トピックはexpanded/backgroundとしてstrict結果と分離する。
+
+### 家固有契約
+
+既存のHouse editorial contractを維持し、次をready条件に含める。
+
+- `editor_contract_version=chat-editorial-v1-20260918`
+- `synthesis={a_need,b_need,connection,derived_question,derivation_note}`
+- 全ページの `page_reflections`
+- `executable_action={what,where,check,decision,barrier,fallback}`
+- `editorial_review.status=passed`
+- editorial_review checks:
+  - two_threads
+  - source_trace
+  - public_separation
+  - primary_alignment
+  - practical_options
+  - executable_action
+  - cross_page_consistency
+  - voice
+
+### ページ・デザイン
+
+ページ数は6〜8枚へ固定しない。題材に必要な枚数で決め、`page_count_reason` を保存する。
+
+固定3配色、固定デザイン3択、`design_direction=house`、`color_palette=blue` を新規adaptive候補の完成条件にしない。
+
+一方で家の制作寸法は維持する。
+
+- `production_spec.size=1080×1440`
+- `production_spec.ratio=3:4`
+- 全ページに現在ページ/総ページ数
+- スワイプ誘導
+
+adaptive handoffにもこの制作仕様を明示する。
+
+### 公開分離
+
+家Chatは従来どおり、需要調査コメントを公開原稿へ直接引用しない。
+
+- `direct_quote=true` は禁止
+- display_copyへGirlsChannel名、元URL、コメント番号、反応数を混入させない
+- research_threads / synthesis / page_reflections 等は内部専用
+
+### 一次情報・計算・証拠性
+
+お金Chatのhard quality gateと同様に、
+
+- 一次情報source_type必須
+- 非引用の各ページに一次情報source_ref
+- `calculation_required:true/false`
+- trueなら `calculation={inputs,formula,unit,result,rounding}`
+- `required_assets[].is_evidence` 必須
+- 生成画像やdiagramを実物証拠として扱わない
+
+### LOCK
+
+家Chatの `content_lock.snapshot` は共通項目に加え、
+
+- synthesis
+- page_reflections
+- executable_action
+- production_spec
+
+もLOCK対象に含める。
+
+LOCK後に変更があればrevision更新・snapshot再作成・final_review再実行が必要。
+
+### 完了条件
+
+`editorial_review` と `final_review` が両方passed、missing_evidence=[]、strict14日、一次情報、page_contract、adaptive_design、LOCK snapshot、家固有契約がすべて揃った場合だけready。
