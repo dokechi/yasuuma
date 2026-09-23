@@ -459,6 +459,19 @@
     ].filter(Boolean);
   }
 
+  function productionText(p) {
+    if (lane(p)!=='house') return [];
+    const spec=p.production_spec||{};
+    return [
+      '【家投稿の制作仕様】',
+      `・画像サイズ: ${str(spec.size)} / 比率: ${str(spec.ratio)}`,
+      '・1080×1440（3:4）を維持する。',
+      '・全ページに現在ページ／総ページ数とスワイプ誘導を入れる。',
+      '・家Chatでは需要調査コメントを公開面へ直接引用しない。',
+      ''
+    ];
+  }
+
   function buildHandoff(item, baseBuilder) {
     const p = payloadOf(item);
     if (!adaptive(p)) return typeof baseBuilder === 'function' ? baseBuilder(item) : '';
@@ -490,6 +503,7 @@
       '【適応型デザイン】',
       ...designText(p),
       '・実写写真・公式写真・一次資料スクショと、AI生成の写実画像・説明用再現を区別する。生成画像を証拠として扱わない。',
+      ...productionText(p),
       '・比較／変化／分解／実演は思考補助であり、無理に型へ押し込まない。1ページ1現象を基本とする。',
       '',
       '【公開面】',
@@ -611,5 +625,5 @@
     doc.querySelectorAll('[data-fp-modal]').forEach(refreshFpModal);
   }
 
-  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,LEGACY_MONEY_VERSION,LEGACY_MONEY_RESEARCH_VERSION,LEGACY_MONEY_DESIGN_VERSION,HOUSE_VERSION,HOUSE_RESEARCH_VERSION,HOUSE_DESIGN_VERSION,TASK_IDS,MONEY_CHAT_TASK_ID,HOUSE_CHAT_TASK_ID,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,moneyChatScope,houseChatScope,adaptiveChatScope,adaptive,communityRequired,girlsCommentInfo,girlsTopicKey,lockSnapshot,strictCommunityIssues,pageContractIssues,sourceIssues,publicOutputIssues,lockIssues,finalReviewIssues,designIssues,houseSpecificIssues,screenshotIssues,quality,preflightIssues,buildHandoff,install};
+  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,LEGACY_MONEY_VERSION,LEGACY_MONEY_RESEARCH_VERSION,LEGACY_MONEY_DESIGN_VERSION,HOUSE_VERSION,HOUSE_RESEARCH_VERSION,HOUSE_DESIGN_VERSION,TASK_IDS,MONEY_CHAT_TASK_ID,HOUSE_CHAT_TASK_ID,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,moneyChatScope,houseChatScope,adaptiveChatScope,adaptive,communityRequired,girlsCommentInfo,girlsTopicKey,lockSnapshot,strictCommunityIssues,pageContractIssues,sourceIssues,publicOutputIssues,lockIssues,finalReviewIssues,designIssues,houseSpecificIssues,screenshotIssues,quality,preflightIssues,productionText,buildHandoff,install};
 });
