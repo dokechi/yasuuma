@@ -217,8 +217,11 @@ house.research_threads.forEach(thread=>thread.comments.forEach(comment=>{comment
 house.question_lineage={selected_question:'どちらを優先する？',answer_target:'図面と生活動線で判断'};
 house.final_review.checked_at=now;
 house.production_spec={size:'1080×1440',ratio:'3:4'};
+house.image_ready=true;
+house.asset_status='ready_for_image_generation';
 house.synthesis={a_need:'Aの困りごと',b_need:'Bの疑問',connection:'同じ生活動線',derived_question:'どちらを優先する？',derivation_note:'2本を統合して導出'};
 house.draft_slides.forEach(slide=>{slide.page_contract.primary_evidence_required=true;});
+house.draft_slides[1].page_contract.display_copy='洗面脱衣の有効幅を測る。採用可否を決める。';
 house.page_reflections=house.draft_slides.map((slide,index)=>({
  page:slide.page,origin:index===0?'synthesis':'primary_research',
  thread_refs:index===0?[{thread_id:'A',comment_no:10},{thread_id:'B',comment_no:11}]:[],
@@ -228,12 +231,13 @@ house.page_reflections=house.draft_slides.map((slide,index)=>({
  extension:null,
  note:''
 }));
-house.executable_action={what:'図面を測る',where:'洗面脱衣',check:'有効幅',decision:'必要寸法を満たすか',barrier:'変更不能なら',fallback:'別配置を比較',public_page:2,public_copy:'C2'};
+house.executable_action={what:'測る',where:'洗面脱衣',check:'有効幅',decision:'採用可否',barrier:'変更不能なら',fallback:'別配置を比較',public_page:2,public_copy:'洗面脱衣の有効幅を測る。採用可否を決める。'};
 house.editorial_review={
  version:'chat-editorial-v1-20260918',status:'passed',checked_at:now,unresolved_items:[],
  checks:{two_threads:'passed',source_trace:'passed',public_separation:'passed',primary_alignment:'passed',practical_options:'passed',executable_action:'passed',cross_page_consistency:'passed',voice:'passed'}
 };
 house.content_lock={locked:true,draft_revision:'r1',locked_at:now,snapshot:A.lockSnapshot(house)};
+house.final_review.reviewed_snapshot=structuredClone(house.content_lock.snapshot);
 
 assert.equal(A.lane(house),'house');
 assert.equal(A.moneyChatScope(house),false);
@@ -253,6 +257,33 @@ const houseHandoff=A.buildHandoff({payload:house,title:'house'});
 assert.match(houseHandoff,/1080×1440/);
 assert.match(houseHandoff,/現在ページ／総ページ数/);
 assert.match(houseHandoff,/家Chatでは需要調査コメントを公開面へ直接引用しない/);
+
+const houseBackgroundSynthesis=structuredClone(house);
+houseBackgroundSynthesis.research_threads.push(
+ {id:'oldA',url:'https://girlschannel.net/topics/2001/',title:'oldA',published_at:'2026-08-01T00:00:00Z',checked_at:now,checked_scope:'1-300',total_comments:300,related_to_question:true,comments:[{comment_no:21,summary:'古い補助A',direct_url:'https://girlschannel.net/comment/2001/21/',plus:null,minus:null,reply_to:null}]},
+ {id:'oldB',url:'https://girlschannel.net/topics/2002/',title:'oldB',published_at:'2026-08-02T00:00:00Z',checked_at:now,checked_scope:'1-300',total_comments:300,related_to_question:true,comments:[{comment_no:22,summary:'古い補助B',direct_url:'https://girlschannel.net/comment/2002/22/',plus:null,minus:null,reply_to:null}]}
+);
+houseBackgroundSynthesis.page_reflections[0].thread_refs=[{thread_id:'oldA',comment_no:21},{thread_id:'oldB',comment_no:22}];
+assert.match(A.houseSpecificIssues(houseBackgroundSynthesis).join(' '),/strict14日適格トピック2本/);
+
+const houseReviewSnapshotMissing=structuredClone(house);
+delete houseReviewSnapshotMissing.final_review.reviewed_snapshot;
+assert.match(A.finalReviewIssues(houseReviewSnapshotMissing).join(' '),/reviewed_snapshotが未保存/);
+
+const houseRelockedWithoutReview=structuredClone(house);
+houseRelockedWithoutReview.draft_slides[0].page_contract.display_copy='LOCK後に書き換えて再LOCK';
+houseRelockedWithoutReview.content_lock.snapshot=A.lockSnapshot(houseRelockedWithoutReview);
+assert.match(A.finalReviewIssues(houseRelockedWithoutReview).join(' '),/現在のLOCK snapshotを照合していない/);
+
+const houseReviewBeforeLock=structuredClone(house);
+houseReviewBeforeLock.content_lock.locked_at='2026-09-23T00:30:00Z';
+houseReviewBeforeLock.final_review.checked_at='2026-09-23T00:00:00Z';
+assert.match(A.finalReviewIssues(houseReviewBeforeLock).join(' '),/原稿LOCKより前/);
+
+const houseTinyAction=structuredClone(house);
+houseTinyAction.executable_action.public_copy='測る';
+houseTinyAction.draft_slides[1].page_contract.display_copy='測る';
+assert.match(A.houseSpecificIssues(houseTinyAction).join(' '),/短すぎて具体行動になっていない|whereの内容が反映されていない/);
 
 const houseNoThreadId=structuredClone(house);
 delete houseNoThreadId.research_threads[0].id;
@@ -279,12 +310,12 @@ houseQuestionMismatch.question_lineage.selected_question='コンセントは何�
 assert.match(A.houseSpecificIssues(houseQuestionMismatch).join(' '),/derived_questionとquestion_lineage\.selected_questionが一致しない/);
 
 const houseActionNotPublic=structuredClone(house);
-houseActionNotPublic.executable_action.public_copy='図面の有効幅を測る';
+houseActionNotPublic.executable_action.public_copy='玄関幅を測る';
 assert.match(A.houseSpecificIssues(houseActionNotPublic).join(' '),/public_copyが指定ページのdisplay_copyに含まれていない/);
 
 const houseActionNotFinal=structuredClone(house);
 houseActionNotFinal.executable_action.public_page=1;
-houseActionNotFinal.executable_action.public_copy='C1';
+houseActionNotFinal.executable_action.public_copy='C1に書いた行動';
 assert.match(A.houseSpecificIssues(houseActionNotFinal).join(' '),/public_pageは最終ページ/);
 
 const houseNoFinalCheckedAt=structuredClone(house);
@@ -311,14 +342,28 @@ assert.match(A.houseSpecificIssues(housePrimaryResearchWithoutPrimary).join(' ')
 const houseRequiredShotPending=structuredClone(house);
 houseRequiredShotPending.screenshot_requests=[{id:'shot1',required:true,label:'メーカー寸法表',url:'https://example.com/official',capture_range:'寸法表',purpose:'寸法根拠',slide_no:2,acquisition_status:'pending',acquisition_ref:null}];
 houseRequiredShotPending.screenshot_decisions={shot1:'assistant'};
+houseRequiredShotPending.image_ready=false;
+houseRequiredShotPending.asset_status='awaiting_screenshot';
 assert.match(A.screenshotIssues(houseRequiredShotPending).join(' '),/未取得/);
 assert.throws(()=>A.buildHandoff({payload:houseRequiredShotPending,title:'house'}),/画像化保留/);
 
 const houseRequiredShotAcquired=structuredClone(house);
 houseRequiredShotAcquired.screenshot_requests=[{id:'shot1',required:true,label:'メーカー寸法表',url:'https://example.com/official',capture_range:'寸法表',purpose:'寸法根拠',slide_no:2,acquisition_status:'acquired',acquisition_ref:'asset:shot1'}];
 houseRequiredShotAcquired.screenshot_decisions={shot1:'assistant'};
+houseRequiredShotAcquired.image_ready=true;
+houseRequiredShotAcquired.asset_status='ready_for_image_generation';
 assert.deepEqual(A.screenshotIssues(houseRequiredShotAcquired),[]);
 assert.doesNotThrow(()=>A.buildHandoff({payload:houseRequiredShotAcquired,title:'house'}));
+
+const housePendingWrongState=structuredClone(houseRequiredShotPending);
+housePendingWrongState.image_ready=true;
+housePendingWrongState.asset_status='ready_for_image_generation';
+assert.match(A.screenshotIssues(housePendingWrongState).join(' '),/image_ready=false|asset_status=awaiting_screenshot/);
+
+const houseReadyWrongState=structuredClone(houseRequiredShotAcquired);
+houseReadyWrongState.image_ready=false;
+houseReadyWrongState.asset_status='awaiting_screenshot';
+assert.match(A.screenshotIssues(houseReadyWrongState).join(' '),/image_ready=true|asset_status=ready_for_image_generation/);
 
 const houseNoSynthesis=structuredClone(house);
 delete houseNoSynthesis.synthesis;
