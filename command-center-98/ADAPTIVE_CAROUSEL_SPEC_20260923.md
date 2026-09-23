@@ -500,3 +500,60 @@ required=trueのscreenshot_requestは担当決定だけでは画像化可能に�
 - `acquisition_ref` 必須
 
 pending / failed / 未取得 / refなしの場合は画像化handoffを停止する。
+
+
+## 家Chat 品質ゲート補強 v3
+
+### synthesisのstrict参照
+
+synthesisページで中心疑問の導出に使うthreadは、単にresearch_threads内に存在するだけでは不可。
+
+参照する2本それぞれが次を満たすこと。
+
+- research_started_at時点で14日以内
+- related_to_question=true
+- total_comments>=200
+- checked_at / checked_scopeあり
+- 実コメントsummaryあり
+- comment direct URLのtopic ID/comment No.一致
+- plus/minusキーあり
+
+さらに**別topic IDの2本**であること。
+background/expandedの古いthreadや、同一トピックを別thread IDで二重登録したものを2本として数えない。
+
+### final_reviewとLOCKの結合
+
+家Chatでは `final_review.reviewed_snapshot` を必須とする。
+
+- `reviewed_snapshot` は照合対象だった `content_lock.snapshot` の完全なdeep copy
+- `final_review.checked_at >= content_lock.locked_at`
+- `final_review.reviewed_snapshot === content_lock.snapshot`
+
+本文変更後にcontent_lock.snapshotだけ作り直しても、final_review.reviewed_snapshotが古ければreadyにしない。
+変更時はdraft_revision更新・再LOCK・再レビューを行う。
+
+### executable_actionの具体性
+
+`public_copy` は最終ページに含まれるだけでは不十分。
+
+最低限、
+- where
+- check
+- what または decision
+
+の内容をpublic_copyへ追跡可能な形で含める。
+「測る」「確認する」のような短すぎる文だけではreadyにしない。
+
+### image readiness
+
+原稿readyと画像化可能は分離する。
+
+required screenshotが未取得:
+- image_ready=false
+- asset_status=`awaiting_screenshot`
+
+required screenshotがすべて取得済み、またはrequired screenshotが0件:
+- image_ready=true
+- asset_status=`ready_for_image_generation`
+
+この状態と `screenshot_decisions / acquisition_status / acquisition_ref` が一致しない場合、画像化handoffを停止する。
