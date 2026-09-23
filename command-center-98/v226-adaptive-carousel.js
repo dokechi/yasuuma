@@ -148,7 +148,7 @@
     const usage = p.design_system_usage;
     if (usage && /^official_/.test(str(usage.usage_type))) {
       if (!safeUrl(usage.source_url)) issues.push('公式Design Systemの参照URLが未保存');
-      if (!arr(usage.official_assets_used || usage.components_used || usage.tokens_used).length) issues.push('公式準拠で使用した部品・設定が未記録');
+      const used = [...arr(usage.official_assets_used), ...arr(usage.components_used), ...arr(usage.tokens_used)];\n      if (!used.length) issues.push('公式準拠で使用した部品・設定が未記録');
     }
     return issues;
   }
@@ -348,7 +348,7 @@
       if (!careerId || !dialog || dialog.dataset.adaptiveV226==='1') return;
       const item=lookup(careerId); if(!item || !adaptive(item)) return;
       dialog.dataset.adaptiveV226='1'; dialog.dataset.adaptiveId=careerId;
-      const q=quality(item,null), pf=screenshotIssues(payloadOf(item)), issues=[...q.issues,...pf];
+      const q=quality(item,null), pf=screenshotIssues(payloadOf(item));\n      const editorialIssues = typeof root.CCChatEditorial?.issues === 'function' ? arr(root.CCChatEditorial.issues(item)) : [];\n      const issues=[...q.issues,...pf,...editorialIssues];
       const copyButton=dialog.querySelector('[data-copy]'); if(copyButton){copyButton.disabled=issues.length>0;copyButton.title=issues.join('／');copyButton.textContent='LOCK済み原稿を画像化用にコピー';}
       const note=doc.createElement('section'); note.className='cce-internal'; note.dataset.adaptiveNotice='1'; note.innerHTML=issues.length?'<b>適応型仕様：画像化保留</b><p>'+esc(issues.join('／'))+'</p>':'<b>適応型仕様：画像化可能</b><p>お金Chat専用の14日需要ゲート、ページ設計、一次情報、原稿LOCK、適応型デザインを確認済み。</p>';
       dialog.querySelector('h3')?.insertAdjacentElement('beforebegin',note);
@@ -376,7 +376,7 @@
       const fpCopy=event.target.closest?.('[data-fp-copy-package]');
       if(fpCopy){const item=lookup(fpCopy.dataset.fpCopyPackage);if(item&&adaptive(item)){event.preventDefault();event.stopImmediatePropagation();try{await copy(buildHandoff(item,null),fpCopy);}catch(e){if(typeof root.toast==='function')root.toast(e.message,'bad');}return;}}
       const careerCopy=event.target.closest?.('.cce-dialog [data-copy]');
-      if(careerCopy){const dialog=careerCopy.closest('.cce-dialog'),item=lookup(dialog?.dataset.adaptiveId||careerId);if(item&&adaptive(item)){event.preventDefault();event.stopImmediatePropagation();try{await copy(buildHandoff(item,null),careerCopy);}catch(e){const feedback=dialog?.querySelector('[data-feedback]');if(feedback)feedback.textContent='コピー保留：'+e.message;}return;}}
+      if(careerCopy){const dialog=careerCopy.closest('.cce-dialog'),item=lookup(dialog?.dataset.adaptiveId||careerId);if(item&&adaptive(item)){event.preventDefault();event.stopImmediatePropagation();try{const editorialIssues=typeof root.CCChatEditorial?.issues==='function'?arr(root.CCChatEditorial.issues(item)):[];if(editorialIssues.length)throw new Error(editorialIssues.join('／'));await copy(buildHandoff(item,null),careerCopy);}catch(e){const feedback=dialog?.querySelector('[data-feedback]');if(feedback)feedback.textContent='コピー保留：'+e.message;}return;}}
     }, true);
     const observer=new root.MutationObserver(mutations=>{
       if(!mutations.some(m=>m.addedNodes?.length))return;
