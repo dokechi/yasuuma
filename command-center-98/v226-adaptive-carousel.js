@@ -8,9 +8,10 @@
   api.install(root);
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
-  const VERSION = 'adaptive-carousel-v1-20260923';
-  const RESEARCH_VERSION = 'community-14d-v1';
-  const DESIGN_VERSION = 'adaptive-visual-v1';
+  const VERSION = 'adaptive-carousel-v1-20260923-money-chat';
+  const RESEARCH_VERSION = 'community-14d-money-chat-v1';
+  const DESIGN_VERSION = 'adaptive-visual-money-chat-v1';
+  const MONEY_TASK_ID = '6a9e5826d4888191a4d82a643e6d5adf';
   const WINDOW_DAYS = 14;
   const MIN_TOPICS = 2;
   const MIN_COMMENTS = 200;
@@ -20,11 +21,19 @@
   const esc = value => str(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const safeUrl = value => { try { const u = new URL(str(value)); return ['http:','https:'].includes(u.protocol) ? u.href : ''; } catch (_) { return ''; } };
   const payloadOf = value => value && value.payload && typeof value.payload === 'object' ? value.payload : (value && typeof value === 'object' ? value : {});
-  const adaptive = value => {
+  const hasAdaptiveMarkers = value => {
     const p = payloadOf(value);
     return str(p.generation_version) === VERSION || str(p.design_version) === DESIGN_VERSION || str(p.adaptive_design?.mode) === 'adaptive';
   };
-  const communityRequired = value => payloadOf(value)?.community_research?.required === true;
+  const moneyChatScope = value => {
+    const p = payloadOf(value);
+    if (str(p.adaptive_scope) === 'money_chat') return true;
+    if (str(p.execution_source).toLowerCase() !== 'chat') return false;
+    if (str(p.runner_key) === 'chat-money-v1') return true;
+    return [p.logical_task_id,p.source_task_id,p.task_id,p.taskId].some(id => str(id) === MONEY_TASK_ID);
+  };
+  const adaptive = value => hasAdaptiveMarkers(value) && moneyChatScope(value);
+  const communityRequired = value => adaptive(value) && payloadOf(value)?.community_research?.required === true;
   const girlsTopicKey = value => {
     try {
       const u = new URL(str(value));
@@ -37,7 +46,11 @@
 
   function strictCommunityIssues(value) {
     const p = payloadOf(value), issues = [];
-    if (!adaptive(p) || !communityRequired(p)) return issues;
+    if (!adaptive(p)) return issues;
+    const research = p.community_research || {};
+    if (research.required !== true) issues.push('お金Chatではガルちゃん需要調査が必須');
+    if (str(research.status) !== 'strict') issues.push('ガルちゃん需要調査がstrict合格ではない');
+    if (Number(research.window_days) !== WINDOW_DAYS) issues.push(`ガルちゃんstrict期間は${WINDOW_DAYS}日で保存する`);
     const start = millis(researchStart(p));
     if (!start) issues.push('需要調査の開始日時が未保存');
     const byKey = new Map();
@@ -47,25 +60,25 @@
     }
     const threads = [...byKey.values()];
     if (threads.length < MIN_TOPICS) issues.push(`ガルちゃんの別トピック${MIN_TOPICS}本が未確認`);
-    const evaluated = threads.map(thread => {
-      const rowIssues = [], title = str(thread?.title) || str(thread?.url) || 'トピック';
+    for (const thread of threads.slice(0, MIN_TOPICS)) {
+      const title = str(thread?.title) || str(thread?.url) || 'トピック';
+      if (thread?.related_to_question !== true) issues.push(`${title}: 中心疑問との関連確認が未保存`);
       const published = millis(thread?.published_at);
-      if (!published) rowIssues.push(`${title}: 公開日時が未確認`);
-      else if (start && (published > start || start - published > WINDOW_DAYS * 86400000)) rowIssues.push(`${title}: 調査開始時点で直近${WINDOW_DAYS}日外`);
-      if (!Number.isFinite(Number(thread?.total_comments))) rowIssues.push(`${title}: 総コメント数が未確認`);
-      else if (Number(thread.total_comments) < MIN_COMMENTS) rowIssues.push(`${title}: 総コメント数${MIN_COMMENTS}件未満`);
-      if (!str(thread?.checked_at) || !str(thread?.checked_scope)) rowIssues.push(`${title}: 実読範囲または確認日時が未保存`);
+      if (!published) issues.push(`${title}: 公開日時が未確認`);
+      else if (start && (published > start || start - published > WINDOW_DAYS * 86400000)) issues.push(`${title}: 調査開始時点で直近${WINDOW_DAYS}日外`);
+      if (!Number.isFinite(Number(thread?.total_comments))) issues.push(`${title}: 総コメント数が未確認`);
+      else if (Number(thread.total_comments) < MIN_COMMENTS) issues.push(`${title}: 総コメント数${MIN_COMMENTS}件未満`);
+      if (!str(thread?.checked_at) || !str(thread?.checked_scope)) issues.push(`${title}: 実読範囲または確認日時が未保存`);
       const comments = arr(thread?.comments);
-      const trackable = comments.some(c => c?.comment_no != null && str(c?.summary) && safeUrl(c?.direct_url));
-      if (!trackable) rowIssues.push(`${title}: 追跡可能な実コメントと直URLが未保存`);
-      const missingReactions = comments.filter(c => c?.comment_no != null && str(c?.summary)).some(c => !Object.prototype.hasOwnProperty.call(c,'plus') || !Object.prototype.hasOwnProperty.call(c,'minus'));
-      if (missingReactions) rowIssues.push(`${title}: 取得不能な反応数はnullとして明示する`);
-      return { thread, issues: rowIssues };
-    });
-    const valid = evaluated.filter(row => row.issues.length === 0);
-    if (valid.length < MIN_TOPICS) {
-      issues.push(`直近${WINDOW_DAYS}日・各${MIN_COMMENTS}件以上・実読済みの別トピック${MIN_TOPICS}本が揃っていない`);
-      evaluated.forEach(row => issues.push(...row.issues));
+      const trackable = comments.filter(c => c?.comment_no != null && str(c?.summary));
+      if (!trackable.length) issues.push(`${title}: 追跡可能な実コメントが未保存`);
+      trackable.forEach(c => {
+        if (!Object.prototype.hasOwnProperty.call(c,'plus')) issues.push(`${title}: コメント${c.comment_no}のplusは未取得ならnullで保存する`);
+        if (!Object.prototype.hasOwnProperty.call(c,'minus')) issues.push(`${title}: コメント${c.comment_no}のminusは未取得ならnullで保存する`);
+      });
+    }
+    if (research.expanded === true || str(research.expanded_status)) {
+      issues.push('拡張調査をstrict合格として完成原稿に使用しない');
     }
     return [...new Set(issues)];
   }
@@ -76,14 +89,44 @@
     const slides = arr(p.draft_slides);
     if (!slides.length) return ['ページ別原稿が未保存'];
     if (!str(p.page_count_reason)) issues.push('ページ数の決定理由が未保存');
+    const placeholder = /(TBD|TODO|ここに|仮枠|仮画像|ダミー|placeholder)/i;
+    const allowedAssets = new Set(['user_photo','official_photo','primary_source_screenshot','verified_real_photo','generated_illustration','generated_photorealistic_image','simulation','diagram']);
     slides.forEach((slide, index) => {
       const page = Number(slide?.page) || index + 1;
       const c = slide?.page_contract || {};
-      const missing = ['reader_question','answer','visual_subject','visual_type','display_copy'].filter(key => !str(c[key]));
-      if (missing.length) issues.push(`${page}ページ目の画面設計が不足: ${missing.join(', ')}`);
-      if (!arr(c.source_refs || slide?.source_refs).length && !str(c.evidence_note)) issues.push(`${page}ページ目の根拠対応が未保存`);
+      const requiredKeys = ['reader_question','answer','visual_subject','visual_type','evidence','calculation','required_assets','display_copy','source_refs','source_type','status'];
+      const absent = requiredKeys.filter(key => !Object.prototype.hasOwnProperty.call(c,key) && !(key === 'source_refs' && Object.prototype.hasOwnProperty.call(slide,'source_refs')));
+      if (absent.length) issues.push(`${page}ページ目の画面設計キーが不足: ${absent.join(', ')}`);
+      const missingText = ['reader_question','answer','visual_subject','visual_type','display_copy','source_type','status'].filter(key => !str(c[key]));
+      if (missingText.length) issues.push(`${page}ページ目の画面設計が不足: ${missingText.join(', ')}`);
+      if (str(c.status) && str(c.status) !== 'ready') issues.push(`${page}ページ目がreadyではない`);
+      const refs = arr(c.source_refs || slide?.source_refs);
+      if (!refs.length && !str(c.evidence_note)) issues.push(`${page}ページ目の根拠対応が未保存`);
+      if (!Array.isArray(c.required_assets)) issues.push(`${page}ページ目のrequired_assetsは配列で保存する`);
+      else c.required_assets.forEach((asset,assetIndex) => {
+        if (!asset || typeof asset !== 'object' || !allowedAssets.has(str(asset.asset_type))) {
+          issues.push(`${page}ページ目の素材${assetIndex+1}に証拠種別が未保存`);
+          return;
+        }
+        if (asset.is_evidence === true && ['generated_illustration','generated_photorealistic_image','simulation','diagram'].includes(str(asset.asset_type))) {
+          issues.push(`${page}ページ目の生成・説明用素材を実物証拠として扱わない`);
+        }
+      });
+      const calc = c.calculation;
+      if (calc && typeof calc === 'object' && Object.keys(calc).length) {
+        const calcMissing = ['inputs','formula','unit','result','rounding'].filter(key => !Object.prototype.hasOwnProperty.call(calc,key) || calc[key] === '' || calc[key] == null);
+        if (calcMissing.length) issues.push(`${page}ページ目の計算条件が不足: ${calcMissing.join(', ')}`);
+      }
+      if (c.direct_quote === true) {
+        const quote = c.quote_source || {};
+        if (!str(quote.source_ref) || !str(quote.quote_text) || (!str(quote.identifier) && quote.comment_no == null)) {
+          issues.push(`${page}ページ目の直接引用に出典・識別情報が不足`);
+        }
+      }
+      const visible = [slide?.headline,slide?.body,c.display_copy].map(str).join(' ');
+      if (str(p.draft_status) === 'ready' && placeholder.test(visible)) issues.push(`${page}ページ目に仮枠・プレースホルダーが残っている`);
     });
-    return issues;
+    return [...new Set(issues)];
   }
 
   function lockIssues(value) {
@@ -110,6 +153,34 @@
     return issues;
   }
 
+  function sourceIssues(value) {
+    const p = payloadOf(value), issues = [];
+    if (!adaptive(p)) return issues;
+    const sources = arr(p.draft_sources);
+    if (!sources.length) return ['一次情報一覧が未保存'];
+    const sourceMap = new Map();
+    sources.forEach((source,index) => {
+      const id = str(source?.id);
+      if (!id) issues.push(`出典${index+1}: idが未保存`);
+      else sourceMap.set(id, source);
+      if (!safeUrl(sourceUrl(source))) issues.push(`出典${index+1}: URLが未保存または不正`);
+      if (!str(source?.source_type)) issues.push(`出典${index+1}: source_typeが未保存`);
+      if (!str(source?.checked_at)) issues.push(`出典${index+1}: checked_atが未保存`);
+    });
+    arr(p.draft_slides).forEach((slide,index) => {
+      const page = Number(slide?.page) || index + 1;
+      const c = slide?.page_contract || {};
+      const refs = arr(c.source_refs || slide?.source_refs).map(str).filter(Boolean);
+      refs.forEach(ref => { if (!sourceMap.has(ref)) issues.push(`${page}ページ目: 不明なsource_ref ${ref}`); });
+      const used = refs.map(ref => sourceMap.get(ref)).filter(Boolean);
+      const communityOnly = used.length && used.every(source => ['community','individual_experience'].includes(str(source?.source_type)));
+      if (communityOnly && !['quote','community_voice'].includes(str(c.visual_type))) {
+        issues.push(`${page}ページ目: UGC/個人体験だけを事実の根拠にしない`);
+      }
+    });
+    return [...new Set(issues)];
+  }
+
   function screenshotIssues(value) {
     const p = payloadOf(value), issues = [];
     if (!adaptive(p)) return issues;
@@ -128,7 +199,7 @@
     const base = typeof baseQuality === 'function' ? baseQuality(value) : {ready:true,issues:[]};
     const ignored = new Set(['ページ別原稿が不足']);
     const issues = arr(base?.issues).filter(issue => !ignored.has(str(issue)));
-    issues.push(...strictCommunityIssues(p), ...pageContractIssues(p), ...lockIssues(p), ...designIssues(p));
+    issues.push(...strictCommunityIssues(p), ...pageContractIssues(p), ...sourceIssues(p), ...lockIssues(p), ...designIssues(p));
     if (p.draft_status !== 'ready') issues.push('完成原稿が未確定');
     return {ready:[...new Set(issues)].length === 0, issues:[...new Set(issues)]};
   }
@@ -181,7 +252,7 @@
     const q = quality(item, null), pf = screenshotIssues(p);
     const issues = [...q.issues, ...pf];
     if (issues.length) throw new Error('画像化保留: ' + [...new Set(issues)].join('／'));
-    const slides = arr(p.draft_slides), sources = arr(p.draft_sources).filter(s => !/girlschannel|ガルちゃん|ガールズちゃんねる/i.test([sourceUrl(s),s?.label,s?.title].filter(Boolean).join(' ')));
+    const slides = arr(p.draft_slides), sources = arr(p.draft_sources).filter(s => !['community','individual_experience'].includes(str(s?.source_type)) && !/girlschannel|ガルちゃん|ガールズちゃんねる/i.test([sourceUrl(s),s?.label,s?.title].filter(Boolean).join(' ')));
     const lock = p.content_lock || {};
     return [
       '以下のLOCK済み確定原稿からカルーセル画像を作成してください。',
@@ -279,7 +350,7 @@
       dialog.dataset.adaptiveV226='1'; dialog.dataset.adaptiveId=careerId;
       const q=quality(item,null), pf=screenshotIssues(payloadOf(item)), issues=[...q.issues,...pf];
       const copyButton=dialog.querySelector('[data-copy]'); if(copyButton){copyButton.disabled=issues.length>0;copyButton.title=issues.join('／');copyButton.textContent='LOCK済み原稿を画像化用にコピー';}
-      const note=doc.createElement('section'); note.className='cce-internal'; note.dataset.adaptiveNotice='1'; note.innerHTML=issues.length?'<b>適応型仕様：画像化保留</b><p>'+esc(issues.join('／'))+'</p>':'<b>適応型仕様：画像化可能</b><p>14日需要ゲート、ページ設計、原稿LOCK、適応型デザインを確認済み。</p>';
+      const note=doc.createElement('section'); note.className='cce-internal'; note.dataset.adaptiveNotice='1'; note.innerHTML=issues.length?'<b>適応型仕様：画像化保留</b><p>'+esc(issues.join('／'))+'</p>':'<b>適応型仕様：画像化可能</b><p>お金Chat専用の14日需要ゲート、ページ設計、一次情報、原稿LOCK、適応型デザインを確認済み。</p>';
       dialog.querySelector('h3')?.insertAdjacentElement('beforebegin',note);
     }
     doc.addEventListener('click', async event => {
@@ -316,5 +387,5 @@
     doc.querySelectorAll('[data-fp-modal]').forEach(refreshFpModal);
   }
 
-  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,adaptive,communityRequired,girlsTopicKey,strictCommunityIssues,pageContractIssues,lockIssues,designIssues,screenshotIssues,quality,preflightIssues,buildHandoff,install};
+  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,MONEY_TASK_ID,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,moneyChatScope,adaptive,communityRequired,girlsTopicKey,strictCommunityIssues,pageContractIssues,sourceIssues,lockIssues,designIssues,screenshotIssues,quality,preflightIssues,buildHandoff,install};
 });
