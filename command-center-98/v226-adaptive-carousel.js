@@ -199,7 +199,8 @@
       if (missingText.length) issues.push(`${page}ページ目の画面設計が不足: ${missingText.join(', ')}`);
       if (str(c.status) && str(c.status) !== 'ready') issues.push(`${page}ページ目がreadyではない`);
       const refs = arr(c.source_refs || slide?.source_refs);
-      if (!refs.length && !str(c.evidence_note)) issues.push(`${page}ページ目の根拠対応が未保存`);
+      const housePrimaryOptional = lane(p)==='house' && c.primary_evidence_required===false;
+      if (!refs.length && !str(c.evidence_note) && !housePrimaryOptional) issues.push(`${page}ページ目の根拠対応が未保存`);
       if (!Array.isArray(c.required_assets)) issues.push(`${page}ページ目のrequired_assetsは配列で保存する`);
       else c.required_assets.forEach((asset,assetIndex) => {
         if (!asset || typeof asset !== 'object' || !allowedAssets.has(str(asset.asset_type))) {
