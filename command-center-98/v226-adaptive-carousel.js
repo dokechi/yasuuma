@@ -807,11 +807,42 @@
       const target=modal.querySelector('.fp-preflight')||modal.querySelector('.fp-draft-slides');
       target?.insertAdjacentHTML('beforebegin',html);
     }
+    const structureRenderState=item=>{
+      const p=payloadOf(item);
+      if(lane(p)!=='money'||str(p.structure_contract_version)!==MONEY_STRUCTURE_VERSION)return'';
+      const spine=p.story_spine||{};
+      return [str(spine.central_question),str(spine.final_answer),...arr(spine.beats).map(beat=>[beat?.page,beat?.role,beat?.phenomenon].map(str).join('~'))].join('::');
+    };
+    const structureHtml=item=>{
+      const p=payloadOf(item),renderState=structureRenderState(item);
+      if(!renderState)return'';
+      const spine=p.story_spine||{},beats=arr(spine.beats);
+      return '<section class="fp-story-spine" data-money-structure="'+esc(item.id)+'" data-structure-render-state="'+esc(renderState)+'">'
+        +'<h4>投稿の背骨</h4>'
+        +'<dl><dt>中心疑問</dt><dd>'+esc(spine.central_question||'')+'</dd><dt>最終回答</dt><dd>'+esc(spine.final_answer||'')+'</dd></dl>'
+        +'<div class="fp-story-beats">'+beats.map(beat=>'<div><b>'+esc(beat?.page||'')+'</b><small>'+esc(beat?.role||'')+'</small><span>'+esc(beat?.phenomenon||'')+'</span></div>').join('')+'</div>'
+        +'</section>';
+    };
+    function renderStructure(modal,item){
+      const current=modal.querySelector('[data-money-structure]');
+      const renderState=structureRenderState(item),html=structureHtml(item);
+      if(!html){current?.remove();return;}
+      if(current){
+        if(current.dataset.structureRenderState===renderState)return;
+        current.outerHTML=html;
+        return;
+      }
+      const entrance=modal.querySelector('[data-money-entrance]');
+      if(entrance){entrance.insertAdjacentHTML('afterend',html);return;}
+      const target=modal.querySelector('.fp-preflight')||modal.querySelector('.fp-draft-slides');
+      target?.insertAdjacentHTML('beforebegin',html);
+    }
 
     function refreshFpModal(modal) {
       const button=modal.querySelector('[data-fp-copy-package]'); if(!button) return;
       const item=lookup(button.dataset.fpCopyPackage); if(!item || !adaptive(item)) return;
       renderEntrance(modal,item);
+      renderStructure(modal,item);
       const p=payloadOf(item), section=modal.querySelector('.fp-preflight');
       if(section && section.dataset.adaptiveV226!=='1') {
         section.dataset.adaptiveV226='1';
@@ -894,7 +925,7 @@
       if(careerCopy){const dialog=careerCopy.closest('.cce-dialog'),item=lookup(dialog?.dataset.adaptiveId||careerId);if(item&&adaptive(item)){event.preventDefault();event.stopImmediatePropagation();try{const editorialIssues=typeof root.CCChatEditorial?.issues==='function'?arr(root.CCChatEditorial.issues(item)):[];if(editorialIssues.length)throw new Error(editorialIssues.join('／'));await copy(buildHandoff(item,null),careerCopy);}catch(e){const feedback=dialog?.querySelector('[data-feedback]');if(feedback)feedback.textContent='コピー保留：'+e.message;}return;}}
     }, true);
     if(!doc.getElementById('adaptiveEntranceStyle')){
-      const style=doc.createElement('style');style.id='adaptiveEntranceStyle';style.textContent='.fp-entrance-picker{margin-top:10px;padding:10px 12px;background:#fff;border:2px solid #4d5f7a}.fp-entrance-picker h4{margin:0 0 4px}.fp-entrance-picker>p{margin:0 0 8px;color:#555}.fp-entrance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.fp-entrance-option{min-width:0;text-align:left;padding:9px;background:#f5f5f5;border:2px solid;border-color:#fff #777 #777 #fff;font:inherit;cursor:pointer}.fp-entrance-option b,.fp-entrance-option small,.fp-entrance-option span,.fp-entrance-option em{display:block}.fp-entrance-option small{margin-top:2px;color:#555}.fp-entrance-option span{margin-top:6px;line-height:1.45;font-weight:700}.fp-entrance-option em{margin-top:7px;color:#006b60;font-size:11px;font-style:normal}.fp-entrance-option.selected{background:#e7f4ee;border-color:#277267;box-shadow:inset 0 0 0 2px #fff}.fp-entrance-option:focus-visible{outline:3px solid #000;outline-offset:2px}@media(max-width:700px){.fp-entrance-grid{grid-template-columns:1fr}}';doc.head.append(style);
+      const style=doc.createElement('style');style.id='adaptiveEntranceStyle';style.textContent='.fp-entrance-picker{margin-top:10px;padding:10px 12px;background:#fff;border:2px solid #4d5f7a}.fp-entrance-picker h4{margin:0 0 4px}.fp-entrance-picker>p{margin:0 0 8px;color:#555}.fp-entrance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.fp-entrance-option{min-width:0;text-align:left;padding:9px;background:#f5f5f5;border:2px solid;border-color:#fff #777 #777 #fff;font:inherit;cursor:pointer}.fp-entrance-option b,.fp-entrance-option small,.fp-entrance-option span,.fp-entrance-option em{display:block}.fp-entrance-option small{margin-top:2px;color:#555}.fp-entrance-option span{margin-top:6px;line-height:1.45;font-weight:700}.fp-entrance-option em{margin-top:7px;color:#006b60;font-size:11px;font-style:normal}.fp-entrance-option.selected{background:#e7f4ee;border-color:#277267;box-shadow:inset 0 0 0 2px #fff}.fp-entrance-option:focus-visible{outline:3px solid #000;outline-offset:2px}.fp-story-spine{margin-top:10px;padding:10px 12px;background:#fff;border:2px solid #6b5d4a}.fp-story-spine h4{margin:0 0 7px}.fp-story-spine dl{display:grid;grid-template-columns:72px 1fr;gap:4px 8px;margin:0 0 9px}.fp-story-spine dt{font-weight:700}.fp-story-spine dd{margin:0}.fp-story-beats{display:grid;gap:5px}.fp-story-beats>div{display:grid;grid-template-columns:26px 90px 1fr;gap:7px;align-items:start;padding:6px 7px;background:#f7f4ef;border:1px solid #c9c0b5}.fp-story-beats b{font-size:12px}.fp-story-beats small{color:#555}.fp-story-beats span{font-weight:700;line-height:1.4}@media(max-width:700px){.fp-entrance-grid{grid-template-columns:1fr}.fp-story-spine dl{grid-template-columns:1fr}.fp-story-beats>div{grid-template-columns:24px 1fr}.fp-story-beats span{grid-column:2}}';doc.head.append(style);
     }
     const refreshAddedNode=node=>{
       if(!node||node.nodeType!==1)return;
