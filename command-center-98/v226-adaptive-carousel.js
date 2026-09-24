@@ -18,6 +18,7 @@
   const HOUSE_RESEARCH_VERSION = 'community-14d-house-chat-v1';
   const HOUSE_DESIGN_VERSION = 'adaptive-visual-house-chat-v1';
   const MONEY_ENTRANCE_VERSION = 'money-entrance-v1-20260924';
+  const MONEY_STRUCTURE_VERSION = 'money-story-spine-v1-20260924';
   const TASK_IDS = {
     money:'6a9e5826d4888191a4d82a643e6d5adf',
     house:'6aa77eb5ce7881919d8dc62554833b60',
@@ -70,6 +71,10 @@
       snapshot.entrance_options=arr(p.entrance_options);
       snapshot.selected_entrance=p.selected_entrance??null;
       snapshot.entrance_selection=p.entrance_selection??null;
+    }
+    if (str(p.structure_contract_version)===MONEY_STRUCTURE_VERSION) {
+      snapshot.structure_contract_version=p.structure_contract_version;
+      snapshot.story_spine=p.story_spine??null;
     }
     return snapshot;
   };
@@ -201,6 +206,46 @@
       evaluated.forEach(row=>issues.push(...row.issues));
     }
     if (research.expanded === true || str(research.expanded_status)) issues.push('拡張調査をstrict合格として完成原稿に使用しない');
+    return [...new Set(issues)];
+  }
+
+  const normStructureText = value => str(value).replace(/\s+/g,' ').trim();
+  function structureIssues(value) {
+    const p=payloadOf(value),issues=[];
+    if(!moneyChatScope(p) || str(p.entrance_contract_version)!==MONEY_ENTRANCE_VERSION) return issues;
+    if(str(p.structure_contract_version)!==MONEY_STRUCTURE_VERSION){
+      issues.push('お金Chatのstory_spine契約が未保存');
+      return issues;
+    }
+    const spine=p.story_spine;
+    if(!spine || typeof spine!=='object' || Array.isArray(spine)){
+      issues.push('story_spineが未保存');
+      return issues;
+    }
+    if(!str(spine.central_question)) issues.push('story_spine.central_questionが未保存');
+    if(!str(spine.final_answer)) issues.push('story_spine.final_answerが未保存');
+    const selected=str(p.question_lineage?.selected_question);
+    if(selected && str(spine.central_question) && normStructureText(spine.central_question)!==normStructureText(selected)){
+      issues.push('story_spine.central_questionが中心疑問と一致しない');
+    }
+    const slides=arr(p.draft_slides),beats=arr(spine.beats);
+    if(beats.length!==slides.length) issues.push('story_spine.beats数がページ数と一致しない');
+    const seen=new Set();
+    slides.forEach((slide,index)=>{
+      const page=Number(slide?.page)||index+1,c=slide?.page_contract||{},beat=beats[index]||{};
+      if(Number(beat?.page)!==page) issues.push(`${page}ページ目のstory_spine beat番号が一致しない`);
+      if(!str(beat?.role)) issues.push(`${page}ページ目のstory_spine.roleが未保存`);
+      if(!str(beat?.phenomenon)) issues.push(`${page}ページ目のstory_spine.phenomenonが未保存`);
+      if(!str(c.phenomenon)) issues.push(`${page}ページ目のpage_contract.phenomenonが未保存`);
+      if(str(beat?.phenomenon) && str(c.phenomenon) && normStructureText(beat.phenomenon)!==normStructureText(c.phenomenon)){
+        issues.push(`${page}ページ目のphenomenonがstory_spineと一致しない`);
+      }
+      const key=normStructureText(c.phenomenon).toLowerCase();
+      if(key){
+        if(seen.has(key)) issues.push(`${page}ページ目のphenomenonが別ページと重複している`);
+        seen.add(key);
+      }
+    });
     return [...new Set(issues)];
   }
 
@@ -564,7 +609,7 @@
     const base = typeof baseQuality === 'function' ? baseQuality(value) : {ready:true,issues:[]};
     const ignored = new Set(['ページ別原稿が不足']);
     const issues = arr(base?.issues).filter(issue => !ignored.has(str(issue)));
-    issues.push(...strictCommunityIssues(p), ...pageContractIssues(p), ...sourceIssues(p), ...publicOutputIssues(p), ...lockIssues(p), ...finalReviewIssues(p), ...designIssues(p), ...houseSpecificIssues(p), ...entranceIssues(p));
+    issues.push(...strictCommunityIssues(p), ...structureIssues(p), ...pageContractIssues(p), ...sourceIssues(p), ...publicOutputIssues(p), ...lockIssues(p), ...finalReviewIssues(p), ...designIssues(p), ...houseSpecificIssues(p), ...entranceIssues(p));
     if (p.draft_status !== 'ready') issues.push('完成原稿が未確定');
     return {ready:[...new Set(issues)].length === 0, issues:[...new Set(issues)]};
   }
@@ -593,6 +638,7 @@
       str(slide?.body || slide?.text || slide?.copy) ? `legacy_body: ${str(slide?.body || slide?.text || slide?.copy)}` : '',
       `読者の疑問: ${str(c.reader_question)}`,
       `このページの答え: ${str(c.answer)}`,
+      `現象: ${str(c.phenomenon)}`,
       `見せる対象: ${str(c.visual_subject)}`,
       `表現: ${str(c.visual_type)}`,
       `計算必須: ${c.calculation_required === true ? 'true' : 'false'}`,
@@ -614,6 +660,18 @@
       str(usage.usage_type) ? `・Design System利用区分: ${str(usage.usage_type)}` : '',
       safeUrl(usage.source_url) ? `・参照元: ${safeUrl(usage.source_url)}` : ''
     ].filter(Boolean);
+  }
+
+  function storySpineText(p) {
+    if(str(p.structure_contract_version)!==MONEY_STRUCTURE_VERSION) return [];
+    const spine=p.story_spine||{};
+    return [
+      '【投稿の背骨｜制作内部情報・画像内に文字として載せない】',
+      `中心疑問: ${str(spine.central_question)}`,
+      `最終回答: ${str(spine.final_answer)}`,
+      ...arr(spine.beats).map(beat=>`${Number(beat?.page)||''}: ${str(beat?.role)}｜${str(beat?.phenomenon)}`),
+      ''
+    ];
   }
 
   function productionText(p) {
@@ -670,6 +728,7 @@
       '【タイトル】', draftTitle(item,p), '',
       '【中心疑問】', str(p.question_lineage?.selected_question), '',
       '【ページ数の理由】', str(p.page_count_reason), '',
+      ...storySpineText(p),
       '【ページ別のLOCK済み原稿・画面設計】', slides.map((s,i)=>pageText(s,i,slides.length)).join('\n\n'), '',
       '【スクショ素材】', arr(p.screenshot_requests).length ? arr(p.screenshot_requests).map(row=>[
         row?.id,row?.label,row?.url,row?.capture_range||row?.capture_area,row?.purpose,row?.slide_no?`使用ページ:${row.slide_no}`:'',`担当:${str(p.screenshot_decisions?.[row?.id])}`
@@ -853,5 +912,5 @@
     doc.querySelectorAll('[data-fp-modal]').forEach(refreshFpModal);
   }
 
-  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,LEGACY_MONEY_VERSION,LEGACY_MONEY_RESEARCH_VERSION,LEGACY_MONEY_DESIGN_VERSION,HOUSE_VERSION,HOUSE_RESEARCH_VERSION,HOUSE_DESIGN_VERSION,MONEY_ENTRANCE_VERSION,TASK_IDS,MONEY_CHAT_TASK_ID,HOUSE_CHAT_TASK_ID,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,moneyChatScope,houseChatScope,adaptiveChatScope,adaptive,communityRequired,girlsCommentInfo,girlsTopicKey,strictThreadEligible,lockSnapshot,strictCommunityIssues,pageContractIssues,sourceIssues,publicOutputIssues,lockIssues,finalReviewIssues,designIssues,houseSpecificIssues,entranceIssues,screenshotIssues,quality,preflightIssues,productionText,buildHandoff,install};
+  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,LEGACY_MONEY_VERSION,LEGACY_MONEY_RESEARCH_VERSION,LEGACY_MONEY_DESIGN_VERSION,HOUSE_VERSION,HOUSE_RESEARCH_VERSION,HOUSE_DESIGN_VERSION,MONEY_ENTRANCE_VERSION,MONEY_STRUCTURE_VERSION,TASK_IDS,MONEY_CHAT_TASK_ID,HOUSE_CHAT_TASK_ID,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,moneyChatScope,houseChatScope,adaptiveChatScope,adaptive,communityRequired,girlsCommentInfo,girlsTopicKey,strictThreadEligible,lockSnapshot,strictCommunityIssues,structureIssues,pageContractIssues,sourceIssues,publicOutputIssues,lockIssues,finalReviewIssues,designIssues,houseSpecificIssues,entranceIssues,screenshotIssues,quality,preflightIssues,productionText,buildHandoff,install};
 });
