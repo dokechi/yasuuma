@@ -2,6 +2,37 @@
   if(typeof sourcingCostHtml!=='function'||typeof sourcingEvidence!=='function')return;
 
   const legacySourcingCostHtml=sourcingCostHtml;
+  const legacyIsReadySourcing=typeof isReadySourcing==='function'?isReadySourcing:null;
+
+  function isElecomCandidate(x){
+    const p=x?.payload||{};
+    const text=[x?.title,p.brand,p.brand_name,p.manufacturer,p.maker,p.product_name,p.supplier]
+      .filter(Boolean).join(' ').toLowerCase();
+    return text.includes('elecom')||text.includes('エレコム');
+  }
+
+  function elecomUnitCost(x){
+    const p=x?.payload||{};
+    const raw=[
+      p.unit_effective_cost_yen,
+      p.effective_unit_cost_yen,
+      p.effective_cost_yen,
+      p.sourcing_cost,
+      p.purchase_price_yen,
+      p.supplier_price_yen
+    ].find(v=>v!==undefined&&v!==null&&String(v).trim()!=='');
+    const n=typeof raw==='string'?Number(raw.replace(/[^0-9.-]/g,'')):Number(raw);
+    return Number.isFinite(n)?n:null;
+  }
+
+  if(legacyIsReadySourcing){
+    isReadySourcing=function(x){
+      if(!legacyIsReadySourcing(x))return false;
+      if(!isElecomCandidate(x))return true;
+      const unit=elecomUnitCost(x);
+      return unit!==null&&unit>=1000;
+    };
+  }
 
   function asArray(value){
     if(Array.isArray(value))return value;
@@ -153,5 +184,5 @@
     if(typeof app==='object'&&app.view==='sourcing'&&typeof renderSourcing==='function')renderSourcing();
   }catch(_){}
 
-  window.CCSourcingMercariHistory={version:'229.1',normalizedHistory};
+  window.CCSourcingMercariHistory={version:'229.3',normalizedHistory};
 })();
