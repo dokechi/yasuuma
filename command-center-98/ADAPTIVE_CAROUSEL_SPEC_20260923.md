@@ -578,3 +578,26 @@ required screenshotがすべて取得済み、またはrequired screenshotが0�
 2. content_lock.snapshot再作成
 3. final_review再実行
 4. final_review.reviewed_snapshotを新LOCK snapshotへ更新
+
+
+## お金Chat 入口3案
+
+新規お金Chat adaptive候補では、本文を変えず入口だけ3案から選べる。
+
+- Michael: 答え先出し
+- Marina: 思い込みが崩れる違和感
+- Ben: 強い数字・事実から分解
+
+payload:
+
+- `entrance_contract_version=money-entrance-v1-20260924`
+- `entrance_options`: Michael / Marina / Ben の3件
+- `selected_entrance`
+- `entrance_selection`
+
+3案すべてを `final_review.reviewed_entrances` へ保存し、事前照合済みの文だけ切り替える。
+
+司令塔の原稿モーダルでは3案をクリックして選択できる。
+選択時は1ページ目の `headline/body/page_contract.display_copy` を事前照合済み案へ差し替え、`draft_revision`、`content_lock`、`final_review.checked_revision` を選択案へ合わせる。
+
+Work版には適用しない。
