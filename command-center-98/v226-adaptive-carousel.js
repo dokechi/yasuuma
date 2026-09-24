@@ -837,10 +837,17 @@
     if(!doc.getElementById('adaptiveEntranceStyle')){
       const style=doc.createElement('style');style.id='adaptiveEntranceStyle';style.textContent='.fp-entrance-picker{margin-top:10px;padding:10px 12px;background:#fff;border:2px solid #4d5f7a}.fp-entrance-picker h4{margin:0 0 4px}.fp-entrance-picker>p{margin:0 0 8px;color:#555}.fp-entrance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.fp-entrance-option{min-width:0;text-align:left;padding:9px;background:#f5f5f5;border:2px solid;border-color:#fff #777 #777 #fff;font:inherit;cursor:pointer}.fp-entrance-option b,.fp-entrance-option small,.fp-entrance-option span,.fp-entrance-option em{display:block}.fp-entrance-option small{margin-top:2px;color:#555}.fp-entrance-option span{margin-top:6px;line-height:1.45;font-weight:700}.fp-entrance-option em{margin-top:7px;color:#006b60;font-size:11px;font-style:normal}.fp-entrance-option.selected{background:#e7f4ee;border-color:#277267;box-shadow:inset 0 0 0 2px #fff}.fp-entrance-option:focus-visible{outline:3px solid #000;outline-offset:2px}@media(max-width:700px){.fp-entrance-grid{grid-template-columns:1fr}}';doc.head.append(style);
     }
+    const refreshAddedNode=node=>{
+      if(!node||node.nodeType!==1)return;
+      if(node.matches?.('[data-fp-modal]'))refreshFpModal(node);
+      else node.querySelectorAll?.('[data-fp-modal]').forEach(refreshFpModal);
+      if(node.matches?.('dialog.cce-dialog'))refreshCareer(node);
+      else node.querySelectorAll?.('dialog.cce-dialog').forEach(refreshCareer);
+    };
     const observer=new root.MutationObserver(mutations=>{
-      if(!mutations.some(m=>m.addedNodes?.length))return;
-      doc.querySelectorAll('[data-fp-modal]').forEach(refreshFpModal);
-      doc.querySelectorAll('dialog.cce-dialog').forEach(refreshCareer);
+      mutations.forEach(mutation=>{
+        mutation.addedNodes?.forEach(refreshAddedNode);
+      });
     });
     observer.observe(doc.body,{childList:true,subtree:true});
     doc.querySelectorAll('[data-fp-modal]').forEach(refreshFpModal);
