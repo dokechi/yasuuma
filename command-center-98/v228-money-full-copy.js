@@ -219,7 +219,7 @@
         scheduled = 0;
         const pending = [...queue]; queue.clear();
         pending.forEach(modal => { try { refresh(modal); } catch (error) { notify(error.message, 'bad'); } });
-      }
+      });
     }
     function attach(modal) {
       if (observers.has(modal)) return;
