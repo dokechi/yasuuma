@@ -72,6 +72,17 @@ moneyEntrance.entrance_options=[
 ];
 moneyEntrance.selected_entrance='michael';
 moneyEntrance.entrance_selection={selected_key:'michael',selected_at:now,source:'test'};
+moneyEntrance.structure_contract_version=A.MONEY_STRUCTURE_VERSION;
+moneyEntrance.story_spine={
+ central_question:'Q',
+ final_answer:'A',
+ beats:[
+  {page:1,role:'entrance',phenomenon:'結論と価格水準のズレ'},
+  {page:2,role:'decision',phenomenon:'比較して判断する'}
+ ]
+};
+moneyEntrance.draft_slides[0].page_contract.phenomenon=moneyEntrance.story_spine.beats[0].phenomenon;
+moneyEntrance.draft_slides[1].page_contract.phenomenon=moneyEntrance.story_spine.beats[1].phenomenon;
 moneyEntrance.final_review.reviewed_entrances=['michael','marina','ben'];
 moneyEntrance.draft_slides[0].headline=moneyEntrance.entrance_options[0].headline;
 moneyEntrance.draft_slides[0].body=moneyEntrance.entrance_options[0].body;
@@ -80,7 +91,29 @@ moneyEntrance.draft_revision='money-entry-r1-michael';
 moneyEntrance.final_review.checked_revision=moneyEntrance.draft_revision;
 moneyEntrance.content_lock={locked:true,draft_revision:moneyEntrance.draft_revision,locked_at:now,snapshot:A.lockSnapshot(moneyEntrance)};
 assert.deepEqual(A.entranceIssues(moneyEntrance),[]);
+assert.deepEqual(A.structureIssues(moneyEntrance),[]);
 assert.equal(A.quality({payload:moneyEntrance,title:'money entrance'},()=>({ready:true,issues:[]})).ready,true);
+
+const missingStorySpine=structuredClone(moneyEntrance);
+delete missingStorySpine.story_spine;
+assert.match(A.structureIssues(missingStorySpine).join(' '),/story_spineが未保存/);
+
+const missingPhenomenon=structuredClone(moneyEntrance);
+delete missingPhenomenon.draft_slides[0].page_contract.phenomenon;
+assert.match(A.structureIssues(missingPhenomenon).join(' '),/page_contract\.phenomenonが未保存/);
+
+const mismatchedPhenomenon=structuredClone(moneyEntrance);
+mismatchedPhenomenon.draft_slides[1].page_contract.phenomenon='別の現象';
+assert.match(A.structureIssues(mismatchedPhenomenon).join(' '),/phenomenonがstory_spineと一致しない/);
+
+const duplicatePhenomenon=structuredClone(moneyEntrance);
+duplicatePhenomenon.story_spine.beats[1].phenomenon=duplicatePhenomenon.story_spine.beats[0].phenomenon;
+duplicatePhenomenon.draft_slides[1].page_contract.phenomenon=duplicatePhenomenon.draft_slides[0].page_contract.phenomenon;
+assert.match(A.structureIssues(duplicatePhenomenon).join(' '),/phenomenonが別ページと重複/);
+
+const changedSpineAfterLock=structuredClone(moneyEntrance);
+changedSpineAfterLock.story_spine.final_answer='LOCK後に変更';
+assert.match(A.lockIssues(changedSpineAfterLock).join(' '),/LOCK後に原稿内容が変更/);
 
 const moneyEntranceMissing=structuredClone(moneyEntrance);
 moneyEntranceMissing.selected_entrance='';
