@@ -62,6 +62,38 @@ assert.deepEqual(A.designIssues(base),[]);
 const q=A.quality({payload:base,title:'title'},()=>({ready:false,issues:['ページ別原稿が不足']}));
 assert.equal(q.ready,true);
 
+const moneyEntrance=structuredClone(base);
+moneyEntrance.entrance_contract_version=A.MONEY_ENTRANCE_VERSION;
+moneyEntrance.entrance_base_revision='money-entry-r1';
+moneyEntrance.entrance_options=[
+ {key:'michael',label:'Michael',approach:'答え先出し',hook:'1億円でも豪邸価格じゃない',headline:'1億円でも、豪邸価格じゃない。',body:'東京23区では相場そのものが上がっている。',display_copy:'1億円でも、東京23区では「豪邸価格」じゃない。\n新築マンションの平均は1億6,884万円。'},
+ {key:'marina',label:'Marina',approach:'思い込みを崩す',hook:'1億円ならもっと豪華だと思ってた',headline:'1億円なら、もっと豪華だと思ってた。',body:'値段の中身を㎡単価で見る。',display_copy:'1億円なら、もっと広くて豪華だと思ってた。\nでも東京23区では、そう見えない理由がある。'},
+ {key:'ben',label:'Ben',approach:'強い数字から分解',hook:'23区中19区が平均1億円超え',headline:'23区中19区が、平均1億円超え。',body:'1億円が高級の目印ではなくなった。',display_copy:'23区中19区が、平均1億円超え。\n東京23区の新築マンション平均は1億6,884万円。'}
+];
+moneyEntrance.selected_entrance='michael';
+moneyEntrance.entrance_selection={selected_key:'michael',selected_at:now,source:'test'};
+moneyEntrance.final_review.reviewed_entrances=['michael','marina','ben'];
+moneyEntrance.draft_slides[0].headline=moneyEntrance.entrance_options[0].headline;
+moneyEntrance.draft_slides[0].body=moneyEntrance.entrance_options[0].body;
+moneyEntrance.draft_slides[0].page_contract.display_copy=moneyEntrance.entrance_options[0].display_copy;
+moneyEntrance.draft_revision='money-entry-r1-michael';
+moneyEntrance.final_review.checked_revision=moneyEntrance.draft_revision;
+moneyEntrance.content_lock={locked:true,draft_revision:moneyEntrance.draft_revision,locked_at:now,snapshot:A.lockSnapshot(moneyEntrance)};
+assert.deepEqual(A.entranceIssues(moneyEntrance),[]);
+assert.equal(A.quality({payload:moneyEntrance,title:'money entrance'},()=>({ready:true,issues:[]})).ready,true);
+
+const moneyEntranceMissing=structuredClone(moneyEntrance);
+moneyEntranceMissing.selected_entrance='';
+assert.match(A.entranceIssues(moneyEntranceMissing).join(' '),/入口案が未選択/);
+
+const moneyEntranceMismatch=structuredClone(moneyEntrance);
+moneyEntranceMismatch.selected_entrance='ben';
+assert.match(A.entranceIssues(moneyEntranceMismatch).join(' '),/1ページ目display_copyが一致しない/);
+
+const moneyEntranceUnreviewed=structuredClone(moneyEntrance);
+moneyEntranceUnreviewed.final_review.reviewed_entrances=['michael','marina'];
+assert.match(A.entranceIssues(moneyEntranceUnreviewed).join(' '),/入口案benが最終照合済みではない/);
+
 const noResearchStarted=structuredClone(base);
 delete noResearchStarted.research_started_at;
 noResearchStarted.content_lock.snapshot=A.lockSnapshot(noResearchStarted);
