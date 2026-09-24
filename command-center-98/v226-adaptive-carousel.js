@@ -787,6 +787,14 @@
             const data=await response.json();if(!response.ok||!data?.ok)throw new Error(data?.error||('HTTP '+response.status));
             const rows=(typeof app!=='undefined'?app.items:[])||[],idx=rows.findIndex(row=>String(row.id)===String(item.id));
             if(idx>=0&&data.item)rows[idx]={...rows[idx],...data.item};
+            if(modal&&data.item){
+              const fresh=payloadOf(data.item),first=arr(fresh.draft_slides)[0]||{};
+              const cover=modal.querySelector('.fp-draft-cover b');if(cover)cover.textContent=str(fresh.draft_cover||fresh.post_title||data.item.title);
+              const firstCard=modal.querySelector('.fp-draft-slide');
+              const h4=firstCard?.querySelector('h4'),body=firstCard?.querySelector('p');
+              if(h4)h4.textContent=str(first.headline||first.title||first.heading);
+              if(body){body.textContent='';str(first.body||first.text||first.copy).split('\n').forEach((line,i)=>{if(i)body.append(doc.createElement('br'));body.append(doc.createTextNode(line));});}
+            }
             if(typeof root.toast==='function')root.toast((data.selectedLabel||key)+'を入口に選びました','good');
             if(modal)refreshFpModal(modal);
           }catch(e){entranceChoice.disabled=false;if(typeof root.toast==='function')root.toast(e.message||'入口を保存できませんでした','bad');}
