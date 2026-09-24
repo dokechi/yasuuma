@@ -1,0 +1,25 @@
+name: Money canonical review regression
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'command-center-98/v228-money-full-copy.js'
+      - 'command-center-98/v228-money-full-copy.test.cjs'
+      - 'command-center-98/v226-adaptive-carousel.js'
+      - 'command-center-98/v226-adaptive-carousel.test.cjs'
+      - '.github/workflows/money-canonical-review.yml'
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and actual adaptive-validator regressions
+        run: |
+          node --check command-center-98/v228-money-full-copy.js
+          node command-center-98/v228-money-full-copy.test.cjs
