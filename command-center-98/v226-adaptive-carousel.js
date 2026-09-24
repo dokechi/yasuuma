@@ -716,9 +716,17 @@
       const current=str(p.screenshot_decisions?.[row?.id]);
       return '<article class="fp-shot '+(row?.required?'required':'')+'"><div><b>'+(row?.required?'必須':'任意')+'</b><strong>'+esc(row?.label||'スクショ候補')+'</strong></div>'+(safeUrl(row?.url)?'<a href="'+esc(row.url)+'" target="_blank" rel="noopener">撮影元を開く</a>':'')+'<dl><dt>撮る範囲</dt><dd>'+esc(row?.capture_range||row?.capture_area||'')+'</dd><dt>使う理由</dt><dd>'+esc(row?.purpose||'')+'</dd></dl><label>画像の用意<select data-fp-shot-decision="'+esc(row?.id||'')+'"><option value="">選んでください</option><option value="assistant" '+(current==='assistant'?'selected':'')+'>まずAIが取得を試す</option><option value="user" '+(current==='user'?'selected':'')+'>自分でスクショを用意</option>'+(row?.required?'':'<option value="skip" '+(current==='skip'?'selected':'')+'>今回は使わない</option>')+'</select></label></article>';
     }).join('');
-    const entranceHtml = item => {
+    const entranceRenderState = item => {
       const p=payloadOf(item);
       if(lane(p)!=='money'||str(p.entrance_contract_version)!==MONEY_ENTRANCE_VERSION)return'';
+      const optionState=arr(p.entrance_options).map(option=>[
+        str(option?.key).toLowerCase(),str(option?.label),str(option?.approach),str(option?.hook),str(option?.display_copy)
+      ].join('~')).join('||');
+      return [str(p.selected_entrance).toLowerCase(),str(p.draft_revision),optionState].join('::');
+    };
+    const entranceHtml = item => {
+      const p=payloadOf(item),renderState=entranceRenderState(item);
+      if(!renderState)return'';
       const selected=str(p.selected_entrance).toLowerCase();
       const cards=arr(p.entrance_options).map(option=>{
         const key=str(option?.key).toLowerCase(),active=key===selected;
@@ -726,17 +734,19 @@
           +'<b>'+esc(option?.label||key)+'</b><small>'+esc(option?.approach||'')+'</small><span>'+esc(option?.hook||option?.display_copy||'')+'</span>'
           +(active?'<em>選択中</em>':'<em>この入口を使う</em>')+'</button>';
       }).join('');
-      return '<section class="fp-entrance-picker" data-money-entrance="'+esc(item.id)+'"><h4>入口の型 3案</h4><p>Michael / Marina / Ben の3案はすべて事前照合済み。クリックすると1枚目だけ切り替えます。</p><div class="fp-entrance-grid">'+cards+'</div></section>';
+      return '<section class="fp-entrance-picker" data-money-entrance="'+esc(item.id)+'" data-entrance-render-state="'+esc(renderState)+'"><h4>入口の型 3案</h4><p>Michael / Marina / Ben の3案はすべて事前照合済み。クリックすると1枚目だけ切り替えます。</p><div class="fp-entrance-grid">'+cards+'</div></section>';
     };
     function renderEntrance(modal,item){
       const current=modal.querySelector('[data-money-entrance]');
-      const html=entranceHtml(item);
+      const renderState=entranceRenderState(item),html=entranceHtml(item);
       if(!html){current?.remove();return;}
-      if(current) current.outerHTML=html;
-      else {
-        const target=modal.querySelector('.fp-preflight')||modal.querySelector('.fp-draft-slides');
-        target?.insertAdjacentHTML('beforebegin',html);
+      if(current){
+        if(current.dataset.entranceRenderState===renderState)return;
+        current.outerHTML=html;
+        return;
       }
+      const target=modal.querySelector('.fp-preflight')||modal.querySelector('.fp-draft-slides');
+      target?.insertAdjacentHTML('beforebegin',html);
     }
 
     function refreshFpModal(modal) {
