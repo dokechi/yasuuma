@@ -81,12 +81,25 @@
     ];
   }
   function buildReviewCopy(item, adaptive) {
-    const p = payload(item), state = inspect(item, adaptive), spine = p.story_spine || {};
+    const p = payload(item), state = inspect(item, adaptive), spine = p.story_spine || {}, logic=p.logic_institution_review||{};
+    const logicLines = p.logic_review_contract_version ? [
+      '【制度・理屈ダブルチェック】',
+      '状態: ' + (text(logic.status)||'未確認'),
+      '論理: ' + (text(logic.logic_verdict)||'未確認'),
+      '制度: ' + (text(logic.institution_verdict)==='not_applicable'?'対象外':(text(logic.institution_verdict)||'未確認')),
+      '一次情報鮮度: ' + (text(logic.checks?.source_freshness)||'未確認'),
+      '確認原稿版: ' + (text(logic.checked_revision)||'未保存'),
+      '結論: ' + (text(logic.conclusion)||'未保存'),
+      ...(list(logic.corrections).length?['修正: '+list(logic.corrections).join('／')]:[]),
+      ...(list(logic.unresolved_items).length?['未解決: '+list(logic.unresolved_items).join('／')]:[]),
+      ''
+    ] : [];
     const lines = [
       '【確認用原稿｜内部資料・画像生成指示ではありません】',
       '公開文の正本は各ページのdisplay_copyです。旧見出し・旧補足文で代用していません。',
       'このコピーにある状態・入口候補・骨格・制作メモは画像へ描画しないでください。', '',
       '【状態】', ...statusLines(p, state), '',
+      ...logicLines,
       '【原稿版・LOCK】', 'draft_revision: ' + text(p.draft_revision),
       'locked_at: ' + text(p.content_lock?.locked_at), '',
       '【タイトル】', text(p.post_title || p.draft_title || item.title), '',
