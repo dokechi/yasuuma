@@ -322,6 +322,7 @@
     const ranked=topItems.slice().sort((a,b)=>fpNewestTime(b)-fpNewestTime(a)).slice(0,3);
     host.hidden=!ranked.length;
     host.innerHTML=ranked.length?'<div class="fp-top-title"><div><b>新着FP案件</b><span>新しい情報が上</span></div><button class="push-button small" data-fp-open-accepted="1">すべて見る</button></div><div class="fp-top-list">'+ranked.map(topCard).join('')+'</div>':'';
+    bindDraftOpenButtons(host);
   };
   const loadTop=async(force=false)=>{
     if(topLoading||app.view!=='active')return;
@@ -341,6 +342,26 @@
     finally{topLoading=false}
   };
   const findFpItem=id=>[...(app.items||[]),...topItems].find(item=>String(item.id)===String(id));
+  function bindDraftOpenButtons(scope=document){
+    scope.querySelectorAll?.('[data-fp-open]').forEach(button=>{
+      if(button.dataset.fpDirectOpen==='1')return;
+      button.dataset.fpDirectOpen='1';
+      button.addEventListener('click',event=>{
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const item=findFpItem(button.dataset.fpOpen);
+        if(!item){
+          if(typeof toast==='function')toast('原稿データを再読込してください','bad');
+          return;
+        }
+        try{openDraft(item)}
+        catch(error){
+          console.error('FP draft open failed',error);
+          if(typeof toast==='function')toast('原稿画面を開けませんでした：'+(error?.message||error),'bad');
+        }
+      });
+    });
+  }
   const relabel=()=>{
     document.querySelectorAll('.thread').forEach(card=>{
       const button=card.querySelector('.action-accept');
@@ -350,7 +371,7 @@
     });
   };
   const baseRender=renderList;
-  renderList=()=>{baseRender();relabel();ensure(app.items||[]);renderTop();loadTop()};
+  renderList=()=>{baseRender();relabel();bindDraftOpenButtons(document);ensure(app.items||[]);renderTop();loadTop()};
 
   const choose=async(item,button)=>{
     if(button.disabled)return;
@@ -682,5 +703,6 @@
   `;
   document.head.appendChild(style);
   relabel();
+  bindDraftOpenButtons(document);
   loadTop(true);
 })();
