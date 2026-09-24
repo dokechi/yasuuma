@@ -37,11 +37,16 @@
     const result=originalBuild.call(this,base,item,mode);
     if(!isChat(item))return result;
     const body=stripLegacyModelReview(result);
-    if(!/^以下の確定原稿から、カルーセル画像を作成してください。/m.test(body)){
+    const legacy=/^以下の確定原稿から、カルーセル画像を作成してください。/m.test(body);
+    const adaptive=/^以下のLOCK済み確定原稿からカルーセル画像を作成してください。/m.test(body);
+    if(!legacy&&!adaptive){
       throw Error('既存の画像制作手順を確認できません。画面を更新してください。');
     }
+    // New adaptive Chat packages already carry their own LOCK/design/handoff contract.
+    // Do not prepend the legacy Astra compatibility wrapper to them.
+    if(adaptive)return body;
     return compatibilityHeader()+body;
   };
 
-  root.CCChatImageContractGuard={version:'208.7',isChat,stripLegacyModelReview,compatibilityHeader};
+  root.CCChatImageContractGuard={version:'208.8',isChat,stripLegacyModelReview,compatibilityHeader};
 })(typeof window!=='undefined'?window:null);
