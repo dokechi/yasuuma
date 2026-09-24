@@ -17,6 +17,7 @@
   const HOUSE_VERSION = 'adaptive-carousel-v1-20260923-house-chat';
   const HOUSE_RESEARCH_VERSION = 'community-14d-house-chat-v1';
   const HOUSE_DESIGN_VERSION = 'adaptive-visual-house-chat-v1';
+  const MONEY_ENTRANCE_VERSION = 'money-entrance-v1-20260924';
   const TASK_IDS = {
     money:'6a9e5826d4888191a4d82a643e6d5adf',
     house:'6aa77eb5ce7881919d8dc62554833b60',
@@ -63,6 +64,12 @@
       snapshot.page_reflections=arr(p.page_reflections);
       snapshot.executable_action=p.executable_action??null;
       snapshot.production_spec=p.production_spec??null;
+    }
+    if (str(p.entrance_contract_version)===MONEY_ENTRANCE_VERSION) {
+      snapshot.entrance_contract_version=p.entrance_contract_version;
+      snapshot.entrance_options=arr(p.entrance_options);
+      snapshot.selected_entrance=p.selected_entrance??null;
+      snapshot.entrance_selection=p.entrance_selection??null;
     }
     return snapshot;
   };
@@ -485,6 +492,35 @@
     return [...new Set(issues)];
   }
 
+  function entranceIssues(value) {
+    const p=payloadOf(value), issues=[];
+    if (!adaptive(p) || lane(p)!=='money' || str(p.entrance_contract_version)!==MONEY_ENTRANCE_VERSION) return issues;
+    const options=arr(p.entrance_options), required=['michael','marina','ben'];
+    if(options.length!==3) issues.push('お金Chatの入口3案がちょうど3件ではない');
+    const byKey=new Map();
+    options.forEach((option,index)=>{
+      const key=str(option?.key).toLowerCase();
+      if(!key) issues.push(`入口案${index+1}のkeyが未保存`);
+      else if(byKey.has(key)) issues.push(`入口案keyが重複: ${key}`);
+      else byKey.set(key,option);
+      ['label','approach','hook','display_copy'].forEach(field=>{
+        if(!str(option?.[field])) issues.push(`入口案${key||index+1}の${field}が未保存`);
+      });
+    });
+    required.forEach(key=>{if(!byKey.has(key))issues.push(`入口案${key}が未保存`);});
+    const selected=str(p.selected_entrance).toLowerCase();
+    if(!required.includes(selected)) issues.push('お金Chatの入口案が未選択');
+    const reviewed=new Set(arr(p.final_review?.reviewed_entrances).map(v=>str(v).toLowerCase()));
+    required.forEach(key=>{if(!reviewed.has(key))issues.push(`入口案${key}が最終照合済みではない`);});
+    if(selected&&byKey.has(selected)){
+      const first=arr(p.draft_slides)[0]||{}, c=first.page_contract||{}, option=byKey.get(selected)||{};
+      if(str(c.display_copy)!==str(option.display_copy)) issues.push('選択した入口案と1ページ目display_copyが一致しない');
+      if(str(first.headline)!==str(option.headline||first.headline)) issues.push('選択した入口案と1ページ目headlineが一致しない');
+      if(!reviewed.has(selected)) issues.push('選択した入口案が最終照合対象に含まれていない');
+    }
+    return [...new Set(issues)];
+  }
+
   function screenshotIssues(value) {
     const p = payloadOf(value), issues = [];
     if (!adaptive(p)) return issues;
@@ -528,7 +564,7 @@
     const base = typeof baseQuality === 'function' ? baseQuality(value) : {ready:true,issues:[]};
     const ignored = new Set(['ページ別原稿が不足']);
     const issues = arr(base?.issues).filter(issue => !ignored.has(str(issue)));
-    issues.push(...strictCommunityIssues(p), ...pageContractIssues(p), ...sourceIssues(p), ...publicOutputIssues(p), ...lockIssues(p), ...finalReviewIssues(p), ...designIssues(p), ...houseSpecificIssues(p));
+    issues.push(...strictCommunityIssues(p), ...pageContractIssues(p), ...sourceIssues(p), ...publicOutputIssues(p), ...lockIssues(p), ...finalReviewIssues(p), ...designIssues(p), ...houseSpecificIssues(p), ...entranceIssues(p));
     if (p.draft_status !== 'ready') issues.push('完成原稿が未確定');
     return {ready:[...new Set(issues)].length === 0, issues:[...new Set(issues)]};
   }
@@ -680,9 +716,33 @@
       const current=str(p.screenshot_decisions?.[row?.id]);
       return '<article class="fp-shot '+(row?.required?'required':'')+'"><div><b>'+(row?.required?'必須':'任意')+'</b><strong>'+esc(row?.label||'スクショ候補')+'</strong></div>'+(safeUrl(row?.url)?'<a href="'+esc(row.url)+'" target="_blank" rel="noopener">撮影元を開く</a>':'')+'<dl><dt>撮る範囲</dt><dd>'+esc(row?.capture_range||row?.capture_area||'')+'</dd><dt>使う理由</dt><dd>'+esc(row?.purpose||'')+'</dd></dl><label>画像の用意<select data-fp-shot-decision="'+esc(row?.id||'')+'"><option value="">選んでください</option><option value="assistant" '+(current==='assistant'?'selected':'')+'>まずAIが取得を試す</option><option value="user" '+(current==='user'?'selected':'')+'>自分でスクショを用意</option>'+(row?.required?'':'<option value="skip" '+(current==='skip'?'selected':'')+'>今回は使わない</option>')+'</select></label></article>';
     }).join('');
+    const entranceHtml = item => {
+      const p=payloadOf(item);
+      if(lane(p)!=='money'||str(p.entrance_contract_version)!==MONEY_ENTRANCE_VERSION)return'';
+      const selected=str(p.selected_entrance).toLowerCase();
+      const cards=arr(p.entrance_options).map(option=>{
+        const key=str(option?.key).toLowerCase(),active=key===selected;
+        return '<button type="button" class="fp-entrance-option '+(active?'selected':'')+'" data-fp-entrance-choice="'+esc(key)+'" data-fp-entrance-id="'+esc(item.id)+'" aria-pressed="'+(active?'true':'false')+'">'
+          +'<b>'+esc(option?.label||key)+'</b><small>'+esc(option?.approach||'')+'</small><span>'+esc(option?.hook||option?.display_copy||'')+'</span>'
+          +(active?'<em>選択中</em>':'<em>この入口を使う</em>')+'</button>';
+      }).join('');
+      return '<section class="fp-entrance-picker" data-money-entrance="'+esc(item.id)+'"><h4>入口の型 3案</h4><p>Michael / Marina / Ben の3案はすべて事前照合済み。クリックすると1枚目だけ切り替えます。</p><div class="fp-entrance-grid">'+cards+'</div></section>';
+    };
+    function renderEntrance(modal,item){
+      const current=modal.querySelector('[data-money-entrance]');
+      const html=entranceHtml(item);
+      if(!html){current?.remove();return;}
+      if(current) current.outerHTML=html;
+      else {
+        const target=modal.querySelector('.fp-preflight')||modal.querySelector('.fp-draft-slides');
+        target?.insertAdjacentHTML('beforebegin',html);
+      }
+    }
+
     function refreshFpModal(modal) {
       const button=modal.querySelector('[data-fp-copy-package]'); if(!button) return;
       const item=lookup(button.dataset.fpCopyPackage); if(!item || !adaptive(item)) return;
+      renderEntrance(modal,item);
       const p=payloadOf(item), section=modal.querySelector('.fp-preflight');
       if(section && section.dataset.adaptiveV226!=='1') {
         section.dataset.adaptiveV226='1';
@@ -714,6 +774,25 @@
     }
     doc.addEventListener('click', async event => {
       const careerOpen=event.target.closest?.('[data-cce-open]'); if(careerOpen) careerId=careerOpen.dataset.cceOpen||'';
+      const entranceChoice=event.target.closest?.('[data-fp-entrance-choice]');
+      if(entranceChoice){
+        const item=lookup(entranceChoice.dataset.fpEntranceId);
+        if(item&&adaptive(item)&&lane(item)==='money'){
+          event.preventDefault();event.stopImmediatePropagation();
+          const key=str(entranceChoice.dataset.fpEntranceChoice).toLowerCase();
+          const modal=entranceChoice.closest('[data-fp-modal]');
+          entranceChoice.disabled=true;
+          try{
+            const response=await root.fetch(RETRO_API,{method:'PATCH',cache:'no-store',headers:{...(typeof authHeaders==='function'?authHeaders():{}),'Content-Type':'application/json'},body:JSON.stringify({action:'fp_entrance',id:String(item.id),entranceKey:key})});
+            const data=await response.json();if(!response.ok||!data?.ok)throw new Error(data?.error||('HTTP '+response.status));
+            const rows=(typeof app!=='undefined'?app.items:[])||[],idx=rows.findIndex(row=>String(row.id)===String(item.id));
+            if(idx>=0&&data.item)rows[idx]={...rows[idx],...data.item};
+            if(typeof root.toast==='function')root.toast((data.selectedLabel||key)+'を入口に選びました','good');
+            if(modal)refreshFpModal(modal);
+          }catch(e){entranceChoice.disabled=false;if(typeof root.toast==='function')root.toast(e.message||'入口を保存できませんでした','bad');}
+          return;
+        }
+      }
       const save=event.target.closest?.('[data-fp-save-preflight]');
       if(save){
         const item=lookup(save.dataset.fpSavePreflight); if(item&&adaptive(item)){
@@ -737,6 +816,9 @@
       const careerCopy=event.target.closest?.('.cce-dialog [data-copy]');
       if(careerCopy){const dialog=careerCopy.closest('.cce-dialog'),item=lookup(dialog?.dataset.adaptiveId||careerId);if(item&&adaptive(item)){event.preventDefault();event.stopImmediatePropagation();try{const editorialIssues=typeof root.CCChatEditorial?.issues==='function'?arr(root.CCChatEditorial.issues(item)):[];if(editorialIssues.length)throw new Error(editorialIssues.join('／'));await copy(buildHandoff(item,null),careerCopy);}catch(e){const feedback=dialog?.querySelector('[data-feedback]');if(feedback)feedback.textContent='コピー保留：'+e.message;}return;}}
     }, true);
+    if(!doc.getElementById('adaptiveEntranceStyle')){
+      const style=doc.createElement('style');style.id='adaptiveEntranceStyle';style.textContent='.fp-entrance-picker{margin-top:10px;padding:10px 12px;background:#fff;border:2px solid #4d5f7a}.fp-entrance-picker h4{margin:0 0 4px}.fp-entrance-picker>p{margin:0 0 8px;color:#555}.fp-entrance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.fp-entrance-option{min-width:0;text-align:left;padding:9px;background:#f5f5f5;border:2px solid;border-color:#fff #777 #777 #fff;font:inherit;cursor:pointer}.fp-entrance-option b,.fp-entrance-option small,.fp-entrance-option span,.fp-entrance-option em{display:block}.fp-entrance-option small{margin-top:2px;color:#555}.fp-entrance-option span{margin-top:6px;line-height:1.45;font-weight:700}.fp-entrance-option em{margin-top:7px;color:#006b60;font-size:11px;font-style:normal}.fp-entrance-option.selected{background:#e7f4ee;border-color:#277267;box-shadow:inset 0 0 0 2px #fff}.fp-entrance-option:focus-visible{outline:3px solid #000;outline-offset:2px}@media(max-width:700px){.fp-entrance-grid{grid-template-columns:1fr}}';doc.head.append(style);
+    }
     const observer=new root.MutationObserver(mutations=>{
       if(!mutations.some(m=>m.addedNodes?.length))return;
       doc.querySelectorAll('[data-fp-modal]').forEach(refreshFpModal);
@@ -746,5 +828,5 @@
     doc.querySelectorAll('[data-fp-modal]').forEach(refreshFpModal);
   }
 
-  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,LEGACY_MONEY_VERSION,LEGACY_MONEY_RESEARCH_VERSION,LEGACY_MONEY_DESIGN_VERSION,HOUSE_VERSION,HOUSE_RESEARCH_VERSION,HOUSE_DESIGN_VERSION,TASK_IDS,MONEY_CHAT_TASK_ID,HOUSE_CHAT_TASK_ID,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,moneyChatScope,houseChatScope,adaptiveChatScope,adaptive,communityRequired,girlsCommentInfo,girlsTopicKey,strictThreadEligible,lockSnapshot,strictCommunityIssues,pageContractIssues,sourceIssues,publicOutputIssues,lockIssues,finalReviewIssues,designIssues,houseSpecificIssues,screenshotIssues,quality,preflightIssues,productionText,buildHandoff,install};
+  return {VERSION,RESEARCH_VERSION,DESIGN_VERSION,LEGACY_MONEY_VERSION,LEGACY_MONEY_RESEARCH_VERSION,LEGACY_MONEY_DESIGN_VERSION,HOUSE_VERSION,HOUSE_RESEARCH_VERSION,HOUSE_DESIGN_VERSION,MONEY_ENTRANCE_VERSION,TASK_IDS,MONEY_CHAT_TASK_ID,HOUSE_CHAT_TASK_ID,WINDOW_DAYS,MIN_TOPICS,MIN_COMMENTS,hasAdaptiveMarkers,lane,moneyChatScope,houseChatScope,adaptiveChatScope,adaptive,communityRequired,girlsCommentInfo,girlsTopicKey,strictThreadEligible,lockSnapshot,strictCommunityIssues,pageContractIssues,sourceIssues,publicOutputIssues,lockIssues,finalReviewIssues,designIssues,houseSpecificIssues,entranceIssues,screenshotIssues,quality,preflightIssues,productionText,buildHandoff,install};
 });
