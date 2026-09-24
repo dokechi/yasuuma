@@ -108,3 +108,8 @@ const special=structuredClone(fixture);special.payload.draft_slides[2].page_cont
 assert.equal(C.canonicalPages(special)[2].copy,special.payload.draft_slides[2].page_contract.display_copy);
 console.log('v228 canonical full-copy tests passed; actual v226 validator, six pages, three entrances, blocked/ready, LOCK, missing data and Work scope verified');
 module.exports={makeFixture};
+
+const R=require('./v229-money-double-check.js');
+assert.equal(R.VERSION,'229.1');
+assert.equal(R.CONTRACT_VERSION,'money-logic-institution-review-v1-20260925');
+assert.equal(typeof R.reviewIssues,'function');
