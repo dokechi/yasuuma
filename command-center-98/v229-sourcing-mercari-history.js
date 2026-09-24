@@ -38,7 +38,7 @@
   }
 
   function saleTiming(row){
-    return first(row,['sold_at','sold_date','sold_datetime','updated_age','sold_age','age','confirmed_at'])||'—';
+    return first(row,['sold_at','sold_date','sold_datetime','updated_age','age_text','sold_age','age','confirmed_at'])||'—';
   }
 
   function saleCondition(row){
@@ -60,6 +60,8 @@
   function normalizedHistory(p){
     const candidates=[
       p?.mercari_sales_history,
+      p?.mercari_sold,
+      p?.mercari_solds,
       p?.mercariSalesHistory,
       p?.mercari_history,
       p?.mercari_sold_history,
