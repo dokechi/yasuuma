@@ -10,7 +10,7 @@
   api.install(root);
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
-  const VERSION = '232.0';
+  const VERSION = '232.1';
   const TASK_ID = '6aa9ee1043388191a2eac3bb2702092a';
   const RETRO_API = 'https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-retro-api';
   const EDITORIAL_VERSION = 'money-spine-editor-v1-20260925';
@@ -349,6 +349,7 @@
       }
       for (const option of list(p.entrance_options)) {
         const candidate = [...modal.querySelectorAll('[data-fp-entrance-choice]')].find(b => b.dataset.fpEntranceChoice === option.key);
+        if(!skeleton && !memo.state.draftReady)putText(candidate?.querySelector('em'),option.key===p.selected_entrance?'選択中':'照合待ち');
         putText(candidate?.querySelector('span'), skeleton ? text(option.hook || option.headline) : text(option.display_copy));
       }
       putText(modal.querySelector('.fp-entrance-picker > p'), skeleton ? '3案から入口を1つ選ぶと、骨格を高度AIへ渡せます。' : p.editorial_workflow_version === EDITORIAL_VERSION ? (memo.state.draftReady ? '原稿の照合が完了しました。入口変更には再編集と再照合が必要です。' : '確認用の原稿です。保留理由を確認し、修正後に再照合してください。') : '選択した入口の表示全文が1ページ目に反映されます。入口を変えても保留は自動解除されません。');

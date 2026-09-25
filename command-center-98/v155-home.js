@@ -125,6 +125,8 @@
   };
   const isCompletedGal=item=>{
     if(!isGalItem(item))return false;
+    const p=item?.payload||{};
+    if(p.source_task_id==='6aa9ee1043388191a2eac3bb2702092a'&&(p.execution_source||p.execution_channel)==='chat'&&p.execution_channel!=='work'&&p.editorial_stage==='final'&&Array.isArray(p.draft_slides)&&p.draft_slides.length>0)return true;
     const quality=window.__fpContentPipeline?.packageQuality;
     if(typeof quality==='function')return quality(item).ready;
     const payload=item?.payload||{};
