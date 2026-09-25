@@ -10,8 +10,10 @@
   api.install(root);
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
-  const VERSION = '230.1';
+  const VERSION = '231.1';
   const TASK_ID = '6aa9ee1043388191a2eac3bb2702092a';
+  const ZANKURE_ID = 'task:' + TASK_ID + ':money-chat:6279063:zankure-current-structure-v1';
+  const RETRO_API = 'https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-retro-api';
   const EDITORIAL_VERSION = 'money-spine-editor-v1-20260925';
   const list = x => Array.isArray(x) ? x : [];
   const text = x => typeof x === 'string' ? x : '';
@@ -19,6 +21,11 @@
   const escape = x => text(x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const unique = xs => [...new Set(xs.filter(Boolean))];
   const awaitingEditorial = p => p.editorial_workflow_version === EDITORIAL_VERSION && p.editorial_stage !== 'final';
+  const isZankure = item => String(item?.id || '') === ZANKURE_ID;
+  const approvedForImage = p => p.pre_image_review?.status === 'approved_by_user' &&
+    p.pre_image_review.checked_revision === p.draft_revision &&
+    p.pre_image_review.checked_locked_at === p.content_lock?.locked_at &&
+    p.image_render_plan?.draft_revision === p.draft_revision;
   function payload(item) {
     if (!item || typeof item !== 'object' || Array.isArray(item)) throw new Error('原稿データを取得できません。');
     const p = Object.prototype.hasOwnProperty.call(item, 'payload') ? item.payload : item;
@@ -80,7 +87,7 @@
     return [
       '原稿版: ' + (text(p.draft_revision) || '未設定'),
       '原稿状態: ' + (text(p.draft_status) || '未設定'),
-      '画像化: ' + (state.imageReady ? '可能' : '保留（確認用コピーのみ）'),
+      '画像化: ' + (p.pre_image_review?.required===true && !approvedForImage(p) ? '画像化前チェックとユーザー確認待ち' : state.imageReady ? '可能' : '保留（確認用コピーのみ）'),
       '保存された保留理由: ' + (text(p.blocked_reason) || 'なし'),
       '需要判定: ' + demandStatus,
       '保存済み最終照合: ' + (text(p.final_review?.status) || '未設定') + '（画像化可否とは別判定）',
@@ -140,6 +147,60 @@
     ].filter(Boolean).join('｜'));
     lines.push('', '【制作条件｜内部確認用】', JSON.stringify(p.production_spec || {}, null, 2),
       '', '【キャプション】', text(p.caption ?? p.draft_caption ?? p.post_caption));
+    return lines.join('\n');
+  }
+  function buildPreImageCheck(item, adaptive) {
+    if (!isZankure(item)) throw new Error('対象の残クレ原稿ではありません。');
+    const p = payload(item), state = inspect(item, adaptive);
+    if (!state.draftReady) throw new Error('原稿確認保留: ' + state.issues.join('／'));
+    const lines = [
+      '# カルーセル画像化前の最終確認',
+      'このターンでは画像を生成しないでください。以下のLOCK済み原稿を、実際に一次情報へアクセスして確認してください。',
+      '日本語: display_copyとキャプションの助詞、語順、重複、表記ゆれ、誤字を確認。意味・事実・条件・数字を変えない最小限の修正だけ可。',
+      '事実・制度・根拠: URLの存在だけで合格にせず、各資料が対応する主張と例外を実際に裏付けるか、現在も有効か確認。',
+      '数字・計算: 金額、割合、単位、合計、比較条件があれば元資料から再計算。なければ該当なし。',
+      'スクショ: 各ページについて必須・任意・不要を理由つきで判定。必須なら取得元URLと切り取り範囲を示す。',
+      '事実・制度・数字・根拠に問題があれば推測で修正せず、画像化を保留してください。',
+      '出力: 【最終確認結果】【日本語修正（修正前/修正後/理由）】【事実・制度・数字の問題】【ページ別スクショ判定】【画像化確定文（全ページ全文）】。',
+      '最後まで画像を生成しないでください。', '',
+      '【原稿版】', 'draft_revision: ' + text(p.draft_revision), 'locked_at: ' + text(p.content_lock?.locked_at),
+      '【投稿タイトル】', text(p.post_title || p.draft_title || item.title),
+      '【キャプション】', text(p.caption ?? p.draft_caption ?? p.post_caption),
+      '【ページ別の公開文・対応根拠】'
+    ];
+    for (const row of state.pages) lines.push('', '【' + row.page + '/' + state.pages.length + '】',
+      'display_copy:', row.copy, 'source_refs: ' + row.source_refs.join(', '),
+      '確認する内容: ' + row.phenomenon,
+      ...(row.calculation ? ['計算: ' + JSON.stringify(row.calculation)] : []));
+    lines.push('', '【一次情報｜URL・主張・確認日を分離】');
+    for (const source of list(p.draft_sources)) lines.push('', '【' + text(source.id) + '】',
+      '名称: ' + text(source.label || source.title), 'URL: ' + text(source.url),
+      'この資料で確認する主張: ' + text(source.claim), '保存時確認日: ' + text(source.checked_at));
+    return lines.join('\n');
+  }
+  function buildZankureImage(item, adaptive) {
+    if (!isZankure(item)) throw new Error('対象の残クレ原稿ではありません。');
+    const p=payload(item), state=inspect(item,adaptive), plan=p.image_render_plan;
+    if (!state.imageReady || !approvedForImage(p)) throw new Error('画像化前チェックとユーザー確認が未完了です。');
+    const pages=list(plan.pages);
+    if (pages.length!==state.pages.length) throw new Error('ページ別の画像設計が不足しています。');
+    const lines=['# カルーセル画像生成',
+      '以下の確認済み原稿を視覚化してください。原稿の再執筆・再解釈は行わないでください。',
+      '各ページを独立した画像として順に表示してください。',
+      '文字以外の視覚的な主役を先に決め、車・人物・具体物・実物資料を内容に合う場合だけ使ってください。',
+      'diagram/comparison/decompositionは文字・四角・矢印だけの指定ではありません。type_onlyは文字が最も明確なページだけです。',
+      '全体を白背景・文字・細線だけのプレゼン資料やWeb画面風に統一しないでください。実物の証拠を生成画像で装わないでください。',
+      '画像内に載せる文字は各ページのdisplay_copyのみ。制作メモと根拠IDは載せないでください。収まらない場合は勝手に削らず報告してください。',
+      '画像化後に文字を全文照合し、不一致があれば完成扱いにしないでください。',
+      '【制作サイズ】', text(p.production_spec?.size || '1080×1440') + ' / ' + text(p.production_spec?.ratio || '3:4')];
+    for(let i=0;i<state.pages.length;i++){
+      const row=state.pages[i], visual=pages[i], shot=p.pre_image_review.screenshot_decisions?.[String(row.page)];
+      if(Number(visual?.page)!==row.page||!text(visual?.hero)||!text(visual?.composition))throw new Error('ページ別画像設計が不正です。');
+      lines.push('', '【'+row.page+'/'+state.pages.length+'】', '視覚的な主役: '+visual.hero,
+        '構図: '+visual.composition, '文字との役割分担: '+text(visual.text_role),
+        '実物スクショ: '+(shot==='optional'?'任意。必要なら原本を確認し、なければ再現しない。':'不要。'),
+        'display_copy:',row.copy);
+    }
     return lines.join('\n');
   }
   function buildEditorialHandoff(item) {
@@ -207,8 +268,9 @@
       button?.focus?.({preventScroll:true});
     }
     if (pipe) {
-      const previous = pipe.buildDraftCopy, quality = pipe.packageQuality;
+      const previous = pipe.buildDraftCopy, quality = pipe.packageQuality, imageHandoff=pipe.buildHandoff;
       pipe.buildDraftCopy = function (item) { return applies(item) ? buildReviewCopy(item, adaptive) : previous.apply(this, arguments); };
+      if(typeof imageHandoff==='function')pipe.buildHandoff=function(item){return isZankure(item)?buildZankureImage(item,adaptive):imageHandoff.apply(this,arguments);};
       if (typeof quality === 'function') pipe.packageQuality = function (item) {
         if (item?.id && applies(item)) cached.set(String(item.id), item);
         return quality.apply(this, arguments);
@@ -252,20 +314,34 @@
       const chosen = list(p.entrance_options).find(x => x.key === p.selected_entrance);
       putText(modal.querySelector('.fp-draft-cover b'), text((skeleton && chosen?.hook) || p.draft_cover || p.post_title || p.draft_title || item.title) || '表紙案未保存');
       putText(modal.querySelector('.fp-draft-dialog > header small'), skeleton ? 'お金Chat｜骨格・根拠の確認' : 'お金Chat｜全文・状態の確認');
-      putText(button, skeleton ? '骨格を高度AIへコピー' : '確認用に全文コピー');
-      if (button) { button.title = skeleton ? '入口を選び、骨格と根拠を高度AIへ渡します。' : '入口3案・投稿の骨格・表示全文・保留理由をコピーします。画像生成指示ではありません。'; button.disabled = skeleton && p.entrance_selection?.source !== 'command_center_user'; }
+      putText(button, skeleton ? '骨格を高度AIへコピー' : isZankure(item) ? '画像化前チェック用にコピー' : '確認用に全文コピー');
+      if (button) { button.title = skeleton ? '入口を選び、骨格と根拠を高度AIへ渡します。' : isZankure(item) ? '日本語・制度・根拠・数字・スクショを確認します。この段階で画像は作りません。' : '入口3案・投稿の骨格・表示全文・保留理由をコピーします。画像生成指示ではありません。'; button.disabled = skeleton && p.entrance_selection?.source !== 'command_center_user'; }
       const status = modal.querySelector('.fp-package-status');
       if (status) {
-        const wanted = 'fp-package-status ' + (memo.state.imageReady ? 'ready' : 'blocked');
+        const wanted = 'fp-package-status ' + (memo.state.imageReady && (!isZankure(item) || approvedForImage(p)) ? 'ready' : 'blocked');
         if (status.className !== wanted) status.className = wanted;
         putHTML(status, skeleton ? '<div><b>骨格段階｜入口選択後に高度AIへ</b><p>原稿と画像は未確定です。高度AIで原稿を完成し、照合後に画像化できます。</p></div>' :
-          '<div><b>' + (memo.state.imageReady ? '画像化の事前検査を通過' : '確認は可能・画像化は保留中') +
+          '<div><b>' + (isZankure(item) && !approvedForImage(p) ? '画像化前チェックとあなたの確認を待っています' : memo.state.imageReady ? '画像化の事前検査を通過' : '確認は可能・画像化は保留中') +
           '</b><pre class="fp-canonical-status">' + escape(statusLines(p,memo.state).join('\n')) + '</pre></div>');
       }
       const imageButton = modal.querySelector('[data-fp-copy-package]');
       if (imageButton) {
-        imageButton.disabled = !memo.state.imageReady;
-        imageButton.title = memo.state.imageReady ? '選択中の表示全文を画像制作へ渡します。' : unique([...memo.state.issues,...memo.state.assetIssues]).join('／');
+        imageButton.disabled = !memo.state.imageReady || (isZankure(item) && !approvedForImage(p));
+        putText(imageButton,isZankure(item)?'確認後、画像化用にコピー':'画像化用にコピー');
+        imageButton.title = isZankure(item) && !approvedForImage(p) ? '画像化前チェックの結果を確認し、下の確認を保存してください。' : memo.state.imageReady ? '選択中の表示全文を画像制作へ渡します。' : unique([...memo.state.issues,...memo.state.assetIssues]).join('／');
+      }
+      if (isZankure(item) && status) {
+        let gate=modal.querySelector('[data-zankure-image-gate]');
+        if(!gate){gate=doc.createElement('section');gate.dataset.zankureImageGate='1';status.insertAdjacentElement('afterend',gate);}
+        const approved=approvedForImage(p);
+        const gateKey=String(p.draft_revision)+'|'+String(p.content_lock?.locked_at)+'|'+approved;
+        if(gate.dataset.gateKey!==gateKey){
+          gate.dataset.gateKey=gateKey;
+          putHTML(gate,approved?'<b>画像化前チェックを確認済み</b><p>この原稿版の短い画像用指示をコピーできます。</p>':
+            '<b>画像化前チェック → あなたの確認 → 画像化</b><p>高度AIの確認結果を読んでください。事実・制度・数字に未解決の問題や公開文の修正があれば、先に原稿を更新して再LOCKします。</p>'+ 
+            '<div class="zankure-shot-decisions">'+memo.state.pages.map(row=>'<label>'+row.page+'ページの実物スクショ <select data-zankure-shot="'+row.page+'"><option value="">選択</option><option value="unnecessary">不要</option><option value="optional">任意</option><option value="required">必須</option></select></label>').join('')+'</div>'+ 
+            '<label><input type="checkbox" data-zankure-confirm> 高度AIの結果を読み、未解決の問題がなく、画像化確定文が現在のLOCK文と同じことを確認した</label><button type="button" data-zankure-approve="'+escape(item.id)+'">確認結果を保存</button>');
+        }
       }
       for (const option of list(p.entrance_options)) {
         const candidate = [...modal.querySelectorAll('[data-fp-entrance-choice]')].find(b => b.dataset.fpEntranceChoice === option.key);
@@ -301,10 +377,12 @@
     doc.querySelectorAll('[data-fp-modal]').forEach(attach);
     // Window capture is before the legacy document handlers (v151/v207/v226).
     root.addEventListener('click', async event => {
-      const button = event.target.closest?.('[data-fp-copy-draft], [data-fp-copy-package]');
+      const button = event.target.closest?.('[data-fp-copy-draft], [data-fp-copy-package], .cce-dialog [data-copy]');
       if (!button) return;
-      const id = button.dataset.fpCopyDraft || button.dataset.fpCopyPackage;
+      const careerCopy=button.matches('.cce-dialog [data-copy]');
+      const id = button.dataset.fpCopyDraft || button.dataset.fpCopyPackage || button.closest('.cce-dialog')?.dataset.adaptiveId;
       const item = lookup(id);
+      if(careerCopy && !isZankure(item))return;
       if (!applies(item)) {
         if (!item && String(id).startsWith('task:' + TASK_ID + ':')) {
           event.preventDefault(); event.stopImmediatePropagation(); notify('原稿データを取得できないため、旧本文で代用せず停止しました。','bad');
@@ -314,13 +392,35 @@
       event.preventDefault(); event.stopImmediatePropagation();
       try {
         if (button.hasAttribute('data-fp-copy-draft')) {
-          await copy(buildReviewCopy(item,adaptive),button); notify(awaitingEditorial(payload(item)) ? '骨格と根拠を高度AI用にコピーしました。' : '表示全文・入口3案・骨格・状態を確認用にコピーしました。','good');
+          await copy(isZankure(item)?buildPreImageCheck(item,adaptive):buildReviewCopy(item,adaptive),button); notify(isZankure(item)?'画像化前チェック用の文章をコピーしました。画像はまだ作りません。':awaitingEditorial(payload(item)) ? '骨格と根拠を高度AI用にコピーしました。' : '表示全文・入口3案・骨格・状態を確認用にコピーしました。','good');
         } else {
           const state = inspect(item,adaptive);
           if (!state.imageReady) throw new Error('画像化保留: ' + unique([...state.issues,...state.assetIssues]).join('／'));
-          await copy(adaptive.buildHandoff(item),button); notify('選択中の表示全文を画像化用にコピーしました。','good');
+          await copy(isZankure(item)?buildZankureImage(item,adaptive):adaptive.buildHandoff(item),button); notify('選択中の表示全文を画像化用にコピーしました。','good');
         }
       } catch (error) { notify(error.message || 'コピーできませんでした。','bad'); }
+    },true);
+    root.addEventListener('click', async event=>{
+      const button=event.target.closest?.('[data-zankure-approve]');if(!button)return;
+      event.preventDefault();event.stopImmediatePropagation();
+      const item=lookup(button.dataset.zankureApprove),modal=button.closest('[data-fp-modal]');
+      if(!isZankure(item)||!modal)return;
+      try{
+        const gate=button.closest('[data-zankure-image-gate]');
+        if(!gate.querySelector('[data-zankure-confirm]')?.checked)throw new Error('高度AIの確認結果を読んでからチェックしてください。');
+        const screenshotDecisions={};
+        for(const select of gate.querySelectorAll('[data-zankure-shot]')){
+          if(!select.value)throw new Error('各ページのスクショ判定を選んでください。');
+          if(select.value==='required')throw new Error('必須スクショがあるページは、素材を取得して原稿・素材確認を更新してください。');
+          screenshotDecisions[select.dataset.zankureShot]=select.value;
+        }
+        const p=payload(item);button.disabled=true;
+        const response=await root.fetch(RETRO_API,{method:'PATCH',cache:'no-store',headers:{...(typeof authHeaders==='function'?authHeaders():{}),'Content-Type':'application/json'},body:JSON.stringify({action:'fp_image_review',id:String(item.id),draftRevision:p.draft_revision,lockedAt:p.content_lock?.locked_at,confirmed:true,unchangedCopy:true,screenshotDecisions})});
+        const data=await response.json();if(!response.ok||!data?.ok)throw new Error(data?.error||('HTTP '+response.status));
+        const rows=(typeof app!=='undefined'?app.items:[])||[],idx=rows.findIndex(row=>String(row.id)===String(item.id));
+        if(idx>=0&&data.item)rows[idx]={...rows[idx],...data.item};cached.set(String(item.id),data.item);
+        schedule(modal);notify('確認結果を保存しました。画像化用コピーを使えます。','good');
+      }catch(error){button.disabled=false;notify(error.message||'確認結果を保存できませんでした。','bad');}
     },true);
     const style = doc.createElement('style');
     style.textContent = '[data-money-full-copy] .fp-canonical-page{padding:12px;background:#fff;border:1px solid #777;min-width:0}' +
@@ -329,9 +429,15 @@
       '[data-money-full-copy] .fp-canonical-status{margin:7px 0 0;font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}' +
       '[data-money-full-copy] .fp-canonical-page details{margin-top:10px;color:#444;font-size:12px}' +
       '[data-money-full-copy] .fp-entrance-option span{white-space:pre-wrap;overflow-wrap:anywhere}' +
-      '[data-money-full-copy] .fp-draft-cover b{white-space:pre-wrap}';
+      '[data-money-full-copy] .fp-draft-cover b{white-space:pre-wrap}'+
+      '[data-zankure-image-gate]{display:grid;gap:8px;margin:10px 0;padding:12px;background:#fff;color:#111;border:2px solid #315c59}'+
+      '[data-zankure-image-gate] p{margin:0;line-height:1.5}'+
+      '[data-zankure-image-gate] .zankure-shot-decisions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}'+
+      '[data-zankure-image-gate] label{display:block;font-size:13px}'+
+      '[data-zankure-image-gate] select{margin-left:6px;font:inherit}'+
+      '@media(max-width:700px){[data-zankure-image-gate] .zankure-shot-decisions{grid-template-columns:1fr}}';
     doc.head.append(style);
     return {refresh,dispose(){bodyObserver.disconnect();observers.forEach(o=>o.disconnect());observers.clear();queue.clear();}};
   }
-  return {VERSION,TASK_ID,EDITORIAL_VERSION,applies,canonicalPages,inspect,buildReviewCopy,buildEditorialHandoff,install};
+  return {VERSION,TASK_ID,EDITORIAL_VERSION,applies,canonicalPages,inspect,buildReviewCopy,buildPreImageCheck,buildZankureImage,buildEditorialHandoff,install};
 });

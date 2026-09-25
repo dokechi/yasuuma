@@ -220,6 +220,24 @@ Deno.serve(async(req:Request)=>{
         const payload={...p,design_direction:design,color_palette:color,cover_mode:cover,screenshot_decisions:normalized,production_preflight:{status:"ready",mode:"legacy",design_direction:design,color_palette:color,cover_mode:cover,screenshot_decisions:normalized,confirmed_at:now}};
         const fresh=await saveFpPayload(row,payload);return json(req,{ok:true,item:mapRow(fresh)});
       }
+      if(action==="fp_image_review"){
+        const target="task:6aa9ee1043388191a2eac3bb2702092a:money-chat:6279063:zankure-current-structure-v1";
+        if(id!==target||body?.confirmed!==true||body?.unchangedCopy!==true)return json(req,{ok:false,error:"invalid_image_review_request"},400);
+        const row=await fpSignal(id),p=row.payload||{},lock=p.content_lock||{};
+        if(p.execution_source!=="chat"||p.draft_status!=="ready"||p.image_ready!==true||lock.locked!==true||
+          String(body?.draftRevision||"")!==String(p.draft_revision||"")||String(lock.draft_revision||"")!==String(p.draft_revision||"")||
+          String(body?.lockedAt||"")!==String(lock.locked_at||""))return json(req,{ok:false,error:"image_review_stale_or_unready"},409);
+        const slides=Array.isArray(p.draft_slides)?p.draft_slides:[],incoming=body?.screenshotDecisions||{},decisions:any={};
+        if(slides.length!==6||!p.image_render_plan||p.image_render_plan.draft_revision!==p.draft_revision)return json(req,{ok:false,error:"image_render_plan_missing"},409);
+        for(const slide of slides){
+          const page=String(slide?.page||""),decision=String(incoming?.[page]||"");
+          if(!page||!["optional","unnecessary"].includes(decision))return json(req,{ok:false,error:"screenshot_decision_missing_or_required_asset"},400);
+          decisions[page]=decision;
+        }
+        const next={...p,pre_image_review:{required:true,status:"approved_by_user",checked_revision:p.draft_revision,checked_locked_at:lock.locked_at,
+          screenshot_decisions:decisions,confirmation:"user_read_external_review_unmodified_copy",approved_at:new Date().toISOString()}};
+        const fresh=await saveFpPayload(row,next);return json(req,{ok:true,item:mapRow(fresh)});
+      }
       if(action==="fp_performance"){
         if(!id||!body?.performance||typeof body.performance!=="object")return json(req,{ok:false,error:"invalid_request"},400);
         const row=await fpSignal(id),p=row.payload||{},input=body.performance,platform=String(input.platform||""),posted=new Date(String(input.posted_at||""));
