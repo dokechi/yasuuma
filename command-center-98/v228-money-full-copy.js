@@ -69,12 +69,16 @@
       issues:unique(issues), assetIssues:unique(assetIssues), pages };
   }
   function statusLines(p, state) {
+    const strictIds = list(p.community_research?.strict_topic_ids).map(text).filter(Boolean);
+    const minimum = Number(p.community_research?.min_topics) || 2;
+    const demandStatus = (text(p.community_research?.status) || '未設定') +
+      (strictIds.length ? '（' + strictIds.length + '/' + minimum + 'トピック）' : '');
     return [
       '原稿版: ' + (text(p.draft_revision) || '未設定'),
       '原稿状態: ' + (text(p.draft_status) || '未設定'),
       '画像化: ' + (state.imageReady ? '可能' : '保留（確認用コピーのみ）'),
       '保存された保留理由: ' + (text(p.blocked_reason) || 'なし'),
-      '需要判定: ' + (text(p.community_research?.status) || '未設定'),
+      '需要判定: ' + demandStatus,
       '保存済み最終照合: ' + (text(p.final_review?.status) || '未設定') + '（画像化可否とは別判定）',
       ...(!state.imageReady && trim(p.demand_evidence?.decision_reason) ? ['理由の説明: ' + p.demand_evidence.decision_reason] : []),
       ...unique([...state.issues, ...state.assetIssues]).map(s => '・' + s)
