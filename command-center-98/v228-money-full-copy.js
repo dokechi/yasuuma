@@ -10,7 +10,7 @@
   api.install(root);
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
-  const VERSION = '231.2';
+  const VERSION = '231.3';
   const TASK_ID = '6aa9ee1043388191a2eac3bb2702092a';
   const ZANKURE_ID = 'task:' + TASK_ID + ':money-chat:6279063:zankure-current-structure-v1';
   const RETRO_API = 'https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-retro-api';
@@ -190,7 +190,7 @@
       '文字以外の視覚的な主役を先に決め、車・人物・具体物・実物資料を内容に合う場合だけ使ってください。',
       'diagram/comparison/decompositionは文字・四角・矢印だけの指定ではありません。type_onlyは文字が最も明確なページだけです。',
       '全体を白背景・文字・細線だけのプレゼン資料やWeb画面風に統一しないでください。実物の証拠を生成画像で装わないでください。',
-      '画像内に載せる文字は各ページのdisplay_copyのみ。制作メモと根拠IDは載せないでください。収まらない場合は勝手に削らず報告してください。',
+      '画像内に載せる文章は各ページのdisplay_copyのみ。制作メタ情報として現在ページ/総ページ数と小さなスワイプ誘導だけを統一表示して構いません。制作メモと根拠IDは載せないでください。収まらない場合は勝手に削らず報告してください。',
       '画像化後に文字を全文照合し、不一致があれば完成扱いにしないでください。',
       '【制作サイズ】', text(p.production_spec?.size || '1080×1440') + ' / ' + text(p.production_spec?.ratio || '3:4')];
     for(let i=0;i<state.pages.length;i++){
