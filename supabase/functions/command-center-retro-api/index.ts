@@ -224,7 +224,7 @@ Deno.serve(async(req:Request)=>{
         const target="task:6aa9ee1043388191a2eac3bb2702092a:money-chat:6279063:zankure-current-structure-v1";
         if(id!==target||body?.confirmed!==true||body?.unchangedCopy!==true)return json(req,{ok:false,error:"invalid_image_review_request"},400);
         const row=await fpSignal(id),p=row.payload||{},lock=p.content_lock||{};
-        if(p.execution_source!=="chat"||p.draft_status!=="ready"||p.image_ready!==true||lock.locked!==true||
+        if(p.execution_source!=="chat"||p.draft_status!=="ready"||p.image_ready!==false||p.asset_status!=="awaiting_pre_image_review"||lock.locked!==true||
           String(body?.draftRevision||"")!==String(p.draft_revision||"")||String(lock.draft_revision||"")!==String(p.draft_revision||"")||
           String(body?.lockedAt||"")!==String(lock.locked_at||""))return json(req,{ok:false,error:"image_review_stale_or_unready"},409);
         const slides=Array.isArray(p.draft_slides)?p.draft_slides:[],incoming=body?.screenshotDecisions||{},decisions:any={};
@@ -234,7 +234,7 @@ Deno.serve(async(req:Request)=>{
           if(!page||!["optional","unnecessary"].includes(decision))return json(req,{ok:false,error:"screenshot_decision_missing_or_required_asset"},400);
           decisions[page]=decision;
         }
-        const next={...p,pre_image_review:{required:true,status:"approved_by_user",checked_revision:p.draft_revision,checked_locked_at:lock.locked_at,
+        const next={...p,image_ready:true,asset_status:"ready_for_image_generation",pre_image_review:{required:true,status:"approved_by_user",checked_revision:p.draft_revision,checked_locked_at:lock.locked_at,
           screenshot_decisions:decisions,confirmation:"user_read_external_review_unmodified_copy",approved_at:new Date().toISOString()}};
         const fresh=await saveFpPayload(row,next);return json(req,{ok:true,item:mapRow(fresh)});
       }
@@ -328,3 +328,4 @@ Deno.serve(async(req:Request)=>{
     return json(req,{ok:true,generatedAt:new Date().toISOString(),items:(data||[]).filter((x:any)=>!isSystemSignal(x)).map((x:any)=>mapRow(x)),agents:{connected:7,total:7},storedCount:count??0,view});
   }catch(e){return json(req,{ok:false,error:String((e as any)?.message||e)},500)}
 });
+
