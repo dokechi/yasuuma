@@ -148,6 +148,9 @@
   const galTitle=item=>item?.payload?.post_title||item?.payload?.draft_title||item?.payload?.draft_cover||item?.title||'投稿原稿';
   const galStatus=item=>{
     const issues=window.__fpContentPipeline?.preflightIssues;
+    const p=item?.payload||{};
+    if(p.pre_image_review?.required===true &&
+      (p.pre_image_review.status!=='approved_by_user'||p.pre_image_review.checked_revision!==p.draft_revision||p.pre_image_review.checked_locked_at!==p.content_lock?.locked_at))return '画像化前チェック待ち';
     if(item?.reviewState==='accepted')return '画像化候補';
     if(typeof issues==='function'&&issues(item?.payload||{}).length===0)return '画像化可能';
     return '制作条件を選ぶ';
@@ -356,3 +359,4 @@
   renderHome();
   setTimeout(refreshHome,180);
 })();
+
