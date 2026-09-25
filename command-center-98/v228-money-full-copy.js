@@ -204,7 +204,7 @@
       }
       modal.dataset.moneyFullCopy = VERSION;
       putHTML(modal.querySelector('.fp-draft-slides'), memo.html);
-      putText(modal.querySelector('.fp-draft-cover b'), memo.state.pages[0]?.copy || 'display_copy未保存');
+      putText(modal.querySelector('.fp-draft-cover b'), text(p.draft_cover || p.post_title || p.draft_title || item.title) || '表紙案未保存');
       putText(modal.querySelector('.fp-draft-dialog > header small'), 'お金Chat｜全文・状態の確認');
       putText(button, '確認用に全文コピー');
       if (button) button.title = '入口3案・投稿の骨格・表示全文・保留理由をコピーします。画像生成指示ではありません。';
@@ -282,7 +282,7 @@
       '[data-money-full-copy] .fp-canonical-status{margin:7px 0 0;font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}' +
       '[data-money-full-copy] .fp-canonical-page details{margin-top:10px;color:#444;font-size:12px}' +
       '[data-money-full-copy] .fp-entrance-option span{white-space:pre-wrap;overflow-wrap:anywhere}' +
-      '[data-money-full-copy] .fp-draft-cover b{white-space:pre-wrap;font-size:20px}';
+      '[data-money-full-copy] .fp-draft-cover b{white-space:pre-wrap}';
     doc.head.append(style);
     return {refresh,dispose(){bodyObserver.disconnect();observers.forEach(o=>o.disconnect());observers.clear();queue.clear();}};
   }
