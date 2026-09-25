@@ -46,9 +46,10 @@ async function fpSignal(id:string){
   const allowed=new Set(["fp_post_candidate","house_post_candidate"]);
   if(error)throw error;if(!data||!allowed.has(String(data.payload?.content_type||"")))throw new Error("content_signal_not_found");return data
 }
-async function saveFpPayload(row:any,payload:any){
-  const {data,error}=await admin.from("command_center_signals").update({payload,updated_at:new Date().toISOString()}).eq("id",row.id)
-    .select("id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,payload").single();
+async function saveFpPayload(row:any,payload:any,comparePayload=false){
+  let query=admin.from("command_center_signals").update({payload,updated_at:new Date().toISOString()}).eq("id",row.id);
+  if(comparePayload)query=query.eq("payload",JSON.stringify(row.payload));
+  const {data,error}=await query.select("id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,payload").single();
   if(error)throw error;return data
 }
 function moneyEntranceSnapshot(p:any){
@@ -221,22 +222,38 @@ Deno.serve(async(req:Request)=>{
         const fresh=await saveFpPayload(row,payload);return json(req,{ok:true,item:mapRow(fresh)});
       }
       if(action==="fp_image_review"){
-        const target="task:6aa9ee1043388191a2eac3bb2702092a:money-chat:6279063:zankure-current-structure-v1";
-        if(id!==target||body?.confirmed!==true||body?.unchangedCopy!==true)return json(req,{ok:false,error:"invalid_image_review_request"},400);
+        if(!id||body?.confirmed!==true||body?.unchangedCopy!==true)return json(req,{ok:false,error:"invalid_image_review_request"},400);
         const row=await fpSignal(id),p=row.payload||{},lock=p.content_lock||{};
-        if(p.execution_source!=="chat"||p.draft_status!=="ready"||p.image_ready!==false||p.asset_status!=="awaiting_pre_image_review"||lock.locked!==true||
+        if(p.execution_source!=="chat"||p.execution_channel==="work"||p.content_type!=="fp_post_candidate"||
+          p.source_task_id!=="6aa9ee1043388191a2eac3bb2702092a"||p.draft_status!=="ready"||
+          !["awaiting_pre_image_review","ready_for_image_generation"].includes(p.asset_status)||lock.locked!==true||
           String(body?.draftRevision||"")!==String(p.draft_revision||"")||String(lock.draft_revision||"")!==String(p.draft_revision||"")||
           String(body?.lockedAt||"")!==String(lock.locked_at||""))return json(req,{ok:false,error:"image_review_stale_or_unready"},409);
         const slides=Array.isArray(p.draft_slides)?p.draft_slides:[],incoming=body?.screenshotDecisions||{},decisions:any={};
-        if(slides.length!==6||!p.image_render_plan||p.image_render_plan.draft_revision!==p.draft_revision)return json(req,{ok:false,error:"image_render_plan_missing"},409);
-        for(const slide of slides){
+        if(!slides.length||!p.image_render_plan||p.image_render_plan.draft_revision!==p.draft_revision||!Array.isArray(p.image_render_plan.pages)||p.image_render_plan.pages.length!==slides.length)return json(req,{ok:false,error:"image_render_plan_missing"},409);
+        const stable=(value:any):string=>JSON.stringify(value,(_key,v)=>v&&typeof v==="object"&&!Array.isArray(v)?Object.keys(v).sort().reduce((o:any,k)=>(o[k]=v[k],o),{}):v);
+        const current:any=moneyEntranceSnapshot(p);
+        if(p.editorial_workflow_version==="money-spine-editor-v1-20260925"){current.editorial_workflow_version=p.editorial_workflow_version;current.editorial_stage=p.editorial_stage??null;}
+        if(!lock.snapshot||stable(lock.snapshot)!==stable(current)||String(p.blocked_reason||"").trim()||
+          (p.missing_evidence||[]).length||(p.unresolved_research_items||[]).length)return json(req,{ok:false,error:"current_copy_or_evidence_unready"},409);
+        for(const review of [p.final_review,p.logic_institution_review]){
+          if(review?.status!=="passed"||review?.checked_revision!==p.draft_revision||
+            !review.reviewed_snapshot||stable(review.reviewed_snapshot)!==stable(lock.snapshot)||(review.unresolved_items||[]).length)
+            return json(req,{ok:false,error:"editorial_review_missing_or_stale"},409);
+        }
+        const seen=new Set();
+        for(const [index,slide] of slides.entries()){
+          const visual=p.image_render_plan.pages[index];
+          if(!visual||Number(visual.page)!==Number(slide.page)||!["hero","composition","text_role"].every(k=>String(visual[k]||"").trim()))
+            return json(req,{ok:false,error:"image_render_plan_incomplete"},409);
           const page=String(slide?.page||""),decision=String(incoming?.[page]||"");
+          if(seen.has(page))return json(req,{ok:false,error:"duplicate_page"},409);seen.add(page);
           if(!page||!["optional","unnecessary"].includes(decision))return json(req,{ok:false,error:"screenshot_decision_missing_or_required_asset"},400);
           decisions[page]=decision;
         }
         const next={...p,image_ready:true,asset_status:"ready_for_image_generation",pre_image_review:{required:true,status:"approved_by_user",checked_revision:p.draft_revision,checked_locked_at:lock.locked_at,
           screenshot_decisions:decisions,confirmation:"user_read_external_review_unmodified_copy",approved_at:new Date().toISOString()}};
-        const fresh=await saveFpPayload(row,next);return json(req,{ok:true,item:mapRow(fresh)});
+        const fresh=await saveFpPayload(row,next,true);return json(req,{ok:true,item:mapRow(fresh)});
       }
       if(action==="fp_performance"){
         if(!id||!body?.performance||typeof body.performance!=="object")return json(req,{ok:false,error:"invalid_request"},400);

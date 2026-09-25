@@ -10,9 +10,8 @@
   api.install(root);
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
-  const VERSION = '231.3';
+  const VERSION = '232.0';
   const TASK_ID = '6aa9ee1043388191a2eac3bb2702092a';
-  const ZANKURE_ID = 'task:' + TASK_ID + ':money-chat:6279063:zankure-current-structure-v1';
   const RETRO_API = 'https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-retro-api';
   const EDITORIAL_VERSION = 'money-spine-editor-v1-20260925';
   const list = x => Array.isArray(x) ? x : [];
@@ -21,7 +20,7 @@
   const escape = x => text(x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const unique = xs => [...new Set(xs.filter(Boolean))];
   const awaitingEditorial = p => p.editorial_workflow_version === EDITORIAL_VERSION && p.editorial_stage !== 'final';
-  const isZankure = item => String(item?.id || '') === ZANKURE_ID;
+  const usesImageReview = item => applies(item);
   const approvedForImage = p => p.pre_image_review?.status === 'approved_by_user' &&
     p.pre_image_review.checked_revision === p.draft_revision &&
     p.pre_image_review.checked_locked_at === p.content_lock?.locked_at &&
@@ -87,7 +86,7 @@
     return [
       '原稿版: ' + (text(p.draft_revision) || '未設定'),
       '原稿状態: ' + (text(p.draft_status) || '未設定'),
-      '画像化: ' + (p.pre_image_review?.required===true && !approvedForImage(p) ? '画像化前チェックとユーザー確認待ち' : state.imageReady ? '可能' : '保留（確認用コピーのみ）'),
+      '画像化: ' + (!approvedForImage(p) ? '画像化前チェックとユーザー確認待ち' : state.imageReady ? '可能' : '保留（確認用コピーのみ）'),
       '保存された保留理由: ' + (text(p.blocked_reason) || 'なし'),
       '需要判定: ' + demandStatus,
       '保存済み最終照合: ' + (text(p.final_review?.status) || '未設定') + '（画像化可否とは別判定）',
@@ -150,12 +149,13 @@
     return lines.join('\n');
   }
   function buildPreImageCheck(item, adaptive) {
-    if (!isZankure(item)) throw new Error('対象の残クレ原稿ではありません。');
+    if (!usesImageReview(item)) throw new Error('対象のお金Chat原稿ではありません。');
     const p = payload(item), state = inspect(item, adaptive);
-    if (!state.draftReady) throw new Error('原稿確認保留: ' + state.issues.join('／'));
+    if (!state.draftReady) return buildReviewCopy(item, adaptive);
     const lines = [
       '# カルーセル画像化前の最終確認',
       'このターンでは画像を生成しないでください。以下のLOCK済み原稿を、実際に一次情報へアクセスして確認してください。',
+      '問いと答え: 元の読者の疑問に最終ページが直接答えているかを確認。単に正しい関連情報を並べただけなら、理由を示して原稿を再編集してください。',
       '日本語: display_copyとキャプションの助詞、語順、重複、表記ゆれ、誤字を確認。意味・事実・条件・数字を変えない最小限の修正だけ可。',
       '事実・制度・根拠: URLの存在だけで合格にせず、各資料が対応する主張と例外を実際に裏付けるか、現在も有効か確認。',
       '数字・計算: 金額、割合、単位、合計、比較条件があれば元資料から再計算。なければ該当なし。',
@@ -179,23 +179,24 @@
     return lines.join('\n');
   }
   function buildZankureImage(item, adaptive) {
-    if (!isZankure(item)) throw new Error('対象の残クレ原稿ではありません。');
+    if (!usesImageReview(item)) throw new Error('対象のお金Chat原稿ではありません。');
     const p=payload(item), state=inspect(item,adaptive), plan=p.image_render_plan;
     if (!state.imageReady || !approvedForImage(p)) throw new Error('画像化前チェックとユーザー確認が未完了です。');
-    const pages=list(plan.pages);
+    const pages=list(plan?.pages);
     if (pages.length!==state.pages.length) throw new Error('ページ別の画像設計が不足しています。');
     const lines=['# カルーセル画像生成',
       '以下の確認済み原稿を視覚化してください。原稿の再執筆・再解釈は行わないでください。',
       '各ページを独立した画像として順に表示してください。',
-      '文字以外の視覚的な主役を先に決め、車・人物・具体物・実物資料を内容に合う場合だけ使ってください。',
+      '文字以外の視覚的な主役を先に決め、人物・商品・場所・生活場面・具体物・実物資料を内容に合う場合だけ使ってください。',
       'diagram/comparison/decompositionは文字・四角・矢印だけの指定ではありません。type_onlyは文字が最も明確なページだけです。',
       '全体を白背景・文字・細線だけのプレゼン資料やWeb画面風に統一しないでください。実物の証拠を生成画像で装わないでください。',
       '画像内に載せる文章は各ページのdisplay_copyのみ。制作メタ情報として現在ページ/総ページ数と小さなスワイプ誘導だけを統一表示して構いません。制作メモと根拠IDは載せないでください。収まらない場合は勝手に削らず報告してください。',
       '画像化後に文字を全文照合し、不一致があれば完成扱いにしないでください。',
       '【制作サイズ】', text(p.production_spec?.size || '1080×1440') + ' / ' + text(p.production_spec?.ratio || '3:4')];
     for(let i=0;i<state.pages.length;i++){
-      const row=state.pages[i], visual=pages[i], shot=p.pre_image_review.screenshot_decisions?.[String(row.page)];
-      if(Number(visual?.page)!==row.page||!text(visual?.hero)||!text(visual?.composition))throw new Error('ページ別画像設計が不正です。');
+      const row=state.pages[i], visual=pages[i], shot=p.pre_image_review?.screenshot_decisions?.[String(row.page)];
+      if(Number(visual?.page)!==row.page||!trim(visual?.hero)||!trim(visual?.composition)||!trim(visual?.text_role))throw new Error('ページ別画像設計が不正です。');
+      if(!['optional','unnecessary'].includes(shot))throw new Error('必須素材またはスクショ判定が未確認です。');
       lines.push('', '【'+row.page+'/'+state.pages.length+'】', '視覚的な主役: '+visual.hero,
         '構図: '+visual.composition, '文字との役割分担: '+text(visual.text_role),
         '実物スクショ: '+(shot==='optional'?'任意。必要なら原本を確認し、なければ再現しない。':'不要。'),
@@ -223,7 +224,9 @@
     return [
       '【司令塔 → 高度AI｜お金投稿の原稿完成依頼】',
       '以下は骨格と根拠です。完成原稿・画像生成指示ではありません。画像はまだ作らないでください。',
-      '中心疑問と最終回答、ページごとのphenomenonを維持して、選択済み入口から各ページの公開文を完成させてください。根拠と矛盾すれば修正理由を示し、骨格を再検討してください。',
+      '最初に元の読者の疑問と最終回答を照合してください。この結論で元の疑問に答えたことになるかを問い直し、ずれていれば理由を記録して骨格から修正してください。調べやすい統計や制度へ論点をすり替えないでください。',
+      '別トピックの需要は同じ問いを直接支えるものだけ数えます。語句や金額が同じだけの関連話題を独立した需要証拠にしません。反応数の最大・最多は確認範囲を超えて断定しません。',
+      'ページ数・役割・視覚的な主役をテーマごとに決めてください。各ページにvisual_subject、composition、text_roleを保存し、文字だけが最適な場合だけtype_onlyにします。',
       '数字・制度・条件・因果関係・出典の鮮度を一次情報で再確認し、論理と制度を別工程でダブルチェックしてください。確認できない主張は保留にしてください。',
       '需要調査の元コメント・番号・反応数・URLは内部資料です。直接引用の根拠を整えた場合を除き、公開文や画像へ入れないでください。',
       'Michael / Marina / Ben は入口の候補です。本文の別案を3本作らず、selected_entranceの1案だけを1ページ目へ採用してください。',
@@ -231,7 +234,7 @@
       '3入口の1ページ目の文面を照合してentrance_options[].display_copyへ保存し、選択中の文面だけをdraft_slides[0].page_contract.display_copyへ反映してください。本文全体の別案は作らないでください。',
       'Supabase接続が利用できる場合は、signal_idとdraft_revisionが現在も一致することを確認してから、同じレコードへ完成原稿を保存してください。別候補の作成や既存Work版の変更はしないでください。',
       '完成時はeditorial_workflow_versionを維持し、editorial_stage="final"、新しいdraft_revision、全ページのpage_contract、caption、draft_sourcesを保存してください。',
-      '保存前に司令塔のお金Chat品質ゲートを全件通し、content_lock.snapshotを完成原稿から完全コピーで作成し、final_reviewとlogic_institution_reviewを同じrevision・snapshotで照合してください。3入口も照合対象です。通過した場合にだけdraft_status="ready"、image_ready=trueにしてください。',
+      '保存前に司令塔のお金Chat品質ゲートを全件通し、content_lock.snapshotを完成原稿から完全コピーで作成し、final_reviewとlogic_institution_reviewを同じrevision・snapshotで照合してください。3入口も照合対象です。原稿の検査を通過した場合だけdraft_status="ready"とし、画像化前のユーザー確認まではimage_ready=false、asset_status="awaiting_pre_image_review"、pre_image_review={required:true,status:"pending"}にしてください。image_render_plan={draft_revision,pages:[{page,hero,composition,text_role}]}をテーマに合わせて保存し、ユーザー承認を代行しないでください。',
       '未解決があればeditorial_stage="selected"、draft_status="awaiting_editorial"、image_ready=falseを維持し、理由を残してください。確認していない制度や出典をpassedと記録しないでください。',
       '接続できない場合は「未保存」と明記し、保存に必要なJSONと未解決事項を返してください。保存・照合の事実を推測で報告しないでください。',
       '', '【入力データ】', JSON.stringify(input,null,2)
@@ -270,7 +273,7 @@
     if (pipe) {
       const previous = pipe.buildDraftCopy, quality = pipe.packageQuality, imageHandoff=pipe.buildHandoff;
       pipe.buildDraftCopy = function (item) { return applies(item) ? buildReviewCopy(item, adaptive) : previous.apply(this, arguments); };
-      if(typeof imageHandoff==='function')pipe.buildHandoff=function(item){return isZankure(item)?buildZankureImage(item,adaptive):imageHandoff.apply(this,arguments);};
+      if(typeof imageHandoff==='function')pipe.buildHandoff=function(item){return usesImageReview(item)?buildZankureImage(item,adaptive):imageHandoff.apply(this,arguments);};
       if (typeof quality === 'function') pipe.packageQuality = function (item) {
         if (item?.id && applies(item)) cached.set(String(item.id), item);
         return quality.apply(this, arguments);
@@ -309,36 +312,36 @@
         viewStates.set(modal, memo);
       }
       modal.dataset.moneyFullCopy = VERSION;
-      if(isZankure(item))putText(modal.querySelector('.fp-performance .fp-performance-context'),'制作条件：ページごとの車・支払い場面と構図を指定');
+      if(usesImageReview(item))putText(modal.querySelector('.fp-performance .fp-performance-context'),'制作条件：テーマに合う視覚的な主役と構図をページごとに指定');
       putHTML(modal.querySelector('.fp-draft-slides'), memo.html);
       const skeleton = awaitingEditorial(p);
       const chosen = list(p.entrance_options).find(x => x.key === p.selected_entrance);
       putText(modal.querySelector('.fp-draft-cover b'), text((skeleton && chosen?.hook) || p.draft_cover || p.post_title || p.draft_title || item.title) || '表紙案未保存');
       putText(modal.querySelector('.fp-draft-dialog > header small'), skeleton ? 'お金Chat｜骨格・根拠の確認' : 'お金Chat｜全文・状態の確認');
-      putText(button, skeleton ? '骨格を高度AIへコピー' : isZankure(item) ? '画像化前チェック用にコピー' : '確認用に全文コピー');
-      if (button) { button.title = skeleton ? '入口を選び、骨格と根拠を高度AIへ渡します。' : isZankure(item) ? '日本語・制度・根拠・数字・スクショを確認します。この段階で画像は作りません。' : '入口3案・投稿の骨格・表示全文・保留理由をコピーします。画像生成指示ではありません。'; button.disabled = skeleton && p.entrance_selection?.source !== 'command_center_user'; }
+      putText(button, skeleton ? '骨格を高度AIへコピー' : memo.state.draftReady ? '画像化前チェック用にコピー' : '確認用に全文コピー');
+      if (button) { button.title = skeleton ? '入口を選び、骨格と根拠を高度AIへ渡します。' : usesImageReview(item) ? '日本語・制度・根拠・数字・スクショを確認します。この段階で画像は作りません。' : '入口3案・投稿の骨格・表示全文・保留理由をコピーします。画像生成指示ではありません。'; button.disabled = skeleton && p.entrance_selection?.source !== 'command_center_user'; }
       const status = modal.querySelector('.fp-package-status');
       if (status) {
-        const wanted = 'fp-package-status ' + (memo.state.imageReady && (!isZankure(item) || approvedForImage(p)) ? 'ready' : 'blocked');
+        const wanted = 'fp-package-status ' + (memo.state.imageReady && (!usesImageReview(item) || approvedForImage(p)) ? 'ready' : 'blocked');
         if (status.className !== wanted) status.className = wanted;
         putHTML(status, skeleton ? '<div><b>骨格段階｜入口選択後に高度AIへ</b><p>原稿と画像は未確定です。高度AIで原稿を完成し、照合後に画像化できます。</p></div>' :
-          '<div><b>' + (isZankure(item) && !approvedForImage(p) ? '画像化前チェックとあなたの確認を待っています' : memo.state.imageReady ? '画像化の事前検査を通過' : '確認は可能・画像化は保留中') +
+          '<div><b>' + (!memo.state.draftReady ? '原稿の確認待ち・画像化は保留中' : usesImageReview(item) && !approvedForImage(p) ? '画像化前チェックとあなたの確認を待っています' : memo.state.imageReady ? '画像化の事前検査を通過' : '確認は可能・画像化は保留中') +
           '</b><pre class="fp-canonical-status">' + escape(statusLines(p,memo.state).join('\n')) + '</pre></div>');
       }
       const imageButton = modal.querySelector('[data-fp-copy-package]');
       if (imageButton) {
-        imageButton.disabled = !memo.state.imageReady || (isZankure(item) && !approvedForImage(p));
-        putText(imageButton,isZankure(item)?'確認後、画像化用にコピー':'画像化用にコピー');
-        imageButton.title = isZankure(item) && !approvedForImage(p) ? '画像化前チェックの結果を確認し、下の確認を保存してください。' : memo.state.imageReady ? '選択中の表示全文を画像制作へ渡します。' : unique([...memo.state.issues,...memo.state.assetIssues]).join('／');
+        imageButton.disabled = !memo.state.imageReady || (usesImageReview(item) && !approvedForImage(p));
+        putText(imageButton,usesImageReview(item)?'確認後、画像化用にコピー':'画像化用にコピー');
+        imageButton.title = usesImageReview(item) && !approvedForImage(p) ? '画像化前チェックの結果を確認し、下の確認を保存してください。' : memo.state.imageReady ? '選択中の表示全文を画像制作へ渡します。' : unique([...memo.state.issues,...memo.state.assetIssues]).join('／');
       }
-      if (isZankure(item) && status) {
+      if (usesImageReview(item) && status) {
         let gate=modal.querySelector('[data-zankure-image-gate]');
         if(!gate){gate=doc.createElement('section');gate.dataset.zankureImageGate='1';status.insertAdjacentElement('afterend',gate);}
         const approved=approvedForImage(p);
-        const gateKey=String(p.draft_revision)+'|'+String(p.content_lock?.locked_at)+'|'+approved;
+        const gateKey=String(p.draft_revision)+'|'+String(p.content_lock?.locked_at)+'|'+approved+'|'+memo.state.draftReady;
         if(gate.dataset.gateKey!==gateKey){
           gate.dataset.gateKey=gateKey;
-          putHTML(gate,approved?'<b>画像化前チェックを確認済み</b><p>この原稿版の短い画像用指示をコピーできます。</p>':
+          putHTML(gate,!memo.state.draftReady?'<b>原稿確認中</b><p>保留理由を解消して原稿を照合すると、画像化前の確認へ進めます。</p>':approved?'<b>画像化前チェックを確認済み</b><p>この原稿版の短い画像用指示をコピーできます。</p>':
             '<b>画像化前チェック → あなたの確認 → 画像化</b><p>高度AIの確認結果を読んでください。事実・制度・数字に未解決の問題や公開文の修正があれば、先に原稿を更新して再LOCKします。</p>'+ 
             '<div class="zankure-shot-decisions">'+memo.state.pages.map(row=>'<label>'+row.page+'ページの実物スクショ <select data-zankure-shot="'+row.page+'"><option value="">選択</option><option value="unnecessary">不要</option><option value="optional">任意</option><option value="required">必須</option></select></label>').join('')+'</div>'+ 
             '<label><input type="checkbox" data-zankure-confirm> 高度AIの結果を読み、未解決の問題がなく、画像化確定文が現在のLOCK文と同じことを確認した</label><button type="button" data-zankure-approve="'+escape(item.id)+'">確認結果を保存</button>');
@@ -348,7 +351,7 @@
         const candidate = [...modal.querySelectorAll('[data-fp-entrance-choice]')].find(b => b.dataset.fpEntranceChoice === option.key);
         putText(candidate?.querySelector('span'), skeleton ? text(option.hook || option.headline) : text(option.display_copy));
       }
-      putText(modal.querySelector('.fp-entrance-picker > p'), skeleton ? '3案から入口を1つ選ぶと、骨格を高度AIへ渡せます。' : p.editorial_workflow_version === EDITORIAL_VERSION ? '高度AIで原稿を確定しました。入口変更には再編集と再照合が必要です。' : '選択した入口の表示全文が1ページ目に反映されます。入口を変えても保留は自動解除されません。');
+      putText(modal.querySelector('.fp-entrance-picker > p'), skeleton ? '3案から入口を1つ選ぶと、骨格を高度AIへ渡せます。' : p.editorial_workflow_version === EDITORIAL_VERSION ? (memo.state.draftReady ? '原稿の照合が完了しました。入口変更には再編集と再照合が必要です。' : '確認用の原稿です。保留理由を確認し、修正後に再照合してください。') : '選択した入口の表示全文が1ページ目に反映されます。入口を変えても保留は自動解除されません。');
     }
     function schedule(modal) {
       queue.add(modal);
@@ -383,7 +386,7 @@
       const careerCopy=button.matches('.cce-dialog [data-copy]');
       const id = button.dataset.fpCopyDraft || button.dataset.fpCopyPackage || button.closest('.cce-dialog')?.dataset.adaptiveId;
       const item = lookup(id);
-      if(careerCopy && !isZankure(item))return;
+      if(careerCopy && !usesImageReview(item))return;
       if (!applies(item)) {
         if (!item && String(id).startsWith('task:' + TASK_ID + ':')) {
           event.preventDefault(); event.stopImmediatePropagation(); notify('原稿データを取得できないため、旧本文で代用せず停止しました。','bad');
@@ -393,11 +396,11 @@
       event.preventDefault(); event.stopImmediatePropagation();
       try {
         if (button.hasAttribute('data-fp-copy-draft')) {
-          await copy(isZankure(item)?buildPreImageCheck(item,adaptive):buildReviewCopy(item,adaptive),button); notify(isZankure(item)?'画像化前チェック用の文章をコピーしました。画像はまだ作りません。':awaitingEditorial(payload(item)) ? '骨格と根拠を高度AI用にコピーしました。' : '表示全文・入口3案・骨格・状態を確認用にコピーしました。','good');
+          await copy(usesImageReview(item)?buildPreImageCheck(item,adaptive):buildReviewCopy(item,adaptive),button); notify(usesImageReview(item)?'画像化前チェック用の文章をコピーしました。画像はまだ作りません。':awaitingEditorial(payload(item)) ? '骨格と根拠を高度AI用にコピーしました。' : '表示全文・入口3案・骨格・状態を確認用にコピーしました。','good');
         } else {
           const state = inspect(item,adaptive);
           if (!state.imageReady) throw new Error('画像化保留: ' + unique([...state.issues,...state.assetIssues]).join('／'));
-          await copy(isZankure(item)?buildZankureImage(item,adaptive):adaptive.buildHandoff(item),button); notify('選択中の表示全文を画像化用にコピーしました。','good');
+          await copy(usesImageReview(item)?buildZankureImage(item,adaptive):adaptive.buildHandoff(item),button); notify('選択中の表示全文を画像化用にコピーしました。','good');
         }
       } catch (error) { notify(error.message || 'コピーできませんでした。','bad'); }
     },true);
@@ -405,7 +408,7 @@
       const button=event.target.closest?.('[data-zankure-approve]');if(!button)return;
       event.preventDefault();event.stopImmediatePropagation();
       const item=lookup(button.dataset.zankureApprove),modal=button.closest('[data-fp-modal]');
-      if(!isZankure(item)||!modal)return;
+      if(!usesImageReview(item)||!modal)return;
       try{
         const gate=button.closest('[data-zankure-image-gate]');
         if(!gate.querySelector('[data-zankure-confirm]')?.checked)throw new Error('高度AIの確認結果を読んでからチェックしてください。');
@@ -415,7 +418,7 @@
           if(select.value==='required')throw new Error('必須スクショがあるページは、素材を取得して原稿・素材確認を更新してください。');
           screenshotDecisions[select.dataset.zankureShot]=select.value;
         }
-        const p=payload(item);button.disabled=true;
+        const p=payload(item);if(!inspect(item,adaptive).draftReady)throw new Error('原稿の確認が完了していません。');button.disabled=true;
         const response=await root.fetch(RETRO_API,{method:'PATCH',cache:'no-store',headers:{...(typeof authHeaders==='function'?authHeaders():{}),'Content-Type':'application/json'},body:JSON.stringify({action:'fp_image_review',id:String(item.id),draftRevision:p.draft_revision,lockedAt:p.content_lock?.locked_at,confirmed:true,unchangedCopy:true,screenshotDecisions})});
         const data=await response.json();if(!response.ok||!data?.ok)throw new Error(data?.error||('HTTP '+response.status));
         const rows=(typeof app!=='undefined'?app.items:[])||[],idx=rows.findIndex(row=>String(row.id)===String(item.id));
