@@ -299,6 +299,7 @@
 
   const topStatus=item=>{
     const status=draftStatus(item);
+    if(item?.id==='task:6aa9ee1043388191a2eac3bb2702092a:money-chat:6279063:zankure-current-structure-v1'&&item?.payload?.pre_image_review?.status!=='approved_by_user')return{label:'画像化前チェック待ち',kind:'action',weight:540};
     if(status.kind==='ready'&&!preflightReady(item.payload||{}))return{label:'制作条件を選ぶ',kind:'action',weight:540};
     if(status.kind==='ready')return{label:status.label,kind:'action',weight:500};
     if(status.kind==='history')return{label:status.label,kind:'history',weight:100};
@@ -711,3 +712,4 @@
   bindDraftOpenButtons(document);
   loadTop(true);
 })();
+
