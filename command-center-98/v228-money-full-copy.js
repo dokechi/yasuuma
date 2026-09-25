@@ -10,7 +10,7 @@
   api.install(root);
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
-  const VERSION = '231.1';
+  const VERSION = '231.2';
   const TASK_ID = '6aa9ee1043388191a2eac3bb2702092a';
   const ZANKURE_ID = 'task:' + TASK_ID + ':money-chat:6279063:zankure-current-structure-v1';
   const RETRO_API = 'https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-retro-api';
@@ -309,6 +309,7 @@
         viewStates.set(modal, memo);
       }
       modal.dataset.moneyFullCopy = VERSION;
+      if(isZankure(item))putText(modal.querySelector('.fp-performance .fp-performance-context'),'制作条件：ページごとの車・支払い場面と構図を指定');
       putHTML(modal.querySelector('.fp-draft-slides'), memo.html);
       const skeleton = awaitingEditorial(p);
       const chosen = list(p.entrance_options).find(x => x.key === p.selected_entrance);
@@ -441,3 +442,4 @@
   }
   return {VERSION,TASK_ID,EDITORIAL_VERSION,applies,canonicalPages,inspect,buildReviewCopy,buildPreImageCheck,buildZankureImage,buildEditorialHandoff,install};
 });
+
