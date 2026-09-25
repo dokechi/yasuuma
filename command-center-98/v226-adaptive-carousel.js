@@ -76,6 +76,10 @@
       snapshot.structure_contract_version=p.structure_contract_version;
       snapshot.story_spine=p.story_spine??null;
     }
+    if (str(p.editorial_workflow_version)==='money-spine-editor-v1-20260925') {
+      snapshot.editorial_workflow_version=p.editorial_workflow_version;
+      snapshot.editorial_stage=p.editorial_stage??null;
+    }
     return snapshot;
   };
   const payloadOf = value => value && value.payload && typeof value.payload === 'object' ? value.payload : (value && typeof value === 'object' ? value : {});
@@ -610,6 +614,7 @@
     const ignored = new Set(['ページ別原稿が不足']);
     const issues = arr(base?.issues).filter(issue => !ignored.has(str(issue)));
     issues.push(...strictCommunityIssues(p), ...structureIssues(p), ...pageContractIssues(p), ...sourceIssues(p), ...publicOutputIssues(p), ...lockIssues(p), ...finalReviewIssues(p), ...designIssues(p), ...houseSpecificIssues(p), ...entranceIssues(p));
+    if (str(p.editorial_workflow_version)==='money-spine-editor-v1-20260925' && str(p.editorial_stage)!=='final') issues.push('高度AIによる原稿完成と照合が未完了');
     if (p.draft_status !== 'ready') issues.push('完成原稿が未確定');
     return {ready:[...new Set(issues)].length === 0, issues:[...new Set(issues)]};
   }
@@ -781,19 +786,21 @@
       const optionState=arr(p.entrance_options).map(option=>[
         str(option?.key).toLowerCase(),str(option?.label),str(option?.approach),str(option?.hook),str(option?.display_copy)
       ].join('~')).join('||');
-      return [str(p.selected_entrance).toLowerCase(),str(p.draft_revision),optionState].join('::');
+      return [str(p.selected_entrance).toLowerCase(),str(p.draft_revision),str(p.editorial_stage),optionState].join('::');
     };
     const entranceHtml = item => {
       const p=payloadOf(item),renderState=entranceRenderState(item);
       if(!renderState)return'';
       const selected=str(p.selected_entrance).toLowerCase();
+      const editorialFinal=p.editorial_workflow_version==='money-spine-editor-v1-20260925'&&p.editorial_stage==='final';
       const cards=arr(p.entrance_options).map(option=>{
         const key=str(option?.key).toLowerCase(),active=key===selected;
-        return '<button type="button" class="fp-entrance-option '+(active?'selected':'')+'" data-fp-entrance-choice="'+esc(key)+'" data-fp-entrance-id="'+esc(item.id)+'" aria-pressed="'+(active?'true':'false')+'">'
+        return '<button type="button" class="fp-entrance-option '+(active?'selected':'')+'" data-fp-entrance-choice="'+esc(key)+'" data-fp-entrance-id="'+esc(item.id)+'" aria-pressed="'+(active?'true':'false')+'"'+(editorialFinal?' disabled':'')+'>'
           +'<b>'+esc(option?.label||key)+'</b><small>'+esc(option?.approach||'')+'</small><span>'+esc(option?.hook||option?.display_copy||'')+'</span>'
-          +(active?'<em>選択中</em>':'<em>この入口を使う</em>')+'</button>';
+          +(active?'<em>選択中</em>':editorialFinal?'<em>原稿確定済み</em>':'<em>この入口を使う</em>')+'</button>';
       }).join('');
-      return '<section class="fp-entrance-picker" data-money-entrance="'+esc(item.id)+'" data-entrance-render-state="'+esc(renderState)+'"><h4>入口の型 3案</h4><p>Michael / Marina / Ben の3案はすべて事前照合済み。クリックすると1枚目だけ切り替えます。</p><div class="fp-entrance-grid">'+cards+'</div></section>';
+      const skeleton=p.editorial_workflow_version==='money-spine-editor-v1-20260925'&&p.editorial_stage!=='final';
+      return '<section class="fp-entrance-picker" data-money-entrance="'+esc(item.id)+'" data-entrance-render-state="'+esc(renderState)+'"><h4>入口の型 3案</h4><p>'+(skeleton?'骨格を共有する3案から入口を1つ選びます。':editorialFinal?'高度AIで原稿を確定しました。入口変更には再編集と再照合が必要です。':'Michael / Marina / Ben の3案はすべて事前照合済み。クリックすると1枚目だけ切り替えます。')+'</p><div class="fp-entrance-grid">'+cards+'</div></section>';
     };
     function renderEntrance(modal,item){
       const current=modal.querySelector('[data-money-entrance]');

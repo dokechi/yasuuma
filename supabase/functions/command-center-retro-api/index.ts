@@ -43,18 +43,59 @@ function fpMetric(v:any,max=1000000000,decimal=false){if(v===null||v===undefined
 async function fpSignal(id:string){
   const fields="id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,payload";
   const {data,error}=await admin.from("command_center_signals").select(fields).eq("id",id).maybeSingle();
-  if(error)throw error;if(!data||data.payload?.content_type!=="fp_post_candidate")throw new Error("fp_signal_not_found");return data
+  const allowed=new Set(["fp_post_candidate","house_post_candidate"]);
+  if(error)throw error;if(!data||!allowed.has(String(data.payload?.content_type||"")))throw new Error("content_signal_not_found");return data
 }
 async function saveFpPayload(row:any,payload:any){
   const {data,error}=await admin.from("command_center_signals").update({payload,updated_at:new Date().toISOString()}).eq("id",row.id)
     .select("id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,payload").single();
   if(error)throw error;return data
 }
+function moneyEntranceSnapshot(p:any){
+  return {
+    post_title:p.post_title??null,
+    draft_title:p.draft_title??null,
+    draft_cover:p.draft_cover??null,
+    caption:p.caption??p.draft_caption??p.post_caption??null,
+    page_count_reason:p.page_count_reason??null,
+    question_lineage:p.question_lineage??null,
+    premise_checks:Array.isArray(p.premise_checks)?p.premise_checks:[],
+    draft_slides:Array.isArray(p.draft_slides)?p.draft_slides:[],
+    draft_sources:Array.isArray(p.draft_sources)?p.draft_sources:[],
+    entrance_contract_version:p.entrance_contract_version??null,
+    entrance_options:Array.isArray(p.entrance_options)?p.entrance_options:[],
+    selected_entrance:p.selected_entrance??null,
+    entrance_selection:p.entrance_selection??null,
+    structure_contract_version:p.structure_contract_version??null,
+    story_spine:p.story_spine??null
+  };
+}
+function moneyStructureReady(p:any){
+  if(String(p?.structure_contract_version||"")!=="money-story-spine-v1-20260924")return false;
+  const spine=p?.story_spine,slides=Array.isArray(p?.draft_slides)?p.draft_slides:[],beats=Array.isArray(spine?.beats)?spine.beats:[];
+  if(!spine||typeof spine!=="object"||Array.isArray(spine)||!String(spine?.central_question||"").trim()||!String(spine?.final_answer||"").trim())return false;
+  if(!slides.length||beats.length!==slides.length)return false;
+  const seen=new Set<string>();
+  for(let i=0;i<slides.length;i++){
+    const slide=slides[i]||{},beat=beats[i]||{},page=Number(slide?.page)||i+1;
+    const bp=Number(beat?.page),role=String(beat?.role||"").trim(),bPhen=String(beat?.phenomenon||"").trim(),sPhen=String(slide?.page_contract?.phenomenon||"").trim();
+    if(bp!==page||!role||!bPhen||!sPhen||bPhen.replace(/\s+/g," ")!==sPhen.replace(/\s+/g," "))return false;
+    const key=sPhen.replace(/\s+/g," ").toLowerCase();
+    if(seen.has(key))return false;seen.add(key);
+  }
+  return true;
+}
 
+function isSystemSignal(row:any){
+  const id=String(row?.id||"");
+  const title=String(row?.title||"");
+  const kind=String(row?.payload?.result_kind||"");
+  return kind==="sales_sync"||/^gmail-sales:|^sns:gmail-sales:/.test(id)||/メルカリ売上同期/.test(title);
+}
 async function allSourcingSignals(){
   const rows:any[]=[];
   for(let offset=0;;offset+=1000){const {data,error}=await admin.from("command_center_signals").select("id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,updated_at,payload").eq("domain","sourcing").order("id",{ascending:true}).range(offset,offset+999);if(error)throw error;rows.push(...(data||[]));if((data||[]).length<1000)break}
-  return rows;
+  return rows.filter((x:any)=>!isSystemSignal(x));
 }
 function readySourcing(row:any,reviewIds:Set<string>){return row.review_state==='new'&&!reviewIds.has(row.id)&&['S','A'].includes(row.priority)&&!['research','supplier','run_summary'].includes(row.payload?.result_kind)}
 async function syncSupplierLedger(signals:any[]){
@@ -70,7 +111,7 @@ async function syncSupplierLedger(signals:any[]){
   ]);if(se)throw se;if(re)throw re;if(ce)throw ce;
   const reviewMap=new Map<string,any>();for(const r of reviews||[]){const a=reviewMap.get(r.supplier_key)||{success:0,close:0,miss:0,lastSuccess:null};a[r.verdict]=(a[r.verdict]||0)+1;if(r.verdict==="success"&&(!a.lastSuccess||new Date(r.judged_at)>new Date(a.lastSuccess)))a.lastSuccess=r.judged_at;reviewMap.set(r.supplier_key,a)}
   const candMap=new Map<string,any>();for(const c of cands||[]){const a=candMap.get(c.supplier_key)||{count:0,lastSeen:null};a.count++;if(!a.lastSeen||new Date(c.last_seen_at)>new Date(a.lastSeen))a.lastSeen=c.last_seen_at;candMap.set(c.supplier_key,a)}
-  const updates=(suppliers||[]).map((s:any)=>{const r=reviewMap.get(s.supplier_key)||{success:0,close:0,miss:0,lastSuccess:null};const c=candMap.get(s.supplier_key)||{count:0,lastSeen:s.last_seen_at};const boost=r.success>0?Math.min(30,15+Math.max(0,r.success-1)*5+Math.min(10,r.close*2)):Math.min(10,r.close*2);const trust=Math.min(100,50+r.success*15+r.close*3);return {supplier_key:s.supplier_key,supplier_name:s.supplier_name,canonical_host:s.canonical_host,homepage_url:s.homepage_url,last_seen_at:c.lastSeen||s.last_seen_at,last_success_at:r.lastSuccess,success_count:r.success,close_count:r.close,miss_count:r.miss,candidate_count:c.count,trust_score:trust,priority_boost:boost,updated_at:now}});
+  const updates=(suppliers||[]).map((s:any)=>{const r=reviewMap.get(s.supplier_key)||{success:0,close:0,miss:0,lastSuccess:null};const c=candMap.get(s.supplier_key)||{count:0,lastSeen:s.last_seen_at};const boost=r.success>0?Math.min(10,5+Math.max(0,r.success-1)*2+Math.min(3,r.close)):Math.min(5,r.close);const trust=Math.min(100,50+r.success*15+r.close*3);return {supplier_key:s.supplier_key,supplier_name:s.supplier_name,canonical_host:s.canonical_host,homepage_url:s.homepage_url,last_seen_at:c.lastSeen||s.last_seen_at,last_success_at:r.lastSuccess,success_count:r.success,close_count:r.close,miss_count:r.miss,candidate_count:c.count,trust_score:trust,priority_boost:boost,updated_at:now}});
   if(updates.length){const {error}=await admin.from("command_center_suppliers").upsert(updates,{onConflict:"supplier_key"});if(error)throw error}
 }
 async function sourcingVerdict(id:string,verdict:string,note:string|null){
@@ -122,17 +163,61 @@ Deno.serve(async(req:Request)=>{
   if(req.method==="PATCH"){
     try{
       const body=await req.json().catch(()=>({}));const id=String(body?.id||"");const action=String(body?.action||"");
+      if(action==="fp_entrance"){
+        if(!id)return json(req,{ok:false,error:"invalid_request"},400);
+        const row=await fpSignal(id),p=row.payload||{},key=String(body?.entranceKey||"").toLowerCase();
+        const allowed=new Set(["michael","marina","ben"]);
+        if(p?.content_type!=="fp_post_candidate"||p?.category!=="fp_psychology"||String(p?.entrance_contract_version||"")!=="money-entrance-v1-20260924"||!allowed.has(key))return json(req,{ok:false,error:"invalid_entrance_request"},400);
+        if(!moneyStructureReady(p))return json(req,{ok:false,error:"structure_not_ready"},409);
+        const options=Array.isArray(p.entrance_options)?p.entrance_options:[],option=options.find((x:any)=>String(x?.key||"").toLowerCase()===key);
+        if(String(p.editorial_workflow_version||"")==="money-spine-editor-v1-20260925"){
+          if(String(p.source_task_id||"")!=="6aa9ee1043388191a2eac3bb2702092a"||String(p.editorial_stage||"")==="final")return json(req,{ok:false,error:"editorial_selection_closed"},409);
+          if(!option||!String(option.hook||option.headline||"").trim())return json(req,{ok:false,error:"entrance_option_missing"},400);
+          const now=new Date().toISOString(),base=String(p.entrance_base_revision||p.draft_revision||"money-spine-r1").replace(/-(michael|marina|ben)$/i,""),revision=`${base}-${key}`;
+          const next:any={...p,selected_entrance:key,entrance_selection:{selected_key:key,selected_at:now,source:"command_center_user"},draft_revision:revision,editorial_stage:"selected",draft_status:"awaiting_editorial",image_ready:false,asset_status:"awaiting_editorial",blocked_reason:"awaiting_editorial"};
+          delete next.content_lock;delete next.final_review;delete next.logic_institution_review;
+          const fresh=await saveFpPayload(row,next);
+          return json(req,{ok:true,item:mapRow(fresh),selectedKey:key,selectedLabel:String(option.label||key)});
+        }
+        const reviewed=new Set((Array.isArray(p.final_review?.reviewed_entrances)?p.final_review.reviewed_entrances:[]).map((x:any)=>String(x).toLowerCase()));
+        if(!option||!reviewed.has(key))return json(req,{ok:false,error:"entrance_not_pre_reviewed"},400);
+        const slides=Array.isArray(p.draft_slides)?structuredClone(p.draft_slides):[];
+        if(!slides.length||!slides[0]?.page_contract)return json(req,{ok:false,error:"entrance_slide_missing"},400);
+        slides[0]={...slides[0],headline:String(option.headline||slides[0].headline||""),body:String(option.body||slides[0].body||""),page_contract:{...slides[0].page_contract,display_copy:String(option.display_copy||"")}};
+        const now=new Date().toISOString(),base=String(p.entrance_base_revision||p.draft_revision||"money-r1").replace(/-(michael|marina|ben)$/i,""),revision=`${base}-${key}`;
+        const entranceSelection={selected_key:key,selected_at:now,source:"command_center_user"};
+        const next:any={...p,selected_entrance:key,entrance_selection:entranceSelection,draft_slides:slides,draft_revision:revision};
+        if(option.post_title)next.post_title=String(option.post_title);
+        next.draft_cover=String(option.draft_cover||option.headline||p.draft_cover||p.post_title||"");
+        const snapshot=moneyEntranceSnapshot(next);
+        next.content_lock={locked:true,draft_revision:revision,locked_at:now,snapshot};
+        next.final_review={...(p.final_review||{}),status:"passed",checked_revision:revision,selected_entrance:key,entrance_selection_applied_at:now,selection_mode:"pre_reviewed_variant"};
+        if(String(p.logic_review_contract_version||"")==="money-logic-institution-review-v1-20260925"){
+          const logic=p.logic_institution_review||{};
+          const logicReviewed=new Set((Array.isArray(logic.reviewed_entrances)?logic.reviewed_entrances:[]).map((x:any)=>String(x).toLowerCase()));
+          if(String(logic.status||"")!=="passed"||!logicReviewed.has(key))return json(req,{ok:false,error:"logic_review_not_pre_reviewed"},409);
+          next.logic_institution_review={...logic,status:"passed",checked_revision:revision,selected_entrance:key,entrance_selection_applied_at:now,reviewed_snapshot:snapshot};
+        }
+        const fresh=await saveFpPayload(row,next);
+        return json(req,{ok:true,item:mapRow(fresh),selectedKey:key,selectedLabel:String(option.label||key)});
+      }
       if(action==="fp_preflight"){
         if(!id)return json(req,{ok:false,error:"invalid_request"},400);
-        const row=await fpSignal(id),p=row.payload||{},design=String(body?.designDirection||""),color=String(body?.colorPalette||""),cover=String(body?.coverMode||"");
-        const allowedDesign=new Set(["friendly","editorial","notebook"]),allowedColor=new Set(["teal","warm","blue"]),allowedCover=new Set(["photo","character","type_only"]);
-        if(!allowedDesign.has(design))return json(req,{ok:false,error:"invalid_design_direction"},400);
-        if(!allowedColor.has(color))return json(req,{ok:false,error:"invalid_color_palette"},400);
-        if(!allowedCover.has(cover))return json(req,{ok:false,error:"invalid_cover_mode"},400);
+        const row=await fpSignal(id),p=row.payload||{};
         const incoming=body?.screenshotDecisions&&typeof body.screenshotDecisions==="object"?body.screenshotDecisions:{},normalized:any={};
         const requests=Array.isArray(p.screenshot_requests)?p.screenshot_requests.slice(0,20):[];
         for(const shot of requests){const shotId=String(shot?.id||"").slice(0,120),decision=String(incoming?.[shotId]||""),allowed=shot?.required?["assistant","user"]:["assistant","user","skip"];if(!shotId||!allowed.includes(decision))return json(req,{ok:false,error:"invalid_screenshot_decision"},400);normalized[shotId]=decision}
-        const now=new Date().toISOString(),payload={...p,design_direction:design,color_palette:color,cover_mode:cover,screenshot_decisions:normalized,production_preflight:{status:"ready",design_direction:design,color_palette:color,cover_mode:cover,screenshot_decisions:normalized,confirmed_at:now}};
+        const now=new Date().toISOString();
+        if(body?.adaptive===true){
+          const payload={...p,screenshot_decisions:normalized,production_preflight:{status:"ready",mode:"adaptive",design_direction:null,color_palette:null,cover_mode:null,screenshot_decisions:normalized,confirmed_at:now}};
+          const fresh=await saveFpPayload(row,payload);return json(req,{ok:true,item:mapRow(fresh)});
+        }
+        const design=String(body?.designDirection||""),color=String(body?.colorPalette||""),cover=String(body?.coverMode||"");
+        const allowedDesign=new Set(row.payload?.content_type==="house_post_candidate"?["house","editorial","notebook"]:["friendly","editorial","notebook"]),allowedColor=new Set(["teal","warm","blue"]),allowedCover=new Set(["photo","character","type_only"]);
+        if(!allowedDesign.has(design))return json(req,{ok:false,error:"invalid_design_direction"},400);
+        if(!allowedColor.has(color))return json(req,{ok:false,error:"invalid_color_palette"},400);
+        if(!allowedCover.has(cover))return json(req,{ok:false,error:"invalid_cover_mode"},400);
+        const payload={...p,design_direction:design,color_palette:color,cover_mode:cover,screenshot_decisions:normalized,production_preflight:{status:"ready",mode:"legacy",design_direction:design,color_palette:color,cover_mode:cover,screenshot_decisions:normalized,confirmed_at:now}};
         const fresh=await saveFpPayload(row,payload);return json(req,{ok:true,item:mapRow(fresh)});
       }
       if(action==="fp_performance"){
@@ -206,7 +291,7 @@ Deno.serve(async(req:Request)=>{
       await syncSupplierLedger(signals||[]);
       const {data:suppliers,error:sp}=await admin.from("command_center_suppliers").select("supplier_key,supplier_name,canonical_host,homepage_url,first_seen_at,last_seen_at,last_success_at,success_count,close_count,miss_count,candidate_count,trust_score,priority_boost,notes").order("priority_boost",{ascending:false}).order("success_count",{ascending:false}).order("last_seen_at",{ascending:false});if(sp)throw sp;
       const reviewBy=new Map((reviews||[]).map((r:any)=>[r.signal_id,r]));const supplierBy=new Map((suppliers||[]).map((r:any)=>[r.supplier_key,r]));
-      const items=(signals||[]).map((x:any)=>{const si=supplierInfo(x.source_title,x.source_url);const r=reviewBy.get(x.id);const sup=supplierBy.get(si.key);const boost=Number(sup?.priority_boost||0);const adjusted=Math.min(100,Number(x.score||0)+boost);return {...mapRow(x,adjusted,0),priority:rankFromScore(adjusted),sourcingVerdict:r?.verdict||null,verdictNote:r?.note||null,judgedAt:r?.judged_at||null,verdictExpiresAt:r?.expires_at||null,supplierKey:si.key,supplierName:si.name,supplierBoost:boost,supplierTrust:Number(sup?.trust_score||50)}});
+      const items=(signals||[]).map((x:any)=>{const si=supplierInfo(x.source_title,x.source_url);const r=reviewBy.get(x.id);const sup=supplierBy.get(si.key);const boost=Math.min(10,Math.max(0,Number(sup?.priority_boost||0)));const adjusted=Math.min(100,Number(x.score||0)+boost);return {...mapRow(x,adjusted,0),priority:rankFromScore(adjusted),sourcingVerdict:r?.verdict||null,verdictNote:r?.note||null,judgedAt:r?.judged_at||null,verdictExpiresAt:r?.expires_at||null,supplierKey:si.key,supplierName:si.name,supplierBoost:boost,supplierTrust:Number(sup?.trust_score||50)}});
       return json(req,{ok:true,generatedAt:new Date().toISOString(),items,suppliers:(suppliers||[]).map(mapSupplier),counts:{total:items.length,unjudged:items.filter((x:any)=>!x.sourcingVerdict).length,success:items.filter((x:any)=>x.sourcingVerdict==="success").length,close:items.filter((x:any)=>x.sourcingVerdict==="close").length,miss:items.filter((x:any)=>x.sourcingVerdict==="miss").length,suppliers:(suppliers||[]).length,provenSuppliers:(suppliers||[]).filter((x:any)=>Number(x.success_count)>0).length}});
     }
     const view=u.searchParams.get("view")||"active";
@@ -214,7 +299,7 @@ Deno.serve(async(req:Request)=>{
     if(view==="active"){
       const [{data,error},negatives]=await Promise.all([admin.from("command_center_signals").select("id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,updated_at,payload").eq("review_state","new").order("score",{ascending:false}).order("last_seen_at",{ascending:false}).limit(40),negativeExamples()]);
       if(error)throw error;
-      const learned=(data||[]).map((x:any)=>{const penalty=learningPenalty(x,negatives);return mapRow(x,Math.max(0,Number(x.score||0)-penalty),penalty)}).sort((a:any,b:any)=>b.score-a.score||new Date(b.lastSeen||0).getTime()-new Date(a.lastSeen||0).getTime()).slice(0,5);
+      const learned=(data||[]).filter((x:any)=>!isSystemSignal(x)).map((x:any)=>{const penalty=learningPenalty(x,negatives);return mapRow(x,Math.max(0,Number(x.score||0)-penalty),penalty)}).sort((a:any,b:any)=>b.score-a.score||new Date(b.lastSeen||0).getTime()-new Date(a.lastSeen||0).getTime()).slice(0,5);
       return json(req,{ok:true,generatedAt:new Date().toISOString(),items:learned,agents:{connected:7,total:7},storedCount:count??0,view,learning:true});
     }
     let q=admin.from("command_center_signals").select("id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,updated_at,payload");
@@ -222,6 +307,6 @@ Deno.serve(async(req:Request)=>{
     else if(["read","accepted","rejected"].includes(view)) q=q.eq("review_state",view).order("updated_at",{ascending:false}).limit(100);
     else q=q.order("updated_at",{ascending:false}).limit(100);
     const {data,error}=await q;if(error)throw error;
-    return json(req,{ok:true,generatedAt:new Date().toISOString(),items:(data||[]).map((x:any)=>mapRow(x)),agents:{connected:7,total:7},storedCount:count??0,view});
+    return json(req,{ok:true,generatedAt:new Date().toISOString(),items:(data||[]).filter((x:any)=>!isSystemSignal(x)).map((x:any)=>mapRow(x)),agents:{connected:7,total:7},storedCount:count??0,view});
   }catch(e){return json(req,{ok:false,error:String((e as any)?.message||e)},500)}
 });
