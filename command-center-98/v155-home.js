@@ -149,7 +149,10 @@
   const galStatus=item=>{
     const issues=window.__fpContentPipeline?.preflightIssues;
     const p=item?.payload||{};
-    if(String(item?.id||'')==='task:6aa9ee1043388191a2eac3bb2702092a:money-chat:6279063:zankure-current-structure-v1'&&p.pre_image_review?.status!=='approved_by_user')return '画像化前チェック待ち';
+    if(p.source_task_id==='6aa9ee1043388191a2eac3bb2702092a'&&(p.execution_source||p.execution_channel)==='chat'&&p.execution_channel!=='work'&&p.content_type==='fp_post_candidate'){
+      if(p.draft_status!=='ready')return p.editorial_stage==='final'?'原稿確認待ち':'原稿作成待ち';
+      if(p.pre_image_review?.status!=='approved_by_user'||p.pre_image_review.checked_revision!==p.draft_revision||p.pre_image_review.checked_locked_at!==p.content_lock?.locked_at)return '画像化前チェック待ち';
+    }
     if(p.pre_image_review?.required===true &&
       (p.pre_image_review.status!=='approved_by_user'||p.pre_image_review.checked_revision!==p.draft_revision||p.pre_image_review.checked_locked_at!==p.content_lock?.locked_at))return '画像化前チェック待ち';
     if(item?.reviewState==='accepted')return '画像化候補';

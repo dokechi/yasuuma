@@ -299,7 +299,11 @@
 
   const topStatus=item=>{
     const status=draftStatus(item);
-    if(item?.id==='task:6aa9ee1043388191a2eac3bb2702092a:money-chat:6279063:zankure-current-structure-v1'&&item?.payload?.pre_image_review?.status!=='approved_by_user')return{label:'画像化前チェック待ち',kind:'action',weight:540};
+    const p=item?.payload||{};
+    if(p.source_task_id==='6aa9ee1043388191a2eac3bb2702092a'&&(p.execution_source||p.execution_channel)==='chat'&&p.execution_channel!=='work'&&p.content_type==='fp_post_candidate'){
+      if(p.draft_status!=='ready'&&p.editorial_stage==='final')return{label:'原稿確認待ち',kind:'research',weight:320};
+      if(p.draft_status==='ready'&&(p.pre_image_review?.status!=='approved_by_user'||p.pre_image_review.checked_revision!==p.draft_revision||p.pre_image_review.checked_locked_at!==p.content_lock?.locked_at))return{label:'画像化前チェック待ち',kind:'action',weight:540};
+    }
     if(status.kind==='ready'&&!preflightReady(item.payload||{}))return{label:'制作条件を選ぶ',kind:'action',weight:540};
     if(status.kind==='ready')return{label:status.label,kind:'action',weight:500};
     if(status.kind==='history')return{label:status.label,kind:'history',weight:100};
