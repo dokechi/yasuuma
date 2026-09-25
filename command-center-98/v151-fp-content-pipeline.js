@@ -107,8 +107,13 @@
   const demand=payload=>payload.demand_evidence&&typeof payload.demand_evidence==='object'?payload.demand_evidence:{};
   const demandVerdict=payload=>text(demand(payload).verdict).toLowerCase();
   const demandReady=payload=>{
-    const d=demand(payload);
-    return demandVerdict(payload)==='strong'&&text(d.question_demand||d.question_demand_summary||d.reason)&&list(d.evidence_comment_nos||payload.source_anchor_comment_nos).length>0;
+    const d=demand(payload), verdict=demandVerdict(payload);
+    const demandText=text(d.question_demand||d.question_demand_summary||d.reason);
+    if(verdict==='strong'&&demandText&&list(d.evidence_comment_nos||payload.source_anchor_comment_nos).length>0)return true;
+    const research=payload.community_research&&typeof payload.community_research==='object'?payload.community_research:{};
+    const minimum=Number(research.min_topics)||2;
+    const strictIds=list(research.strict_topic_ids).filter(Boolean);
+    return verdict==='strict'&&text(research.status).toLowerCase()==='strict'&&strictIds.length>=minimum&&!!demandText;
   };
   const screenshotDecision=(payload,row)=>text(payload.screenshot_decisions?.[row?.id]);
   const preflightIssues=payload=>{
