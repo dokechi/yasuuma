@@ -86,7 +86,7 @@ function authExpired(){localStorage.removeItem('cc_retro_token');location.replac
 const labels={money:'FP・家計',subsidy:'補助金',company:'会社・業界',ai:'AI',deal:'お得',sourcing:'仕入れ',sns:'SNS候補'};
 const stateLabels={new:'未処理',read:'既読',accepted:'採用済',rejected:'却下済'};
 let app={view:'active',domain:'all',rank:'all',data:null,items:[],busy:false,lastUndo:null};
-let sourcingApp={loaded:false,items:[],suppliers:[],counts:{},sub:'queue',purchases:[],purchaseCounts:{},purchaseSuppliers:[],purchaseMonth:'2026-08'};
+let sourcingApp={loaded:false,items:[],suppliers:[],counts:{},sub:'queue',purchases:[],purchaseCounts:{},purchaseSuppliers:[],purchaseMonth:new Date(Date.now()+9*60*60*1000).toISOString().slice(0,7)};
 let taskApp={loaded:false,tasks:[],counts:{},selected:null,pending:null,error:false};
 let shellState={reviewIndex:0,reviewBusy:false};
 function esc(v){return String(v??'').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]))}
