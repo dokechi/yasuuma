@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {HOUSE_CAMPAIGN, copyIssues, contentIssues, deliveryIssues, revisionOf, jobState, renderAll, createBufferPost, httpsUrl} from '../supabase/functions/_shared/affiliate-production.mjs';
+import {HOUSE_CAMPAIGN, copyIssues, contentIssues, deliveryIssues, revisionOf, jobState, renderAll, createBufferPost, httpsUrl} from '../supabase/functions/shared/affiliate-production.mjs';
 const fixture=JSON.parse(await readFile(new URL('./affiliate-production-pilot.json',import.meta.url),'utf8'));
 const stamp=Date.parse('2026-10-01T12:00:00Z');
 const fresh=()=>structuredClone(fixture), camp=()=>structuredClone(HOUSE_CAMPAIGN);
