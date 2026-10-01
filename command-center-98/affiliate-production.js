@@ -1,6 +1,6 @@
 (()=>{
   if(typeof API==='undefined'||typeof load!=='function'||typeof authHeaders!=='function')return;
-  const core=import('../supabase/functions/_shared/affiliate-production.mjs?v=20261001.1');
+  const core=import('../supabase/functions/shared/affiliate-production.mjs?v=20261002.1');
   const tabs=document.getElementById('viewTabs'),hub=document.getElementById('regularHub');if(!tabs||!hub)return;
   const button=document.createElement('button');button.type='button';button.id='affiliateProductionBtn';button.className='push-button small';button.dataset.view='affiliate';button.textContent='投稿制作';const refreshButton=tabs.querySelector('#refreshBtn');if(refreshButton)refreshButton.before(button);else tabs.append(button);
   const nav=document.getElementById('ccPrimaryNav');if(nav){const entry=document.createElement('button');entry.type='button';entry.className='push-button home-nav-button';entry.dataset.homeAction='affiliate';entry.textContent='投稿制作';entry.onclick=()=>load('affiliate');nav.querySelector('[data-home-action="more"]')?.before(entry)}

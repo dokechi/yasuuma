@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {affiliateGet,affiliatePatch,affiliatePublicAsset} from '../supabase/functions/command-center-retro-api/affiliate-production-api.ts';
-import {HOUSE_CAMPAIGN,JOB_TASK,CAMPAIGN_TASK,ASSET_TASK,revisionOf} from '../supabase/functions/_shared/affiliate-production.mjs';
+import {HOUSE_CAMPAIGN,JOB_TASK,CAMPAIGN_TASK,ASSET_TASK,revisionOf} from '../supabase/functions/shared/affiliate-production.mjs';
 const fixture=JSON.parse(await readFile(new URL('./affiliate-production-pilot.json',import.meta.url),'utf8'));
 const request=()=>new Request('https://example.supabase.co/functions/v1/retro',{method:'PATCH'});
 function setup(){
