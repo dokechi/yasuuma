@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { affiliatePublicAsset, affiliateGet, affiliatePatch } from "./affiliate-production-api.ts";
 
 const SUPA = Deno.env.get("SUPABASE_URL") || "";
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -145,6 +146,9 @@ async function logDeletedSignal(row:any){
 
 Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS") return new Response(null,{status:204,headers:cors(req)});
+  const affiliateDeps={admin,json,hmac,same,cors,token:Deno.env.get("BUFFER_API_TOKEN")||""};
+  const affiliateAsset=await affiliatePublicAsset(req,affiliateDeps);
+  if(affiliateAsset)return affiliateAsset;
   if(req.method==="POST"){
     try{
       const body=await req.json().catch(()=>({}));
@@ -164,6 +168,8 @@ Deno.serve(async(req:Request)=>{
   if(req.method==="PATCH"){
     try{
       const body=await req.json().catch(()=>({}));const id=String(body?.id||"");const action=String(body?.action||"");
+      const affiliateResult=await affiliatePatch(req,body,affiliateDeps);
+      if(affiliateResult)return affiliateResult;
       if(action==="fp_entrance"){
         if(!id)return json(req,{ok:false,error:"invalid_request"},400);
         const row=await fpSignal(id),p=row.payload||{},key=String(body?.entranceKey||"").toLowerCase();
@@ -295,6 +301,8 @@ Deno.serve(async(req:Request)=>{
   if(req.method!=="GET") return json(req,{ok:false,error:"method_not_allowed"},405);
   try{
     const resource=u.searchParams.get("resource")||"signals";
+    const affiliateResult=await affiliateGet(req,affiliateDeps);
+    if(affiliateResult)return affiliateResult;
     if(resource==="tasks"){
       const {data,error}=await admin.from("command_center_tasks").select("task_id,title,domain,schedule,timing_mode,is_enabled,notifications_enabled,email_enabled,last_run_time,task_prompt,result_ingest_enabled,result_ingest_note,updated_at,synced_at").order("is_enabled",{ascending:false}).order("title",{ascending:true});
       if(error) throw error;
@@ -310,7 +318,7 @@ Deno.serve(async(req:Request)=>{
       const rawLimit=Number(u.searchParams.get("limit")||50),rawOffset=Number(u.searchParams.get("offset")||0);
       const limit=Number.isFinite(rawLimit)?Math.min(100,Math.max(1,Math.floor(rawLimit))):50;
       const offset=Number.isFinite(rawOffset)?Math.max(0,Math.floor(rawOffset)):0;
-      let query=admin.from("command_center_task_events").select("id,task_id,event_key,domain,priority,score,title,summary,source_url,impact_yen,deadline,occurred_at,payload",{count:"exact"});
+      let query=admin.from("command_center_task_events").select("id,task_id,event_key,domain,priority,score,title,summary,source_url,impact_yen,deadline,occurred_at,payload",{count:"exact"}).neq("task_id","affiliate-assets-v1");
       const domain=u.searchParams.get("domain"),taskId=u.searchParams.get("taskId");if(domain)query=query.eq("domain",domain);if(taskId)query=query.eq("task_id",taskId);
       const {data,error,count}=await query.order("occurred_at",{ascending:false}).order("id",{ascending:false}).range(offset,offset+limit-1);if(error)throw error;
       const rows=data||[];let deleted=new Set<string>();
