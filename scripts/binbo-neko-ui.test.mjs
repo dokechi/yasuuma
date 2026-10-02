@@ -1,6 +1,6 @@
 // Isolated DOM test. No browser automation and no calls to live services.
 import {test} from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import {createRequire} from 'node:module';import {fixture} from './binbo-neko-fixture.mjs';
-const root=process.env.BINBO_NEKO_UI_MODULES;const {JSDOM}=root?createRequire(root+'/package.json')('jsdom'):{};
+const root=process.env.BINBO_NEKO_UI_MODULES;const {JSDOM,VirtualConsole}=root?createRequire(root+'/package.json')('jsdom'):{};
 async function dom(copyFails=false){const j={...fixture(),revision:'revision-one',state_key:'ready',state_label:'原稿が届いています',issues:[]},calls=[],copied=[];
  const w=new JSDOM('<body><div id="mainWindow"></div><div id="ccPrimaryNav"><button data-home-action="more">その他</button></div><div id="viewTabs"><button id="refreshBtn">更新</button></div><div id="domainTabs"></div><div id="commandHome"></div><div id="sourcingHub"></div><div id="affiliateDesk"></div><div id="regularHub"><h2 class="section-title"></h2><div id="listFilter"></div><div id="list"></div></div></body>',{runScripts:'outside-only',url:'https://example.invalid/'}).window;
  Object.assign(w,{API:'https://api.example',app:{view:'active'},load:async()=>{},authHeaders:()=>({Authorization:'Bearer test'}),authExpired:()=>assert.fail('unexpected auth expiry'),toast:()=>{},AbortSignal});
@@ -15,4 +15,14 @@ test('Tab has one handoff button; one complete copy is recorded only after clipb
 });
 test('Clipboard failure exposes one selected packet and does not claim copied',{skip:!root},async()=>{
  const {w,calls,copied}=await dom(true);try{await w.document.querySelector('[data-packet]').onclick();assert.equal(copied.length,0);assert.deepEqual(calls.map(c=>c.action),['neko_packet']);const t=w.document.querySelector('dialog textarea');assert.match(t.value,/Complete packet/);assert.equal(t.selectionStart,0);assert.equal(t.selectionEnd,t.value.length);}finally{w.close()}
+});
+test('Production wrapper modules expose the desk through existing HOME navigation',{skip:!root},async()=>{
+ const dir=new URL('../command-center-98/',import.meta.url),wrapper=await readFile(new URL('app-v130.html',dir),'utf8');let html=await readFile(new URL('app.html',dir),'utf8');
+ const affiliateCore=await import('../supabase/functions/shared/affiliate-production.mjs');
+ for(const match of wrapper.matchAll(/<script src="\.\/([^"?]+)\?[^\"]*">/g)){let code=await readFile(new URL(match[1],dir),'utf8');if(match[1]==='affiliate-production.js')code=code.replace(/import\('[^']+'\)/,'Promise.resolve(window.__affiliateTestCore)');const end=html.lastIndexOf('</body>');html=html.slice(0,end)+'<script>'+code.replaceAll('</script','<\\/script')+'</script>'+html.slice(end);}
+ const j={...fixture(),revision:'current',state_key:'ready',state_label:'原稿が届いています',issues:[]},errors=[],v=new VirtualConsole();v.on('jsdomError',e=>errors.push(e.message));
+ const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://isolated-command-test.invalid/',pretendToBeVisual:true,virtualConsole:v,beforeParse(w){w.localStorage.setItem('cc_retro_token','isolated-test-token');Object.assign(w,{__affiliateTestCore:affiliateCore,AbortSignal,structuredClone,TextEncoder,TextDecoder,scrollTo:()=>{}});w.HTMLElement.prototype.scrollIntoView=()=>{};w.fetch=async url=>new Response(JSON.stringify({ok:true,items:[],tasks:[],events:[],purchases:[],suppliers:[],programs:[],accounts:[],jobs:String(url).includes('resource=binbo-neko')?[j]:[],counts:{},readyCount:0,total:0,nextOffset:null}));}});
+ try{const w=dom.window,start=Date.now();while(!w.CCBinboNeko||w.CCHome?.loading){if(Date.now()-start>5000)throw Error('Production modules did not settle');await new Promise(r=>setTimeout(r,10));}
+  await w.CCBinboNeko.show();assert.equal(w.document.querySelector('#binboNekoBtn').isConnected,true);assert.equal(w.document.querySelector('#ccPageTitle').textContent,'貧乏ねこ');assert.equal(w.document.querySelector('#binboNekoDesk').hidden,false);assert.equal(w.document.querySelectorAll('[data-packet]').length,1);assert.ok(w.document.querySelector('#ccPrimaryNav [data-home-action="binbo-neko"]').classList.contains('selected'));assert.deepEqual(errors,[]);
+ }finally{dom.window.close()}
 });
