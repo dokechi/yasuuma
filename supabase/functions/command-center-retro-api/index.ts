@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { affiliatePublicAsset, affiliateGet, affiliatePatch } from "./affiliate-production-api.ts";
+import { nekoGet, nekoPatch } from "./binbo-neko-api.ts";
 
 const SUPA = Deno.env.get("SUPABASE_URL") || "";
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -170,6 +171,8 @@ Deno.serve(async(req:Request)=>{
       const body=await req.json().catch(()=>({}));const id=String(body?.id||"");const action=String(body?.action||"");
       const affiliateResult=await affiliatePatch(req,body,affiliateDeps);
       if(affiliateResult)return affiliateResult;
+      const nekoResult=await nekoPatch(req,body,{admin,json});
+      if(nekoResult)return nekoResult;
       if(action==="fp_entrance"){
         if(!id)return json(req,{ok:false,error:"invalid_request"},400);
         const row=await fpSignal(id),p=row.payload||{},key=String(body?.entranceKey||"").toLowerCase();
@@ -303,6 +306,8 @@ Deno.serve(async(req:Request)=>{
     const resource=u.searchParams.get("resource")||"signals";
     const affiliateResult=await affiliateGet(req,affiliateDeps);
     if(affiliateResult)return affiliateResult;
+    const nekoResult=await nekoGet(req,{admin,json});
+    if(nekoResult)return nekoResult;
     if(resource==="tasks"){
       const {data,error}=await admin.from("command_center_tasks").select("task_id,title,domain,schedule,timing_mode,is_enabled,notifications_enabled,email_enabled,last_run_time,task_prompt,result_ingest_enabled,result_ingest_note,updated_at,synced_at").order("is_enabled",{ascending:false}).order("title",{ascending:true});
       if(error) throw error;
