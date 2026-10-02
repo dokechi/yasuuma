@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {HOUSE_CAMPAIGN, copyIssues, contentIssues, deliveryIssues, revisionOf, jobState, renderAll, createBufferPost, httpsUrl, copyRevisionOf, productionPacket} from '../supabase/functions/shared/affiliate-production.mjs';
+import {HOUSE_CAMPAIGN, copyIssues, contentIssues, deliveryIssues, revisionOf, jobState, renderAll, createBufferPost, httpsUrl, copyRevisionOf, productionPacket, validCarouselSize} from '../supabase/functions/shared/affiliate-production.mjs';
 const fixture=JSON.parse(await readFile(new URL('./affiliate-production-pilot.json',import.meta.url),'utf8'));
 const stamp=Date.parse('2026-10-01T12:00:00Z');
 const fresh=()=>structuredClone(fixture), camp=()=>structuredClone(HOUSE_CAMPAIGN);
@@ -54,4 +54,9 @@ test('Completed images bind approval, while operational link changes do not requ
 test('A complete handoff includes every page, evidence, persona and separate-image instructions without account credentials',async()=>{
  const j=fresh(),c={...camp(),domain:'money',affiliate_url:'https://example.com/private-affiliate'};const packet=await productionPacket(j,c);
  assert.ok(packet.includes('水道屋の経理'));assert.ok(packet.includes(await copyRevisionOf(j,c)));assert.ok(packet.includes(j.sources[0].url));assert.ok(packet.includes(j.slides[8].headline));assert.ok(packet.includes('コラージュ'));assert.ok(!packet.includes('private-affiliate'));
+});
+
+test('Native image dimensions accept only one pixel of 4:5 rounding, without scaling',()=>{
+ for(const [width,height] of [[1080,1350],[1024,1280],[1122,1402],[1122,1403],[1121,1402]])assert.equal(validCarouselSize(width,height),true);
+ for(const [width,height] of [[1092,1440],[1073,1466],[1122,1404],[1120,1402],[799,1000],[2161,2701],[1122.5,1403],['1122',1402]])assert.equal(validCarouselSize(width,height),false);
 });
