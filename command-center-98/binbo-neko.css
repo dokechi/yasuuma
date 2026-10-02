@@ -1,3 +1,6 @@
+#binboNekoDesk[hidden]{display:none!important}
+#mainWindow[data-cc-view="binbo-neko"] #regularHub>:not(#binboNekoDesk){display:none!important}
+#ccPrimaryNav [data-home-action="binbo-neko"].selected{background:#000080!important;color:#fff!important}
 #binboNekoDesk{color:#171717;padding:12px 0}
 .neko-header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:8px 12px;border-bottom:2px solid #808080}
 .neko-header h2{font-size:23px;margin:0 0 5px}.neko-header p{margin:0;font-size:14px}.neko-operation{font-size:12px;line-height:1.7;max-width:300px;color:#444}
