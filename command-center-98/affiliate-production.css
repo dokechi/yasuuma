@@ -12,6 +12,8 @@
 .affiliate-job header{display:flex;align-items:center;gap:15px;flex-wrap:wrap}.affiliate-job h3{font-size:21px;flex:1;margin:0}
 .affiliate-state{padding:8px 12px;background:#eef3f0;font-size:13px;border-radius:20px;white-space:nowrap}
 .affiliate-fit{font-size:14px}.affiliate-slides{display:flex;gap:12px;overflow-x:auto;padding:12px 0;scroll-snap-type:x proximity}
+.affiliate-production-actions{margin:18px 0;padding:16px;background:#eef3f0;border-radius:6px}.affiliate-production-actions .push-button{margin:4px 8px 4px 0}.affiliate-production-actions p{font-size:14px;margin:10px 0 0}
+.affiliate-import-pages{display:flex;gap:14px;overflow:auto}.affiliate-import-page{flex:0 0 216px}.affiliate-import-page img{width:216px;height:270px;object-fit:contain}.affiliate-import-page p{overflow-wrap:anywhere}.affiliate-import-message{line-height:1.6}.affiliate-import input{max-width:100%;margin:12px 0}
 .affiliate-slide{flex:0 0 216px;padding:0;background:white;color:#193b3a;border:1px solid #d1dad7;cursor:zoom-in;scroll-snap-align:start;border-radius:5px;overflow:hidden}
 .affiliate-slide img{display:block;width:216px;height:270px}.affiliate-slide span{display:block;padding:8px;font-size:13px}
 .affiliate-caption{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;font:inherit;font-size:14px;background:#f3f6f4;padding:16px}
