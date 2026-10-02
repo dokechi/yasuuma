@@ -1,4 +1,4 @@
-import { VERSION, JOB_TASK, CAMPAIGN_TASK, ASSET_TASK, HOUSE_CAMPAIGN, revisionOf, jobState, renderAll, deliveryIssues, contentIssues, httpsUrl, deliveryCaption, createBufferPost } from '../shared/affiliate-production.mjs';
+import { VERSION, JOB_TASK, CAMPAIGN_TASK, ASSET_TASK, HOUSE_CAMPAIGN, revisionOf, copyRevisionOf, digest, finishedIssues, productionPacket, jobState, deliveryIssues, contentIssues, httpsUrl, deliveryCaption, createBufferPost } from '../shared/affiliate-production.mjs';
 
 type Deps = { admin: any; json: (r: Request, b: unknown, status?: number) => Response; hmac: (v: string) => Promise<string>; same: (a: string, b: string) => boolean; cors: (r: Request) => Headers; token: string };
 const TABLE = 'command_center_task_events';
@@ -14,6 +14,20 @@ async function campaign(d: Deps, id: string) { const r = await row(d,CAMPAIGN_TA
 async function job(d: Deps, id: string) { const r = await row(d,JOB_TASK,id); if(!r || r.payload?.result_kind !== 'affiliate_job' || !r.payload?.job) throw new Error('投稿が見つかりません'); return r; }
 async function withState(d: Deps, r: any) { const j = r.payload.job, c = await campaign(d,j.campaign_id); return {...j,id:r.event_key,updated_at:r.occurred_at,...await jobState(j,c,!!d.token)}; }
 function assetKey(id: string, revision: string, page: number) { return `${id}:${revision}:${page}`; }
+function finishedKey(id: string,set: string,page: number){return `${id}:finished:${set}:${page}`;}
+function readPng(input: unknown) {
+  const png=String(input||'').replace(/^data:image\/png;base64,/,'');
+  if(png.length>6000000 || !/^iVBORw0KGgo[A-Za-z0-9+/]*={0,2}$/.test(png)) throw new Error('完成画像は1枚4.5MB以内のPNGにしてください');
+  const bytes=Uint8Array.from(atob(png),x=>x.charCodeAt(0)),v=new DataView(bytes.buffer);let at=8,width=0,height=0,data=false,end=false;
+  while(at+12<=bytes.length){const n=v.getUint32(at),type=String.fromCharCode(...bytes.slice(at+4,at+8));if(n>bytes.length-at-12)throw new Error('PNGが壊れています');if(at===8 && (type!=='IHDR'||n!==13))throw new Error('PNGのヘッダーが不正です');if(type==='IHDR'){width=v.getUint32(at+8);height=v.getUint32(at+12)}if(type==='IDAT'&&n)data=true;if(type==='IEND'){end=n===0&&at+12===bytes.length;break}at+=n+12;}
+  if(!end||!data||width<800||width>2160||height*4!==width*5)throw new Error('完成画像は縦4:5、幅800〜2160pxのPNGにしてください');
+  return {png,width,height};
+}
+async function storedFinished(d: Deps,id: string,j: any,c: any) {
+  const errors=finishedIssues(j,await copyRevisionOf(j,c));if(errors.length)throw new Error(errors.join(' / '));
+  const out=[];
+  for(const p of j.finished_images.pages){const r=await row(d,ASSET_TASK,finishedKey(id,j.finished_images.set_id,p.page)),png=r?.payload?.png;if(!png || await digest(png)!==p.sha256)throw new Error('保存した完成画像を確認してください');out.push(png)}return out;
+}
 
 // Only signed PNGs for an explicitly released post are public; no job data or
 // affiliate credentials are exposed. Tokens are bound to page, revision and expiry.
@@ -31,7 +45,12 @@ export async function affiliatePublicAsset(req: Request, d: Deps): Promise<Respo
 }
 
 export async function affiliateGet(req: Request, d: Deps): Promise<Response | null> {
-  const u = new URL(req.url); if(u.searchParams.get('resource') !== 'affiliate-production') return null;
+  const u = new URL(req.url);
+  if(u.searchParams.get('resource')==='affiliate-finished-images'){
+    try{const id=compact(u.searchParams.get('id'),220),r=await job(d,id),j=r.payload.job,c=await campaign(d,j.campaign_id);if(u.searchParams.get('revision')!==await revisionOf(j,c))return d.json(req,{ok:false,error:'最新の内容を読み直してください'},409);const assets=await storedFinished(d,id,j,c);return d.json(req,{ok:true,assets:assets.map((png,i)=>({page:i+1,png:'data:image/png;base64,'+png}))});}
+    catch(e){return d.json(req,{ok:false,error:compact((e as any)?.message)},409)}
+  }
+  if(u.searchParams.get('resource') !== 'affiliate-production') return null;
   const [{data:jobs,error:je},{data:campaigns,error:ce},{data:runs,error:re}] = await Promise.all([
     d.admin.from(TABLE).select('event_key,payload,occurred_at').eq('task_id',JOB_TASK).order('occurred_at',{ascending:false}).limit(60),
     d.admin.from(TABLE).select('event_key,payload').eq('task_id',CAMPAIGN_TASK),
@@ -60,15 +79,33 @@ export async function affiliatePatch(req: Request, body: any, d: Deps): Promise<
       await save(d,JOB_TASK,id,j.title,{...r.payload,job:{...j,decision:'skipped',approval:null}},r);return d.json(req,{ok:true});
     }
     if(action==='affiliate_recheck') {
-      await save(d,JOB_TASK,id,j.title,{...r.payload,job:{...j,decision:null,approval:null,advertiser_review:null,needs_recheck:true,review:{...j.review,status:'blocked',notes:'利用者が自動再確認を依頼。次の定期制作で根拠と内容を再確認する。'}}},r);return d.json(req,{ok:true});
+      await save(d,JOB_TASK,id,j.title,{...r.payload,job:{...j,decision:null,approval:null,advertiser_review:null,handoff:null,finished_images:null,needs_recheck:true,review:{...j.review,status:'blocked',notes:'利用者が自動再確認を依頼。次の定期制作で根拠と内容を再確認する。清書画像も再取り込みが必要。'}}},r);return d.json(req,{ok:true});
+    }
+    if(action==='affiliate_handoff'){
+      const errors=contentIssues(j,c);if(errors.length)throw new Error(errors.join(' / '));const copy_revision=await copyRevisionOf(j,c),packet=await productionPacket({...j,id},c);
+      await save(d,JOB_TASK,id,j.title,{...r.payload,job:{...j,handoff:{copy_revision,exported_at:now()}}},r);return d.json(req,{ok:true,packet,copy_revision});
+    }
+    if(action==='affiliate_import_images'){
+      const errors=contentIssues(j,c);if(errors.length)throw new Error(errors.join(' / '));const copy_revision=await copyRevisionOf(j,c);
+      if(body.copy_revision!==copy_revision || j.handoff?.copy_revision!==copy_revision)throw new Error('最新の制作セットをGPTへ渡してから、その版の完成画像を取り込んでください');
+      const inputs=Array.isArray(body.assets)?body.assets:[];if(inputs.length!==j.slides.length)throw new Error(`完成画像は${j.slides.length}枚すべてをページ順に取り込んでください`);
+      const assets=inputs.map((p:any,i:number)=>{if(p.page!==i+1)throw new Error('完成画像のページ順を確認してください');return {...readPng(p.png),page:i+1}});
+      if(assets.reduce((n,p)=>n+p.png.length,0)>32000000)throw new Error('全画像の合計は24MB以内にしてください');
+      const pages=await Promise.all(assets.map(async p=>({page:p.page,width:p.width,height:p.height,sha256:await digest(p.png)})));
+      if(new Set(pages.map(p=>p.sha256)).size!==pages.length)throw new Error('同じ画像が重複しています。ページ順を確認してください');
+      const set_id=await digest({copy_revision,pages});
+      for(const p of assets){const key=finishedKey(id,set_id,p.page),old=await row(d,ASSET_TASK,key);if(!old)await save(d,ASSET_TASK,key,`${j.title}｜清書${p.page}枚目`,{result_kind:'affiliate_finished_asset',job_id:id,set_id,page:p.page,png:p.png});}
+      const updated={...j,decision:null,approval:null,advertiser_review:null,finished_images:{copy_revision,set_id,pages,imported_at:now(),review_status:'user_check_pending'}};
+      await save(d,JOB_TASK,id,j.title,{...r.payload,job:updated},r);return d.json(req,{ok:true,state:await jobState(updated,c,!!d.token)});
     }
     if(action==='affiliate_approve') {
-      const errors=contentIssues(j,c);if(errors.length)return d.json(req,{ok:false,error:errors.join(' / ')},409);
-      renderAll(j,c); // Reject overflows before recording any human approval.
+      const errors=[...contentIssues(j,c),...finishedIssues(j,await copyRevisionOf(j,c))];if(errors.length)return d.json(req,{ok:false,error:errors.join(' / ')},409);
+      await storedFinished(d,id,j,c); // Approval binds the exact imported image bytes and current copy.
       const updated={...j,decision:null,approval:{status:'approved',revision,checked_at:now(),reviewer:'command_center_user'}};
       await save(d,JOB_TASK,id,j.title,{...r.payload,job:updated},r);return d.json(req,{ok:true,state:await jobState(updated,c,!!d.token)});
     }
     if(action==='affiliate_advertiser_review') {
+      await storedFinished(d,id,j,c);
       if(!compact(body.note))throw new Error('広告主の確認結果を記録してください');
       await save(d,JOB_TASK,id,j.title,{...r.payload,job:{...j,advertiser_review:{status:'approved',revision,evidence:compact(body.note),checked_at:now()}}},r);return d.json(req,{ok:true});
     }
@@ -83,12 +120,10 @@ export async function affiliatePatch(req: Request, body: any, d: Deps): Promise<
       if(errors.length)return d.json(req,{ok:false,error:errors.join(' / ')},409);
       const dueAt=compact(body.due_at,50), due=Date.parse(dueAt);if(!Number.isFinite(due)||due<Date.now()+300000||due>Date.now()+10*86400000)throw new Error('予約日時は5分後〜10日後にしてください');
       const futureErrors=deliveryIssues(j,c,!!d.token,due);if(futureErrors.length)throw new Error('予約日時まで有効な根拠・広告条件を確認してください');
-      const assets=Array.isArray(body.assets)?body.assets:[];if(assets.length!==j.slides.length)throw new Error('画像が全ページ揃っていません');
-      let total=0;
+      const assets=await storedFinished(d,id,j,c);
+      if(body.assets!==undefined)throw new Error('配信画像は保存済みの承認画像を使用します。画像の差し替えは取り込みから行ってください');
       for(let i=0;i<assets.length;i++) {
-        const png=String(assets[i]||'').replace(/^data:image\/png;base64,/,'');total+=png.length;
-        if(png.length>2500000||total>14000000||!/^iVBORw0KGgo[A-Za-z0-9+/=]+$/.test(png))throw new Error('画像の形式またはサイズを確認してください');
-        const raw=Uint8Array.from(atob(png.slice(0,48)),x=>x.charCodeAt(0));const dv=new DataView(raw.buffer);if(dv.getUint32(16)!==1080||dv.getUint32(20)!==1350)throw new Error('画像は1080×1350で生成してください');
+        const png=assets[i];
         const key=assetKey(id,revision,i+1), old=await row(d,ASSET_TASK,key);await save(d,ASSET_TASK,key,`${j.title}｜${i+1}枚目`,{result_kind:'affiliate_asset',job_id:id,revision,page:i+1,png},old);
       }
       const sending={...j,dispatch:{status:'sending',revision,due_at:dueAt,started_at:now()}};
