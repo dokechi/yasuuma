@@ -94,3 +94,17 @@ test('Queue sends the approved stored PNGs in page order; caller image substitut
 test('Recheck releases the handoff lock and removes finished image approval before automatic editing',async()=>{
  const {d,rows,j,c}=await importFinished(setup());const r=await affiliatePatch(request(),{action:'affiliate_recheck',id:j.id,revision:await revisionOf(j,c)},d);assert.equal(r.status,200);assert.equal(rows[0].payload.job.handoff,null);assert.equal(rows[0].payload.job.finished_images,null);assert.equal(rows[0].payload.job.review.status,'blocked');
 });
+
+test('Native rounded PNGs import unchanged, while a taller page blocks the whole set',async()=>{
+ const s=setup(),revision=await revisionOf(s.j,s.c);
+ const handoff=await affiliatePatch(request(),{action:'affiliate_handoff',id:s.j.id,revision},s.d);assert.equal(handoff.status,200);
+ const {copy_revision}=await handoff.json();
+ const assets=s.j.slides.map((_,i)=>({page:i+1,png:testPng(i+1,1122,1402)}));
+ const base={action:'affiliate_import_images',id:s.j.id,revision,copy_revision};
+ const taller=assets.map((p,i)=>i===1?{...p,png:testPng(2,1092,1440)}:p);
+ assert.equal((await affiliatePatch(request(),{...base,assets:taller},s.d)).status,409);assert.equal(s.rows.filter(r=>r.task_id===ASSET_TASK).length,0);
+ const accepted=await affiliatePatch(request(),{...base,assets},s.d);assert.equal(accepted.status,200);assert.equal((await accepted.json()).state.state,'review');
+ const saved=s.rows[0].payload.job;assert.equal(saved.approval,null);assert.equal(saved.finished_images.pages[1].width,1122);assert.equal(saved.finished_images.pages[1].height,1402);
+ const read=await affiliateGet(new Request(`https://example.com/?resource=affiliate-finished-images&id=${s.j.id}&revision=${await revisionOf(saved,s.c)}`),s.d);
+ assert.equal(read.status,200);assert.equal((await read.json()).assets[1].png,'data:image/png;base64,'+assets[1].png);
+});

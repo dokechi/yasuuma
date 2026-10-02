@@ -1,4 +1,4 @@
-import { VERSION, JOB_TASK, CAMPAIGN_TASK, ASSET_TASK, HOUSE_CAMPAIGN, revisionOf, copyRevisionOf, digest, finishedIssues, productionPacket, jobState, deliveryIssues, contentIssues, httpsUrl, deliveryCaption, createBufferPost } from '../shared/affiliate-production.mjs';
+import { VERSION, JOB_TASK, CAMPAIGN_TASK, ASSET_TASK, HOUSE_CAMPAIGN, revisionOf, copyRevisionOf, digest, validCarouselSize, finishedIssues, productionPacket, jobState, deliveryIssues, contentIssues, httpsUrl, deliveryCaption, createBufferPost } from '../shared/affiliate-production.mjs';
 
 type Deps = { admin: any; json: (r: Request, b: unknown, status?: number) => Response; hmac: (v: string) => Promise<string>; same: (a: string, b: string) => boolean; cors: (r: Request) => Headers; token: string };
 const TABLE = 'command_center_task_events';
@@ -20,7 +20,7 @@ function readPng(input: unknown) {
   if(png.length>6000000 || !/^iVBORw0KGgo[A-Za-z0-9+/]*={0,2}$/.test(png)) throw new Error('完成画像は1枚4.5MB以内のPNGにしてください');
   const bytes=Uint8Array.from(atob(png),x=>x.charCodeAt(0)),v=new DataView(bytes.buffer);let at=8,width=0,height=0,data=false,end=false;
   while(at+12<=bytes.length){const n=v.getUint32(at),type=String.fromCharCode(...bytes.slice(at+4,at+8));if(n>bytes.length-at-12)throw new Error('PNGが壊れています');if(at===8 && (type!=='IHDR'||n!==13))throw new Error('PNGのヘッダーが不正です');if(type==='IHDR'){width=v.getUint32(at+8);height=v.getUint32(at+12)}if(type==='IDAT'&&n)data=true;if(type==='IEND'){end=n===0&&at+12===bytes.length;break}at+=n+12;}
-  if(!end||!data||width<800||width>2160||height*4!==width*5)throw new Error('完成画像は縦4:5、幅800〜2160pxのPNGにしてください');
+  if(!end||!data||!validCarouselSize(width,height))throw new Error('完成画像は縦4:5、幅800〜2160pxのPNGにしてください');
   return {png,width,height};
 }
 async function storedFinished(d: Deps,id: string,j: any,c: any) {
