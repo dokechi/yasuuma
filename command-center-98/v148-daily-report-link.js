@@ -38,6 +38,20 @@
     dailyButton.after(cooneyButton);
   }
 
+  const SHIIRE_INOCHI_URL='https://shiireinochi.vercel.app/';
+  let shiireButton=document.getElementById('menuShiireInochi');
+  const createdShiire=!shiireButton;
+  if(!shiireButton){
+    shiireButton=document.createElement('button');
+    shiireButton.className='menu-item';
+    shiireButton.type='button';
+    shiireButton.id='menuShiireInochi';
+    shiireButton.setAttribute('aria-label','仕入れ命を開く');
+    shiireButton.title='仕入れ命を新しいタブで開く';
+    shiireButton.textContent='仕入れ命';
+    cooneyButton.after(shiireButton);
+  }
+
   const openUrl=url=>{
     if(typeof closeMenus==='function')closeMenus();
     window.open(url,'_blank','noopener,noreferrer');
@@ -53,6 +67,13 @@
     cooneyButton.addEventListener('click',()=>{
       if(typeof bump==='function')bump(cooneyButton);
       openUrl(COONEY_URL);
+    });
+  }
+
+  if(createdShiire){
+    shiireButton.addEventListener('click',()=>{
+      if(typeof bump==='function')bump(shiireButton);
+      openUrl(SHIIRE_INOCHI_URL);
     });
   }
 
