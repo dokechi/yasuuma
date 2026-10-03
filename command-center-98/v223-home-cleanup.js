@@ -147,6 +147,15 @@
     simplifyHome();
   }
 
+  // The shared HOME read model owns data rendering; this file is presentation-only
+  // for that version. Older entrypoints retain the legacy behavior below.
+  if(H.readModel){
+    document.addEventListener('cc:home-render',simplifyHome);
+    simplifyHome();
+    window.CCHomeCleanupV223={version:'20261003.1',run:simplifyHome,isSalesSync:H.readModel.isSalesSync,isPostFlow:H.readModel.isPostFlow};
+    return;
+  }
+
   let queued=false;
   function queue(){
     if(queued)return;

@@ -108,6 +108,8 @@
   function build(base, item, mode = 'ready') {
     if (typeof base !== 'string' || !base.trim()) throw Error('画像化用コピーの本文がありません。');
     if (!['ready', 'review'].includes(mode)) throw Error('画像化用コピーの種別が不正です。');
+    // Keep the shared prompt unchanged, but never export missing or misordered pages.
+    spec(item);
     // Intentionally add nothing. Chat uses the established buildHandoff() program
     // verbatim; only the execution environment differs from Work/Astra.
     return base;

@@ -20,14 +20,39 @@
   nav.id='ccPrimaryNav';
   const shell=document.createElement('section');
   shell.id='ccDestination';shell.hidden=true;
-  shell.innerHTML='<div class="cc-heading"><button class="push-button" data-home-action="home">← HOME</button><div><h1 id="ccPageTitle" tabindex="-1"></h1><p id="ccPageDescription"></p></div><button class="push-button cc-more-button" data-cc-more aria-expanded="false" aria-controls="ccMore">その他</button><span id="ccRefreshSlot"></span></div>';
+  shell.innerHTML='<div class="cc-heading"><button class="push-button" data-home-action="home">← HOME</button><div><h1 id="ccPageTitle" tabindex="-1"></h1><p id="ccPageDescription"></p></div><button class="push-button cc-more-button" data-cc-more aria-expanded="false" aria-controls="ccMore">すべての画面</button><span id="ccRefreshSlot"></span></div>';
   nav.after(shell);
   by('ccRefreshSlot').append(by('refreshBtn'));
   const more=document.createElement('section');more.id='ccMore';more.hidden=true;
-  more.setAttribute('aria-label','その他の画面');
-  more.innerHTML='<div class="cc-more-head"><b>その他の画面</b><button class="push-button small" data-cc-more>閉じる</button></div><div class="home-launcher-grid">'+by('homeLauncher').querySelector('.home-launcher-grid').innerHTML+
+  more.setAttribute('aria-label','すべての画面');
+  more.innerHTML='<div class="cc-more-head"><b>すべての画面</b><button class="push-button small" data-cc-more>閉じる</button></div><div class="home-launcher-grid">'+by('homeLauncher').querySelector('.home-launcher-grid').innerHTML+
     '<button class="home-launcher-card" data-home-domain="all"><b>すべての情報</b><span>未確認の新着を見る</span></button><button class="home-launcher-card" data-home-domain="money"><b>FP・家計</b><span>家計の情報を見る</span></button><button class="home-launcher-card" data-home-domain="sns"><b>SNS候補</b><span>投稿用の情報を見る</span></button><button class="home-launcher-card" data-cc-view="events"><b>タスク結果</b><span>保存された結果を見る</span></button><button class="home-launcher-card" data-cc-view="saved"><b>保存済み</b><span>保存した情報を見る</span></button></div>';
   shell.after(more);
+  // Give the existing routes a stable, shared grouping. Late-added desks are
+  // placed in the same grid without changing their original click handlers.
+  const routeGroup=button=>button.dataset.ccView==='affiliate'?'制作':button.dataset.homeShortcut&&['shiire','cooney','daily'].includes(button.dataset.homeShortcut)||button.dataset.homeAction==='tasks'?'業務ツール':'情報・履歴';
+  function groupRoutes(){
+    const grid=more.querySelector('.home-launcher-grid'),cards=[...grid.querySelectorAll(':scope > .home-launcher-card')],desired=[];
+    for(const label of ['制作','情報・履歴','業務ツール']){
+      const group=cards.filter(button=>routeGroup(button)===label);
+      if(!group.length)continue;
+      let heading=grid.querySelector('[data-route-heading="'+label+'"]');
+      if(!heading){heading=document.createElement('h2');heading.dataset.routeHeading=label;heading.className='cc-route-heading';heading.textContent=label}
+      desired.push(heading,...group);
+    }
+    const current=[...grid.children];
+    if(current.length!==desired.length||current.some((node,i)=>node!==desired[i]))grid.replaceChildren(...desired);
+  }
+  groupRoutes();
+  new MutationObserver(groupRoutes).observe(more.querySelector('.home-launcher-grid'),{childList:true});
+  function orderPrimaryNav(){
+    const order=['home','affiliate','binbo-neko','sourcing-queue','fp-draft','house-draft','x','daily','more'];
+    const current=[...nav.children],priority=node=>{const index=order.indexOf(node.dataset.homeAction||node.dataset.homeShortcut);return index<0?order.length:index};
+    const desired=[...current].sort((a,b)=>priority(a)-priority(b));
+    if(current.some((node,i)=>node!==desired[i]))nav.replaceChildren(...desired);
+  }
+  orderPrimaryNav();
+  new MutationObserver(orderPrimaryNav).observe(nav,{childList:true});
   nav.querySelector('[data-home-action="more"]').setAttribute('aria-controls','ccMore');
   const toggleMore=()=>{more.hidden=!more.hidden;syncMore();if(!more.hidden)more.querySelector('button')?.focus()};
   function syncMore(){document.querySelectorAll('[data-cc-more],#ccPrimaryNav [data-home-action="more"]').forEach(b=>b.setAttribute('aria-expanded',String(!more.hidden)))}
@@ -101,7 +126,7 @@
       :kind==='reddit'?(window.CCReddit.statusText[item.status]||'')
       :kind==='sourcing'?({success:'仕入れできた',close:'惜しかった',miss:'今は見当違い'}[item.sourcingVerdict]||'候補')
       :stateLabels[item?.reviewState||'new'];
-    const date=kind==='x'?(item.updatedAt||item.detectedAt||item.createdAt):time(item), meta=[date?'更新 '+fmtUpdated(date):'',state];
+    const date=kind==='x'?(window.CCData?.itemTime(item)||time(item)):time(item), meta=[date?'更新 '+fmtUpdated(date):'日時不明',state];
     if(kind==='x'){meta.push(item.organizer||'');if(item.applicationDeadline)meta.push('締切 '+fmtUpdated(item.applicationDeadline))}
     if(kind==='sourcing'){meta.push(item.supplierName||item.source||'');if(item.impact!=null)meta.push('想定純利益 '+yen(item.impact))}
     const details=document.createElement('details');details.className='cc-item';details.dataset.ccKey=key;

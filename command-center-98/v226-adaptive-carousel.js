@@ -80,7 +80,9 @@
       snapshot.editorial_workflow_version=p.editorial_workflow_version;
       snapshot.editorial_stage=p.editorial_stage??null;
     }
-    return snapshot;
+    // A LOCK is a stored JSON value, never a live view of the editable draft.
+    // Detach every nested value so a later edit cannot silently edit its baseline.
+    return JSON.parse(JSON.stringify(snapshot));
   };
   const payloadOf = value => value && value.payload && typeof value.payload === 'object' ? value.payload : (value && typeof value === 'object' ? value : {});
   const hasAdaptiveMarkers = value => {

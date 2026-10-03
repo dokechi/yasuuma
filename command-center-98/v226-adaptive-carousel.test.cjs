@@ -48,6 +48,23 @@ const base={
 };
 base.content_lock={locked:true,draft_revision:'r1',locked_at:now,snapshot:A.lockSnapshot(base)};
 
+// A snapshot must be independent before serialization as well as after loading
+// stored JSON. Mutating nested draft data must never mutate the LOCK baseline.
+for(const [name,mutate] of [
+ ['page display copy',p=>{p.draft_slides[0].page_contract.display_copy='changed';}],
+ ['source claim',p=>{p.draft_sources[0].claim='changed';}],
+ ['question lineage',p=>{p.question_lineage.answer_target='changed';}]
+]){
+ const p=structuredClone(base),snapshot=p.content_lock.snapshot,before=JSON.stringify(snapshot);
+ assert.notEqual(snapshot.draft_slides,p.draft_slides);
+ assert.notEqual(snapshot.draft_slides[0].page_contract,p.draft_slides[0].page_contract);
+ assert.notEqual(snapshot.draft_sources[0],p.draft_sources[0]);
+ mutate(p);
+ assert.equal(JSON.stringify(snapshot),before,name+' must not mutate the LOCK');
+ assert.match(A.lockIssues(p).join(' '),/LOCK後に原稿内容が変更/,name);
+ assert.throws(()=>A.buildHandoff({payload:p}),/画像化保留/,name);
+}
+
 assert.equal(A.lane(base),'money');
 assert.equal(A.moneyChatScope(base),true);
 assert.equal(A.adaptive(base),true);
@@ -504,5 +521,14 @@ assert.match(handoff,/固定された3配色/);
 assert.match(handoff,/layout_overflow/);
 assert.match(handoff,/制作内部情報｜画像内に文字として載せない/);
 assert.doesNotMatch(handoff,/girlschannel/);
+
+// The Chat compatibility layer must preserve the adaptive contract exactly:
+// no legacy wrapper, no changed LOCK copy, and independent-image delivery.
+const fs=require('node:fs'),vm=require('node:vm');
+const guardWindow={CCIndividualImages:{...require('./v207-individual-image-handoff.js')}};
+vm.runInNewContext(fs.readFileSync(__dirname+'/v208-chat-image-contract-guard.js','utf8'),{window:guardWindow});
+assert.equal(guardWindow.CCIndividualImages.build(handoff,{payload:base}),handoff);
+assert.match(handoff,/各ページを独立した別画像/);
+assert.match(handoff,/結合画像・一覧・コラージュ・ZIPだけ・リンクだけは禁止/);
 
 console.log('v226 money + house Chat hardened quality-gate tests passed');

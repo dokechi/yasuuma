@@ -9,6 +9,12 @@
 #ccMore{padding:8px;margin-bottom:8px;background:#dfdfdf;border:2px solid;border-color:#fff #808080 #808080 #fff}
 .cc-more-head{display:flex;justify-content:space-between;align-items:center}
 #ccMore .home-launcher-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.cc-route-heading{grid-column:1/-1;margin:10px 0 0;padding:0 0 5px;border-bottom:1px solid #aaa;font-size:12px;color:#444}
+.cc-route-heading[hidden]{display:none}
+#ccMore .home-launcher-card{min-height:66px}
+#ccMore .home-launcher-card span{white-space:normal;line-height:1.5}
+.cc-heading{min-width:0}
+#ccPrimaryNav .home-nav-button{min-height:48px}
 .cc-navigation .toolbar{display:none!important}
 #ccFilters{display:flex;flex-wrap:wrap;gap:12px;padding:8px 0;margin-bottom:4px}
 #ccFilters[hidden],#ccStateLabel[hidden]{display:none!important}

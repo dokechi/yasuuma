@@ -24,14 +24,20 @@ test('cycle-safe, bounded traversal', () => {
 });
 test('badge is conspicuous and never interpolates untrusted HTML', () => {
   const html = api.badgeHtml({payload:{execution_source:'chat', execution_label:'<script>alert(1)</script>'}});
-  assert.ok(html.includes('<strong>チャットから実行</strong>'));
+  assert.match(html, /class="cc-chat-head-badge"/);
+  assert.match(html, /data-cc-chat-head="chat"/);
+  assert.match(html, /aria-label="チャットから実行"/);
+  assert.match(html, />CHAT<\/span>/);
   assert.ok(!html.includes('<script>'));
   assert.equal(api.badgeHtml({}), '');
 });
 test('article insertion is idempotent and leaves Work byte-identical', () => {
-  const html = '<article class="reddit-card"><button data-r-edit="abc">詳細</button></article>';
+  const html = '<article class="reddit-card"><b class="reddit-card-title">投稿</b><button data-r-edit="abc">詳細</button></article>';
   assert.equal(api.injectArticleBadge(html, {}), html);
   const inserted = api.injectArticleBadge(html,chat);
+  assert.notEqual(inserted, html);
+  assert.match(inserted, /reddit-card-title cc-chat-title/);
+  assert.equal((inserted.match(/data-cc-chat-head=/g)||[]).length,1);
   assert.equal(api.injectArticleBadge(inserted,chat), inserted);
   assert.ok(inserted.includes('data-r-edit="abc"'));
 });
@@ -61,21 +67,30 @@ test('run summaries and Work relabeling are rejected', () => {
   assert.throws(()=>api.stampNewCandidate('house','chat:',{}, {runId:'x'}));
 });
 test('browser hooks preserve original handlers and do not duplicate on reload', () => {
-  const styles=[];
-  const document={createElement:()=>({}),head:{appendChild:x=>styles.push(x)},querySelectorAll:()=>[]};
+  const styles=[],observed=[],listHost={},redditHost={};
+  const document={createElement:()=>({}),head:{appendChild:x=>styles.push(x)},querySelectorAll:()=>[],getElementById:id=>id==='list'?listHost:id==='redditBody'?redditHost:null};
   const original='<div class="task-origin"><button data-source-task="logical">生成元タスク：House</button></div>';
-  const win={document, taskOriginHtml:()=>original, CCReddit:{state:{items:[]}, card:()=>'<article class="reddit-card">Body</article>'}};
-  const context=vm.createContext({window:win,app:{items:[]},Set,Map});
+  const win={document, app:{items:[]}, taskOriginHtml:()=>original,
+    CCReddit:{state:{items:[]}, card:()=>'<article class="reddit-card"><b class="reddit-card-title">Body</b></article>'},
+    MutationObserver:class{observe(host){observed.push(host);}},requestAnimationFrame:fn=>fn()};
+  // Browser globals and window are the same object; a separate window stub skips
+  // the production module's global function wrappers altogether.
+  win.window=win;
+  const context=vm.createContext(win);
   const code=fs.readFileSync(require.resolve('./v204-chat-execution-source.js'),'utf8');
   vm.runInContext(code,context);
   const work=win.taskOriginHtml({});
   assert.equal(work,original);
-  assert.ok(win.taskOriginHtml(chat).includes('参照ルール：'));
+  const sharedChat={payload:{...chat.payload,source_task_id:api.taskIds.money}};
+  assert.ok(win.taskOriginHtml(sharedChat).includes('参照ルール：'));
+  assert.equal(win.taskOriginHtml(chat),original,'A Chat runner without a shared task ID keeps its task label');
   assert.ok(win.taskOriginHtml(chat).includes('data-source-task="logical"'));
-  assert.ok(win.CCReddit.card({sourcePayload:{event:chat}}).includes('data-cc-chat-execution'));
-  const once=win.taskOriginHtml(chat);
+  assert.ok(win.CCReddit.card({sourcePayload:{event:chat}}).includes('data-cc-chat-head'));
+  assert.deepEqual(observed,[listHost,redditHost]);
+  const once=win.taskOriginHtml(sharedChat);
   vm.runInContext(code,context);
-  assert.equal(win.taskOriginHtml(chat),once);
+  assert.equal(win.taskOriginHtml(sharedChat),once);
   assert.equal(styles.length,1);
+  assert.equal(observed.length,2);
 });
 console.log(checks+' test groups passed.');
