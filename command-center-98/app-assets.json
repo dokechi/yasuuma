@@ -13,7 +13,8 @@
     "./v225-menu-layer-fix.css?v=225.1",
     "./affiliate-production.css?v=20261002.3",
     "./binbo-neko.css?v=20261002.2",
-    "./v230-request-progress.css?v=20261004.1"
+    "./v230-request-progress.css?v=20261004.1",
+    "./v231-trade-details.css?v=20261004.1"
   ],
   "scripts": [
     "./v143-ledger-month.js?v=175",
@@ -66,6 +67,7 @@
     "./v229-sourcing-mercari-history.js?v=229.3",
     "./affiliate-production.js?v=20261002.3",
     "./binbo-neko.js?v=20261002.1",
-    "./v230-request-progress.js?v=20261004.1"
+    "./v230-request-progress.js?v=20261004.1",
+    "./v231-trade-details.js?v=20261004.1"
   ]
 }
