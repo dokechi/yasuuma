@@ -58,6 +58,7 @@
     if (!applies(item)) throw new Error('現行お金Chatの原稿ではありません。');
     if (awaitingEditorial(p)) return {draftReady:false,imageReady:false,
       issues:[p.entrance_selection?.source === 'command_center_user' ? '高度AIによる原稿完成待ち' : '入口を1つ選んでください'],assetIssues:[],pages};
+    if(p.review_status==='rejected'||p.content_review?.status==='rejected')issues.push('本人不採用：制作中止');
     if (!pages.length) issues.push('ページ別原稿がありません。');
     pages.forEach(row => { if (row.missing) issues.push(row.page + 'ページ目のdisplay_copyが未保存です。'); });
     try {
@@ -85,7 +86,7 @@
       (strictIds.length ? '（' + strictIds.length + '/' + minimum + 'トピック）' : '');
     return [
       '原稿版: ' + (text(p.draft_revision) || '未設定'),
-      '原稿状態: ' + (text(p.draft_status) || '未設定'),
+      '原稿保存状態: ' + (text(p.draft_status) || '未設定') + '（採用・画像完成とは別）',
       '画像化: ' + (!approvedForImage(p) ? '画像化前チェックとユーザー確認待ち' : state.imageReady ? '可能' : '保留（確認用コピーのみ）'),
       '保存された保留理由: ' + (text(p.blocked_reason) || 'なし'),
       '需要判定: ' + demandStatus,
@@ -320,8 +321,19 @@
       putText(modal.querySelector('.fp-draft-dialog > header small'), skeleton ? 'お金Chat｜骨格・根拠の確認' : 'お金Chat｜全文・状態の確認');
       putText(button, skeleton ? '骨格を高度AIへコピー' : memo.state.draftReady ? '画像化前チェック用にコピー' : '確認用に全文コピー');
       if (button) { button.title = skeleton ? '入口を選び、骨格と根拠を高度AIへ渡します。' : usesImageReview(item) ? '日本語・制度・根拠・数字・スクショを確認します。この段階で画像は作りません。' : '入口3案・投稿の骨格・表示全文・保留理由をコピーします。画像生成指示ではありません。'; button.disabled = skeleton && p.entrance_selection?.source !== 'command_center_user'; }
+      const authority=modal.__fpAuthoritativeState;
+      const display=authority&&root.CCFPFinishedImages?.reviewDisplay?.(authority);
       const status = modal.querySelector('.fp-package-status');
-      if (status) {
+      if (status && display) {
+        const wanted='fp-package-status '+(display.blocked?'blocked':'ready');
+        if(status.className!==wanted)status.className=wanted;
+        putHTML(status,'<div><b>'+escape(display.label)+'</b><p>'+escape(display.next)+'</p><pre class="fp-canonical-status">'+escape([
+          '原稿版: '+text(authority.copy?.draft_revision),
+          '原稿保存状態: '+(text(authority.draft_status)||'未設定')+'（採用・画像完成を意味しません）',
+          '画像保存状態: '+(root.CCFPFinishedImages?.status?.(authority.status)||'未確認'),
+          ...(authority.production_issues||[]).map(s=>'・'+s)
+        ].join('\n'))+'</pre></div>');
+      } else if (status) {
         const wanted = 'fp-package-status ' + (memo.state.imageReady && (!usesImageReview(item) || approvedForImage(p)) ? 'ready' : 'blocked');
         if (status.className !== wanted) status.className = wanted;
         putHTML(status, skeleton ? '<div><b>骨格段階｜入口選択後に高度AIへ</b><p>原稿と画像は未確定です。高度AIで原稿を完成し、照合後に画像化できます。</p></div>' :
@@ -330,11 +342,14 @@
       }
       const imageButton = modal.querySelector('[data-fp-copy-package]');
       if (imageButton) {
-        imageButton.disabled = !memo.state.imageReady || (usesImageReview(item) && !approvedForImage(p));
+        imageButton.disabled = !!display?.blocked || !memo.state.imageReady || (usesImageReview(item) && !approvedForImage(p));
         putText(imageButton,usesImageReview(item)?'確認後、画像化用にコピー':'画像化用にコピー');
         imageButton.title = usesImageReview(item) && !approvedForImage(p) ? '画像化前チェックの結果を確認し、下の確認を保存してください。' : memo.state.imageReady ? '選択中の表示全文を画像制作へ渡します。' : unique([...memo.state.issues,...memo.state.assetIssues]).join('／');
       }
-      if (usesImageReview(item) && status) {
+      if(display?.blocked){
+        const oldGate=modal.querySelector('[data-zankure-image-gate]');
+        if(oldGate)putHTML(oldGate,'<b>'+escape(display.label)+'</b><p>'+escape(display.next)+'</p>');
+      } else if (usesImageReview(item) && status) {
         let gate=modal.querySelector('[data-zankure-image-gate]');
         if(!gate){gate=doc.createElement('section');gate.dataset.zankureImageGate='1';status.insertAdjacentElement('afterend',gate);}
         const approved=approvedForImage(p);

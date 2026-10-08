@@ -28,6 +28,15 @@ function memoryDb(initial){
  return {admin,tables,get writes(){return writes;},failCas(v){forceCasFailure=v;}};
 }
 export async function runFpImageContractTests(){
+ const {createRequire}=await import('node:module');
+ const front=createRequire(import.meta.url)('../command-center-98/fp-finished-images.js');
+ assert.match(front.reviewDisplay({production_issues:['本人不採用：制作中止']}).label,/不採用/);
+ assert.match(front.reviewDisplay({production_issues:['FP5点採用基準の記録待ち']}).label,/再審査/);
+ assert.equal(front.reviewDisplay({production_issues:[]}).blocked,false);
+ assert.match(front.reviewDisplay({production_issues:[]}).label,/画像完成は別/);
+ assert.equal(front.reviewDisplay(undefined).blocked,true);
+ assert.match(front.reviewDisplay({unverified:true}).label,/再読未確認/);
+
  const id='task:6aa9ee1043388191a2eac3bb2702092a:money-chat:test-images',payload={content_type:'fp_post_candidate',draft_status:'ready',draft_revision:'r1',
   content_lock:{locked:true,draft_revision:'r1',locked_at:'lock1'},draft_slides:[{page:1,page_contract:{display_copy:'全文1'}},{page:2,page_contract:{display_copy:'全文2'}}],
   caption:'投稿文',post_title:'original',channel_configuration:'unverified',screenshot_requests:[{id:'official',required:true,url:'https://www.stat.go.jp/evidence.pdf',label:'公式グラフ',slide_no:2}],retained:{doNotLose:true},image_history:[{old:'keep'}]};

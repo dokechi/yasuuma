@@ -115,17 +115,17 @@
   }
   async function refresh(){
    const version=++state.refreshVersion;
-   state.pending=[];input.value='';state.confirm=false;confirm.checked=false;
+   state.pending=[];input.value='';state.confirm=false;confirm.checked=false;panel.closest('[data-fp-modal]').__fpAuthoritativeState={unverified:true};
    try{
     const data=await request(id);
     await Promise.all((data.assets||[]).map(async a=>{const img=await decode(a.png);if(!api.validSize(img.naturalWidth,img.naturalHeight))throw new Error('保存画像の寸法を確認してください');}));
     if(version!==state.refreshVersion)return;
-    state.data=data;status.textContent=api.status(state.data.status);recordCardState(id,state.data);
+    state.data=data;panel.closest('[data-fp-modal]').__fpAuthoritativeState=data;status.textContent=api.status(state.data.status);recordCardState(id,state.data);
     issues.replaceChildren(...(state.data.issues||[]).map(s=>element('li',s)));
     copy.replaceChildren(summary,...state.data.copy.pages.map(p=>{const box=element('pre',(p.page)+'枚目\n'+api.copyText(p.copy));return box;}));
     before.checked=false;plan.replaceChildren(planSummary,...(state.data.image_render_plan?.pages||[]).map(p=>element('pre',p.page+'枚目：'+p.hero+'\n'+p.composition+'\n'+p.text_role)));
     confirm.checked=false;state.confirm=false;renderRequirements();renderGallery();updateControls();
-   }catch(e){if(version!==state.refreshVersion)return;state.data=null;status.textContent='読込未確認：'+e.message;gallery.replaceChildren();updateControls();}
+   }catch(e){if(version!==state.refreshVersion)return;state.data=null;panel.closest('[data-fp-modal]').__fpAuthoritativeState={unverified:true,error:e.message};status.textContent='読込未確認：'+e.message;gallery.replaceChildren();updateControls();}
   }
   async function operate(fn){
    if(state.busy)return;state.busy=true;updateControls();
@@ -185,7 +185,7 @@
   }catch(e){if((cardEpoch.get(key)||0)!==epoch||cardSignature(id)!==signature)return;if(label)label.textContent='画像状態の再読未確認';const detail=card.querySelector('.fp-draft-status span');if(detail)detail.textContent=e.message;}
   finally{cardPending.delete(normalize(id));}
  }
- function attachCards(node){if(node.matches?.('[data-fp-draft-actions]'))readCard(node);node.querySelectorAll?.('[data-fp-draft-actions]').forEach(readCard);}
+ function attachCards(node){const caption=doc.getElementById('listCaption');if(caption?.textContent==='完成原稿')caption.textContent='原稿一覧（採用・画像完成は別確認）';if(node.matches?.('[data-fp-draft-actions]'))readCard(node);node.querySelectorAll?.('[data-fp-draft-actions]').forEach(readCard);}
 
  const observer=new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes){if(n.nodeType!==1)continue;attachCards(n);if(n.matches('[data-fp-modal]'))attach(n);else n.querySelectorAll('[data-fp-modal]').forEach(attach);}});
  observer.observe(doc.body,{childList:true,subtree:true});attachCards(doc.body);doc.querySelectorAll('[data-fp-modal]').forEach(attach);
@@ -233,5 +233,13 @@
   }
   ctx.fillStyle=ink;ctx.font='400 24px sans-serif';ctx.fillText(String(index+1)+' / 6',930,1280);
  }
- return {copyText,validSize,status,shortStatus,error,lines,drawSavingsPage};
+ function reviewDisplay(data){
+  if(!data||data.unverified||!Array.isArray(data.production_issues))return {blocked:true,label:'状態の再読未確認',next:'状態を再読してから判断してください。'+(data?.error||'')};
+  const issues=data.production_issues;
+  const rejected=issues.some(s=>String(s).includes('本人不採用'));
+  const adoptionPending=issues.some(s=>/FP5点|FP採用審査/.test(String(s)));
+  return {blocked:issues.length>0,label:rejected?'本人不採用｜制作中止':adoptionPending?'FP採用の再審査待ち':issues.length?'制作条件の確認待ち':'原稿審査済み（画像完成は別確認）',
+   next:rejected?'この候補の制作は中止。原稿は履歴として保存します。':adoptionPending?'5点の本文・根拠を再審査し、採用後に画像化前の本人確認へ進みます。':issues.length?'表示された未確認点を解消してください。':'保存画像の有無と本人確認を別途確認してください。'};
+ }
+ return {reviewDisplay,copyText,validSize,status,shortStatus,error,lines,drawSavingsPage};
 });
