@@ -228,7 +228,7 @@
     const payload=item.payload||{};
     if(['saved_pending_review','confirmed_manual'].includes(payload.image_status)&&(!payload.finished_images||payload.finished_images.draft_revision!==payload.draft_revision||payload.finished_images.locked_at!==payload.content_lock?.locked_at))return{label:'原稿更新・画像再確認待ち',kind:'blocked'};
     if(payload.image_status==='saved_pending_review')return{label:'画像保存済み・検品待ち',kind:'ready'};
-    if(payload.image_status==='confirmed_manual')return{label:'画像確認済み・手動投稿',kind:'ready'};
+    if(payload.image_status==='confirmed_manual')return{label:'画像検品の記録あり・再読確認待ち',kind:'ready'};
     if(payload.image_status==='published')return{label:'公開済み（履歴復元）',kind:'history'};
     if(['revision_pending','needs_regeneration'].includes(payload.image_status))return{label:'画像改修待ち',kind:'blocked'};
     if(payload.image_status==='partial')return{label:'画像制作の続き待ち',kind:'blocked'};
@@ -271,7 +271,7 @@
     const quality=packageQuality(item);
     const verified=quality.ready?'pass':(payload.source_checked_at?'ready':'pending');
     const drafted=list(payload.draft_slides).length?(quality.ready?'pass':'ready'):'pending';
-    const imageStep=['ready','complete','published','confirmed_manual'].includes(payload.image_status)?'pass':['partial','revision_pending','needs_regeneration','saved_pending_review'].includes(payload.image_status)?'ready':'pending';
+    const imageStep=['ready','complete','published'].includes(payload.image_status)?'pass':['partial','revision_pending','needs_regeneration','saved_pending_review'].includes(payload.image_status)?'ready':'pending';
     const steps=stage('発掘','pass')+stage('事実確認',verified)+stage('原稿',drafted)+stage('選択',chosen?'pass':'pending')+stage('画像',imageStep);
     const structure=(list(payload.definitive_structure).length?list(payload.definitive_structure):list(payload.post_structure)).map(row=>'<li>'+escFp(typeof row==='string'?row:(row?.text||row?.title||JSON.stringify(row)))+'</li>').join('');
     const question=payload.reader_question||payload.question_lineage?.selected_question||payload.first_impression||payload.cover_idea||item.title||'';
