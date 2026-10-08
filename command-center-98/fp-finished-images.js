@@ -6,9 +6,9 @@
  const doc=root.document;
  const CAN_COMPOSE_ID='task:6aa9ee1043388191a2eac3bb2702092a:money-chat:6281805:average-savings-not-passline';
  function endpoint(){return typeof API==='string'?API:null;}
- async function request(id,body){
+ async function request(id,body,resource='fp-finished-images'){
   const base=endpoint();if(!base)throw new Error('画像保存APIが未設定です');
-  const url=new URL(base);if(!body){url.searchParams.set('resource','fp-finished-images');url.searchParams.set('id',id);}
+  const url=new URL(base);if(!body){url.searchParams.set('resource',resource);url.searchParams.set('id',id);}
   const r=await root.fetch(url,{method:body?'PATCH':'GET',cache:'no-store',headers:{...(typeof authHeaders==='function'?authHeaders():{}),...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
   if(r.status===401)throw new Error('ログインを確認してください');
   const d=await r.json();if(!r.ok||!d.ok)throw new Error(api.error(d.error));return d;
@@ -107,7 +107,7 @@
    try{
     state.data=await request(id);
     await Promise.all((state.data.assets||[]).map(async a=>{const img=await decode(a.png);if(!api.validSize(img.naturalWidth,img.naturalHeight))throw new Error('保存画像の寸法を確認してください');}));
-    status.textContent=api.status(state.data.status);
+    status.textContent=api.status(state.data.status);recordCardState(id,state.data);
     issues.replaceChildren(...(state.data.issues||[]).map(s=>element('li',s)));
     copy.replaceChildren(summary,...state.data.copy.pages.map(p=>{const box=element('pre',(p.page)+'枚目\n'+api.copyText(p.copy));return box;}));
     confirm.checked=false;state.confirm=false;renderRequirements();renderGallery();updateControls();
@@ -136,8 +136,42 @@
   const panel=element('section',undefined,'fp-finished-panel');panel.dataset.fpFinished='1';
   modal.querySelector('main')?.prepend(panel);paint(panel,id);
  }
- const observer=new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes){if(n.nodeType!==1)continue;if(n.matches('[data-fp-modal]'))attach(n);else n.querySelectorAll('[data-fp-modal]').forEach(attach);}});
- observer.observe(doc.body,{childList:true,subtree:true});doc.querySelectorAll('[data-fp-modal]').forEach(attach);
+
+ const cardStates=new Map(),cardPending=new Map();
+ const normalize=id=>String(id).replace(/^(sns:)+/,'');
+ function cardSignature(id){
+  try{if(typeof app!=='undefined'){const item=(app.items||[]).find(i=>normalize(i.id)===normalize(id));if(item)return JSON.stringify(item.payload||{});}}catch(_){}
+  return '';
+ }
+ function applyCardState(card,data){
+  const label=card.querySelector('.fp-draft-status b'),detail=card.querySelector('.fp-draft-status span');
+  if(label)label.textContent=api.shortStatus(data.status);
+  if(detail)detail.textContent=api.status(data.status)+(data.issues?.length?' '+data.issues.join('／'):'');
+  const host=card.closest('[id^="card-"]');
+  for(const stage of host?.querySelectorAll('.fp-stage')||[]){if(stage.querySelector('small')?.textContent!=='画像')continue;
+   const kind=data.status==='confirmed_manual'?'pass':data.status==='saved_pending_review'?'ready':'pending';
+   stage.className='fp-stage '+kind;const mark=stage.querySelector('b');if(mark)mark.textContent=kind==='pass'?'✓':kind==='ready'?'→':'待';
+  }
+ }
+ function recordCardState(id,data){
+  cardStates.set(normalize(id),{data,time:Date.now(),signature:cardSignature(id)});
+  for(const card of doc.querySelectorAll('[data-fp-draft-actions]'))if(normalize(card.dataset.fpDraftActions)===normalize(id))applyCardState(card,data);
+ }
+ async function readCard(card){
+  const id=card.dataset.fpDraftActions;if(!/^task:(6aa9ee1043388191a2eac3bb2702092a|6a9e5826d4888191a4d82a643e6d5adf):/.test(normalize(id)))return;
+  const old=cardStates.get(normalize(id)),signature=cardSignature(id);
+  if(old&&signature&&signature===old.signature&&Date.now()-old.time<5000){applyCardState(card,old.data);return;}
+  const label=card.querySelector('.fp-draft-status b');if(label)label.textContent='原稿審査・保存画像を再読中';
+  try{
+   let pending=cardPending.get(normalize(id));if(!pending){pending=request(id,null,'fp-image-state');cardPending.set(normalize(id),pending);}
+   recordCardState(id,await pending);
+  }catch(e){if(label)label.textContent='画像状態の再読未確認';const detail=card.querySelector('.fp-draft-status span');if(detail)detail.textContent=e.message;}
+  finally{cardPending.delete(normalize(id));}
+ }
+ function attachCards(node){if(node.matches?.('[data-fp-draft-actions]'))readCard(node);node.querySelectorAll?.('[data-fp-draft-actions]').forEach(readCard);}
+
+ const observer=new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes){if(n.nodeType!==1)continue;attachCards(n);if(n.matches('[data-fp-modal]'))attach(n);else n.querySelectorAll('[data-fp-modal]').forEach(attach);}});
+ observer.observe(doc.body,{childList:true,subtree:true});attachCards(doc.body);doc.querySelectorAll('[data-fp-modal]').forEach(attach);
  const style=element('style');style.textContent='.fp-finished-panel{background:#fff;color:#16324f;padding:14px;border:2px solid #0f756d;margin-bottom:12px}.fp-finished-panel pre{white-space:pre-wrap;line-height:1.6}.fp-finished-controls{display:grid;gap:10px}.fp-finished-controls input[type=file]{max-width:100%}.fp-finished-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}.fp-finished-gallery figure{margin:0}.fp-finished-gallery img{width:100%;height:auto;border:1px solid #16324f}.fp-finished-gallery figcaption{margin:8px 0}.fp-finished-gallery a{display:inline-block}.fp-finished-evidence{display:grid;gap:7px;padding:10px;border:1px solid #16324f;margin:10px 0}@media(max-width:650px){.fp-finished-gallery{grid-template-columns:1fr}}';doc.head.append(style);
 })(typeof window==='undefined'?null:window,function(){
  const copyText=s=>String(s??'').replace(/\\n/g,'\n');
@@ -145,6 +179,7 @@
  const status=s=>({blocked:'原稿審査または画像化前確認が未完了です。画像保存・本人確認は保留中です。',missing:'完成画像は未保存です。原稿完成と画像完成は別です。',stale:'旧画像はありますが原稿の版が変わっています。再制作・検品待ちです。',
  saved_pending_review:'全ページを保存して再読しました。本人による画像・全文の検品は未完了です。',
  confirmed_manual:'画像・全文の本人確認を保存済みです。投稿先と掲載条件を確認して手動で投稿してください。'})[s]||'画像状態は未確認です';
+ const shortStatus=s=>({missing:'完成画像は未保存',blocked:'原稿審査・画像化前確認待ち',stale:'原稿更新・画像再確認待ち',saved_pending_review:'画像保存済み・検品待ち',confirmed_manual:'同版画像の本人確認済み・手動投稿'})[s]||'画像状態未確認';
  const error=s=>({fp_copy_changed_retry:'原稿が更新されました。最新の内容を再読してください',fp_copy_stale_or_unlocked:'原稿の版またはLOCKが変わっています',
  required_source_image_unchecked:'必須の公式資料画像の確認が未完了です',fp_finished_images_required:'最新原稿の全画像を保存・再読してください',
  fp_image_bytes_missing_or_changed:'保存画像の不足またはハッシュ不一致があります',fp_copy_unresolved:'原稿に未解決の確認点があります',
@@ -181,5 +216,5 @@
   }
   ctx.fillStyle=ink;ctx.font='400 24px sans-serif';ctx.fillText(String(index+1)+' / 6',930,1280);
  }
- return {copyText,validSize,status,error,lines,drawSavingsPage};
+ return {copyText,validSize,status,shortStatus,error,lines,drawSavingsPage};
 });
