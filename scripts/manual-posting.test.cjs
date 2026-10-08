@@ -7,7 +7,7 @@ async function run(){
  new Function(front);
  assert.ok(!front.includes('affiliate_queue'));
  assert.ok(!front.includes('data-queue'));
- assert.ok(back.includes("if(j.posting_mode==='manual')"));
+ assert.ok(back.includes("if(j.posting_mode==='manual'||c.posting_mode==='manual'||c.id===HOUSE_CAMPAIGN.id)"));
  assert.ok(back.includes('const post=await createBufferPost'));
  const acceptStart=front.indexOf('  async function accept(j){'),acceptEnd=front.indexOf('  function hide()',acceptStart);
  const requests=[];
@@ -20,11 +20,15 @@ async function run(){
  .replace(/\(p:any,i:number\)/g,'(p,i)').replace(/\(p:any\)/g,'(p)');
  let reads=0,saved;
  const row={payload:{result_kind:'affiliate_job',retained:'original',job:{title:'sample',campaign_id:'c',slides:[1],finished_images:{set_id:'exact'},approval:null}}};
- const context={compact:v=>String(v??''),job:async()=>{reads++;return row;},campaign:async()=>({id:'c'}),revisionOf:async()=>'rev',deliveryIssues:()=>['legacy_conditions_pending'],contentIssues:()=>[],finishedIssues:()=>[],copyRevisionOf:async()=>'copy',storedFinished:async()=>['exact-png'],now:()=>'2026-10-08T00:00:00Z',JOB_TASK:'affiliate-production-jobs-v1',save:async(...args)=>{saved=args;},jobState:async()=>({state:'approved'})};
+ const context={compact:v=>String(v??''),job:async()=>{reads++;return row;},campaign:async()=>({id:row.payload.job.campaign_id}),revisionOf:async()=>'rev',deliveryIssues:()=>['legacy_conditions_pending'],contentIssues:()=>[],finishedIssues:()=>[],copyRevisionOf:async()=>'copy',storedFinished:async()=>['exact-png'],now:()=>'2026-10-08T00:00:00Z',HOUSE_CAMPAIGN:{id:'house-townlife-test'},JOB_TASK:'affiliate-production-jobs-v1',save:async(...args)=>{saved=args;},jobState:async()=>({state:'approved'})};
  const fn=new Function(...Object.keys(context),src+'; return affiliatePatch;')(...Object.values(context));
  const deps={token:'connected-test-only',admin:{from(){throw new Error('unexpected DB access');}},json:(req,b,status=200)=>({b,status})};
  const queue=await fn({}, {action:'affiliate_queue',id:'existing',revision:'rev'},deps);
  assert.equal(queue.status,409);assert.ok(queue.b.error.includes('legacy_conditions_pending'));assert.equal(saved,undefined);
+ row.payload.job.campaign_id='house-townlife-test';
+ const initialTarget=await fn({}, {action:'affiliate_queue',id:'existing',revision:'rev'},deps);
+ assert.equal(initialTarget.status,403);assert.equal(initialTarget.b.error,'manual_posting_only');assert.equal(saved,undefined);
+ row.payload.job.campaign_id='c';
  row.payload.job.posting_mode='manual';
  const manualQueue=await fn({}, {action:'affiliate_queue',id:'existing',revision:'rev'},deps);
  assert.equal(manualQueue.status,403);assert.equal(manualQueue.b.error,'manual_posting_only');assert.equal(saved,undefined);
