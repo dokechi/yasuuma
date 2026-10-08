@@ -36,6 +36,26 @@ export async function runFpImageContractTests(){
  payload.content_lock.snapshot=currentEditorialSnapshot(payload);
  for(const key of ['final_review','logic_institution_review'])payload[key]={status:'passed',checked_revision:'r1',reviewed_snapshot:structuredClone(payload.content_lock.snapshot),unresolved_items:[]};
  assert.deepEqual(productionIssues(payload),[]);
+ // Separate user pre-image action, never inferred from an editorial review.
+ const pre=structuredClone(payload);pre.pre_image_review={status:'not_required',required:false};
+ const preDb=memoryDb({command_center_task_events:[{id:'before',task_id:'6aa9ee1043388191a2eac3bb2702092a',event_key:'money-chat:test-images',title:'original',payload:structuredClone(pre)}]});
+ const preD={admin:preDb.admin,sha256:async s=>createHash('sha256').update(s).digest('hex'),json:(_r,b,status=200)=>({body:b,status})};
+ const preBody={action:'fp_pre_image_confirm',id,draftRevision:'r1',lockedAt:'lock1',copyHash:await copyHash(preD,pre),confirmed:true};
+ const preRow=preDb.tables.get('command_center_task_events')[0];
+ for(const change of [
+  {confirmed:false},{copyHash:'old'}
+ ]){const r=await fpImagesPatch({}, {...preBody,...change},preD);assert.equal(r.status,409);assert.equal(preDb.writes,0);}
+ for(const mutate of [
+  p=>{p.logic_institution_review.status='pending';},p=>{p.image_render_plan.pages=[];},p=>{p.content_lock.locked=false;}
+ ]){preRow.payload=structuredClone(pre);mutate(preRow.payload);const b={...preBody,copyHash:await copyHash(preD,preRow.payload)};
+  const r=await fpImagesPatch({},b,preD);assert.equal(r.status,409);assert.equal(preDb.writes,0);}
+ preRow.payload=structuredClone(pre);preDb.failCas(true);
+ const preRace=await fpImagesPatch({},preBody,preD);assert.equal(preRace.status,409);assert.equal(preRow.payload.pre_image_review.status,'not_required');
+ preDb.failCas(false);const accepted=await fpImagesPatch({},preBody,preD);
+ assert.equal(accepted.status,200);assert.equal(preRow.payload.pre_image_review.status,'approved_by_user');
+ assert.equal(preRow.payload.pre_image_review.checked_locked_at,'lock1');assert.equal(preRow.payload.pre_image_review_history[0].previous.status,'not_required');
+ assert.equal(preRow.payload.finished_images,undefined);assert.deepEqual(preRow.payload.draft_slides,pre.draft_slides);
+
  const db=memoryDb({command_center_task_events:[{id:'candidate',task_id:'6aa9ee1043388191a2eac3bb2702092a',event_key:'money-chat:test-images',title:'original',payload:structuredClone(payload)}]});
  const d={admin:db.admin,sha256:async s=>createHash('sha256').update(s).digest('hex'),json:(_req,b,status=200)=>({body:b,status})};
  const body={action:'fp_finished_import',id,draftRevision:'r1',lockedAt:'lock1',copyHash:await copyHash(d,payload),assets:[{page:1,png:png(10)},{page:2,png:png(20)}]};
@@ -92,6 +112,6 @@ export async function runFpImageContractTests(){
  asset.payload.png=body.assets[0].png.split(',')[1];
  db.failCas(true);const race=await fpImagesPatch({},body,d);assert.equal(race.status,409);
  assert.equal(candidate.payload.finished_image_review.status,'confirmed_manual');
- return {passed:29,assets:countAssets(),liveDb:false};
+ return {passed:36,assets:countAssets(),liveDb:false};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)console.log(await runFpImageContractTests());
