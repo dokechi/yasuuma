@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {deflateSync} from 'node:zlib';
+import {pathToFileURL} from 'node:url';
 import {fpImagesPatch,fpImagesGet,copyHash,finished,readPng,crc32,identity} from '../supabase/functions/command-center-retro-api/fp-finished-images-api.mjs';
 function png(color,width=1080,height=1350){
  const chunk=(type,data)=>{const t=Buffer.from(type),body=Buffer.concat([t,data]),out=Buffer.alloc(data.length+12);out.writeUInt32BE(data.length);body.copy(out,4);out.writeUInt32BE(crc32(body),out.length-4);return out;};
@@ -62,4 +63,4 @@ export async function runFpImageContractTests(){
  assert.equal(candidate.payload.finished_image_review.status,'confirmed_manual');
  return {passed:12,assets:countAssets(),liveDb:false};
 }
-if(import.meta.url===new URL('file://'+process.argv[1]).href)console.log(await runFpImageContractTests());
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)console.log(await runFpImageContractTests());
