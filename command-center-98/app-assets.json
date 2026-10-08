@@ -68,6 +68,7 @@
     "./affiliate-production.js?v=20261008.1-manual",
     "./binbo-neko.js?v=20261002.1",
     "./v230-request-progress.js?v=20261004.1",
-    "./v231-trade-details.js?v=20261004.1"
+    "./v231-trade-details.js?v=20261004.1",
+    "./fp-finished-images.js?v=20261008.1"
   ]
 }
