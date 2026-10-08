@@ -66,7 +66,7 @@ test('late feature patches and the latest daily-report entry remain present', ()
     './v222-sourcing-click-fix.js?v=222.1',
     './v223-home-cleanup.js?v=20261003.1',
     './v224-home-menu-fix.js?v=224.2',
-    './v228-money-full-copy.js?v=232.1-theme-adaptive',
+    './v228-money-full-copy.js?v=232.2-state',
     './v229-sourcing-mercari-history.js?v=229.3',
     './affiliate-production.js?v=20261008.1-manual',
     './binbo-neko.js?v=20261002.1'
