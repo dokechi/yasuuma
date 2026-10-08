@@ -49,6 +49,13 @@ export function fpLearningIssues(p){
  const issues=[];
  if(p.review_status==='rejected'||p.content_review?.status==='rejected')issues.push('本人不採用：制作中止');
  const r=p.editorial_review?.fp_learning_value;
+ const criteria=['before_after','mechanism','conditions_exceptions','primary_evidence','reader_action'];
+ const proof=array(r?.criteria);
+ if(!r?.reviewed_snapshot||stable(r.reviewed_snapshot)!==stable(currentEditorialSnapshot(p))||!text(r?.reviewed_by).trim()||!Number.isFinite(Date.parse(r?.checked_at||''))||
+  !Number.isFinite(Date.parse(r?.evidence_checked_at||''))||!text(r?.applicable_conditions).trim()||
+  criteria.some(key=>{const c=proof.find(x=>x.key===key);return !c||c.status!=='passed'||!text(c.finding).trim()||!array(c.body_evidence).length||
+    array(c.body_evidence).some(e=>{const page=array(p.draft_slides).find(s=>Number(s.page)===Number(e.page));return !text(e.excerpt).trim()||!text(page?.page_contract?.display_copy).includes(text(e.excerpt));});}))
+  issues.push('FP5点採用基準の同版本文照合・適用条件・確認日・審査者の記録待ち');
  if(r?.status!=='passed'||r.checked_revision!==p.draft_revision||
   !text(r.mechanism).trim()||!text(r.primary_evidence_url).trim().match(/^https:\/\//)||
   !text(r.reader_decision_before).trim()||!text(r.reader_decision_after).trim()||
