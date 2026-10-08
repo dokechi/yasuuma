@@ -92,7 +92,7 @@ export async function fpImagesGet(req,d){
   const c=await candidate(d,u.searchParams.get('id'));
   const current=await copyHash(d,c.row.payload);
   if(u.searchParams.get('copyHash')&&u.searchParams.get('copyHash')!==current)fail('fp_copy_changed_retry');
-  return d.json(req,{ok:true,id:c.id,...await finished(d,c),copy:snapshot(c.row.payload)});
+  return d.json(req,{ok:true,id:c.id,...await finished(d,c),copy:snapshot(c.row.payload),draft_status:c.row.payload.draft_status,requirements:array(c.row.payload.screenshot_requests).filter(s=>s.required).map(s=>({id:s.id,url:s.url,label:s.label,slide_no:s.slide_no,capture_range:s.capture_range})),visuals:array(c.row.payload.draft_slides).map(s=>({page:s.page,role:s.role,visual_mode:s.visual_mode,visual:s.visual}))});
  }catch(e){return d.json(req,{ok:false,error:e.message},e.status||500);}
 }
 export async function fpImagesPatch(req,body,d){
