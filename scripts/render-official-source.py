@@ -7,7 +7,18 @@ subprocess.run(["pdftotext","-f","33","-l","33","-bbox",str(pdf),str(root/"page-
 tree=ET.parse(root/"page-bbox.html")
 page=next(x for x in tree.iter() if x.tag.endswith("page"))
 words=[x for x in page.iter() if x.tag.endswith("word")]
-titles=[x for x in words if "図Ⅲ" in "".join(x.itertext()) and ("７" in "".join(x.itertext()) or "7" in "".join(x.itertext()))]
+lines={}
+for word in words:
+    key=round(float(word.attrib["yMin"]),1)
+    lines.setdefault(key,[]).append(word)
+titles=[]
+for y,line in lines.items():
+    line.sort(key=lambda x:float(x.attrib["xMin"]))
+    label="".join("".join(x.itertext()) for x in line).replace(" ","").replace("　","")
+    if ("図Ⅲ" in label or "図III" in label) and ("７" in label or "7" in label):
+        titles.append(line[0])
+if len(titles)!=1:
+    print("Public page lines:",json.dumps([{"y":y,"text":"".join("".join(x.itertext()) for x in line)} for y,line in lines.items()],ensure_ascii=False))
 if len(titles)!=1:
     raise RuntimeError("Official figure title cannot be located uniquely; no crop produced")
 scale=180/72
