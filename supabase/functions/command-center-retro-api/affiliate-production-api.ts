@@ -1,4 +1,4 @@
-import { VERSION, JOB_TASK, CAMPAIGN_TASK, ASSET_TASK, HOUSE_CAMPAIGN, revisionOf, copyRevisionOf, digest, validCarouselSize, finishedIssues, productionPacket, jobState, deliveryIssues, contentIssues, httpsUrl, deliveryCaption, createBufferPost } from '../shared/affiliate-production.mjs';
+import { VERSION, JOB_TASK, CAMPAIGN_TASK, ASSET_TASK, HOUSE_CAMPAIGN, revisionOf, copyRevisionOf, digest, validCarouselSize, finishedIssues, productionPacket, jobState, deliveryIssues, contentIssues, httpsUrl } from '../shared/affiliate-production.mjs';
 
 type Deps = { admin: any; json: (r: Request, b: unknown, status?: number) => Response; hmac: (v: string) => Promise<string>; same: (a: string, b: string) => boolean; cors: (r: Request) => Headers; token: string };
 const TABLE = 'command_center_task_events';
@@ -63,6 +63,8 @@ export async function affiliateGet(req: Request, d: Deps): Promise<Response | nu
 
 export async function affiliatePatch(req: Request, body: any, d: Deps): Promise<Response | null> {
   const action=String(body?.action||'');if(!action.startsWith('affiliate_'))return null;
+  // Manual posting policy: reject legacy clients before any read, write or external call.
+  if(action==='affiliate_queue')return d.json(req,{ok:false,error:'manual_posting_only'},403);
   try {
     if(action==='affiliate_campaign') {
       const id=compact(body.id,100), old=await row(d,CAMPAIGN_TASK,id), c=await campaign(d,id), b=body.campaign||{};
@@ -113,33 +115,6 @@ export async function affiliatePatch(req: Request, body: any, d: Deps): Promise<
       const keys=['clicks','applications','approved_count','confirmed_revenue_yen','cost_yen','work_minutes'];const values:any={};
       for(const key of keys){const n=body.metrics?.[key];if(n===null||n===undefined||n===''){values[key]=null;continue}if(!Number.isFinite(Number(n))||Number(n)<0||Number(n)>100000000)throw new Error('成果の数字を確認してください');values[key]=Number(n)}
       await save(d,JOB_TASK,id,j.title,{...r.payload,job:{...j,metrics:{...values,checked_at:now()}}},r);return d.json(req,{ok:true});
-    }
-    if(action==='affiliate_queue') {
-      const errors=deliveryIssues(j,c,!!d.token);if(j.approval?.revision!==revision||j.approval?.status!=='approved')errors.push('最新の画像・原稿が未承認');
-      if(c.media_approval_scope==='per_post'&&j.advertiser_review?.revision!==revision)errors.push('最新の投稿に対する広告主確認が未完了');
-      if(errors.length)return d.json(req,{ok:false,error:errors.join(' / ')},409);
-      const dueAt=compact(body.due_at,50), due=Date.parse(dueAt);if(!Number.isFinite(due)||due<Date.now()+300000||due>Date.now()+10*86400000)throw new Error('予約日時は5分後〜10日後にしてください');
-      const futureErrors=deliveryIssues(j,c,!!d.token,due);if(futureErrors.length)throw new Error('予約日時まで有効な根拠・広告条件を確認してください');
-      const assets=await storedFinished(d,id,j,c);
-      if(body.assets!==undefined)throw new Error('配信画像は保存済みの承認画像を使用します。画像の差し替えは取り込みから行ってください');
-      for(let i=0;i<assets.length;i++) {
-        const png=assets[i];
-        const key=assetKey(id,revision,i+1), old=await row(d,ASSET_TASK,key);await save(d,ASSET_TASK,key,`${j.title}｜${i+1}枚目`,{result_kind:'affiliate_asset',job_id:id,revision,page:i+1,png},old);
-      }
-      const sending={...j,dispatch:{status:'sending',revision,due_at:dueAt,started_at:now()}};
-      // CAS claim precedes the external mutation. An ambiguous outcome stays
-      // locked for reconciliation instead of creating the same post again.
-      const claimed=await save(d,JOB_TASK,id,j.title,{...r.payload,job:sending},r);
-      try {
-        const expires=Date.now()+14*86400000, urls=[];
-        for(let i=0;i<assets.length;i++){const signature=await d.hmac(`affiliate-asset|${id}|${revision}|${i+1}|${expires}`);const u=new URL(req.url);u.search='';u.searchParams.set('resource','affiliate-asset');for(const [k,v]of Object.entries({id,revision,page:String(i+1),expires:String(expires),signature}))u.searchParams.set(k,v);urls.push(u.toString())}
-        const post=await createBufferPost({token:d.token,channelId:c.publisher_channel,caption:deliveryCaption(j,c),assetUrls:urls,dueAt});
-        await save(d,JOB_TASK,id,j.title,{...r.payload,job:{...sending,dispatch:{...sending.dispatch,status:'scheduled',provider:'buffer',provider_id:post.id,confirmed_at:now()}}},{...r,...claimed});
-        return d.json(req,{ok:true,post});
-      } catch {
-        await save(d,JOB_TASK,id,j.title,{...r.payload,job:{...sending,dispatch:{...sending.dispatch,status:'unknown',error:'受付結果を確認してください。重複防止のため自動再送しません'}}},{...r,...claimed});
-        return d.json(req,{ok:false,error:'予約投稿の受付結果を確認してください。重複防止のため自動再送しません'},502);
-      }
     }
     return d.json(req,{ok:false,error:'unknown_affiliate_action'},400);
   } catch(e) { return d.json(req,{ok:false,error:compact((e as any)?.message||e)},409); }
