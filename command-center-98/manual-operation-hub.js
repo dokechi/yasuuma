@@ -69,12 +69,17 @@
   const targets=key==='tiktok'?['@sucker0508','sucker0508','tiktok@sucker0508']:key==='kyun'?['キュン拾い','threadsキュン拾い']:key==='choi'?['ちょい上等','threadsちょい上等']:[];
   return values.some(v=>targets.includes(v));
  }
- function unique(items){const seen=new Set();return items.filter(i=>{if(!i?.id||seen.has(String(i.id)))return false;seen.add(String(i.id));return true;});}
+ function unique(items){
+  const out=[],positions=new Map(),stamp=i=>{for(const k of ['updatedAt','occurredAt','lastSeen','detectedAt','createdAt','occurred_at']){const v=i?.[k];if(typeof v==='string'&&Number.isFinite(Date.parse(v)))return Date.parse(v);}return -Infinity;};
+  for(const item of items){if(!item?.id)continue;const key=String(item.id).replace(/^(sns:)+/,'');
+   if(!positions.has(key)){positions.set(key,out.length);out.push(item);}else{const index=positions.get(key);if(stamp(item)>stamp(out[index]))out[index]=item;}
+  }return out;
+ }
  function savedCopies(p){
   const result=[],variants=Array.isArray(p.body_variants)?p.body_variants:Array.isArray(p.body_options)?p.body_options:[];
   variants.forEach((v,i)=>{const t=typeof v==='string'?v:v.text||v.body;if(t)result.push({label:'保存本文案'+(i+1),text:String(t)});});
   const main=p.main_post||p.threads_main_post||p.post_text||p.caption||p.draft_caption;if(main&&!result.some(r=>r.text===main))result.push({label:'保存主投稿',text:String(main)});
-  const recommended=p.recommended_variant||p.recommended_option;if(recommended!==undefined&&recommended!==null)result.push({label:'保存された推奨案',text:String(recommended)});
+  const recommended=p.recommended_variant||p.recommended_option;if(recommended!==undefined&&recommended!==null)result.push({label:'保存された推奨案',text:typeof recommended==='object'?String(recommended.text||recommended.body||recommended.label||JSON.stringify(recommended)):String(recommended)});
   const reply=p.self_reply||p.reply_text||p.threads_reply;if(reply)result.push({label:'保存自己返信',text:String(reply)});
   const link=p.purchase_link||p.purchase_url;if(typeof link==='string'&&/^https:\/\//.test(link))result.push({label:'保存購入リンク',text:link});
   return result;
