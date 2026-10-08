@@ -34,7 +34,10 @@ function requireVersion(p,body){
  if(text(p.blocked_reason).trim()||array(p.missing_evidence).length||array(p.unresolved_research_items).length)fail('fp_copy_unresolved');
  return pages;
 }
-// Validate PNG structure before storing. Browser import also decodes the image.
+export function crc32(bytes){
+ let crc=0xffffffff;for(const b of bytes){crc^=b;for(let i=0;i<8;i++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}return (crc^0xffffffff)>>>0;
+}
+// Validate PNG chunks and CRCs before storing. Browser import also decodes pixels.
 export function readPng(input){
  const match=text(input).match(/^data:image\/png;base64,([A-Za-z0-9+/]+={0,2})$/);
  if(!match||match[1].length>8000000||match[1].length%4)fail('invalid_png',400);
@@ -43,8 +46,8 @@ export function readPng(input){
  let offset=8,width=0,height=0,idat=false,end=false;
  while(offset+12<=b.length){
   const size=v.getUint32(offset),type=String.fromCharCode(...b.slice(offset+4,offset+8));
-  if(offset+size+12>b.length)fail('invalid_png',400);
-  if(offset===8){if(type!=='IHDR'||size!==13)fail('invalid_png',400);width=v.getUint32(offset+8);height=v.getUint32(offset+12);}
+  if(offset+size+12>b.length||crc32(b.slice(offset+4,offset+8+size))!==v.getUint32(offset+8+size))fail('invalid_png',400);
+  if(offset===8){if(type!=='IHDR'||size!==13)fail('invalid_png',400);width=v.getUint32(offset+8);height=v.getUint32(offset+12);if(![0,2,3,4,6].includes(b[offset+17])||b[offset+18]!==0||b[offset+19]!==0||b[offset+20]>1)fail('invalid_png',400);}
   if(type==='IDAT'&&size>0)idat=true;
   if(type==='IEND'){if(size!==0||offset+12!==b.length)fail('invalid_png',400);end=true;break;}
   offset+=size+12;
