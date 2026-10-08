@@ -31,11 +31,21 @@ export async function runFpImageContractTests(){
  const id='task:6aa9ee1043388191a2eac3bb2702092a:money-chat:test-images',payload={content_type:'fp_post_candidate',draft_status:'ready',draft_revision:'r1',
   content_lock:{locked:true,draft_revision:'r1',locked_at:'lock1'},draft_slides:[{page:1,page_contract:{display_copy:'全文1'}},{page:2,page_contract:{display_copy:'全文2'}}],
   caption:'投稿文',post_title:'original',channel_configuration:'unverified',screenshot_requests:[{id:'official',required:true,url:'https://www.stat.go.jp/evidence.pdf',label:'公式グラフ',slide_no:2}],retained:{doNotLose:true},image_history:[{old:'keep'}]};
+ payload.editorial_review={fp_learning_value:{status:'passed',checked_revision:'r1',mechanism:'制度の具体的な仕組み',primary_evidence_url:'https://www.stat.go.jp/evidence.pdf',reader_decision_before:'条件を確認せず比較する',reader_decision_after:'適用条件を確認して対象を選ぶ',specific_knowledge:true,general_advice_only:false}};
  payload.image_render_plan={draft_revision:'r1',pages:payload.draft_slides.map(s=>({page:s.page,hero:'defined',composition:'defined',text_role:'defined'}))};
  payload.pre_image_review={status:'approved_by_user',checked_revision:'r1',checked_locked_at:'lock1'};
  payload.content_lock.snapshot=currentEditorialSnapshot(payload);
  for(const key of ['final_review','logic_institution_review'])payload[key]={status:'passed',checked_revision:'r1',reviewed_snapshot:structuredClone(payload.content_lock.snapshot),unresolved_items:[]};
  assert.deepEqual(productionIssues(payload),[]);
+ for(const mutate of [
+  p=>{delete p.editorial_review;},p=>{p.editorial_review.fp_learning_value.mechanism='';},
+  p=>{p.editorial_review.fp_learning_value.primary_evidence_url='';},
+  p=>{p.editorial_review.fp_learning_value.reader_decision_after=p.editorial_review.fp_learning_value.reader_decision_before;},
+  p=>{p.editorial_review.fp_learning_value.general_advice_only=true;},
+  p=>{p.editorial_review.fp_learning_value.checked_revision='old';},
+  p=>{p.review_status='rejected';}
+ ]){const rejected=structuredClone(payload);mutate(rejected);assert.ok(productionIssues(rejected).length);}
+
  // Separate user pre-image action, never inferred from an editorial review.
  const pre=structuredClone(payload);pre.pre_image_review={status:'not_required',required:false};
  const preDb=memoryDb({command_center_task_events:[{id:'before',task_id:'6aa9ee1043388191a2eac3bb2702092a',event_key:'money-chat:test-images',title:'original',payload:structuredClone(pre)}]});
