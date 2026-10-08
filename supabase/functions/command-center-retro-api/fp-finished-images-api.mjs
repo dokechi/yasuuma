@@ -112,7 +112,7 @@ export async function finished(d,c){
  if(!f||f.contract!==CONTRACT)return {status:gate.length?'blocked':'missing',assets:[],issues:['完成画像は未保存です',...gate],copy_hash:await copyHash(d,p)};
  const current=await copyHash(d,p),issues=[];
  if(f.copy_hash!==current||f.draft_revision!==p.draft_revision||f.locked_at!==p.content_lock?.locked_at)
- return {status:'stale',assets:[],issues:['原稿が更新されています。旧画像を現行原稿として表示しません'],copy_hash:current,manifest:f};
+ return {status:'stale',assets:[],issues:['原稿が更新されています。旧画像を現行原稿として表示しません',...gate],copy_hash:current,manifest:f};
  if(gate.length)return {status:'blocked',assets:[],issues:gate,copy_hash:current,manifest:f};
  if(!Array.isArray(f.pages)||f.pages.length!==array(p.draft_slides).length)fail('fp_image_manifest_incomplete');
  const assets=[];
