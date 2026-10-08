@@ -24,7 +24,7 @@
   const img=await decode(png);return {png,img,name:file.name};
  }
  function paint(panel,id){
-  const state={data:null,pending:[],busy:false,evidence:new Map(),sourceImages:new Map(),confirm:false};
+  const state={data:null,pending:[],busy:false,evidence:new Map(),sourceImages:new Map(),confirm:false,refreshVersion:0};
   const heading=element('h4','完成画像・掲載全文・確認点');
   const status=element('p','保存済み画像を読み込んでいます');status.setAttribute('aria-live','polite');
   const issues=element('ul'),copy=element('details'),summary=element('summary','現在の掲載全文を確認');copy.append(summary);
@@ -41,9 +41,17 @@
     assets:state.pending.map((s,i)=>({page:i+1,png:s.png})),evidence});
    state.pending=[];state.confirm=false;input.value='';await refresh();
   }));
+  const before=element('input');before.type='checkbox';
+  const beforeLabel=element('label','掲載全文・各ページの画像構成・必須資料の範囲を確認し、この版を画像化してよい ');beforeLabel.prepend(before);
+  const beforeSave=button('画像化前の本人確認を保存',()=>operate(async()=>{
+   if(!before.checked)throw new Error('画像化前の確認にチェックしてください');
+   const p=state.data.copy;await request(id,{action:'fp_pre_image_confirm',id,draftRevision:p.draft_revision,lockedAt:p.locked_at,copyHash:state.data.copy_hash,confirmed:true});
+   before.checked=false;await refresh();
+  }));
+  const plan=element('details'),planSummary=element('summary','この版の画像構成を確認');plan.append(planSummary);panel.append(plan);
   const confirm=element('input');confirm.type='checkbox';
   const confirmLabel=element('label','完成画像の全文・順番・数字を原稿と見比べて確認しました ');confirmLabel.prepend(confirm);
-  confirm.onchange=()=>{state.confirm=confirm.checked;updateControls();};
+  confirm.onchange=()=>{state.confirm=confirm.checked;updateControls();};before.onchange=updateControls;
   const confirmSave=button('本人確認を保存（手動投稿）',()=>operate(async()=>{
    const p=state.data.copy;
    await request(id,{action:'fp_finished_confirm_manual',id,draftRevision:p.draft_revision,lockedAt:p.locked_at,
@@ -65,13 +73,16 @@
    state.pending=rendered;state.confirm=false;confirm.checked=false;renderGallery();updateControls();
    status.textContent='6枚を組版しました。画面を検品してから保存してください。保存・本人確認はまだです。';
   }));
-  controls.append(importLabel,reload,save,confirmLabel,confirmSave);
+  controls.append(beforeLabel,beforeSave,importLabel,reload,save,confirmLabel,confirmSave);
   if(id===CAN_COMPOSE_ID)controls.prepend(compose);
   const notice=element('p','画像保存・本人確認は投稿を実行しません。投稿先の設定と掲載条件を本人が確認し、手動で投稿してください。');
   panel.append(notice);
   function updateControls(){
    const ok=!!state.data&&!state.busy;
    const productionReady=ok&&!(state.data.production_issues||[]).length;
+   const beforeIssues=state.data?.production_issues||[];
+   const beforeReady=ok&&beforeIssues.includes('画像化前の本人確認待ち')&&beforeIssues.every(s=>s==='画像化前の本人確認待ち');
+   before.disabled=!beforeReady;beforeSave.disabled=!beforeReady||!before.checked;
    input.disabled=!ok;reload.disabled=state.busy;save.disabled=!productionReady||state.pending.length!==state.data.copy.pages.length;
    const valid=['saved_pending_review','confirmed_manual'].includes(state.data?.status)&&!state.pending.length;
    confirm.disabled=!ok||!valid;confirmSave.disabled=!productionReady||!valid||!state.confirm||(state.data.issues||[]).some(s=>s.startsWith('必須資料'));
@@ -103,15 +114,18 @@
    }
   }
   async function refresh(){
+   const version=++state.refreshVersion;
    state.pending=[];input.value='';state.confirm=false;confirm.checked=false;
    try{
-    state.data=await request(id);
-    await Promise.all((state.data.assets||[]).map(async a=>{const img=await decode(a.png);if(!api.validSize(img.naturalWidth,img.naturalHeight))throw new Error('保存画像の寸法を確認してください');}));
-    status.textContent=api.status(state.data.status);recordCardState(id,state.data);
+    const data=await request(id);
+    await Promise.all((data.assets||[]).map(async a=>{const img=await decode(a.png);if(!api.validSize(img.naturalWidth,img.naturalHeight))throw new Error('保存画像の寸法を確認してください');}));
+    if(version!==state.refreshVersion)return;
+    state.data=data;status.textContent=api.status(state.data.status);recordCardState(id,state.data);
     issues.replaceChildren(...(state.data.issues||[]).map(s=>element('li',s)));
     copy.replaceChildren(summary,...state.data.copy.pages.map(p=>{const box=element('pre',(p.page)+'枚目\n'+api.copyText(p.copy));return box;}));
+    before.checked=false;plan.replaceChildren(planSummary,...(state.data.image_render_plan?.pages||[]).map(p=>element('pre',p.page+'枚目：'+p.hero+'\n'+p.composition+'\n'+p.text_role)));
     confirm.checked=false;state.confirm=false;renderRequirements();renderGallery();updateControls();
-   }catch(e){state.data=null;status.textContent='読込未確認：'+e.message;gallery.replaceChildren();updateControls();}
+   }catch(e){if(version!==state.refreshVersion)return;state.data=null;status.textContent='読込未確認：'+e.message;gallery.replaceChildren();updateControls();}
   }
   async function operate(fn){
    if(state.busy)return;state.busy=true;updateControls();
