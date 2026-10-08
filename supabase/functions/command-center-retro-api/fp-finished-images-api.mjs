@@ -140,13 +140,24 @@ export async function fpImagesGet(req,d){
   const current=await copyHash(d,c.row.payload);
   if(u.searchParams.get('copyHash')&&u.searchParams.get('copyHash')!==current)fail('fp_copy_changed_retry');
   if(resource==='fp-image-state'){const {assets,...state}=await finished(d,c);return d.json(req,{ok:true,id:c.id,...state,asset_count:assets.length,production_issues:productionIssues(c.row.payload)});}
-  return d.json(req,{ok:true,id:c.id,...await finished(d,c),copy:snapshot(c.row.payload),draft_status:c.row.payload.draft_status,production_issues:productionIssues(c.row.payload),requirements:array(c.row.payload.screenshot_requests).filter(s=>s.required).map(s=>({id:s.id,url:s.url,label:s.label,slide_no:s.slide_no,capture_range:s.capture_range})),visuals:array(c.row.payload.draft_slides).map(s=>({page:s.page,role:s.role,visual_mode:s.visual_mode,visual:s.visual}))});
+  return d.json(req,{ok:true,id:c.id,...await finished(d,c),copy:snapshot(c.row.payload),draft_status:c.row.payload.draft_status,production_issues:productionIssues(c.row.payload),requirements:array(c.row.payload.screenshot_requests).filter(s=>s.required).map(s=>({id:s.id,url:s.url,label:s.label,slide_no:s.slide_no,capture_range:s.capture_range})),image_render_plan:c.row.payload.image_render_plan??null,pre_image_review:c.row.payload.pre_image_review??null,visuals:array(c.row.payload.draft_slides).map(s=>({page:s.page,role:s.role,visual_mode:s.visual_mode,visual:s.visual}))});
  }catch(e){return d.json(req,{ok:false,error:e.message},e.status||500);}
 }
 export async function fpImagesPatch(req,body,d){
- if(!['fp_finished_import','fp_finished_confirm_manual'].includes(body?.action))return null;
+ if(!['fp_finished_import','fp_finished_confirm_manual','fp_pre_image_confirm'].includes(body?.action))return null;
  try{
-  const c=await candidate(d,body.id),p=c.row.payload,pages=requireVersion(p,body),copy_hash=await copyHash(d,p);
+  const c=await candidate(d,body.id),p=c.row.payload;
+  if(body.action==='fp_pre_image_confirm'){
+   if(body.confirmed!==true)fail('fp_pre_image_user_confirmation_required');
+   if(body.draftRevision!==p.draft_revision||body.lockedAt!==p.content_lock?.locked_at||body.copyHash!==await copyHash(d,p))fail('fp_copy_changed_retry');
+   if(p.pre_image_review?.status==='approved_by_user'&&p.pre_image_review.checked_revision===p.draft_revision&&p.pre_image_review.checked_locked_at===p.content_lock?.locked_at&&!productionIssues(p).length)return d.json(req,{ok:true,id:c.id,...await finished(d,c)});
+   const review={status:'approved_by_user',checked_revision:p.draft_revision,checked_locked_at:p.content_lock?.locked_at,checked_at:new Date().toISOString(),confirmation_scope:'public_copy_and_render_plan',source:'authenticated_user_click'};
+   const next={...p,pre_image_review:review};const gate=productionIssues(next);if(gate.length)fail('fp_editorial_gate_failed: '+gate.join('／'));
+   next.pre_image_review_history=[...array(p.pre_image_review_history),{previous:p.pre_image_review??null,review}];
+   await saveCandidate(d,c,next);c.row.payload=next;
+   return d.json(req,{ok:true,id:c.id,...await finished(d,c)});
+  }
+  const pages=requireVersion(p,body),copy_hash=await copyHash(d,p);
   if(body.copyHash!==copy_hash)fail('fp_copy_changed_retry');
   if(body.action==='fp_finished_import'){
    if(array(body.assets).length!==pages.length)fail('all_fp_pages_required',400);
