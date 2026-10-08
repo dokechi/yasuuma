@@ -102,6 +102,7 @@
    }
   }
   async function refresh(){
+   state.pending=[];input.value='';state.confirm=false;confirm.checked=false;
    try{
     state.data=await request(id);status.textContent=api.status(state.data.status);
     issues.replaceChildren(...(state.data.issues||[]).map(s=>element('li',s)));
