@@ -6,8 +6,8 @@ import {affiliateGet,affiliatePatch,affiliatePublicAsset} from '../supabase/func
 import {HOUSE_CAMPAIGN,JOB_TASK,CAMPAIGN_TASK,ASSET_TASK,revisionOf,copyRevisionOf,digest} from '../supabase/functions/shared/affiliate-production.mjs';
 const fixture=JSON.parse(await readFile(new URL('./affiliate-production-pilot.json',import.meta.url),'utf8'));
 const request=()=>new Request('https://example.supabase.co/functions/v1/retro',{method:'PATCH'});
-function setup(){
- const j=structuredClone(fixture),c=structuredClone(HOUSE_CAMPAIGN),fresh=new Date().toISOString();j.sources.forEach(s=>s.checked_at=fresh);j.demand.forEach(s=>s.checked_at=fresh);j.review.checked_at=fresh;c.terms_checked_at=fresh;
+function setup({manualTarget=false}={}){
+ const j=structuredClone(fixture),c=structuredClone(HOUSE_CAMPAIGN),fresh=new Date().toISOString();j.sources.forEach(s=>s.checked_at=fresh);j.demand.forEach(s=>s.checked_at=fresh);j.review.checked_at=fresh;c.terms_checked_at=fresh;if(!manualTarget){c.id='unrelated-reservation-test';j.campaign_id=c.id;}
  const rows=[{id:1,task_id:JOB_TASK,event_key:j.id,title:j.title,occurred_at:fresh,payload:{result_kind:'affiliate_job',job:j}},{id:2,task_id:CAMPAIGN_TASK,event_key:c.id,title:c.name,occurred_at:fresh,payload:{result_kind:'affiliate_campaign',campaign:c}}];
  class Q{
   filters=[];op='select';value=null;singleResult=false;limitN=Infinity;
@@ -107,4 +107,16 @@ test('Native rounded PNGs import unchanged, while a taller page blocks the whole
  const saved=s.rows[0].payload.job;assert.equal(saved.approval,null);assert.equal(saved.finished_images.pages[1].width,1122);assert.equal(saved.finished_images.pages[1].height,1402);
  const read=await affiliateGet(new Request(`https://example.com/?resource=affiliate-finished-images&id=${s.j.id}&revision=${await revisionOf(saved,s.c)}`),s.d);
  assert.equal(read.status,200);assert.equal((await read.json()).assets[1].png,'data:image/png;base64,'+assets[1].png);
+});
+
+test('Current manual pilot rejects cached legacy queue before its first manual confirmation',async()=>{
+ const s=setup({manualTarget:true}),rev=await revisionOf(s.j,s.c);
+ let response=await affiliatePatch(request(),{action:'affiliate_queue',id:s.j.id,revision:rev,due_at:new Date(Date.now()+600000).toISOString()},s.d);
+ assert.equal(response.status,403);assert.equal((await response.json()).error,'manual_posting_only');
+ assert.equal(s.rows.length,2);assert.equal(s.rows[0].payload.job.dispatch,null);
+ const finished=await importFinished(s),current=await revisionOf(finished.j,finished.c);
+ response=await affiliatePatch(request(),{action:'affiliate_approve',id:finished.j.id,revision:current},finished.d);
+ assert.equal(response.status,200);assert.equal(finished.rows[0].payload.job.posting_mode,'manual');
+ response=await affiliatePatch(request(),{action:'affiliate_queue',id:finished.j.id,revision:current},finished.d);
+ assert.equal(response.status,403);assert.equal(finished.rows[0].payload.job.dispatch,null);
 });

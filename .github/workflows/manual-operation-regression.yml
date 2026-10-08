@@ -1,0 +1,47 @@
+name: Manual operation regression
+on:
+  push:
+    branches:
+      - 'codex/manual-confirmation-20261008'
+    paths:
+      - 'command-center-98/**'
+      - 'scripts/**'
+      - 'supabase/functions/**'
+      - '.github/workflows/manual-operation-regression.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'command-center-98/**'
+      - 'scripts/**'
+      - 'supabase/functions/**'
+      - '.github/workflows/manual-operation-regression.yml'
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax and manual operation contracts
+        run: |
+          node --check command-center-98/fp-finished-images.js
+          node --check command-center-98/manual-operation-hub.js
+          node --check command-center-98/affiliate-production.js
+          node scripts/manual-posting.test.cjs
+          node scripts/manual-operation-state.test.cjs
+          node scripts/manual-operation-hub-ui.test.cjs
+          node scripts/fp-finished-images.test.mjs
+          node --test scripts/affiliate-production-api.test.mjs scripts/affiliate-production.test.mjs
+      - name: Existing loader, home and FP regressions
+        run: |
+          node command-center-98/app-loader.test.cjs
+          node command-center-98/home-read-model.test.cjs
+          node command-center-98/command-center-data.test.cjs
+          node command-center-98/individual-image-handoff.test.cjs
+          node command-center-98/v226-adaptive-carousel.test.cjs
+          node command-center-98/v228-money-full-copy.test.cjs
+          node scripts/test-money-theme-adaptive.cjs

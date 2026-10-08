@@ -1,0 +1,34 @@
+name: Official public PDF render
+on:
+  push:
+    branches: ['codex/manual-confirmation-20261008']
+    paths:
+      - 'scripts/render-official-source.py'
+      - '.github/workflows/official-source-render.yml'
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Render official public source
+        run: |
+          if ! command -v pdftoppm >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install --yes poppler-utils
+          fi
+          mkdir -p official-source
+          curl --fail --location --retry 1 'https://www.stat.go.jp/data/zenkokukakei/2024/pdf/gaiyou0828.pdf' --output official-source/official.pdf
+          python3 scripts/render-official-source.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: official-public-source-p27
+          path: |
+            official-source/official-page-33.png
+            official-source/official-figure-p27.png
+            official-source/source-metadata.json
+          retention-days: 7

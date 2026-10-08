@@ -25,7 +25,7 @@ test('Desk hands off all copy, imports ordered files, displays only stored finis
   await d.querySelector('[data-save]').onclick();await wait(()=>!d.querySelector('[data-approve]').disabled);
   assert.match(d.querySelector('.affiliate-state').textContent,/完成画像・原稿の確認待ち/);assert.equal(d.querySelectorAll('.affiliate-slide img').length,9);assert.ok([...d.querySelectorAll('.affiliate-slide img')].every(i=>i.src.startsWith('data:image/png;base64,')));
   d.querySelector('[data-page="0"]').onclick();assert.match(d.querySelector('#affiliatePreview').textContent,/取り込んだ完成画像/);d.querySelector('#affiliatePreviewClose').onclick();
-  await d.querySelector('[data-approve]').onclick();assert.match(d.querySelector('.affiliate-state').textContent,/承認済み・接続待ち/);assert.equal(d.querySelector('[data-queue]'),null);assert.equal(w.CCAffiliateProduction.state.data.jobs[0].dispatch,null);
+  await d.querySelector('[data-approve]').onclick();assert.match(d.querySelector('.affiliate-state').textContent,/確認済み・手動投稿/);assert.equal(d.querySelector('[data-queue]'),null);assert.equal(w.CCAffiliateProduction.state.data.jobs[0].dispatch,null);assert.equal(w.CCAffiliateProduction.state.data.jobs[0].posting_mode,'manual');
   await d.querySelector('[data-recheck]').onclick();assert.match(d.querySelector('.affiliate-state').textContent,/自動再確認待ち/);assert.equal(d.querySelector('[data-approve]').disabled,true);assert.equal(w.CCAffiliateProduction.state.data.jobs[0].finished_images,null);assert.deepEqual(errors,[]);
  }finally{dom.window.close()}
 });

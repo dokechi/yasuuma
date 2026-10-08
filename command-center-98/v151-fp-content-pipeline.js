@@ -133,6 +133,17 @@
   const packageQuality=item=>{
     const payload=item.payload||{};
     const issues=[];
+    if(payload.review_status==='rejected'||payload.content_review?.status==='rejected')issues.push('本人不採用：制作中止');
+    if(fp(item)){
+      const r=payload.editorial_review?.fp_learning_value;
+      const criteria=['before_after','mechanism','conditions_exceptions','primary_evidence','reader_action'];
+      if(!r?.reviewed_snapshot||!text(r?.reviewed_by)||!Number.isFinite(Date.parse(r?.checked_at||''))||!Number.isFinite(Date.parse(r?.evidence_checked_at||''))||!text(r?.applicable_conditions)||
+        criteria.some(key=>{const c=list(r?.criteria).find(x=>x.key===key);return !c||c.status!=='passed'||!text(c.finding)||!list(c.body_evidence).length||
+          list(c.body_evidence).some(e=>{const page=list(payload.draft_slides).find(s=>Number(s.page)===Number(e.page));return !text(e.excerpt)||!String(page?.page_contract?.display_copy||'').includes(String(e.excerpt));});}))
+        issues.push('FP5点採用基準の本文照合・適用条件・確認日・審査者の記録待ち');
+      if(r?.status!=='passed'||r.checked_revision!==payload.draft_revision||!text(r.mechanism)||!/^https:\/\//.test(text(r.primary_evidence_url))||!text(r.reader_decision_before)||!text(r.reader_decision_after)||r.reader_decision_before===r.reader_decision_after||r.specific_knowledge!==true||r.general_advice_only!==false)
+        issues.push('FP採用審査待ち：具体的な仕組み・一次情報の根拠・読者の判断の変化を確認');
+    }
     if(payload.draft_status!=='ready')issues.push('完成原稿が未確定');
     if(list(payload.draft_slides).length<5)issues.push('ページ別原稿が不足');
     if(!text(payload.source_url||item.url))issues.push('元記事の直リンクが未保存');
@@ -226,6 +237,9 @@
   const draftStatus=item=>{
     const quality=packageQuality(item);
     const payload=item.payload||{};
+    if(['saved_pending_review','confirmed_manual'].includes(payload.image_status)&&(!payload.finished_images||payload.finished_images.draft_revision!==payload.draft_revision||payload.finished_images.locked_at!==payload.content_lock?.locked_at))return{label:'原稿更新・画像再確認待ち',kind:'blocked'};
+    if(payload.image_status==='saved_pending_review')return{label:'画像保存済み・検品待ち',kind:'ready'};
+    if(payload.image_status==='confirmed_manual')return{label:'画像検品の記録あり・再読確認待ち',kind:'ready'};
     if(payload.image_status==='published')return{label:'公開済み（履歴復元）',kind:'history'};
     if(['revision_pending','needs_regeneration'].includes(payload.image_status))return{label:'画像改修待ち',kind:'blocked'};
     if(payload.image_status==='partial')return{label:'画像制作の続き待ち',kind:'blocked'};
@@ -247,14 +261,16 @@
     const copyReady=quality.ready&&preflightReady(payload);
     return '<section class="fp-draft-actions" data-fp-draft-actions="'+escFp(item.id)+'">'
       +'<div class="fp-draft-status '+escFp(status.kind)+'"><b>'+escFp(status.label)+'</b><span>'
-      +(payload.image_status==='published'?'画像制作・投稿済みの履歴です。再利用時は現行ルールで再確認します。'
+      +(payload.image_status==='saved_pending_review'?'全ページを保存済みです。完成画像を開き、原稿全文・数字・順番を検品してください。'
+        :payload.image_status==='confirmed_manual'?'画像の本人確認を記録済みです。媒体設定と掲載条件を確認して手動で投稿してください。'
+        :payload.image_status==='published'?'画像制作・投稿済みの履歴です。再利用時は現行ルールで再確認します。'
         :['revision_pending','needs_regeneration'].includes(payload.image_status)?'旧画像はありますが、修正版の再生成が残っています。'
         :payload.image_status==='partial'?'画像は一部だけ作成済みです。原稿再確認後に続きから制作します。'
         :payload.workflow_lane==='hold'?'中心疑問の需要が現行ゲート未達のため保留しています。'
         :payload.review_status==='needs_current_final_review'?'原稿は保存済みです。gpt-6-astraの最終照合後に画像化できます。'
         :legacy?'制作済みの履歴です。現在の需要ゲートでは再利用しません。':quality.ready?'原稿・根拠・スクショ指示・投稿文を保存済み':escFp(quality.issues.join('／')))
       +'</span></div><div class="fp-draft-buttons">'
-      +'<button class="push-button fp-open-draft" data-fp-open="'+escFp(item.id)+'">原稿・需要・制作条件</button>'
+      +'<button class="push-button fp-open-draft" data-fp-open="'+escFp(item.id)+'">原稿・完成画像・確認点</button>'
       +'<button class="push-button fp-copy-images" data-fp-copy-package="'+escFp(item.id)+'" '+(copyReady?'':'disabled')+'>画像化用にコピー</button>'
       +'</div></section>';
   };
@@ -266,7 +282,7 @@
     const quality=packageQuality(item);
     const verified=quality.ready?'pass':(payload.source_checked_at?'ready':'pending');
     const drafted=list(payload.draft_slides).length?(quality.ready?'pass':'ready'):'pending';
-    const imageStep=['ready','complete','published'].includes(payload.image_status)?'pass':['partial','revision_pending','needs_regeneration'].includes(payload.image_status)?'ready':'pending';
+    const imageStep=['ready','complete','published'].includes(payload.image_status)?'pass':['partial','revision_pending','needs_regeneration','saved_pending_review'].includes(payload.image_status)?'ready':'pending';
     const steps=stage('発掘','pass')+stage('事実確認',verified)+stage('原稿',drafted)+stage('選択',chosen?'pass':'pending')+stage('画像',imageStep);
     const structure=(list(payload.definitive_structure).length?list(payload.definitive_structure):list(payload.post_structure)).map(row=>'<li>'+escFp(typeof row==='string'?row:(row?.text||row?.title||JSON.stringify(row)))+'</li>').join('');
     const question=payload.reader_question||payload.question_lineage?.selected_question||payload.first_impression||payload.cover_idea||item.title||'';

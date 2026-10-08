@@ -46,10 +46,10 @@ function successfulFetch(calls = []) {
 test('the manifest preserves every legacy asset in order with explicit read-model and progress additions', () => {
   assert.equal(manifest.shell, legacy.shell);
   assert.equal(manifest.styles.length, 14);
-  assert.equal(manifest.scripts.length, 52);
+  assert.equal(manifest.scripts.length, legacy.scripts.length + 5);
   const paths=urls=>urls.map(url=>url.split('?')[0]);
   assert.deepEqual(paths(manifest.styles).filter(path=>!['./v230-request-progress.css','./v231-trade-details.css'].includes(path)), paths(legacy.styles));
-  assert.deepEqual(paths(manifest.scripts).filter(path=>!['./command-center-data.js','./v230-request-progress.js','./v231-trade-details.js'].includes(path)), paths(legacy.scripts));
+  assert.deepEqual(paths(manifest.scripts).filter(path=>!['./command-center-data.js','./v230-request-progress.js','./v231-trade-details.js','./fp-finished-images.js','./manual-operation-hub.js'].includes(path)), paths(legacy.scripts));
   assert.equal(manifest.scripts.findIndex(url=>url.startsWith('./command-center-data.js')),manifest.scripts.findIndex(url=>url.startsWith('./v155-home.js'))-1);
 });
 
@@ -62,19 +62,25 @@ test('every configured asset exists and is loaded once, even across version stri
 });
 
 test('late feature patches and the latest daily-report entry remain present', () => {
-  assert.deepEqual(manifest.scripts.slice(-9,-2), [
+  assert.deepEqual(manifest.scripts.filter(url=>!['./fp-finished-images.js','./manual-operation-hub.js'].includes(url.split('?')[0])).slice(-9,-2), [
     './v222-sourcing-click-fix.js?v=222.1',
     './v223-home-cleanup.js?v=20261003.1',
     './v224-home-menu-fix.js?v=224.2',
     './v228-money-full-copy.js?v=232.1-theme-adaptive',
     './v229-sourcing-mercari-history.js?v=229.3',
-    './affiliate-production.js?v=20261002.3',
+    './affiliate-production.js?v=20261008.1-manual',
     './binbo-neko.js?v=20261002.1'
   ]);
   assert.ok(manifest.scripts.includes('./v148-daily-report-link.js?v=20261004.1'));
   assert.ok(manifest.scripts.includes('./v155-home.js?v=20261003.1'));
 });
 
+test('manual review additions load after existing home and FP dependencies',()=>{
+ const paths=manifest.scripts.map(url=>url.split('?')[0]);
+ assert.deepEqual(paths.slice(-2),['./fp-finished-images.js','./manual-operation-hub.js']);
+ assert.ok(paths.indexOf('./fp-finished-images.js')>paths.indexOf('./v151-fp-content-pipeline.js'));
+ assert.ok(paths.indexOf('./manual-operation-hub.js')>paths.indexOf('./v155-home.js'));
+});
 test('composition reflects only declared assets and leaves the base shell intact', () => {
   const styles = manifest.styles.map(url => '<link rel="stylesheet" href="' + url + '">').join('');
   const scripts = manifest.scripts.map(url => '<script src="' + url + '"></script>').join('');
