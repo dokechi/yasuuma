@@ -4,7 +4,7 @@
  if(!root?.document||root.CCFPFinishedImages)return;
  root.CCFPFinishedImages=api;
  const doc=root.document;
- const CAN_COMPOSE_ID='task:6aa9ee1043388191a2eac3bb2702092a:money-chat:6281805:average-savings-not-passline';
+ const CAN_COMPOSE_ID=null; // Bespoke composition is retired; generic PNG import remains available.
  function endpoint(){return typeof API==='string'?API:null;}
  async function request(id,body,resource='fp-finished-images'){
   const base=endpoint();if(!base)throw new Error('画像保存APIが未設定です');
