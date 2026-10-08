@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { affiliatePublicAsset, affiliateGet, affiliatePatch } from "./affiliate-production-api.ts";
 import { nekoGet, nekoPatch } from "./binbo-neko-api.ts";
+import { fpImagesGet, fpImagesPatch } from "./fp-finished-images-api.mjs";
 
 const SUPA = Deno.env.get("SUPABASE_URL") || "";
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -169,6 +170,8 @@ Deno.serve(async(req:Request)=>{
   if(req.method==="PATCH"){
     try{
       const body=await req.json().catch(()=>({}));const id=String(body?.id||"");const action=String(body?.action||"");
+      const fpImagesResult=await fpImagesPatch(req,body,{admin,json,sha256});
+      if(fpImagesResult)return fpImagesResult;
       const affiliateResult=await affiliatePatch(req,body,affiliateDeps);
       if(affiliateResult)return affiliateResult;
       const nekoResult=await nekoPatch(req,body,{admin,json});
@@ -304,6 +307,8 @@ Deno.serve(async(req:Request)=>{
   if(req.method!=="GET") return json(req,{ok:false,error:"method_not_allowed"},405);
   try{
     const resource=u.searchParams.get("resource")||"signals";
+    const fpImagesResult=await fpImagesGet(req,{admin,json,sha256});
+    if(fpImagesResult)return fpImagesResult;
     const affiliateResult=await affiliateGet(req,affiliateDeps);
     if(affiliateResult)return affiliateResult;
     const nekoResult=await nekoGet(req,{admin,json});
