@@ -34,6 +34,8 @@ export async function runFpImageContractTests(){
  assert.match(front.reviewDisplay({production_issues:['FP5点採用基準の記録待ち']}).label,/再審査/);
  assert.equal(front.reviewDisplay({production_issues:[]}).blocked,false);
  assert.match(front.reviewDisplay({production_issues:[]}).label,/画像完成は別/);
+ assert.equal(front.reviewDisplay(undefined).blocked,true);
+ assert.match(front.reviewDisplay({unverified:true}).label,/再読未確認/);
 
  const id='task:6aa9ee1043388191a2eac3bb2702092a:money-chat:test-images',payload={content_type:'fp_post_candidate',draft_status:'ready',draft_revision:'r1',
   content_lock:{locked:true,draft_revision:'r1',locked_at:'lock1'},draft_slides:[{page:1,page_contract:{display_copy:'全文1'}},{page:2,page_contract:{display_copy:'全文2'}}],
