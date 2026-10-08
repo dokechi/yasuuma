@@ -101,7 +101,7 @@ export async function affiliatePatch(req: Request, body: any, d: Deps): Promise<
     if(action==='affiliate_approve'||action==='affiliate_confirm_manual') {
       const errors=[...contentIssues(j,c),...finishedIssues(j,await copyRevisionOf(j,c))];if(errors.length)return d.json(req,{ok:false,error:errors.join(' / ')},409);
       await storedFinished(d,id,j,c); // Approval binds the exact imported image bytes and current copy.
-      const updated={...j,decision:null,...(action==='affiliate_confirm_manual'?{posting_mode:'manual'}:{}),approval:{status:'approved',revision,checked_at:now(),reviewer:'command_center_user'}};
+      const updated={...j,decision:null,...(action==='affiliate_confirm_manual'||c.posting_mode==='manual'||c.id===HOUSE_CAMPAIGN.id?{posting_mode:'manual'}:{}),approval:{status:'approved',revision,checked_at:now(),reviewer:'command_center_user'}};
       await save(d,JOB_TASK,id,j.title,{...r.payload,job:updated},r);return d.json(req,{ok:true,state:await jobState(updated,c,!!d.token)});
     }
     if(action==='affiliate_advertiser_review') {
@@ -115,8 +115,9 @@ export async function affiliatePatch(req: Request, body: any, d: Deps): Promise<
       await save(d,JOB_TASK,id,j.title,{...r.payload,job:{...j,metrics:{...values,checked_at:now()}}},r);return d.json(req,{ok:true});
     }
     if(action==='affiliate_queue') {
-      // Only jobs explicitly reviewed through the manual workflow are blocked.
-      if(j.posting_mode==='manual')return d.json(req,{ok:false,error:'manual_posting_only'},403);
+      // The current production pilot is manual from its first review, including cached legacy clients.
+      // Other campaigns retain their existing workflow unless explicitly marked manual.
+      if(j.posting_mode==='manual'||c.posting_mode==='manual'||c.id===HOUSE_CAMPAIGN.id)return d.json(req,{ok:false,error:'manual_posting_only'},403);
       const errors=deliveryIssues(j,c,!!d.token);if(j.approval?.revision!==revision||j.approval?.status!=='approved')errors.push('最新の画像・原稿が未承認');
       if(c.media_approval_scope==='per_post'&&j.advertiser_review?.revision!==revision)errors.push('最新の投稿に対する広告主確認が未完了');
       if(errors.length)return d.json(req,{ok:false,error:errors.join(' / ')},409);
