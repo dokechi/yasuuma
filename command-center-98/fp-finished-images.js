@@ -137,7 +137,7 @@
   modal.querySelector('main')?.prepend(panel);paint(panel,id);
  }
 
- const cardStates=new Map(),cardPending=new Map();
+ const cardStates=new Map(),cardPending=new Map(),cardEpoch=new Map();
  const normalize=id=>String(id).replace(/^(sns:)+/,'');
  function cardSignature(id){
   try{if(typeof app!=='undefined'){const item=(app.items||[]).find(i=>normalize(i.id)===normalize(id));if(item)return JSON.stringify(item.payload||{});}}catch(_){}
@@ -154,7 +154,8 @@
   }
  }
  function recordCardState(id,data){
-  cardStates.set(normalize(id),{data,time:Date.now(),signature:cardSignature(id)});
+  const key=normalize(id);cardEpoch.set(key,(cardEpoch.get(key)||0)+1);
+  cardStates.set(key,{data,time:Date.now(),signature:cardSignature(id)});
   for(const card of doc.querySelectorAll('[data-fp-draft-actions]'))if(normalize(card.dataset.fpDraftActions)===normalize(id))applyCardState(card,data);
  }
  async function readCard(card){
@@ -162,10 +163,12 @@
   const old=cardStates.get(normalize(id)),signature=cardSignature(id);
   if(old&&signature&&signature===old.signature&&Date.now()-old.time<5000){applyCardState(card,old.data);return;}
   const label=card.querySelector('.fp-draft-status b');if(label)label.textContent='原稿審査・保存画像を再読中';
+  const key=normalize(id),epoch=cardEpoch.get(key)||0;
   try{
-   let pending=cardPending.get(normalize(id));if(!pending){pending=request(id,null,'fp-image-state');cardPending.set(normalize(id),pending);}
-   recordCardState(id,await pending);
-  }catch(e){if(label)label.textContent='画像状態の再読未確認';const detail=card.querySelector('.fp-draft-status span');if(detail)detail.textContent=e.message;}
+   let pending=cardPending.get(key);if(!pending){pending=request(id,null,'fp-image-state');cardPending.set(key,pending);}
+   const data=await pending;
+   if((cardEpoch.get(key)||0)===epoch&&cardSignature(id)===signature)recordCardState(id,data);
+  }catch(e){if((cardEpoch.get(key)||0)!==epoch||cardSignature(id)!==signature)return;if(label)label.textContent='画像状態の再読未確認';const detail=card.querySelector('.fp-draft-status span');if(detail)detail.textContent=e.message;}
   finally{cardPending.delete(normalize(id));}
  }
  function attachCards(node){if(node.matches?.('[data-fp-draft-actions]'))readCard(node);node.querySelectorAll?.('[data-fp-draft-actions]').forEach(readCard);}
