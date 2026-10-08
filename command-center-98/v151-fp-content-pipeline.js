@@ -136,6 +136,11 @@
     if(payload.review_status==='rejected'||payload.content_review?.status==='rejected')issues.push('本人不採用：制作中止');
     if(fp(item)){
       const r=payload.editorial_review?.fp_learning_value;
+      const criteria=['before_after','mechanism','conditions_exceptions','primary_evidence','reader_action'];
+      if(!r?.reviewed_snapshot||!text(r?.reviewed_by)||!Number.isFinite(Date.parse(r?.checked_at||''))||!Number.isFinite(Date.parse(r?.evidence_checked_at||''))||!text(r?.applicable_conditions)||
+        criteria.some(key=>{const c=list(r?.criteria).find(x=>x.key===key);return !c||c.status!=='passed'||!text(c.finding)||!list(c.body_evidence).length||
+          list(c.body_evidence).some(e=>{const page=list(payload.draft_slides).find(s=>Number(s.page)===Number(e.page));return !text(e.excerpt)||!String(page?.page_contract?.display_copy||'').includes(String(e.excerpt));});}))
+        issues.push('FP5点採用基準の本文照合・適用条件・確認日・審査者の記録待ち');
       if(r?.status!=='passed'||r.checked_revision!==payload.draft_revision||!text(r.mechanism)||!/^https:\/\//.test(text(r.primary_evidence_url))||!text(r.reader_decision_before)||!text(r.reader_decision_after)||r.reader_decision_before===r.reader_decision_after||r.specific_knowledge!==true||r.general_advice_only!==false)
         issues.push('FP採用審査待ち：具体的な仕組み・一次情報の根拠・読者の判断の変化を確認');
     }
