@@ -20,13 +20,56 @@ export async function candidate(d,id){
  if(!data||data.payload?.content_type!=='fp_post_candidate')fail('fp_candidate_not_found',404);
  return {row:data,identity:k,id:k.task?'task:'+k.task+':'+k.key:k.key};
 }
+export function editorialSnapshot(p){
+  return {
+    post_title:p.post_title??null,
+    draft_title:p.draft_title??null,
+    draft_cover:p.draft_cover??null,
+    caption:p.caption??p.draft_caption??p.post_caption??null,
+    page_count_reason:p.page_count_reason??null,
+    question_lineage:p.question_lineage??null,
+    premise_checks:Array.isArray(p.premise_checks)?p.premise_checks:[],
+    draft_slides:Array.isArray(p.draft_slides)?p.draft_slides:[],
+    draft_sources:Array.isArray(p.draft_sources)?p.draft_sources:[],
+    entrance_contract_version:p.entrance_contract_version??null,
+    entrance_options:Array.isArray(p.entrance_options)?p.entrance_options:[],
+    selected_entrance:p.selected_entrance??null,
+    entrance_selection:p.entrance_selection??null,
+    structure_contract_version:p.structure_contract_version??null,
+    story_spine:p.story_spine??null
+  };
+}
+export function stable(value){return JSON.stringify(value,(_k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((o,k)=>(o[k]=v[k],o),{}):v);}
+export function currentEditorialSnapshot(p){
+ const current=editorialSnapshot(p);
+ if(p.editorial_workflow_version==='money-spine-editor-v1-20260925'){current.editorial_workflow_version=p.editorial_workflow_version;current.editorial_stage=p.editorial_stage??null;}
+ return current;
+}
+export function productionIssues(p){
+ const issues=[],lock=p.content_lock||{},pages=array(p.draft_slides),current=currentEditorialSnapshot(p);
+ if(p.draft_status!=='ready'||lock.locked!==true||!p.draft_revision||lock.draft_revision!==p.draft_revision||!lock.locked_at)issues.push('原稿完成・同版LOCKの確認待ち');
+ if(!lock.snapshot||stable(lock.snapshot)!==stable(current))issues.push('LOCKと現在の原稿snapshotが一致しません');
+ for(const [key,label]of [['final_review','最終原稿審査'],['logic_institution_review','論理・制度審査']]){
+  const r=p[key];if(r?.status!=='passed'||r.checked_revision!==p.draft_revision||!r.reviewed_snapshot||stable(r.reviewed_snapshot)!==stable(lock.snapshot)||array(r.unresolved_items).length)issues.push(label+'の同版snapshot確認待ち');
+ }
+ const review=p.pre_image_review;
+ if(review?.status!=='approved_by_user'||review.checked_revision!==p.draft_revision||review.checked_locked_at!==lock.locked_at)issues.push('画像化前の本人確認待ち');
+ const plan=p.image_render_plan;
+ if(!plan||plan.draft_revision!==p.draft_revision||array(plan.pages).length!==pages.length||
+  pages.some((s,i)=>Number(plan.pages?.[i]?.page)!==Number(s.page)||!['hero','composition','text_role'].every(k=>text(plan.pages[i][k]).trim())))issues.push('同版の画像制作計画の確認待ち');
+ if(text(p.blocked_reason).trim()||array(p.missing_evidence).length||array(p.unresolved_research_items).length)issues.push('未解決事項・根拠不足があります');
+ return issues;
+}
+export function evidenceScope(s){return {id:text(s.id),url:text(s.url),slide_no:Number(s.slide_no),capture_range:text(s.capture_range),required:s.required===true};}
+
 export function snapshot(p){
  const pages=array(p.draft_slides).map((s,i)=>({page:Number(s.page??i+1),copy:text(s.page_contract?.display_copy)}));
  return {draft_revision:text(p.draft_revision),locked_at:text(p.content_lock?.locked_at),selected_entrance:p.selected_entrance??null,
  title:text(p.post_title||p.draft_title),caption:text(p.caption),pages};
 }
-export async function copyHash(d,p){return d.sha256(JSON.stringify(snapshot(p)));}
+export async function copyHash(d,p){return d.sha256(stable({copy:snapshot(p),editorial:currentEditorialSnapshot(p),draft_status:p.draft_status,lock:p.content_lock,final_review:p.final_review,logic_institution_review:p.logic_institution_review,pre_image_review:p.pre_image_review,image_render_plan:p.image_render_plan,blocked_reason:p.blocked_reason??null,missing_evidence:array(p.missing_evidence),unresolved_research_items:array(p.unresolved_research_items),required_evidence:array(p.screenshot_requests).filter(s=>s.required).map(evidenceScope)}));}
 function requireVersion(p,body){
+ const gate=productionIssues(p);if(gate.length)fail('fp_editorial_gate_failed: '+gate.join('／'));
  if(!p.draft_revision||!p.content_lock?.locked_at||p.content_lock.locked!==true||p.content_lock.draft_revision!==p.draft_revision||
  body.draftRevision!==p.draft_revision||body.lockedAt!==p.content_lock.locked_at)fail('fp_copy_stale_or_unlocked');
  const pages=snapshot(p).pages;
@@ -65,10 +108,12 @@ async function saveCandidate(d,c,p){
 }
 export async function finished(d,c){
  const p=c.row.payload,f=p.finished_images;
- if(!f||f.contract!==CONTRACT)return {status:'missing',assets:[],issues:['完成画像は未保存です'],copy_hash:await copyHash(d,p)};
+ const gate=productionIssues(p);
+ if(!f||f.contract!==CONTRACT)return {status:gate.length?'blocked':'missing',assets:[],issues:['完成画像は未保存です',...gate],copy_hash:await copyHash(d,p)};
  const current=await copyHash(d,p),issues=[];
  if(f.copy_hash!==current||f.draft_revision!==p.draft_revision||f.locked_at!==p.content_lock?.locked_at)
  return {status:'stale',assets:[],issues:['原稿が更新されています。旧画像を現行原稿として表示しません'],copy_hash:current,manifest:f};
+ if(gate.length)return {status:'blocked',assets:[],issues:gate,copy_hash:current,manifest:f};
  if(!Array.isArray(f.pages)||f.pages.length!==array(p.draft_slides).length)fail('fp_image_manifest_incomplete');
  const assets=[];
  for(const [i,page]of f.pages.entries()){
@@ -82,7 +127,7 @@ export async function finished(d,c){
  }
  if(p.channel_configuration==='unverified'||!p.channel_configuration)issues.push('投稿先の媒体設定は未確認です');
  for(const shot of array(p.screenshot_requests).filter(s=>s.required)){
-  if(f.evidence?.[shot.id]?.checked!==true||f.evidence[shot.id].url!==shot.url)issues.push('必須資料の画像確認待ち：'+text(shot.label||shot.id));
+  if(f.evidence?.[shot.id]?.checked!==true||stable(f.evidence[shot.id].scope)!==stable(evidenceScope(shot)))issues.push('必須資料の画像確認待ち：'+text(shot.label||shot.id));
  }
  const review=p.finished_image_review;
  const confirmed=review?.status==='confirmed_manual'&&review.copy_hash===current&&review.set_id===f.set_id;
@@ -94,7 +139,7 @@ export async function fpImagesGet(req,d){
   const c=await candidate(d,u.searchParams.get('id'));
   const current=await copyHash(d,c.row.payload);
   if(u.searchParams.get('copyHash')&&u.searchParams.get('copyHash')!==current)fail('fp_copy_changed_retry');
-  return d.json(req,{ok:true,id:c.id,...await finished(d,c),copy:snapshot(c.row.payload),draft_status:c.row.payload.draft_status,requirements:array(c.row.payload.screenshot_requests).filter(s=>s.required).map(s=>({id:s.id,url:s.url,label:s.label,slide_no:s.slide_no,capture_range:s.capture_range})),visuals:array(c.row.payload.draft_slides).map(s=>({page:s.page,role:s.role,visual_mode:s.visual_mode,visual:s.visual}))});
+  return d.json(req,{ok:true,id:c.id,...await finished(d,c),copy:snapshot(c.row.payload),draft_status:c.row.payload.draft_status,production_issues:productionIssues(c.row.payload),requirements:array(c.row.payload.screenshot_requests).filter(s=>s.required).map(s=>({id:s.id,url:s.url,label:s.label,slide_no:s.slide_no,capture_range:s.capture_range})),visuals:array(c.row.payload.draft_slides).map(s=>({page:s.page,role:s.role,visual_mode:s.visual_mode,visual:s.visual}))});
  }catch(e){return d.json(req,{ok:false,error:e.message},e.status||500);}
 }
 export async function fpImagesPatch(req,body,d){
@@ -112,7 +157,7 @@ export async function fpImagesPatch(req,body,d){
    const evidence={};
    for(const shot of array(p.screenshot_requests).filter(s=>s.required)){
     const v=body.evidence?.[shot.id];
-    if(v?.checked===true&&v.url===shot.url)evidence[shot.id]={checked:true,url:shot.url,checked_at:new Date().toISOString(),reviewer:'command_center_user'};
+    if(v?.checked===true&&v.url===shot.url)evidence[shot.id]={checked:true,url:shot.url,scope:evidenceScope(shot),checked_at:new Date().toISOString(),reviewer:'command_center_user'};
    }
    const set_id=await d.sha256(JSON.stringify({copy_hash,hashes})),idHash=await d.sha256(c.id),manifest=[];
    for(const [i,a]of inputs.entries()){
