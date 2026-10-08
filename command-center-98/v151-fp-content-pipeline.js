@@ -226,6 +226,7 @@
   const draftStatus=item=>{
     const quality=packageQuality(item);
     const payload=item.payload||{};
+    if(['saved_pending_review','confirmed_manual'].includes(payload.image_status)&&(!payload.finished_images||payload.finished_images.draft_revision!==payload.draft_revision||payload.finished_images.locked_at!==payload.content_lock?.locked_at))return{label:'原稿更新・画像再確認待ち',kind:'blocked'};
     if(payload.image_status==='saved_pending_review')return{label:'画像保存済み・検品待ち',kind:'ready'};
     if(payload.image_status==='confirmed_manual')return{label:'画像確認済み・手動投稿',kind:'ready'};
     if(payload.image_status==='published')return{label:'公開済み（履歴復元）',kind:'history'};
