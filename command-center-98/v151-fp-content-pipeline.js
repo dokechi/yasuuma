@@ -133,6 +133,12 @@
   const packageQuality=item=>{
     const payload=item.payload||{};
     const issues=[];
+    if(payload.review_status==='rejected'||payload.content_review?.status==='rejected')issues.push('本人不採用：制作中止');
+    if(fp(item)){
+      const r=payload.editorial_review?.fp_learning_value;
+      if(r?.status!=='passed'||r.checked_revision!==payload.draft_revision||!text(r.mechanism)||!/^https:\/\//.test(text(r.primary_evidence_url))||!text(r.reader_decision_before)||!text(r.reader_decision_after)||r.reader_decision_before===r.reader_decision_after||r.specific_knowledge!==true||r.general_advice_only!==false)
+        issues.push('FP採用審査待ち：具体的な仕組み・一次情報の根拠・読者の判断の変化を確認');
+    }
     if(payload.draft_status!=='ready')issues.push('完成原稿が未確定');
     if(list(payload.draft_slides).length<5)issues.push('ページ別原稿が不足');
     if(!text(payload.source_url||item.url))issues.push('元記事の直リンクが未保存');
