@@ -14,7 +14,7 @@
   async function api(body){const r=await fetch(API,{method:'PATCH',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify(body)});if(r.status===401){authExpired();throw new Error('ログインを確認してください')}const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'保存できませんでした');return d}
   async function accept(j){
     // Confirmation is a local review record. It never schedules or publishes.
-    return api({action:'affiliate_approve',id:j.id,revision:j.revision});
+    return api({action:'affiliate_confirm_manual',id:j.id,revision:j.revision});
   }
   function hide(){desk.hidden=true;document.getElementById('list').hidden=false;hub.querySelector('.section-title').hidden=false;document.getElementById('listFilter').hidden=false}
   function show(){
