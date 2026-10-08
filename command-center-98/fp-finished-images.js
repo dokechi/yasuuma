@@ -115,7 +115,7 @@
   }
   async function refresh(){
    const version=++state.refreshVersion;
-   state.pending=[];input.value='';state.confirm=false;confirm.checked=false;
+   state.pending=[];input.value='';state.confirm=false;confirm.checked=false;panel.closest('[data-fp-modal]').__fpAuthoritativeState={unverified:true};
    try{
     const data=await request(id);
     await Promise.all((data.assets||[]).map(async a=>{const img=await decode(a.png);if(!api.validSize(img.naturalWidth,img.naturalHeight))throw new Error('保存画像の寸法を確認してください');}));
@@ -125,7 +125,7 @@
     copy.replaceChildren(summary,...state.data.copy.pages.map(p=>{const box=element('pre',(p.page)+'枚目\n'+api.copyText(p.copy));return box;}));
     before.checked=false;plan.replaceChildren(planSummary,...(state.data.image_render_plan?.pages||[]).map(p=>element('pre',p.page+'枚目：'+p.hero+'\n'+p.composition+'\n'+p.text_role)));
     confirm.checked=false;state.confirm=false;renderRequirements();renderGallery();updateControls();
-   }catch(e){if(version!==state.refreshVersion)return;state.data=null;status.textContent='読込未確認：'+e.message;gallery.replaceChildren();updateControls();}
+   }catch(e){if(version!==state.refreshVersion)return;state.data=null;panel.closest('[data-fp-modal]').__fpAuthoritativeState={unverified:true,error:e.message};status.textContent='読込未確認：'+e.message;gallery.replaceChildren();updateControls();}
   }
   async function operate(fn){
    if(state.busy)return;state.busy=true;updateControls();
@@ -234,7 +234,8 @@
   ctx.fillStyle=ink;ctx.font='400 24px sans-serif';ctx.fillText(String(index+1)+' / 6',930,1280);
  }
  function reviewDisplay(data){
-  const issues=Array.isArray(data?.production_issues)?data.production_issues:[];
+  if(!data||data.unverified||!Array.isArray(data.production_issues))return {blocked:true,label:'状態の再読未確認',next:'状態を再読してから判断してください。'+(data?.error||'')};
+  const issues=data.production_issues;
   const rejected=issues.some(s=>String(s).includes('本人不採用'));
   const adoptionPending=issues.some(s=>/FP5点|FP採用審査/.test(String(s)));
   return {blocked:issues.length>0,label:rejected?'本人不採用｜制作中止':adoptionPending?'FP採用の再審査待ち':issues.length?'制作条件の確認待ち':'原稿審査済み（画像完成は別確認）',
