@@ -46,7 +46,8 @@ export async function runFpImageContractTests(){
  const countAssets=()=>db.tables.get('command_center_task_events').filter(r=>r.payload.result_kind==='fp_finished_asset').length;
  assert.equal(countAssets(),2);
  const reread=await fpImagesGet({url:'https://api.example/?resource=fp-finished-images&id='+encodeURIComponent(id)},d);
- assert.equal(reread.status,200);assert.equal(reread.body.assets[0].png,body.assets[0].png);
+ assert.equal(reread.status,200);
+ const alias=await fpImagesGet({url:'https://api.example/?resource=fp-finished-images&id='+encodeURIComponent('sns:'+id)},d);assert.equal(alias.status,200);assert.equal(alias.body.id,id);assert.equal(reread.body.assets[0].png,body.assets[0].png);
  const unchecked=await fpImagesPatch({}, {...body,action:'fp_finished_confirm_manual',confirmed:true,unchangedCopy:true},d);assert.equal(unchecked.status,409);
  const evidence=await fpImagesPatch({}, {...body,evidence:{official:{checked:true,url:payload.screenshot_requests[0].url}}},d);assert.equal(evidence.status,200);assert.equal(countAssets(),2);
  const confirmed=await fpImagesPatch({}, {...body,action:'fp_finished_confirm_manual',confirmed:true,unchangedCopy:true},d);
