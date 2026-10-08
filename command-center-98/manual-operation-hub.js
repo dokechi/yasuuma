@@ -30,7 +30,7 @@
   const more=e('button','保存原稿の続き100件を確認','push-button');more.type='button';dialog.append(more);
   function render(){
    const matches=api.unique(items).filter(i=>api.matchesAccount(i,account.key));list.replaceChildren();
-   status.textContent=matches.length?matches.length+'件｜保存された媒体設定で照合。投稿・予約は実行しません。':'この読取範囲に媒体を明示した原稿はありません。元資料は保全しています。名前やジャンルから自動分類しません。';
+   status.textContent=matches.length?matches.length+'件｜保存された媒体設定で照合。投稿・予約は実行しません。':'この読取範囲に媒体を明示した原稿はありません。元資料は保全しています。媒体の設定が必要です。名前やジャンルから自動分類しません。';
    for(const item of matches){const p=api.payload(item),card=e('article');card.append(e('h3',item.title||p.post_title||'保存原稿'));
     const copies=api.savedCopies(p);for(const copy of copies){card.append(e('h4',copy.label),e('pre',copy.text));const b=e('button',copy.label+'をコピー','push-button');b.type='button';b.onclick=async()=>{try{await root.navigator.clipboard.writeText(copy.text);status.textContent='原文をコピーしました。本人が確認して手動投稿してください。';}catch(_){status.textContent='クリップボード未確認。表示全文を選択してコピーしてください。';}};card.append(b);}
     if(!copies.length)card.append(e('p','本文の保存形式は未確認です。元の原稿画面で確認してください。'));
