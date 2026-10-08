@@ -104,7 +104,9 @@
   async function refresh(){
    state.pending=[];input.value='';state.confirm=false;confirm.checked=false;
    try{
-    state.data=await request(id);status.textContent=api.status(state.data.status);
+    state.data=await request(id);
+    await Promise.all((state.data.assets||[]).map(async a=>{const img=await decode(a.png);if(!api.validSize(img.naturalWidth,img.naturalHeight))throw new Error('保存画像の寸法を確認してください');}));
+    status.textContent=api.status(state.data.status);
     issues.replaceChildren(...(state.data.issues||[]).map(s=>element('li',s)));
     copy.replaceChildren(summary,...state.data.copy.pages.map(p=>{const box=element('pre',(p.page)+'枚目\n'+api.copyText(p.copy));return box;}));
     confirm.checked=false;state.confirm=false;renderRequirements();renderGallery();updateControls();
