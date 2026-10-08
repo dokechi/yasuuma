@@ -58,6 +58,7 @@
     if (!applies(item)) throw new Error('現行お金Chatの原稿ではありません。');
     if (awaitingEditorial(p)) return {draftReady:false,imageReady:false,
       issues:[p.entrance_selection?.source === 'command_center_user' ? '高度AIによる原稿完成待ち' : '入口を1つ選んでください'],assetIssues:[],pages};
+    if(p.review_status==='rejected'||p.content_review?.status==='rejected')issues.push('本人不採用：制作中止');
     if (!pages.length) issues.push('ページ別原稿がありません。');
     pages.forEach(row => { if (row.missing) issues.push(row.page + 'ページ目のdisplay_copyが未保存です。'); });
     try {
@@ -85,7 +86,7 @@
       (strictIds.length ? '（' + strictIds.length + '/' + minimum + 'トピック）' : '');
     return [
       '原稿版: ' + (text(p.draft_revision) || '未設定'),
-      '原稿状態: ' + (text(p.draft_status) || '未設定'),
+      '原稿保存状態: ' + (text(p.draft_status) || '未設定') + '（採用・画像完成とは別）',
       '画像化: ' + (!approvedForImage(p) ? '画像化前チェックとユーザー確認待ち' : state.imageReady ? '可能' : '保留（確認用コピーのみ）'),
       '保存された保留理由: ' + (text(p.blocked_reason) || 'なし'),
       '需要判定: ' + demandStatus,
