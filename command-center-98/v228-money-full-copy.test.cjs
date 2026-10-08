@@ -61,7 +61,7 @@ assert.equal(C.applies(fixture),true);
 assert.equal(C.inspect(fixture,A).imageReady,false);
 const review=C.buildReviewCopy(fixture,A);
 assert.match(review,/確認用原稿.*画像生成指示ではありません/);
-assert.match(review,/原稿状態: blocked/);
+assert.match(review,/原稿保存状態: blocked/);
 assert.match(review,/community_strict_insufficient/);
 assert.match(review,/Marina/);assert.match(review,/Ben/);
 assert.match(review,/投稿の骨格/);assert.match(review,/根拠ID:/);
@@ -90,6 +90,9 @@ for(const key of ['marina','ben','michael']){
   assert.equal(C.canonicalPages(valid)[0].copy,o.display_copy);
   assert.ok(A.buildHandoff(valid).includes(o.display_copy));
 }
+const rejected=structuredClone(valid);rejected.payload.review_status='rejected';
+assert.equal(C.inspect(rejected,A).imageReady,false);
+assert.match(C.buildReviewCopy(rejected,A),/本人不採用：制作中止/);
 const absent=structuredClone(valid);delete absent.payload.draft_slides[2].page_contract.display_copy;
 assert.equal(C.inspect(absent,A).imageReady,false);
 assert.match(C.buildReviewCopy(absent,A),/display_copy未保存・旧本文で代用しません/);
