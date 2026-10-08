@@ -45,8 +45,19 @@ export function currentEditorialSnapshot(p){
  if(p.editorial_workflow_version==='money-spine-editor-v1-20260925'){current.editorial_workflow_version=p.editorial_workflow_version;current.editorial_stage=p.editorial_stage??null;}
  return current;
 }
+export function fpLearningIssues(p){
+ const issues=[];
+ if(p.review_status==='rejected'||p.content_review?.status==='rejected')issues.push('本人不採用：制作中止');
+ const r=p.editorial_review?.fp_learning_value;
+ if(r?.status!=='passed'||r.checked_revision!==p.draft_revision||
+  !text(r.mechanism).trim()||!text(r.primary_evidence_url).trim().match(/^https:\/\//)||
+  !text(r.reader_decision_before).trim()||!text(r.reader_decision_after).trim()||
+  r.reader_decision_before===r.reader_decision_after||r.specific_knowledge!==true||r.general_advice_only!==false)
+  issues.push('FP採用審査待ち：具体的な仕組み・一次情報の根拠・読者の判断の変化を確認');
+ return issues;
+}
 export function productionIssues(p){
- const issues=[],lock=p.content_lock||{},pages=array(p.draft_slides),current=currentEditorialSnapshot(p);
+ const issues=fpLearningIssues(p),lock=p.content_lock||{},pages=array(p.draft_slides),current=currentEditorialSnapshot(p);
  if(p.draft_status!=='ready'||lock.locked!==true||!p.draft_revision||lock.draft_revision!==p.draft_revision||!lock.locked_at)issues.push('原稿完成・同版LOCKの確認待ち');
  if(!lock.snapshot||stable(lock.snapshot)!==stable(current))issues.push('LOCKと現在の原稿snapshotが一致しません');
  for(const [key,label]of [['final_review','最終原稿審査'],['logic_institution_review','論理・制度審査']]){
@@ -67,7 +78,7 @@ export function snapshot(p){
  return {draft_revision:text(p.draft_revision),locked_at:text(p.content_lock?.locked_at),selected_entrance:p.selected_entrance??null,
  title:text(p.post_title||p.draft_title),caption:text(p.caption),pages};
 }
-export async function copyHash(d,p){return d.sha256(stable({copy:snapshot(p),editorial:currentEditorialSnapshot(p),draft_status:p.draft_status,lock:p.content_lock,final_review:p.final_review,logic_institution_review:p.logic_institution_review,pre_image_review:p.pre_image_review,image_render_plan:p.image_render_plan,blocked_reason:p.blocked_reason??null,missing_evidence:array(p.missing_evidence),unresolved_research_items:array(p.unresolved_research_items),required_evidence:array(p.screenshot_requests).filter(s=>s.required).map(evidenceScope)}));}
+export async function copyHash(d,p){return d.sha256(stable({copy:snapshot(p),editorial:currentEditorialSnapshot(p),fp_learning_value:p.editorial_review?.fp_learning_value??null,review_status:p.review_status??null,content_review:p.content_review??null,draft_status:p.draft_status,lock:p.content_lock,final_review:p.final_review,logic_institution_review:p.logic_institution_review,pre_image_review:p.pre_image_review,image_render_plan:p.image_render_plan,blocked_reason:p.blocked_reason??null,missing_evidence:array(p.missing_evidence),unresolved_research_items:array(p.unresolved_research_items),required_evidence:array(p.screenshot_requests).filter(s=>s.required).map(evidenceScope)}));}
 function requireVersion(p,body){
  const gate=productionIssues(p);if(gate.length)fail('fp_editorial_gate_failed: '+gate.join('／'));
  if(!p.draft_revision||!p.content_lock?.locked_at||p.content_lock.locked!==true||p.content_lock.draft_revision!==p.draft_revision||
