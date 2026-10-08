@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {deflateSync} from 'node:zlib';
 import {pathToFileURL} from 'node:url';
-import {fpImagesPatch,fpImagesGet,copyHash,finished,readPng,crc32,identity} from '../supabase/functions/command-center-retro-api/fp-finished-images-api.mjs';
+import {fpImagesPatch,fpImagesGet,copyHash,finished,readPng,crc32,identity,currentEditorialSnapshot,productionIssues} from '../supabase/functions/command-center-retro-api/fp-finished-images-api.mjs';
 function png(color,width=1080,height=1350){
  const chunk=(type,data)=>{const t=Buffer.from(type),body=Buffer.concat([t,data]),out=Buffer.alloc(data.length+12);out.writeUInt32BE(data.length);body.copy(out,4);out.writeUInt32BE(crc32(body),out.length-4);return out;};
  const header=Buffer.alloc(13);header.writeUInt32BE(width);header.writeUInt32BE(height,4);header[8]=8;header[9]=0;
@@ -31,10 +31,25 @@ export async function runFpImageContractTests(){
  const id='task:6aa9ee1043388191a2eac3bb2702092a:money-chat:test-images',payload={content_type:'fp_post_candidate',draft_status:'ready',draft_revision:'r1',
   content_lock:{locked:true,draft_revision:'r1',locked_at:'lock1'},draft_slides:[{page:1,page_contract:{display_copy:'全文1'}},{page:2,page_contract:{display_copy:'全文2'}}],
   caption:'投稿文',post_title:'original',channel_configuration:'unverified',screenshot_requests:[{id:'official',required:true,url:'https://www.stat.go.jp/evidence.pdf',label:'公式グラフ',slide_no:2}],retained:{doNotLose:true},image_history:[{old:'keep'}]};
+ payload.image_render_plan={draft_revision:'r1',pages:payload.draft_slides.map(s=>({page:s.page,hero:'defined',composition:'defined',text_role:'defined'}))};
+ payload.pre_image_review={status:'approved_by_user',checked_revision:'r1',checked_locked_at:'lock1'};
+ payload.content_lock.snapshot=currentEditorialSnapshot(payload);
+ for(const key of ['final_review','logic_institution_review'])payload[key]={status:'passed',checked_revision:'r1',reviewed_snapshot:structuredClone(payload.content_lock.snapshot),unresolved_items:[]};
+ assert.deepEqual(productionIssues(payload),[]);
  const db=memoryDb({command_center_task_events:[{id:'candidate',task_id:'6aa9ee1043388191a2eac3bb2702092a',event_key:'money-chat:test-images',title:'original',payload:structuredClone(payload)}]});
  const d={admin:db.admin,sha256:async s=>createHash('sha256').update(s).digest('hex'),json:(_req,b,status=200)=>({body:b,status})};
  const body={action:'fp_finished_import',id,draftRevision:'r1',lockedAt:'lock1',copyHash:await copyHash(d,payload),assets:[{page:1,png:png(10)},{page:2,png:png(20)}]};
  assert.equal(readPng(body.assets[0].png).width,1080);
+ const seed=db.tables.get('command_center_task_events')[0];
+ const invalid=[
+  p=>{p.final_review.status='pending';},p=>{p.logic_institution_review.checked_revision='old';},
+  p=>{p.content_lock.snapshot.caption='changed';},p=>{p.pre_image_review.status='not_required';},
+  p=>{p.image_render_plan.pages[0].hero='';},p=>{p.content_lock.locked=false;},
+  p=>{p.draft_status='blocked';},p=>{p.missing_evidence=['new gap'];}
+ ];
+ for(const mutate of invalid){seed.payload=structuredClone(payload);mutate(seed.payload);
+  const response=await fpImagesPatch({},body,d);assert.equal(response.status,409);assert.equal(db.writes,0);}
+ seed.payload=structuredClone(payload);
  assert.throws(()=>identity('task:unrelated:record'));
  const stale=await fpImagesPatch({}, {...body,draftRevision:'old'},d);assert.equal(stale.status,409);assert.equal(db.writes,0);
  const duplicate=await fpImagesPatch({}, {...body,assets:[body.assets[0],{page:2,png:body.assets[0].png}]},d);assert.equal(duplicate.status,400);assert.equal(db.writes,0);
@@ -52,6 +67,21 @@ export async function runFpImageContractTests(){
  const evidence=await fpImagesPatch({}, {...body,evidence:{official:{checked:true,url:payload.screenshot_requests[0].url}}},d);assert.equal(evidence.status,200);assert.equal(countAssets(),2);
  const confirmed=await fpImagesPatch({}, {...body,action:'fp_finished_confirm_manual',confirmed:true,unchangedCopy:true},d);
  assert.equal(confirmed.status,200);assert.equal(confirmed.body.status,'confirmed_manual');assert.ok(confirmed.body.issues.some(s=>s.includes('媒体設定')));
+ const valid=structuredClone(candidate.payload);
+ for(const mutate of [
+  p=>{p.content_lock.locked=false;},p=>{p.draft_status='blocked';},p=>{p.missing_evidence=['new gap'];},
+  p=>{p.final_review.status='failed';},p=>{p.logic_institution_review.reviewed_snapshot.caption='changed';},
+  p=>{p.pre_image_review.checked_revision='old';},p=>{p.image_render_plan.pages[0].composition='';},
+  p=>{p.screenshot_requests[0].slide_no=1;},p=>{p.screenshot_requests[0].capture_range='different crop';}
+ ]){
+  candidate.payload=structuredClone(valid);mutate(candidate.payload);
+  const read=await fpImagesGet({url:'https://api.example/?resource=fp-finished-images&id='+encodeURIComponent(id)},d);
+  assert.ok(['stale','blocked'].includes(read.body.status));assert.equal(read.body.assets.length,0);
+  const list=await fpImagesGet({url:'https://api.example/?resource=fp-image-state&id='+encodeURIComponent(id)},d);
+  assert.equal(list.body.status,read.body.status);assert.equal(list.body.assets,undefined);assert.equal(list.body.asset_count,0);
+  const approve=await fpImagesPatch({}, {...body,action:'fp_finished_confirm_manual',confirmed:true,unchangedCopy:true},d);assert.equal(approve.status,409);
+ }
+ candidate.payload=structuredClone(valid);
  candidate.payload.draft_slides[0].page_contract.display_copy='改訂した全文';
  const mismatch=await fpImagesGet({url:'https://api.example/?resource=fp-finished-images&id='+encodeURIComponent(id)},d);
  assert.equal(mismatch.status,200);assert.equal(mismatch.body.status,'stale');assert.equal(mismatch.body.assets.length,0);
@@ -62,6 +92,6 @@ export async function runFpImageContractTests(){
  asset.payload.png=body.assets[0].png.split(',')[1];
  db.failCas(true);const race=await fpImagesPatch({},body,d);assert.equal(race.status,409);
  assert.equal(candidate.payload.finished_image_review.status,'confirmed_manual');
- return {passed:12,assets:countAssets(),liveDb:false};
+ return {passed:29,assets:countAssets(),liveDb:false};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)console.log(await runFpImageContractTests());
