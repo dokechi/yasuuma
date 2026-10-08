@@ -71,10 +71,11 @@
   panel.append(notice);
   function updateControls(){
    const ok=!!state.data&&!state.busy;
-   input.disabled=!ok;reload.disabled=state.busy;save.disabled=!ok||state.pending.length!==state.data.copy.pages.length;
+   const productionReady=ok&&!(state.data.production_issues||[]).length;
+   input.disabled=!ok;reload.disabled=state.busy;save.disabled=!productionReady||state.pending.length!==state.data.copy.pages.length;
    const valid=['saved_pending_review','confirmed_manual'].includes(state.data?.status)&&!state.pending.length;
-   confirm.disabled=!ok||!valid;confirmSave.disabled=!ok||!valid||!state.confirm||(state.data.issues||[]).some(s=>s.startsWith('必須資料'));
-   compose.disabled=!ok||state.data.copy.pages.length!==6||state.data.draft_status!=='ready'||(state.data.requirements||[]).some(s=>!state.sourceImages.has(s.id));
+   confirm.disabled=!ok||!valid;confirmSave.disabled=!productionReady||!valid||!state.confirm||(state.data.issues||[]).some(s=>s.startsWith('必須資料'));
+   compose.disabled=!productionReady||state.data.copy.pages.length!==6||state.data.draft_status!=='ready'||(state.data.requirements||[]).some(s=>!state.sourceImages.has(s.id));
   }
   function renderGallery(){
    gallery.replaceChildren();const pages=state.pending.length?state.pending:state.data?.assets||[];
@@ -141,7 +142,7 @@
 })(typeof window==='undefined'?null:window,function(){
  const copyText=s=>String(s??'').replace(/\\n/g,'\n');
  const validSize=(w,h)=>Number.isInteger(w)&&Number.isInteger(h)&&w>=800&&w<=2160&&h===w*5/4;
- const status=s=>({missing:'完成画像は未保存です。原稿完成と画像完成は別です。',stale:'旧画像はありますが原稿の版が変わっています。再制作・検品待ちです。',
+ const status=s=>({blocked:'原稿審査または画像化前確認が未完了です。画像保存・本人確認は保留中です。',missing:'完成画像は未保存です。原稿完成と画像完成は別です。',stale:'旧画像はありますが原稿の版が変わっています。再制作・検品待ちです。',
  saved_pending_review:'全ページを保存して再読しました。本人による画像・全文の検品は未完了です。',
  confirmed_manual:'画像・全文の本人確認を保存済みです。投稿先と掲載条件を確認して手動で投稿してください。'})[s]||'画像状態は未確認です';
  const error=s=>({fp_copy_changed_retry:'原稿が更新されました。最新の内容を再読してください',fp_copy_stale_or_unlocked:'原稿の版またはLOCKが変わっています',
