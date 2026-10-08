@@ -35,6 +35,7 @@ export async function runFpImageContractTests(){
  payload.image_render_plan={draft_revision:'r1',pages:payload.draft_slides.map(s=>({page:s.page,hero:'defined',composition:'defined',text_role:'defined'}))};
  payload.pre_image_review={status:'approved_by_user',checked_revision:'r1',checked_locked_at:'lock1'};
  payload.content_lock.snapshot=currentEditorialSnapshot(payload);
+ Object.assign(payload.editorial_review.fp_learning_value,{reviewed_snapshot:structuredClone(payload.content_lock.snapshot),reviewed_by:'test reviewer',checked_at:'2026-10-08T00:00:00Z',evidence_checked_at:'2026-10-08T00:00:00Z',applicable_conditions:'対象条件と例外',criteria:['before_after','mechanism','conditions_exceptions','primary_evidence','reader_action'].map(key=>({key,status:'passed',finding:'Fixture review result',body_evidence:[{page:1,excerpt:'全文1'}]}))});
  for(const key of ['final_review','logic_institution_review'])payload[key]={status:'passed',checked_revision:'r1',reviewed_snapshot:structuredClone(payload.content_lock.snapshot),unresolved_items:[]};
  assert.deepEqual(productionIssues(payload),[]);
  for(const mutate of [
@@ -43,7 +44,13 @@ export async function runFpImageContractTests(){
   p=>{p.editorial_review.fp_learning_value.reader_decision_after=p.editorial_review.fp_learning_value.reader_decision_before;},
   p=>{p.editorial_review.fp_learning_value.general_advice_only=true;},
   p=>{p.editorial_review.fp_learning_value.checked_revision='old';},
-  p=>{p.review_status='rejected';}
+  p=>{p.review_status='rejected';},
+  p=>{p.editorial_review.fp_learning_value.criteria=[];},
+  p=>{p.editorial_review.fp_learning_value.criteria[0].body_evidence=[{page:1,excerpt:'本文に存在しない'}];},
+  p=>{p.editorial_review.fp_learning_value.criteria[0].body_evidence=[{page:8,excerpt:'全文1'}];},
+  p=>{p.editorial_review.fp_learning_value.evidence_checked_at='';},
+  p=>{p.editorial_review.fp_learning_value.applicable_conditions='';},
+  p=>{p.editorial_review.fp_learning_value.reviewed_snapshot={};}
  ]){const rejected=structuredClone(payload);mutate(rejected);assert.ok(productionIssues(rejected).length);}
 
  // Separate user pre-image action, never inferred from an editorial review.
