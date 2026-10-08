@@ -18,7 +18,7 @@ export async function candidate(d,id){
  q=k.task?q.eq('task_id',k.task).eq('event_key',k.key):q.eq('id',k.key);
  const {data,error}=await q.maybeSingle();if(error)throw error;
  if(!data||data.payload?.content_type!=='fp_post_candidate')fail('fp_candidate_not_found',404);
- return {row:data,identity:k,id:text(id)};
+ return {row:data,identity:k,id:k.task?'task:'+k.task+':'+k.key:k.key};
 }
 export function snapshot(p){
  const pages=array(p.draft_slides).map((s,i)=>({page:Number(s.page??i+1),copy:text(s.page_contract?.display_copy)}));
@@ -34,9 +34,8 @@ function requireVersion(p,body){
  if(text(p.blocked_reason).trim()||array(p.missing_evidence).length||array(p.unresolved_research_items).length)fail('fp_copy_unresolved');
  return pages;
 }
-export function crc32(bytes){
- let crc=0xffffffff;for(const b of bytes){crc^=b;for(let i=0;i<8;i++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}return (crc^0xffffffff)>>>0;
-}
+const CRC_TABLE=Array.from({length:256},(_,n)=>{let c=n;for(let i=0;i<8;i++)c=(c>>>1)^((c&1)?0xedb88320:0);return c>>>0;});
+export function crc32(bytes){let crc=0xffffffff;for(const b of bytes)crc=(crc>>>8)^CRC_TABLE[(crc^b)&255];return (crc^0xffffffff)>>>0;}
 // Validate PNG chunks and CRCs before storing. Browser import also decodes pixels.
 export function readPng(input){
  const match=text(input).match(/^data:image\/png;base64,([A-Za-z0-9+/]+={0,2})$/);
