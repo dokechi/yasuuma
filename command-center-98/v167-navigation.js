@@ -127,7 +127,7 @@
       :kind==='sourcing'?({success:'仕入れできた',close:'惜しかった',miss:'今は見当違い'}[item.sourcingVerdict]||'候補')
       :stateLabels[item?.reviewState||'new'];
     const date=kind==='x'?(window.CCData?.itemTime(item)||time(item)):time(item), meta=[date?'更新 '+fmtUpdated(date):'日時不明',state];
-    if(kind==='x'){meta.push(item.organizer||'');if(item.applicationDeadline)meta.push('締切 '+fmtUpdated(item.applicationDeadline))}
+    if(kind==='x'){meta.push(item.organizer||'');if(item.applicationDeadline)meta.push('締切 '+window.CCX.deadlineDate(item.applicationDeadline)+' JST')}
     if(kind==='sourcing'){meta.push(item.supplierName||item.source||'');if(item.impact!=null)meta.push('想定純利益 '+yen(item.impact))}
     const details=document.createElement('details');details.className='cc-item';details.dataset.ccKey=key;
     const summary=document.createElement('summary');summary.className='cc-item-summary';
