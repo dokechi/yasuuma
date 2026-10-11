@@ -17,7 +17,7 @@ function store(tables, {failWrite = false, failReadTable = null, readOnly = fals
   const snapshotsReady = new Promise(resolve => { releaseSnapshots = resolve; });
   class Query {
     constructor(table) { this.table = table; this.filters = []; this.op = 'select'; }
-    select() { return this; }
+    select(fields) { this.fields=fields;return this; }
     eq(key, value) { this.filters.push(row => key === 'payload' ? isDeepStrictEqual(row[key], JSON.parse(value)) : row[key] === value); return this; }
     order() { return this; }
     range(start, end) { this.bounds = [start, end]; return this; }
@@ -46,6 +46,7 @@ function store(tables, {failWrite = false, failReadTable = null, readOnly = fals
           }
         }
         if (this.bounds) matched = matched.slice(this.bounds[0], this.bounds[1] + 1);
+        if(this.fields&&this.fields!=='*')matched=matched.map(row=>Object.fromEntries(this.fields.split(',').filter(key=>Object.hasOwn(row,key)).map(key=>[key,row[key]])));
         const result = {data: structuredClone(this.one ? matched[0] || null : matched), error: null};
         // Capture both snapshots before either writer can commit. Promise.all
         // alone does not guarantee overlapping reads after asynchronous auth.
@@ -182,6 +183,25 @@ test('real state route refuses old screens and replay; returns the version neede
   assert.equal(s.writes.length,1);
   assert.equal((await call('PATCH',{id:'state-1',state:'new',expectedUpdatedAt:result.updatedAt})).status,200);
   assert.equal(s.tables.command_center_signals[0].review_state,'new');
+});
+
+test('FP preflight response propagates its exact version through actual UI merge then ordinary review succeeds',async()=>{
+  const row={...signal(),updated_at:'2026-10-11T00:00:00.123456Z',review_state:'new'};
+  const s=store({command_center_signals:[structuredClone(row)]}),call=await api(s);
+  const response=await call('PATCH',{action:'fp_preflight',id:row.id,adaptive:true});
+  assert.equal(response.status,200);const data=await response.json();assert.ok(data.item.updatedAt);
+  const fp=await readFile(new URL('../command-center-98/v151-fp-content-pipeline.js',import.meta.url),'utf8');
+  const merge=fp.slice(fp.indexOf('  const replaceCachedItem='),fp.indexOf('  const put='));
+  const appState={items:[{id:row.id,updatedAt:row.updated_at,reviewState:'new'}],busy:false,view:'active'};
+  const topItems=[{...appState.items[0]}];
+  runInNewContext(merge+'\nreplaceCachedItem(fresh);',{app:appState,topItems,fresh:data.item});
+  assert.equal(appState.items[0].updatedAt,data.item.updatedAt);assert.equal(topItems[0].updatedAt,data.item.updatedAt);
+  const review=shellSource.slice(shellSource.indexOf('async function review('),shellSource.indexOf('async function hardDelete('));
+  const context={app:appState,document:{getElementById:()=>null},cssSafe:x=>x,bump(){},setStatus(){},toast(){},setTimeout(){},
+    API:'https://example.invalid',AUTH:'synthetic',fetch:async(_url,options)=>call(options.method,JSON.parse(options.body))};
+  runInNewContext(review+'\nglobalThis.runReview=review;',context);
+  assert.equal(await context.runReview(row.id,'accepted',{}),true);
+  assert.equal(s.tables.command_center_signals[0].review_state,'accepted');
 });
 test('real PATCH validates sourcing input before any DB operation', async () => {
   const s = store({}, {readOnly: true}), call = await api(s);

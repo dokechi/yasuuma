@@ -83,6 +83,29 @@ test('actual card editor retains input on 409/428 and copy retries retain the sa
   await X.copy('s','x',{});assert.equal(ids,2);
 });
 
+test('each actual undo notification keeps its own id, previous state and committed version',async()=>{
+  const shell=await readFile(new URL('../command-center-98/app.html',import.meta.url),'utf8'),notices=[];
+  const make=()=>({isConnected:true,classList:{},querySelector(){return this.button;},button:{disabled:false},remove(){this.removed=true;}});
+  const app={lastUndo:null,view:'active'},requests=[],context={app,document:{getElementById:()=>({appendChild:el=>notices.push(el)}),createElement:make},
+    esc:x=>x,setTimeout(){},bump(){},API:'https://example.invalid',AUTH:'synthetic',load:async()=>{},
+    fetch:async(_url,options)=>{const body=JSON.parse(options.body);requests.push(body);return {ok:body.id!=='stale',status:body.id==='stale'?409:200,json:async()=>({ok:body.id!=='stale'})};}};
+  const toastCode=shell.slice(shell.indexOf('function toast('),shell.indexOf('function setStatus('));
+  const undoCode=shell.slice(shell.indexOf('async function undoLast('),shell.indexOf('\n',shell.indexOf('async function undoLast(')));
+  runInNewContext(toastCode+'\n'+undoCode+'\nglobalThis.emitToast=toast;',context);
+  app.lastUndo={id:'A',previous:'new',item:{updatedAt:'version-A'}};
+  context.emitToast('A','good',app.lastUndo);
+  app.lastUndo={id:'B',previous:'read',item:{updatedAt:'version-B'}};
+  context.emitToast('B','good',app.lastUndo);
+  await notices[0].button.onclick();
+  assert.deepEqual(requests[0],{id:'A',state:'new',expectedUpdatedAt:'version-A'});assert.equal(app.lastUndo.id,'B');
+  await notices[1].button.onclick();
+  assert.deepEqual(requests[1],{id:'B',state:'read',expectedUpdatedAt:'version-B'});
+  app.lastUndo={id:'stale',previous:'new',item:{updatedAt:'stale-version'}};
+  context.emitToast('stale','good',app.lastUndo);const staleNotice=notices.at(-1);
+  await staleNotice.button.onclick();assert.equal(staleNotice.removed,undefined);assert.equal(staleNotice.button.disabled,false);
+  assert.equal(requests.at(-1).id,'stale');assert.equal(app.lastUndo.id,'stale');
+});
+
 test('real X handler rejects stale editor writes and returns the same copy receipt after candidate changes',async()=>{
   const tables={command_center_x_candidates:[{id:'c',product_name:'synthetic',status:'draft',updated_at:'2026-10-11T00:00:00.123456Z',x_draft:'text',draft_type:'opening',application_deadline:'2026-11-11T00:00:00Z'}],command_center_card_copy_history:[],command_center_card_copy_summary:[],command_center_card_draft_reviews:[]};
   class Query{

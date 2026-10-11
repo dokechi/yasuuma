@@ -47,13 +47,13 @@ function mapEvent(x:any){return {id:x.id,taskId:x.task_id,eventKey:x.event_key,d
 function fpShort(v:any,max=500){const s=String(v??"").trim();return s?s.slice(0,max):null}
 function fpMetric(v:any,max=1000000000,decimal=false){if(v===null||v===undefined||v==="")return null;const n=Number(v);if(!Number.isFinite(n)||n<0||n>max)throw new Error("invalid_fp_metric");return decimal?Math.round(n*10)/10:Math.round(n)}
 async function fpSignal(id:string){
-  const fields="id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,payload";
+  const fields="id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,updated_at,payload";
   const {data,error}=await admin.from("command_center_signals").select(fields).eq("id",id).maybeSingle();
   const allowed=new Set(["fp_post_candidate","house_post_candidate"]);
   if(error)throw error;if(!data||!allowed.has(String(data.payload?.content_type||"")))throw new Error("content_signal_not_found");return data
 }
 async function saveFpPayload(row:any,payload:any){
-  return saveGuardedPayload(admin,row,payload,"id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,payload");
+  return saveGuardedPayload(admin,row,payload,"id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,updated_at,payload");
 }
 function moneyEntranceSnapshot(p:any){
   return {

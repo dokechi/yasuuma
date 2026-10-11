@@ -247,19 +247,20 @@
   by('xeDraft').oninput=X.chars;by('xeThreadsDraft').oninput=X.chars;by('xClose').onclick=X.close;by('xeCancel').onclick=X.close;
   by('xeCopyX').onclick=()=>X.copy(value('xeId'),'x',by('xeCopyX'),value('xeDraft'));
   by('xeCopyThreads').onclick=()=>X.copy(value('xeId'),'threads',by('xeCopyThreads'),value('xeThreadsDraft'));
+  X.editorCandidate=()=>({productName:value('xeProduct'),organizer:value('xeOrganizer'),priority:value('xePriority'),score:value('xeScore'),franchise:value('xeFranchise'),category:value('xeCategory'),applicationDeadline:value('xeDeadline')?new Date(value('xeDeadline')).toISOString():null,targetRegion:value('xeRegion'),conditions:value('xeConditions'),applicationUrl:value('xeApply'),officialUrl:value('xeOfficial'),officialVerified:value('xeVerified')==='true',officialCheckedAt:value('xeOfficialChecked')?new Date(value('xeOfficialChecked')).toISOString():null,officialCheckNote:value('xeOfficialNote'),discoverySource:value('xeDiscoverySource'),discoveryUrl:value('xeDiscovery'),valueHook:value('xeValueHook'),valueHookKind:value('xeValueKind'),valueHookCheckedAt:value('xeValueChecked')?new Date(value('xeValueChecked')).toISOString():null,valueHookSourceUrl:value('xeValueSource'),affiliateStatus:value('xeAffiliateStatus'),affiliateUrl:value('xeAffiliate'),xDraft:value('xeDraft'),threadsDraft:value('xeThreadsDraft'),userNote:value('xeNote')});
   by('xForm').onsubmit=async event=>{
     event.preventDefault();
     const id=value('xeId');
-    const candidate={productName:value('xeProduct'),organizer:value('xeOrganizer'),priority:value('xePriority'),score:value('xeScore'),franchise:value('xeFranchise'),category:value('xeCategory'),applicationDeadline:value('xeDeadline')?new Date(value('xeDeadline')).toISOString():null,targetRegion:value('xeRegion'),conditions:value('xeConditions'),applicationUrl:value('xeApply'),officialUrl:value('xeOfficial'),officialVerified:value('xeVerified')==='true',officialCheckedAt:value('xeOfficialChecked')?new Date(value('xeOfficialChecked')).toISOString():null,officialCheckNote:value('xeOfficialNote'),discoverySource:value('xeDiscoverySource'),discoveryUrl:value('xeDiscovery'),valueHook:value('xeValueHook'),valueHookKind:value('xeValueKind'),valueHookCheckedAt:value('xeValueChecked')?new Date(value('xeValueChecked')).toISOString():null,valueHookSourceUrl:value('xeValueSource'),affiliateStatus:value('xeAffiliateStatus'),affiliateUrl:value('xeAffiliate'),xDraft:value('xeDraft'),threadsDraft:value('xeThreadsDraft'),userNote:value('xeNote')};
+    const candidate=X.editorCandidate();
     try{
       const data=id?await X.request({method:'PATCH',headers:X.headers(),body:JSON.stringify({action:'save',id,candidate,editReason:value('xeEditReason'),expectedUpdatedAt:X.editorVersion})}):await X.request({method:'POST',headers:X.headers(),body:JSON.stringify({candidate})});
       X.update(data.item);X.close();toast(data.reviewWarning?'保存しました（修正履歴のみ記録エラー）':'保存しました',data.reviewWarning?'bad':'good');
-        }catch(error){toast(error.message||'保存できませんでした','bad');
+    }catch(error){toast(error.message||'保存できませんでした','bad');
       if(error.status===409||error.status===428){
         let note=by('xeConflict');
         if(!note){note=document.createElement('div');note.id='xeConflict';note.setAttribute('role','alert');by('xForm').appendChild(note)}
         note.textContent='保存されていません。入力は残っています。入力控えをコピーして最新情報を確認してください。自動で再保存はしません。';
-        const copy=document.createElement('button');copy.type='button';copy.className='push-button';copy.textContent='入力控えをコピー';copy.onclick=()=>X.clip(JSON.stringify({candidate,editReason:value('xeEditReason')},null,2),'入力控えをコピーしました',copy);note.appendChild(copy);
+        const copy=document.createElement('button');copy.type='button';copy.className='push-button';copy.textContent='入力控えをコピー';copy.onclick=()=>X.clip(JSON.stringify({candidate:X.editorCandidate(),editReason:value('xeEditReason')},null,2),'入力控えをコピーしました',copy);note.appendChild(copy);
         const refresh=document.createElement('button');refresh.type='button';refresh.className='push-button';refresh.textContent='一覧の最新情報を確認（入力を保持）';refresh.onclick=()=>X.load();note.appendChild(refresh);
       }
     }
