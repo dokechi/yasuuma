@@ -1,3 +1,4 @@
+import { SaveError, expectedVersion, saveVersionedRow, validCopyId, saveCopyEvent } from "../_shared/save-consistency.mjs";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import twitterText from "npm:twitter-text@3.1.0";
@@ -584,7 +585,10 @@ Deno.serve(async (req: Request) => {
       };
       const value = { ...base, ...editable(source) };
       if (value.official_verified && !value.official_checked_at) value.official_checked_at = new Date().toISOString();
-      const { data, error } = await db.from("command_center_x_candidates").upsert(value, { onConflict: "candidate_key" }).select("*").single();
+      // Creation must never reset an existing candidate. The UNIQUE key also
+      // protects concurrent creates and retries after a lost response.
+      const { data, error } = await db.from("command_center_x_candidates").insert(value).select("*").single();
+      if (error?.code === "23505") throw new SaveError("candidate_already_exists",409);
       if (error) throw error;
       return json(req, { ok: true, item: map(data) });
     }
@@ -605,39 +609,20 @@ Deno.serve(async (req: Request) => {
         if (!textSnapshot.trim()) return json(req, { ok: false, error: "copy_text_required" }, 400);
         if (Array.from(textSnapshot).length > 5000) return json(req, { ok: false, error: "copy_text_too_long" }, 400);
 
-        const copiedAt = date(body.copiedAt) || new Date().toISOString();
-        const deadline = current.application_deadline ? new Date(String(current.application_deadline)).valueOf() : 0;
-        if (deadline && Number.isFinite(deadline) && deadline <= new Date(copiedAt).valueOf()) {
-          return json(req, { ok: false, error: "締切済みのためコピー履歴を記録できません" }, 409);
-        }
-
-        const rawEventId = String(body.clientEventId || "");
-        const clientEventId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(rawEventId)
-          ? rawEventId
-          : crypto.randomUUID();
-        const draftType = TYPES.has(String(current.draft_type || "")) ? String(current.draft_type) : null;
-        const eventValue = {
-          client_event_id: clientEventId,
-          candidate_id: current.id,
-          platform,
-          draft_type: draftType,
-          relative_stage: copyStage(current.application_deadline, draftType, copiedAt),
-          text_snapshot: textSnapshot,
-          deadline_snapshot: current.application_deadline || null,
-          created_at: copiedAt,
-        };
-
-        let copyEvent: Record<string, any> | null = null;
-        const inserted = await db.from("command_center_card_copy_history").insert(eventValue).select("*").single();
-        if (inserted.error?.code === "23505") {
-          const existing = await db.from("command_center_card_copy_history").select("*")
-            .eq("client_event_id", clientEventId).single();
-          if (existing.error) throw existing.error;
-          copyEvent = existing.data;
-        } else {
-          if (inserted.error) throw inserted.error;
-          copyEvent = inserted.data;
-        }
+        if(typeof body.copiedAt!=="string"||!date(body.copiedAt))throw new SaveError("invalid_copy_time",400);
+        const copiedAt = date(body.copiedAt)!;
+        const deadlineSnapshot = Object.hasOwn(body,"deadlineSnapshot") ? body.deadlineSnapshot : current.application_deadline || null;
+        if (deadlineSnapshot != null && (typeof deadlineSnapshot !== "string" || !date(deadlineSnapshot))) throw new SaveError("invalid_copy_deadline",400);
+        const clientEventId = validCopyId(body.clientEventId);
+        const draftType = Object.hasOwn(body,"draftType") ? body.draftType : TYPES.has(String(current.draft_type || "")) ? String(current.draft_type) : null;
+        if (draftType != null && !TYPES.has(draftType)) throw new SaveError("invalid_copy_draft_type",400);
+        const eventValue={client_event_id:clientEventId,candidate_id:current.id,platform,draft_type:draftType,relative_stage:copyStage(deadlineSnapshot,draftType,copiedAt),text_snapshot:textSnapshot,deadline_snapshot:deadlineSnapshot,created_at:copiedAt};
+        const copyEvent = await saveCopyEvent(db,eventValue,()=>{
+          const sameDeadline=(a:any,b:any)=>a==null&&b==null||a!=null&&b!=null&&date(a)===date(b);
+          if(!sameDeadline(deadlineSnapshot,current.application_deadline)||draftType!==(TYPES.has(String(current.draft_type||""))?String(current.draft_type):null)) throw new SaveError("save_conflict_reload",409);
+          const deadline=deadlineSnapshot?new Date(deadlineSnapshot).valueOf():0;
+          if(deadline&&deadline<=new Date(copiedAt).valueOf()) throw new SaveError("copy_deadline_passed",409);
+        });
         const summary = await copySummaryFor(current.id);
         return json(req, { ok: true, item: map(current, summary), copyEvent: mapCopyEvent(copyEvent || eventValue) });
       }
@@ -689,14 +674,14 @@ Deno.serve(async (req: Request) => {
         return json(req, { ok: true, item: map(data) });
       }
 
+      expectedVersion(body.expectedUpdatedAt);
       const source = body.candidate || body;
       validateDrafts(source);
       const update = editable(source);
       if (update.official_verified && !update.official_checked_at && !current.official_checked_at) {
         update.official_checked_at = new Date().toISOString();
       }
-      const { data, error } = await db.from("command_center_x_candidates").update(update).eq("id", id).select("*").single();
-      if (error) throw error;
+      const data=await saveVersionedRow(db,"command_center_x_candidates",id,update,body.expectedUpdatedAt);
       const reviewWarning = await recordDraftReviews(current, source, body.editReason);
       return json(req, { ok: true, item: map(data), reviewWarning });
     }
@@ -709,6 +694,8 @@ Deno.serve(async (req: Request) => {
     }
     return json(req, { ok: false, error: "method_not_allowed" }, 405);
   } catch (error) {
-    return json(req, { ok: false, error: String((error as any)?.message || error) }, 500);
+    if(error instanceof SaveError)return json(req,{ok:false,error:error.message},error.status);
+    if(/^(X投稿文が上限|Threads投稿文が上限)/.test(String((error as any)?.message||"")))return json(req,{ok:false,error:String((error as any).message)},400);
+    return json(req, { ok: false, error: "save_failed" }, 500);
   }
 });

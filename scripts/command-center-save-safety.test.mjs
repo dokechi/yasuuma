@@ -7,6 +7,7 @@ import {runInNewContext} from 'node:vm';
 import {createHmac, webcrypto} from 'node:crypto';
 import {saveGuardedPayload, validateSourcingVerdict, mutationFailure, MutationError} from '../supabase/functions/command-center-retro-api/guarded-payload.mjs';
 import {sourcingSuppliers} from '../supabase/functions/command-center-retro-api/sourcing-read-model.mjs';
+import {SaveError, saveVersionedRow} from '../supabase/functions/_shared/save-consistency.mjs';
 
 // Isolated PostgREST contract simulator. Filters are evaluated at commit time,
 // JSONB comparisons ignore key order, and injected failures commit nothing.
@@ -16,7 +17,7 @@ function store(tables, {failWrite = false, failReadTable = null, readOnly = fals
   const snapshotsReady = new Promise(resolve => { releaseSnapshots = resolve; });
   class Query {
     constructor(table) { this.table = table; this.filters = []; this.op = 'select'; }
-    select() { return this; }
+    select(fields) { this.fields=fields;return this; }
     eq(key, value) { this.filters.push(row => key === 'payload' ? isDeepStrictEqual(row[key], JSON.parse(value)) : row[key] === value); return this; }
     order() { return this; }
     range(start, end) { this.bounds = [start, end]; return this; }
@@ -45,6 +46,7 @@ function store(tables, {failWrite = false, failReadTable = null, readOnly = fals
           }
         }
         if (this.bounds) matched = matched.slice(this.bounds[0], this.bounds[1] + 1);
+        if(this.fields&&this.fields!=='*')matched=matched.map(row=>Object.fromEntries(this.fields.split(',').filter(key=>Object.hasOwn(row,key)).map(key=>[key,row[key]])));
         const result = {data: structuredClone(this.one ? matched[0] || null : matched), error: null};
         // Capture both snapshots before either writer can commit. Promise.all
         // alone does not guarantee overlapping reads after asynchronous auth.
@@ -155,7 +157,7 @@ async function api(s) {
     Deno: {env: {get: name => name === 'SUPABASE_SERVICE_ROLE_KEY' ? 'isolated-test-key' : 'https://example.invalid'}, serve: callback => {handler = callback;}},
     createClient: () => s.admin, crypto: webcrypto, TextEncoder, Headers, Response, URL, structuredClone,
     affiliatePublicAsset: noRoute, affiliatePatch: noRoute, affiliateGet: noRoute, nekoPatch: noRoute, nekoGet: noRoute,
-    fpImagesPatch: noRoute, fpImagesGet: noRoute, saveGuardedPayload, validateSourcingVerdict, mutationFailure, sourcingSuppliers
+    fpImagesPatch: noRoute, fpImagesGet: noRoute, saveGuardedPayload, validateSourcingVerdict, mutationFailure, sourcingSuppliers, SaveError, saveVersionedRow
   });
   const exp = String(Date.now() + 60000), token = exp + '.' + createHmac('sha256', 'isolated-test-key').update('retro|' + exp).digest('hex');
   return (method, body, resource = '') => handler(new Request('https://example.invalid/?resource=' + resource, {
@@ -167,6 +169,40 @@ test('real sourcing GET handler succeeds while every database mutation is forbid
   const call = await api(s), response = await call('GET', undefined, 'sourcing'), body = await response.json();
   assert.equal(response.status, 200); assert.equal(body.ok, true); assert.equal(body.items.length, 1);
   assert.equal(body.suppliers[0].candidateCount, 1); assert.equal(body.items[0].supplierBoost, 0); noWrite(s);
+});
+
+test('real state route refuses old screens and replay; returns the version needed by undo', async () => {
+  const version='2026-10-11T00:00:00.123456Z';
+  const s=store({command_center_signals:[{id:'state-1',review_state:'new',updated_at:version}]});
+  const call=await api(s);
+  assert.equal((await call('PATCH',{id:'state-1',state:'read'})).status,428);noWrite(s);
+  const response=await call('PATCH',{id:'state-1',state:'read',expectedUpdatedAt:version});
+  assert.equal(response.status,200);const result=await response.json();assert.ok(result.updatedAt);
+  assert.equal((await call('PATCH',{id:'state-1',state:'accepted',expectedUpdatedAt:version})).status,409);
+  assert.equal((await call('PATCH',{id:'state-1',state:'read',expectedUpdatedAt:version})).status,409);
+  assert.equal(s.writes.length,1);
+  assert.equal((await call('PATCH',{id:'state-1',state:'new',expectedUpdatedAt:result.updatedAt})).status,200);
+  assert.equal(s.tables.command_center_signals[0].review_state,'new');
+});
+
+test('FP preflight response propagates its exact version through actual UI merge then ordinary review succeeds',async()=>{
+  const row={...signal(),updated_at:'2026-10-11T00:00:00.123456Z',review_state:'new'};
+  const s=store({command_center_signals:[structuredClone(row)]}),call=await api(s);
+  const response=await call('PATCH',{action:'fp_preflight',id:row.id,adaptive:true});
+  assert.equal(response.status,200);const data=await response.json();assert.ok(data.item.updatedAt);
+  const fp=await readFile(new URL('../command-center-98/v151-fp-content-pipeline.js',import.meta.url),'utf8');
+  const merge=fp.slice(fp.indexOf('  const replaceCachedItem='),fp.indexOf('  const put='));
+  const appState={items:[{id:row.id,updatedAt:row.updated_at,reviewState:'new'}],busy:false,view:'active'};
+  const topItems=[{...appState.items[0]}];
+  runInNewContext(merge+'\nreplaceCachedItem(fresh);',{app:appState,topItems,fresh:data.item});
+  assert.equal(appState.items[0].updatedAt,data.item.updatedAt);assert.equal(topItems[0].updatedAt,data.item.updatedAt);
+  const review=shellSource.slice(shellSource.indexOf('async function review('),shellSource.indexOf('async function hardDelete('));
+  const context={app:appState,document:{getElementById:()=>null},cssSafe:x=>x,bump(){},setStatus(){},toast(){},setTimeout(){},
+    API:'https://example.invalid',AUTH:'synthetic',fetch:async(_url,options)=>{appState.items[0]={...appState.items[0],reviewState:'read'};return call(options.method,JSON.parse(options.body));}};
+  runInNewContext(review+'\nglobalThis.runReview=review;',context);
+  assert.equal(await context.runReview(row.id,'accepted',{}),true);
+  assert.equal(s.tables.command_center_signals[0].review_state,'accepted');
+  assert.equal(appState.lastUndo.previous,'new'); // Captured before the in-flight UI refresh.
 });
 test('real PATCH validates sourcing input before any DB operation', async () => {
   const s = store({}, {readOnly: true}), call = await api(s);

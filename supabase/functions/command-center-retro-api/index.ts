@@ -5,6 +5,7 @@ import { nekoGet, nekoPatch } from "./binbo-neko-api.ts";
 import { fpImagesGet, fpImagesPatch } from "./fp-finished-images-api.mjs";
 import { saveGuardedPayload, validateSourcingVerdict, mutationFailure } from "./guarded-payload.mjs";
 import { sourcingSuppliers } from "./sourcing-read-model.mjs";
+import { SaveError, saveVersionedRow } from "../_shared/save-consistency.mjs";
 
 const SUPA = Deno.env.get("SUPABASE_URL") || "";
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -27,7 +28,7 @@ async function hmac(v:string){const k=await crypto.subtle.importKey("raw",enc.en
 function same(a:string,b:string){if(a.length!==b.length)return false;let x=0;for(let i=0;i<a.length;i++)x|=a.charCodeAt(i)^b.charCodeAt(i);return x===0}
 async function issue(){const exp=Date.now()+TTL*1000;const body=`retro|${exp}`;return `${exp}.${await hmac(body)}`}
 async function auth(req:Request){const raw=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"").trim();if(!raw)return false;const [e,s]=raw.split(".");const exp=Number(e);if(!exp||exp<Date.now())return false;return same(s||"",await hmac(`retro|${e}`))}
-function mapRow(x:any, scoreOverride?:number, penalty=0){return {id:x.id,domain:x.domain,priority:x.priority,basePriority:x.priority,score:scoreOverride??x.score,baseScore:x.score,feedbackPenalty:penalty,title:x.title,summary:x.summary,reason:x.reason,next:x.next_action,impact:x.impact_yen,impactLabel:x.impact_label,deadline:x.deadline,confidence:x.confidence,source:x.source_title,url:x.source_url,reviewState:x.review_state,lastSeen:x.last_seen_at,payload:x.payload||{}}}
+function mapRow(x:any, scoreOverride?:number, penalty=0){return {id:x.id,domain:x.domain,priority:x.priority,basePriority:x.priority,score:scoreOverride??x.score,baseScore:x.score,feedbackPenalty:penalty,title:x.title,summary:x.summary,reason:x.reason,next:x.next_action,impact:x.impact_yen,impactLabel:x.impact_label,deadline:x.deadline,confidence:x.confidence,source:x.source_title,url:x.source_url,reviewState:x.review_state,updatedAt:x.updated_at,lastSeen:x.last_seen_at,payload:x.payload||{}}}
 function rankFromScore(v:number){return v>=85?"S":v>=70?"A":"B"}
 function supplierInfo(sourceTitle:any, sourceUrl:any){
   let host="",key="",homepage="";
@@ -46,13 +47,13 @@ function mapEvent(x:any){return {id:x.id,taskId:x.task_id,eventKey:x.event_key,d
 function fpShort(v:any,max=500){const s=String(v??"").trim();return s?s.slice(0,max):null}
 function fpMetric(v:any,max=1000000000,decimal=false){if(v===null||v===undefined||v==="")return null;const n=Number(v);if(!Number.isFinite(n)||n<0||n>max)throw new Error("invalid_fp_metric");return decimal?Math.round(n*10)/10:Math.round(n)}
 async function fpSignal(id:string){
-  const fields="id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,payload";
+  const fields="id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,updated_at,payload";
   const {data,error}=await admin.from("command_center_signals").select(fields).eq("id",id).maybeSingle();
   const allowed=new Set(["fp_post_candidate","house_post_candidate"]);
   if(error)throw error;if(!data||!allowed.has(String(data.payload?.content_type||"")))throw new Error("content_signal_not_found");return data
 }
 async function saveFpPayload(row:any,payload:any){
-  return saveGuardedPayload(admin,row,payload,"id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,payload");
+  return saveGuardedPayload(admin,row,payload,"id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,updated_at,payload");
 }
 function moneyEntranceSnapshot(p:any){
   return {
@@ -291,9 +292,9 @@ Deno.serve(async(req:Request)=>{
         await syncSupplierLedger([]);
         return json(req,{ok:true,id,verdict:null,state:"new"});
       }
-      const state=String(body?.state||"");if(!id||!["new","read","accepted","rejected"].includes(state)) return json(req,{ok:false,error:"invalid_request"},400);
-      const {error}=await admin.from("command_center_signals").update({review_state:state,updated_at:new Date().toISOString()}).eq("id",id);if(error) throw error;return json(req,{ok:true,id,state});
-    }catch(e){const failure=mutationFailure(e);return json(req,{ok:false,error:failure.code},failure.status)}
+      const state=String(body?.state||"");if(typeof body?.id!=="string"||!id.trim()||id.length>500||!["new","read","accepted","rejected"].includes(state)) return json(req,{ok:false,error:"invalid_request"},400);
+      const saved=await saveVersionedRow(admin,"command_center_signals",id,{review_state:state},body.expectedUpdatedAt,"id,review_state,updated_at");return json(req,{ok:true,id,state,updatedAt:saved.updated_at});
+    }catch(e){const failure=e instanceof SaveError?{code:e.message,status:e.status}:mutationFailure(e);return json(req,{ok:false,error:failure.code},failure.status)}
   }
 
   if(req.method==="DELETE"){

@@ -3,7 +3,7 @@
  const labels={inbox:'未判定',candidate:'投稿候補',draft:'下書き',approved:'承認済み',posted:'投稿済み',rejected:'見送り'},types={opening:'受付開始',deadline:'締切前',affiliate:'PR導線'};
  const by=id=>document.getElementById(id),e=s=>esc(s??''),link=(u,t)=>u?'<a href="'+e(u)+'" target="_blank" rel="noopener">'+e(t)+'</a>':'未登録';
  X.headers=()=>({...authHeaders(),'Content-Type':'application/json'});
- X.request=async(options={})=>{const r=await fetch(X.api,{cache:'no-store',...options});if(r.status===401){authExpired();throw Error('認証期限切れ')}const d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||('HTTP '+r.status));return d};
+ X.request=async(options={})=>{const r=await fetch(X.api,{cache:'no-store',...options});if(r.status===401){authExpired();throw Error('認証期限切れ')}const d=await r.json();if(!r.ok||!d.ok){const error=Error(r.status===409?'他の画面で更新されました。入力は残しています。最新情報を確認してください。':r.status===428?'この画面には保存の版情報がありません。入力をコピーしてから最新情報を確認してください。':d.error||('HTTP '+r.status));error.status=r.status;error.code=d.error;throw error;}return d};
  X.recount=()=>{const c={total:X.state.items.length,inbox:0,candidate:0,draft:0,approved:0,posted:0,rejected:0};X.state.items.forEach(x=>c[x.status]=(c[x.status]||0)+1);X.state.counts=c};
  X.update=x=>{const i=X.state.items.findIndex(v=>v.id===x.id);i<0?X.state.items.unshift(x):X.state.items[i]=x;X.recount();X.render()};
  const sourceBtn=document.querySelector('#viewTabs button[data-view="sourcing"]'),btn=document.createElement('button');btn.type='button';btn.id='xViewBtn';btn.className='push-button small';btn.innerHTML='<span>カード</span><span class="x-badge" id="xTopBadge">0</span>';sourceBtn?.insertAdjacentElement('afterend',btn);

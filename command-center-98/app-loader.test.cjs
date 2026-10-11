@@ -38,13 +38,13 @@ function successfulFetch(calls = []) {
   return async (url, options) => {
     calls.push({url, options});
     if (url === loader.MANIFEST_URL) return {ok: true, json: async () => manifest};
-    assert.equal(url, legacy.shell);
+    assert.equal(url, manifest.shell);
     return {ok: true, text: async () => shell};
   };
 }
 
 test('the manifest preserves every legacy asset in order with explicit read-model and progress additions', () => {
-  assert.equal(manifest.shell, legacy.shell);
+  assert.equal(manifest.shell.split('?')[0], legacy.shell.split('?')[0]);
   assert.equal(manifest.styles.length, 15);
   assert.equal(manifest.scripts.length, legacy.scripts.length + 7);
   const paths=urls=>urls.map(url=>url.split('?')[0]);
@@ -130,7 +130,7 @@ test('boot requests fresh manifest and the same shell URL, then writes and close
   assert.equal(await loader.boot({document, fetch: successfulFetch(calls)}), true);
   assert.deepEqual(calls, [
     {url: loader.MANIFEST_URL, options: {cache: 'no-store'}},
-    {url: './app.html?v=195', options: {cache: 'no-store'}}
+    {url: manifest.shell, options: {cache: 'no-store'}}
   ]);
   assert.deepEqual(document.calls, ['open', 'write', 'close']);
   assert.equal(document.html, loader.composeDocument(shell, manifest));
