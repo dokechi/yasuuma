@@ -198,10 +198,11 @@ test('FP preflight response propagates its exact version through actual UI merge
   assert.equal(appState.items[0].updatedAt,data.item.updatedAt);assert.equal(topItems[0].updatedAt,data.item.updatedAt);
   const review=shellSource.slice(shellSource.indexOf('async function review('),shellSource.indexOf('async function hardDelete('));
   const context={app:appState,document:{getElementById:()=>null},cssSafe:x=>x,bump(){},setStatus(){},toast(){},setTimeout(){},
-    API:'https://example.invalid',AUTH:'synthetic',fetch:async(_url,options)=>call(options.method,JSON.parse(options.body))};
+    API:'https://example.invalid',AUTH:'synthetic',fetch:async(_url,options)=>{appState.items[0]={...appState.items[0],reviewState:'read'};return call(options.method,JSON.parse(options.body));}};
   runInNewContext(review+'\nglobalThis.runReview=review;',context);
   assert.equal(await context.runReview(row.id,'accepted',{}),true);
   assert.equal(s.tables.command_center_signals[0].review_state,'accepted');
+  assert.equal(appState.lastUndo.previous,'new'); // Captured before the in-flight UI refresh.
 });
 test('real PATCH validates sourcing input before any DB operation', async () => {
   const s = store({}, {readOnly: true}), call = await api(s);
