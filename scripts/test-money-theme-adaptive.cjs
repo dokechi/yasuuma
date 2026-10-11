@@ -36,8 +36,17 @@ src=stripTypeScriptTypes(src);
 const snap=src.slice(src.indexOf('function moneyEntranceSnapshot'),src.indexOf('function moneyStructureReady'));
 const block=src.slice(src.indexOf('      if(action==="fp_image_review")'),src.indexOf('      if(action==="fp_performance")'));
 const context={JSON,Date,Set};vm.createContext(context);
-vm.runInContext(snap+'globalThis.handle=async function(row,body){const id=row.id,action="fp_image_review",req={};const fpSignal=async()=>row;const json=(_r,data,status=200)=>({status,...data});const mapRow=x=>x;const saveFpPayload=async(r,p,cas)=>{if(!cas)throw new Error("CAS required");return {...r,payload:p}};'+block+'}',context);
+vm.runInContext(snap+'globalThis.handle=async function(row,body){const id=row.id,action="fp_image_review",req={};const fpSignal=async()=>row;const json=(_r,data,status=200)=>({status,...data});const mapRow=x=>x;const saveFpPayload=globalThis.guardedSave;'+block+'}',context);
 (async()=>{
+ const {saveGuardedPayload}=await import('../supabase/functions/command-center-retro-api/guarded-payload.mjs');
+ let guardedSaves=0;
+ context.guardedSave=async(row,payload)=>{
+  // Exercise the real always-on guard, including its snapshot predicate.
+  const predicates=[];let value;
+  const query={update(v){value=v;return this},eq(k,v){predicates.push([k,v]);return this},select(){return this},
+   async maybeSingle(){assert(predicates.some(([k,v])=>k==='id'&&v===row.id));assert(predicates.some(([k,v])=>k==='payload'&&v===JSON.stringify(row.payload)));guardedSaves++;return {data:{...row,...value},error:null}}};
+  return saveGuardedPayload({from:()=>query},row,payload,'*');
+ };
  for(const n of [3,5,7]){
   const row=sample(n,'case'+n),p=row.payload;
   const body={confirmed:true,unchangedCopy:true,draftRevision:p.draft_revision,lockedAt:p.content_lock.locked_at,screenshotDecisions:Object.fromEntries(p.draft_slides.map(s=>[s.page,'unnecessary']))};
@@ -54,6 +63,7 @@ vm.runInContext(snap+'globalThis.handle=async function(row,body){const id=row.id
    ['根拠不足',r=>r.payload.missing_evidence=['未取得']]
   ]){const r=clone(row),b=clone(body);change(r,b);const out=await context.handle(r,b);assert(out.status>=400,name);count++;}
  }
+ assert.equal(guardedSaves,3,'only valid approvals reach the guarded database save');
  console.log('PASS backend: 3/5/7枚・承認・版照合・資料不足・Work除外・CAS');
  console.log(JSON.stringify({passed:count,failed:0}));
 })().catch(e=>{console.error(e);process.exit(1)});

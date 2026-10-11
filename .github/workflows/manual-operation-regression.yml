@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - 'codex/manual-confirmation-20261008'
+      - 'codex/command-center-save-safety-*'
     paths:
       - 'command-center-98/**'
       - 'scripts/**'
@@ -26,6 +27,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Type check save and sourcing contracts
+        run: >-
+          npm exec --yes --package=typescript@5.9.3 --
+          tsc --noEmit --allowJs --checkJs --target es2022 --module nodenext --moduleResolution nodenext
+          supabase/functions/command-center-retro-api/guarded-payload.mjs
+          supabase/functions/command-center-retro-api/sourcing-read-model.mjs
       - name: Syntax and manual operation contracts
         run: |
           node --check command-center-98/fp-finished-images.js
@@ -36,6 +43,7 @@ jobs:
           node scripts/manual-operation-hub-ui.test.cjs
           node scripts/fp-finished-images.test.mjs
           node --test scripts/affiliate-production-api.test.mjs scripts/affiliate-production.test.mjs
+          node --test scripts/command-center-save-safety.test.mjs
       - name: Existing loader, home and FP regressions
         run: |
           node command-center-98/app-loader.test.cjs
