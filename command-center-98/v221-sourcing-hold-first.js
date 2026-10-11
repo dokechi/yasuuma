@@ -4,29 +4,17 @@
   const tabs=document.getElementById('sourcingTabs');
 
   function readyItems(){
-    return (sourcingApp.items||[])
-      .filter(x=>typeof isReadySourcing==='function'&&isReadySourcing(x))
-      .sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||new Date(b.lastSeen||0)-new Date(a.lastSeen||0));
+    return window.CCSourcingDisplayModel.readyItems(sourcingApp.items,
+      x=>typeof isReadySourcing==='function'&&isReadySourcing(x));
   }
 
-  function closeItems(){
-    return (sourcingApp.items||[])
-      .filter(x=>x.sourcingVerdict==='close')
-      .sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||new Date(b.lastSeen||0)-new Date(a.lastSeen||0));
-  }
-
-  function researchCount(){
-    if(typeof sourcingResults==='undefined'||!sourcingResults.loaded||typeof sourcingResearchRecords!=='function')return 0;
-    try{return sourcingResearchRecords('research').length}catch{return 0}
-  }
-
-  function holdItemCount(){
-    return readyItems().length+closeItems().length+researchCount();
-  }
-
-  function syncHoldCount(){
-    const badge=document.getElementById('sourcingHoldCount');
-    if(badge)badge.textContent=String(holdItemCount());
+  function displaySnapshot(){
+    let research=[];
+    if(typeof sourcingResults!=='undefined'&&sourcingResults.loaded&&typeof sourcingResearchRecords==='function'){
+      try{research=sourcingResearchRecords('research')}catch(_){}
+    }
+    return window.CCSourcingDisplayModel.snapshot(sourcingApp.items,
+      x=>typeof isReadySourcing==='function'&&isReadySourcing(x),research);
   }
 
   function removeQueueTab(){
@@ -67,21 +55,21 @@
   }
 
   function injectReadyIntoHold(){
+    const model=displaySnapshot();
+    const holdCount=document.getElementById('sourcingHoldCount');
+    if(holdCount&&holdCount.textContent!==String(model.total))holdCount.textContent=String(model.total);
     if(sourcingApp.sub!=='hold')return;
     const host=document.getElementById('sourcingBody');
     if(!host)return;
 
-    const ready=readyItems();
-    const total=holdItemCount();
+    const ready=model.ready;
+    const total=model.total;
 
     const caption=host.querySelector('.sourcing-caption');
     if(caption){
       const count=caption.querySelector('span');
-      if(count)count.textContent=total+'件';
+      if(count&&count.textContent!==total+'件')count.textContent=total+'件';
     }
-
-    const holdCount=document.getElementById('sourcingHoldCount');
-    if(holdCount)holdCount.textContent=String(total);
 
     const queueCount=document.getElementById('sourcingQueueCount');
     if(queueCount)queueCount.textContent='0';
@@ -134,7 +122,6 @@
     removeQueueTab();
     updateIntro();
     baseRender();
-    syncHoldCount();
     removeQueueTab();
     injectReadyIntoHold();
   };
