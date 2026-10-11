@@ -61,9 +61,13 @@
   const intro=document.querySelector('#sourcingHub .sourcing-intro');
   if(intro)intro.innerHTML='<b>仕入れ専用。</b> 商品は「仕入れ候補 → 保留 / 実仕入れ / 見送り」で管理。<b>実仕入れはGmailの購入履歴を正本</b>として表示します。保留は、値下げ待ち・実売不足・送料確認など、まだ追う案件です。';
 
-  function researchCount(){
-    if(typeof sourcingResults==='undefined'||!sourcingResults.loaded||typeof sourcingResearchRecords!=='function')return 0;
-    try{return sourcingResearchRecords('research').length}catch{return 0}
+  function displaySnapshot(){
+    let research=[];
+    if(typeof sourcingResults!=='undefined'&&sourcingResults.loaded&&typeof sourcingResearchRecords==='function'){
+      try{research=sourcingResearchRecords('research')}catch(_){}
+    }
+    return window.CCSourcingDisplayModel.snapshot(sourcingApp.items,
+      x=>typeof isReadySourcing==='function'&&isReadySourcing(x),research);
   }
 
   function pendingPurchaseOrders(){
@@ -79,15 +83,15 @@
     badge.innerHTML='<span class="sourcing-count-main">'+h(confirmed)+'</span>'+(pending?'<span class="sourcing-count-pending" title="Gmailで仕入確定前の注文">未確定'+h(pending)+'</span>':'');
   }
 
-  function syncCounts(){
+  function syncCounts(model=displaySnapshot()){
     const c=sourcingApp.counts||{};
     const queueCount=document.getElementById('sourcingQueueCount');
     const holdCount=document.getElementById('sourcingHoldCount');
     const missCount=document.getElementById('sourcingMissCount');
     const discoveryCount=document.getElementById('sourcingDiscoveryCount');
     const supplierCount=document.getElementById('sourcingSupplierCount');
-    if(queueCount)queueCount.textContent=String((sourcingApp.items||[]).filter(x=>typeof isReadySourcing==='function'&&isReadySourcing(x)).length);
-    if(holdCount)holdCount.textContent=String(Number(c.close||0)+researchCount());
+    if(queueCount)queueCount.textContent=String(model.ready.length);
+    if(holdCount)holdCount.textContent=String(model.total);
     if(missCount)missCount.textContent=String(c.miss??0);
     if(discoveryCount)discoveryCount.textContent=(typeof sourcingResults!=='undefined'&&sourcingResults.error)?'!':(typeof sourcingResults!=='undefined'&&sourcingResults.loaded&&typeof sourcingResearchRecords==='function'?String(sourcingResearchRecords('supplier').length):'…');
     if(supplierCount)supplierCount.textContent=String(c.suppliers??(sourcingApp.suppliers||[]).length);
@@ -152,9 +156,10 @@
     if(!host)return;
     if(typeof sourcingResults!=='undefined'&&!sourcingResults.loaded&&!sourcingResults.pending&&!sourcingResults.error&&typeof loadSourcingResults==='function')void loadSourcingResults();
 
-    const items=(sourcingApp.items||[]).filter(x=>x.sourcingVerdict==='close').sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||new Date(b.lastSeen||0)-new Date(a.lastSeen||0));
-    const researchN=researchCount();
-    let html='<div class="sourcing-caption"><b>保留</b><span>'+(items.length+researchN)+'件</span></div>'+
+    const model=displaySnapshot();
+    const items=model.closed;
+    const researchN=model.researchCount;
+    let html='<div class="sourcing-caption"><b>保留</b><span>'+model.total+'件</span></div>'+
       '<p class="purchase-note">まだ追う案件です。値下げ待ち・実売不足・送料確認・在庫復活待ち・相場待ちなどをここにまとめます。</p>';
 
     if(items.length){
@@ -173,7 +178,7 @@
     });
     relabelRendered();
     bindHoldCards(host);
-    syncCounts();
+    syncCounts(model);
     syncSelected();
   }
 

@@ -11,7 +11,8 @@ function sourceFunction(name){
 }
 
 function harness(){
-  const badge={textContent:''},caption={textContent:''},sections=[];
+  let badgeValue='',badgeWrites=0;
+  const badge={get textContent(){return badgeValue},set textContent(value){badgeValue=value;badgeWrites++}},caption={textContent:''},sections=[];
   const host={querySelector(selector){
     if(selector==='.sourcing-caption')return {querySelector:()=>caption};
     return null;
@@ -21,15 +22,15 @@ function harness(){
     {id:'miss',sourcingVerdict:'miss'},{id:'purchased',sourcingVerdict:'success'}];
   const context={sourcingApp:{sub:'hold',items,counts:{close:2}},sourcingResults:{loaded:false},
     research:[],sourcingResearchRecords:()=>context.research,isReadySourcing:x=>x.ready===true,
-    cssSafe:x=>x,sourcingCardHtml:x=>x.id,window:{},
+    cssSafe:x=>x,sourcingCardHtml:x=>x.id,window:{CCSourcingDisplayModel:require('./sourcing-display-model.js')},
     document:{getElementById:id=>id==='sourcingBody'?host:id==='sourcingHoldCount'?badge:null,
       querySelector:()=>null,createElement:()=>({}),head:{appendChild(){}}},
     formatPurchaseCount(){},
   };
   vm.createContext(context);
-  vm.runInContext(sourceFunction('researchCount')+'\n'+sourceFunction('syncCounts')+'\nrenderSourcing=function(){syncCounts()};',context);
+  vm.runInContext(sourceFunction('displaySnapshot')+'\n'+sourceFunction('syncCounts')+'\nrenderSourcing=function(){syncCounts()};',context);
   vm.runInContext(source,context);
-  return {context,badge,caption,sections};
+  return {context,badge,caption,sections,host,get badgeWrites(){return badgeWrites}};
 }
 
 test('hold and every other tab use the same target definition without changing records',()=>{
@@ -61,4 +62,21 @@ test('count reflects current records and final readiness predicate rather than s
   h.context.sourcingApp.items[0].ready=false;
   h.context.sourcingApp.sub='purchases';h.context.renderSourcing();assert.equal(h.badge.textContent,'13');
   h.context.sourcingApp.items=[];h.context.renderSourcing();assert.equal(h.badge.textContent,'0');
+});
+test('one render uses one base renderer and avoids rewriting an already correct hold badge',()=>{
+  const h=harness(),before=h.badgeWrites;
+  h.context.renderSourcing();assert.equal(h.badgeWrites-before,1);
+  h.context.sourcingApp.sub='purchases';const next=h.badgeWrites;
+  h.context.renderSourcing();assert.equal(h.badgeWrites-next,1);
+});
+test('actual hold renderer keeps closed cards and research with the unified caption count',()=>{
+  const h=harness();
+  h.context.sourcingResults.loaded=true;h.context.research=[{id:'research'}];
+  Object.assign(h.context,{sourcingResultPanel:()=>'<div>research evidence link</div>',
+    relabelRendered(){},bindHoldCards(){},syncSelected(){},holdReasonHtml:()=>''});
+  vm.runInContext(sourceFunction('renderHold')+'\nrenderHold();',h.context);
+  assert.ok(h.host.innerHTML.includes('close1'));assert.ok(h.host.innerHTML.includes('close2'));
+  assert.ok(h.host.innerHTML.includes('research evidence link'));
+  assert.ok(h.host.innerHTML.includes('15件'));
+  assert.equal(h.badge.textContent,'15');
 });

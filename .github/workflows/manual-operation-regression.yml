@@ -6,6 +6,7 @@ on:
       - 'codex/command-center-save-safety-*'
       - 'codex/command-center-hold-count-*'
       - 'codex/command-center-market-evidence-*'
+      - 'codex/command-center-sourcing-render-*'
     paths:
       - 'command-center-98/**'
       - 'scripts/**'
@@ -50,6 +51,9 @@ jobs:
           node --test command-center-98/v221-sourcing-hold-count.test.cjs
           node --check command-center-98/v229-sourcing-mercari-history.js
           node --test command-center-98/v229-sourcing-mercari-history.test.cjs
+          node --check command-center-98/sourcing-display-model.js
+          node --check command-center-98/v216-sourcing-status-flow.js
+          node --test command-center-98/sourcing-display-model.test.cjs
       - name: Existing loader, home and FP regressions
         run: |
           node command-center-98/app-loader.test.cjs

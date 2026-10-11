@@ -36,6 +36,7 @@
     "./v214-ledger-reconciled-sales.js?v=214.1",
     "./v215-yahoo-sales-ledger.js?v=215.1",
     "./v211-ledger-cost-columns.js?v=211.1",
+    "./sourcing-display-model.js?v=20261011.1",
     "./v216-sourcing-status-flow.js?v=216.1",
     "./v217-sourcing-price-wait.js?v=217.1",
     "./v218-sourcing-card-cleanup.js?v=218.1",
