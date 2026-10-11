@@ -64,12 +64,28 @@
 
   function salePrice(row){
     const raw=first(row,['sold_price_yen','price_yen','sold_price','price']);
-    const n=typeof raw==='string'?Number(raw.replace(/[^0-9.-]/g,'')):Number(raw);
+    if(raw===null||(typeof raw!=='number'&&typeof raw!=='string'))return null;
+    const text=typeof raw==='string'?raw.trim().replace(/[,，\s]/g,'').replace(/^[¥￥]/,'').replace(/円$/,''):raw;
+    if(typeof text==='string'&&!/^-?\d+(?:\.\d+)?$/.test(text))return null;
+    const n=Number(text);
     return Number.isFinite(n)?n:null;
   }
 
   function saleTiming(row){
-    return first(row,['sold_at','sold_date','sold_datetime','updated_age','age_text','sold_age','age','confirmed_at'])||'—';
+    const known=value=>value!==null&&!/^(?:\?|—|不明|未確認|unknown|n\/?a)$/i.test(String(value).trim());
+    const sold=first(row,['sold_at','sold_date','sold_datetime']);
+    const parts=['成約日: '+(known(sold)?String(sold):'未確認')];
+    for(const [label,keys] of [
+      ['成約時期',['sold_age']],
+      ['確認日',['confirmed_at']],
+      ['更新日',['updated_at','updated_date']],
+      ['更新時期',['updated_age']],
+      ['日付種別不明',['age_text','age']]
+    ]){
+      const value=first(row,keys);
+      if(value!==null)parts.push(label+': '+(known(value)?String(value):'未確認'));
+    }
+    return parts.join(' / ');
   }
 
   function saleCondition(row){
@@ -77,11 +93,11 @@
   }
 
   function saleMatch(row){
-    return first(row,['match_class','match','grade'])||'—';
+    return first(row,['match_class','match','grade'])??'未判定';
   }
 
   function saleVariant(row){
-    return first(row,['variant_difference','difference','variant_diff'])||'完全一致';
+    return first(row,['variant_difference','difference','variant_diff'])??'未判定';
   }
 
   function saleTitle(row){
@@ -119,14 +135,14 @@
     return '<div class="mercari-history-v229">'+
       '<div class="mercari-history-head"><b>メルカリ売買履歴</b><span>'+rows.length+'件</span></div>'+
       '<div class="mercari-history-scroll"><table class="sourcing-meta mercari-history-table">'+
-      '<thead><tr><th>判定</th><th>売価</th><th>時期</th><th>状態</th><th>差分</th><th>取引</th></tr></thead><tbody>'+
+      '<thead><tr><th>判定</th><th>売価</th><th>日付・種別</th><th>状態</th><th>差分</th><th>取引</th></tr></thead><tbody>'+
       rows.map(row=>{
         const url=row.__url||saleUrl(row);
         const price=salePrice(row);
         const title=saleTitle(row);
         return '<tr>'+
           '<td><b>'+esc(saleMatch(row))+'</b></td>'+
-          '<td class="profit">'+(price===null?'—':yen(price))+'</td>'+
+          '<td class="profit">'+(price===null?'未確認':yen(price))+'</td>'+
           '<td>'+esc(saleTiming(row))+'</td>'+
           '<td>'+esc(saleCondition(row))+'</td>'+
           '<td>'+esc(saleVariant(row))+'</td>'+
