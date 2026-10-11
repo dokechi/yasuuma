@@ -46,10 +46,10 @@ function successfulFetch(calls = []) {
 test('the manifest preserves every legacy asset in order with explicit read-model and progress additions', () => {
   assert.equal(manifest.shell.split('?')[0], legacy.shell.split('?')[0]);
   assert.equal(manifest.styles.length, 15);
-  assert.equal(manifest.scripts.length, legacy.scripts.length + 7);
+  assert.equal(manifest.scripts.length, legacy.scripts.length + 8);
   const paths=urls=>urls.map(url=>url.split('?')[0]);
   assert.deepEqual(paths(manifest.styles).filter(path=>!['./sourcing-mobile-comparison.css','./v230-request-progress.css','./v231-trade-details.css'].includes(path)), paths(legacy.styles));
-  assert.deepEqual(paths(manifest.scripts).filter(path=>!['./sourcing-mobile-comparison.js','./sourcing-display-model.js','./command-center-data.js','./v230-request-progress.js','./v231-trade-details.js','./fp-finished-images.js','./manual-operation-hub.js'].includes(path)), paths(legacy.scripts));
+  assert.deepEqual(paths(manifest.scripts).filter(path=>!['./sourcing-atomic-save.js','./sourcing-mobile-comparison.js','./sourcing-display-model.js','./command-center-data.js','./v230-request-progress.js','./v231-trade-details.js','./fp-finished-images.js','./manual-operation-hub.js'].includes(path)), paths(legacy.scripts));
   assert.equal(manifest.scripts.findIndex(url=>url.startsWith('./sourcing-display-model.js')),manifest.scripts.findIndex(url=>url.startsWith('./sourcing-mobile-comparison.js'))-1);
   assert.equal(manifest.scripts.findIndex(url=>url.startsWith('./sourcing-mobile-comparison.js')),manifest.scripts.findIndex(url=>url.startsWith('./v216-sourcing-status-flow.js'))-1);
   assert.equal(manifest.scripts.findIndex(url=>url.startsWith('./command-center-data.js')),manifest.scripts.findIndex(url=>url.startsWith('./v155-home.js'))-1);

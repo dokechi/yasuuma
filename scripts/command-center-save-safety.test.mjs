@@ -7,6 +7,7 @@ import {runInNewContext} from 'node:vm';
 import {createHmac, webcrypto} from 'node:crypto';
 import {saveGuardedPayload, validateSourcingVerdict, mutationFailure, MutationError} from '../supabase/functions/command-center-retro-api/guarded-payload.mjs';
 import {sourcingSuppliers} from '../supabase/functions/command-center-retro-api/sourcing-read-model.mjs';
+import {saveSourcingRoute} from '../supabase/functions/command-center-retro-api/sourcing-atomic-route.mjs';
 import {SaveError, saveVersionedRow} from '../supabase/functions/_shared/save-consistency.mjs';
 
 // Isolated PostgREST contract simulator. Filters are evaluated at commit time,
@@ -157,7 +158,7 @@ async function api(s) {
     Deno: {env: {get: name => name === 'SUPABASE_SERVICE_ROLE_KEY' ? 'isolated-test-key' : 'https://example.invalid'}, serve: callback => {handler = callback;}},
     createClient: () => s.admin, crypto: webcrypto, TextEncoder, Headers, Response, URL, structuredClone,
     affiliatePublicAsset: noRoute, affiliatePatch: noRoute, affiliateGet: noRoute, nekoPatch: noRoute, nekoGet: noRoute,
-    fpImagesPatch: noRoute, fpImagesGet: noRoute, saveGuardedPayload, validateSourcingVerdict, mutationFailure, sourcingSuppliers, SaveError, saveVersionedRow
+    fpImagesPatch: noRoute, fpImagesGet: noRoute, saveGuardedPayload, validateSourcingVerdict, mutationFailure, sourcingSuppliers, SaveError, saveVersionedRow, saveSourcingRoute
   });
   const exp = String(Date.now() + 60000), token = exp + '.' + createHmac('sha256', 'isolated-test-key').update('retro|' + exp).digest('hex');
   return (method, body, resource = '') => handler(new Request('https://example.invalid/?resource=' + resource, {
@@ -207,69 +208,16 @@ test('FP preflight response propagates its exact version through actual UI merge
 test('real PATCH validates sourcing input before any DB operation', async () => {
   const s = store({}, {readOnly: true}), call = await api(s);
   const response = await call('PATCH', {action: 'sourcing_verdict', id: {bad: true}, verdict: 'close'});
-  assert.equal(response.status, 400); assert.deepEqual(await response.json(), {ok: false, error: 'invalid_sourcing_verdict'}); noWrite(s);
+  assert.equal(response.status, 400); assert.deepEqual(await response.json(), {ok: false, error: 'invalid_sourcing_mutation'}); noWrite(s);
 });
 test('sourcing read failure does not partially persist a ledger', async () => {
   const s = store({command_center_signals: [], command_center_sourcing_reviews: []}, {readOnly: true, failReadTable: 'command_center_supplier_candidates'}), call = await api(s);
   const response = await call('GET', undefined, 'sourcing');
   assert.equal(response.status, 500); assert.equal((await response.json()).ok, false); noWrite(s);
 });
-test('reset refreshes persisted scores before success and actual UI merge cannot restore the old score', async () => {
-  const s = store(resetTables()), call = await api(s);
-  const response = await call('PATCH', {action: 'sourcing_reset', id: 'reset-1'});
-  assert.equal(response.status, 200); assert.equal((await response.json()).ok, true);
-  assert.equal(s.tables.command_center_sourcing_reviews.length, 0);
-  assert.equal(s.tables.command_center_signals[0].review_state, 'new');
-  const persisted = s.tables.command_center_suppliers[0];
-  assert.equal(persisted.success_count, 0); assert.equal(persisted.priority_boost, 0); assert.equal(persisted.trust_score, 50);
-  assert.equal(persisted.purchase_order_count, 2); assert.equal(persisted.purchase_unit_count, 5); assert.equal(persisted.purchase_spend_yen, 1000);
-  assert.deepEqual(persisted.notes, {memo: 'keep'}); assert.equal(persisted.last_seen_at, '2026-10-01T00:00:00Z');
-  const writesBeforeRead = s.writes.length;
-  const sourcing = await (await call('GET', undefined, 'sourcing')).json();
-  const state = {suppliers: sourcing.suppliers, purchaseSuppliers: s.tables.command_center_suppliers.filter(row => row.purchase_order_count > 0)};
-  assert.match(purchaseMergeSource, /Math\.max/);
-  runInNewContext(purchaseMergeSource + '\nmergePurchaseSupplierMetrics();', {sourcingApp: state});
-  assert.equal(state.suppliers[0].trustScore, 50); assert.equal(state.suppliers[0].priorityBoost, 0);
-  assert.equal(state.suppliers[0].purchaseOrderCount, 2); assert.equal(state.suppliers[0].successCount, 2, 'real purchases remain counted after judgment reset');
-  assert.equal(s.writes.length, writesBeforeRead, 'read and UI merge do not persist');
-  const repeat = await call('PATCH', {action: 'sourcing_reset', id: 'reset-1'});
-  assert.equal(repeat.status, 200); assert.equal(s.tables.command_center_suppliers.length, 1); assert.equal(s.tables.command_center_supplier_candidates.length, 1);
-  assert.equal(s.tables.command_center_suppliers[0].trust_score, 50);
-});
-test('reset refreshes a supplier without purchases while keeping ledger purchase eligibility unchanged', async () => {
-  const s = store(resetTables(0)), call = await api(s);
-  assert.equal((await call('PATCH', {action: 'sourcing_reset', id: 'reset-1'})).status, 200);
-  assert.equal(s.tables.command_center_suppliers[0].trust_score, 50);
-  assert.equal(s.tables.command_center_suppliers.filter(row => row.purchase_order_count > 0).length, 0);
-});
-test('reset retains other reviews and recalculates their contribution rather than zeroing a whole supplier', async () => {
-  const tables = resetTables();
-  tables.command_center_sourcing_reviews.push({signal_id: 'other', supplier_key: 'shop.example', verdict: 'close', judged_at: '2026-10-03'});
-  const s = store(tables), call = await api(s);
-  assert.equal((await call('PATCH', {action: 'sourcing_reset', id: 'reset-1'})).status, 200);
-  assert.equal(tables.command_center_sourcing_reviews.length, 1); assert.equal(tables.command_center_sourcing_reviews[0].signal_id, 'other');
-  assert.equal(tables.command_center_suppliers[0].priority_boost, 1); assert.equal(tables.command_center_suppliers[0].trust_score, 53);
-});
-test('reset refuses invalid, missing and non-sourcing records without writes', async () => {
-  const tables = resetTables(); tables.command_center_signals.push({...signal(), domain: 'sns'});
-  const s = store(tables), call = await api(s);
-  for (const [id, status] of [[{}, 400], ['missing', 404], ['signal-1', 400]]) {
-    assert.equal((await call('PATCH', {action: 'sourcing_reset', id})).status, status);
-  }
-  noWrite(s); assert.equal(tables.command_center_sourcing_reviews.length, 1);
-});
-test('reset reports supplier-refresh failure and a retry repairs the persisted scores', async () => {
-  const tables = resetTables(), failed = store(tables, {failReadTable: 'command_center_suppliers'}), first = await api(failed);
-  const response = await first('PATCH', {action: 'sourcing_reset', id: 'reset-1'});
-  assert.equal(response.status, 500); assert.deepEqual(await response.json(), {ok: false, error: 'mutation_failed'});
-  // This legacy multi-table flow is not transactional. Never claim rollback:
-  // the judgment was removed but stale persisted scores must be repaired.
-  assert.equal(tables.command_center_sourcing_reviews.length, 0); assert.equal(tables.command_center_suppliers[0].trust_score, 65);
-  const repaired = store(tables), retry = await api(repaired);
-  assert.equal((await retry('PATCH', {action: 'sourcing_reset', id: 'reset-1'})).status, 200);
-  assert.equal(tables.command_center_suppliers[0].trust_score, 50); assert.equal(tables.command_center_suppliers[0].priority_boost, 0);
-  assert.equal(tables.command_center_suppliers[0].purchase_spend_yen, 1000);
-});
+// Reset/aggregate/replay/failure assertions now run against the actual SQL and
+// authenticated HTTP handler in local-review/sourcing-atomic-native.test.cjs.
+
 test('real posting performance route remains usable and reports concurrent save as HTTP 409', async () => {
   const row = signal(), s = store({command_center_signals: [structuredClone(row)]}, {signalReadBarrier: 2}), call = await api(s);
   const responses = await Promise.all([10, 20].map(reach => call('PATCH', {action: 'fp_performance', id: row.id, performance: {platform: 'instagram', posted_at: '2026-10-01T00:00:00Z', reach}})));

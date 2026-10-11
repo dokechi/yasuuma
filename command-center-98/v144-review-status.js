@@ -67,8 +67,9 @@
   if(typeof load==='function'){
     const originalLoad=load;
     load=async function(view=app.view){
-      await originalLoad(view);
+      const result=await originalLoad(view);
       if(view==='active'&&app.view==='active')await hydrateAllUnconfirmed();
+      return result;
     };
   }
 

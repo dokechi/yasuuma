@@ -86,3 +86,10 @@ The current inventory view sums existing allocation rows without filtering curre
 - Update progress with actual imported purchases/lines/sales, status updates, duplicates skipped, deferred/review counts, verification result, and historical-coverage gaps. An enabled schedule alone is not evidence of a completed import.
 - The morning target is a deadline for a visible status/result, not a guarantee that every ambiguous source will be resolved. Continue a partial run from its saved unresolved work without skipping the interval.
 - Check the current time between bounded batches. If the run is still active shortly before the morning target, publish a truthful interim status before continuing, rather than waiting for the entire backlog to finish.
+# 集計列の書込み境界（原子保存接続のローカル案）
+
+購入・売却の取込は、それぞれの取引表の列だけを更新する。購入行の supplier_key / supplier_name は取引の属性であり、command_center_suppliers の候補・判定集計を更新する許可にはならない。
+
+command_center_suppliers、command_center_supplier_candidates、command_center_sourcing_reviews の判定由来集計は専用の原子保存経路で管理する。取込から candidate_count / success_count / close_count / miss_count / priority_boost / trust_score を含む全行 upsert を行わない。購入実績の4列を更新する必要がある場合は、その列だけをSETする専用経路として別途レビューし、既存値をコピーした集計列を混在させない。
+
+直近の取込保存物と現在のDBトリガー構造は、購入・売却のみの取込が判定集計を書き換えないことを支持する。全期間の実SQL不存在を保証する記述ではない。

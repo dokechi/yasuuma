@@ -67,7 +67,8 @@
     if(button)button.disabled=true;
     if(typeof setStatus==='function')setStatus('価格待ち条件を保存中...',true);
     try{
-      const r=await fetch(API,{
+      const r=await window.CCSourcingSave.request(API,{
+        sourcingSnapshot:window.CCSourcingSave.snapshot(x.id,button),
         method:'PATCH',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+AUTH},
         body:JSON.stringify({action:'sourcing_verdict',id:String(x.id),verdict:'close',note:noteFor(n)})
@@ -75,7 +76,8 @@
       const d=await r.json();
       if(!r.ok||!d?.ok)throw new Error(d?.error||'保存失敗');
       if(typeof toast==='function')toast('価格待ち '+money(n)+'以下で保存しました','good');
-      await load('sourcing');
+      const refreshed=await load('sourcing');
+      if(!refreshed)return;
       if(typeof sourcingApp!=='undefined'){
         sourcingApp.sub='hold';
         renderSourcing();

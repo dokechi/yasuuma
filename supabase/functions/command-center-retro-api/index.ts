@@ -3,9 +3,11 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { affiliatePublicAsset, affiliateGet, affiliatePatch } from "./affiliate-production-api.ts";
 import { nekoGet, nekoPatch } from "./binbo-neko-api.ts";
 import { fpImagesGet, fpImagesPatch } from "./fp-finished-images-api.mjs";
-import { saveGuardedPayload, validateSourcingVerdict, mutationFailure } from "./guarded-payload.mjs";
+import { saveGuardedPayload, mutationFailure } from "./guarded-payload.mjs";
 import { sourcingSuppliers } from "./sourcing-read-model.mjs";
 import { SaveError, saveVersionedRow } from "../_shared/save-consistency.mjs";
+
+import { saveSourcingRoute } from "./sourcing-atomic-route.mjs";
 
 const SUPA = Deno.env.get("SUPABASE_URL") || "";
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -102,30 +104,6 @@ async function allSourcingSignals(){
   return rows.filter((x:any)=>!isSystemSignal(x));
 }
 function readySourcing(row:any,reviewIds:Set<string>){return row.review_state==='new'&&!reviewIds.has(row.id)&&['S','A'].includes(row.priority)&&!['research','supplier','run_summary'].includes(row.payload?.result_kind)}
-async function syncSupplierLedger(signals:any[]){
-  const now=new Date().toISOString();
-  const supplierRows:any[]=[];const candidateRows:any[]=[];const seen=new Set<string>();
-  for(const x of signals){const si=supplierInfo(x.source_title,x.source_url);if(!seen.has(si.key)){seen.add(si.key);supplierRows.push({supplier_key:si.key,supplier_name:si.name,canonical_host:si.host||null,homepage_url:si.homepage,last_seen_at:x.last_seen_at||now,updated_at:now})}candidateRows.push({signal_id:String(x.id),supplier_key:si.key,supplier_name:si.name,title:x.title||null,source_url:x.source_url||null,latest_score:Number(x.score)||0,last_seen_at:x.last_seen_at||now})}
-  if(supplierRows.length){const {error}=await admin.from("command_center_suppliers").upsert(supplierRows,{onConflict:"supplier_key"});if(error)throw error}
-  if(candidateRows.length){const {error}=await admin.from("command_center_supplier_candidates").upsert(candidateRows,{onConflict:"signal_id"});if(error)throw error}
-  const [{data:suppliers,error:se},{data:reviews,error:re},{data:cands,error:ce}]=await Promise.all([
-    admin.from("command_center_suppliers").select("supplier_key,supplier_name,canonical_host,homepage_url,first_seen_at,last_seen_at,last_success_at,success_count,close_count,miss_count,candidate_count,trust_score,priority_boost,notes,created_at,updated_at"),
-    admin.from("command_center_sourcing_reviews").select("signal_id,verdict,supplier_key,judged_at,expires_at"),
-    admin.from("command_center_supplier_candidates").select("signal_id,supplier_key,last_seen_at")
-  ]);if(se)throw se;if(re)throw re;if(ce)throw ce;
-  const reviewMap=new Map<string,any>();for(const r of reviews||[]){const a=reviewMap.get(r.supplier_key)||{success:0,close:0,miss:0,lastSuccess:null};a[r.verdict]=(a[r.verdict]||0)+1;if(r.verdict==="success"&&(!a.lastSuccess||new Date(r.judged_at)>new Date(a.lastSuccess)))a.lastSuccess=r.judged_at;reviewMap.set(r.supplier_key,a)}
-  const candMap=new Map<string,any>();for(const c of cands||[]){const a=candMap.get(c.supplier_key)||{count:0,lastSeen:null};a.count++;if(!a.lastSeen||new Date(c.last_seen_at)>new Date(a.lastSeen))a.lastSeen=c.last_seen_at;candMap.set(c.supplier_key,a)}
-  const updates=(suppliers||[]).map((s:any)=>{const r=reviewMap.get(s.supplier_key)||{success:0,close:0,miss:0,lastSuccess:null};const c=candMap.get(s.supplier_key)||{count:0,lastSeen:s.last_seen_at};const boost=r.success>0?Math.min(10,5+Math.max(0,r.success-1)*2+Math.min(3,r.close)):Math.min(5,r.close);const trust=Math.min(100,50+r.success*15+r.close*3);return {supplier_key:s.supplier_key,supplier_name:s.supplier_name,canonical_host:s.canonical_host,homepage_url:s.homepage_url,last_seen_at:c.lastSeen||s.last_seen_at,last_success_at:r.lastSuccess,success_count:r.success,close_count:r.close,miss_count:r.miss,candidate_count:c.count,trust_score:trust,priority_boost:boost,updated_at:now}});
-  if(updates.length){const {error}=await admin.from("command_center_suppliers").upsert(updates,{onConflict:"supplier_key"});if(error)throw error}
-}
-async function sourcingVerdict(id:string,verdict:string,note:string|null){
-  const {data:row,error}=await admin.from("command_center_signals").select("id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,source_title,source_url,payload,last_seen_at").eq("id",id).maybeSingle();if(error)throw error;if(!row||row.domain!=="sourcing")throw new Error("sourcing_signal_not_found");
-  const si=supplierInfo(row.source_title,row.source_url);const expires=verdict==="miss"?new Date(Date.now()+14*86400000).toISOString():null;
-  const {error:ue}=await admin.from("command_center_sourcing_reviews").upsert({signal_id:id,verdict,supplier_key:si.key,supplier_name:si.name,source_url:row.source_url||null,note:note||null,snapshot:{title:row.title,summary:row.summary,score:row.score,impact_yen:row.impact_yen,payload:row.payload||{}},judged_at:new Date().toISOString(),expires_at:expires},{onConflict:"signal_id"});if(ue)throw ue;
-  const state=verdict==="success"?"accepted":"read";const {error:se}=await admin.from("command_center_signals").update({review_state:state,review_note:`sourcing:${verdict}`,updated_at:new Date().toISOString()}).eq("id",id);if(se)throw se;
-  await syncSupplierLedger([row]);return {row,si,state};
-}
-
 async function logDeletedSignal(row:any){
   const signalKey=String(row.id||"");
   const {data:existing}=await admin.from("command_center_feedback").select("id").eq("action","deleted").eq("signal_key",signalKey).maybeSingle();
@@ -275,22 +253,8 @@ Deno.serve(async(req:Request)=>{
         if(performance.reach===null)return json(req,{ok:false,error:"reach_required"},400);
         const payload={...p,performance};const fresh=await saveFpPayload(row,payload);return json(req,{ok:true,item:mapRow(fresh)});
       }
-      if(action==="sourcing_verdict"){
-        const input=validateSourcingVerdict(body);
-        const out=await sourcingVerdict(input.id,input.verdict,input.note);return json(req,{ok:true,id:input.id,verdict:input.verdict,supplierKey:out.si.key,state:out.state});
-      }
-      if(action==="sourcing_reset"){
-        if(typeof body?.id!=="string"||!id.trim()||id.length>500)return json(req,{ok:false,error:"invalid_request"},400);
-        const {data:row,error:readError}=await admin.from("command_center_signals").select("id,domain").eq("id",id).maybeSingle();if(readError)throw readError;
-        if(!row)return json(req,{ok:false,error:"sourcing_signal_not_found"},404);
-        if(row.domain!=="sourcing")return json(req,{ok:false,error:"invalid_sourcing_reset"},400);
-        const {error:de}=await admin.from("command_center_sourcing_reviews").delete().eq("signal_id",id);if(de)throw de;
-        const {error:se}=await admin.from("command_center_signals").update({review_state:"new",review_note:null,updated_at:new Date().toISOString()}).eq("id",id);if(se)throw se;
-        // The purchase-ledger API returns persisted scores and the UI merges
-        // them with Math.max. Refresh on this explicit mutation before success;
-        // GET stays read-only. Empty input avoids changing observations/candidates.
-        await syncSupplierLedger([]);
-        return json(req,{ok:true,id,verdict:null,state:"new"});
+      if(action==="sourcing_verdict"||action==="sourcing_reset"){
+        const out=await saveSourcingRoute(admin,body,supplierInfo);return json(req,out);
       }
       const state=String(body?.state||"");if(typeof body?.id!=="string"||!id.trim()||id.length>500||!["new","read","accepted","rejected"].includes(state)) return json(req,{ok:false,error:"invalid_request"},400);
       const saved=await saveVersionedRow(admin,"command_center_signals",id,{review_state:state},body.expectedUpdatedAt,"id,review_state,updated_at");return json(req,{ok:true,id,state,updatedAt:saved.updated_at});

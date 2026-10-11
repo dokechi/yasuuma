@@ -1,5 +1,5 @@
 {
-  "shell": "./app.html?v=20261011.save1",
+  "shell": "./app.html?v=20261011.atomic2",
   "styles": [
     "./v140-reddit.css?v=175",
     "./v141-reddit-mobile.css?v=175",
@@ -18,9 +18,10 @@
     "./v231-trade-details.css?v=20261004.1"
   ],
   "scripts": [
+    "./sourcing-atomic-save.js?v=20261011.atomic2",
     "./v143-ledger-month.js?v=175",
     "./v130-ledger-patch.js?v=175",
-    "./v144-review-status.js?v=192",
+    "./v144-review-status.js?v=20261011.atomic2",
     "./v140-reddit-core.js?v=175",
     "./v140-reddit-ui.js?v=175",
     "./v140-reddit-editor.js?v=175",
@@ -39,12 +40,12 @@
     "./v211-ledger-cost-columns.js?v=211.1",
     "./sourcing-display-model.js?v=20261011.3",
     "./sourcing-mobile-comparison.js?v=20261011.2",
-    "./v216-sourcing-status-flow.js?v=216.1",
-    "./v217-sourcing-price-wait.js?v=217.1",
+    "./v216-sourcing-status-flow.js?v=20261011.atomic2",
+    "./v217-sourcing-price-wait.js?v=20261011.atomic2",
     "./v218-sourcing-card-cleanup.js?v=218.1",
-    "./v219-sourcing-final-tabs.js?v=219.1",
+    "./v219-sourcing-final-tabs.js?v=20261011.atomic2",
     "./v220-supplier-ledger-compact.js?v=220.1",
-    "./v221-sourcing-hold-first.js?v=221.1",
+    "./v221-sourcing-hold-first.js?v=20261011.atomic2",
     "./v148-daily-report-link.js?v=20261004.1",
     "./v151-fp-content-pipeline.js?v=20261008.1-image-review",
     "./v161-fp-draft-tab.js?v=205",
