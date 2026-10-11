@@ -6,6 +6,8 @@ The editor stays open after 409/428, retaining inputs and baseline. It offers a 
 
 Copy history uses the existing client_event_id unique index. A pending copy keeps one UUID, timestamp, text and draft/deadline snapshots through same-page retries; concurrent clicks do not create another intent. The server checks receipts before the current deadline. It compares candidate, platform, draft kind, relative stage, text, deadline and copied timestamp. Different content using the same key returns 409, including the uniqueness-race path. No external posting is added.
 
+New card creation has no previous version and uses INSERT. A duplicate candidate_key returns 409 without overwriting the existing candidate. Existing edits use the version guard. Retrying a create after a lost response therefore requires checking the existing candidate, rather than claiming a replayed success.
+
 ## Boundaries
 
 - No schema, RPC, ACL, RLS, auth or credential changes. No production deployment.

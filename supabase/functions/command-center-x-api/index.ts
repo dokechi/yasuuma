@@ -565,7 +565,6 @@ Deno.serve(async (req: Request) => {
 
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
-      expectedVersion(body.expectedUpdatedAt);
       const source = body.candidate || body;
       validateDrafts(source);
       const product = txt(source.productName);
@@ -586,7 +585,10 @@ Deno.serve(async (req: Request) => {
       };
       const value = { ...base, ...editable(source) };
       if (value.official_verified && !value.official_checked_at) value.official_checked_at = new Date().toISOString();
-      const { data, error } = await db.from("command_center_x_candidates").upsert(value, { onConflict: "candidate_key" }).select("*").single();
+      // Creation must never reset an existing candidate. The UNIQUE key also
+      // protects concurrent creates and retries after a lost response.
+      const { data, error } = await db.from("command_center_x_candidates").insert(value).select("*").single();
+      if (error?.code === "23505") throw new SaveError("candidate_already_exists",409);
       if (error) throw error;
       return json(req, { ok: true, item: map(data) });
     }
@@ -672,6 +674,7 @@ Deno.serve(async (req: Request) => {
         return json(req, { ok: true, item: map(data) });
       }
 
+      expectedVersion(body.expectedUpdatedAt);
       const source = body.candidate || body;
       validateDrafts(source);
       const update = editable(source);

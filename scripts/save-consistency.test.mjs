@@ -95,6 +95,10 @@ test('real X handler rejects stale editor writes and returns the same copy recei
       if(this.op==='update')rows.forEach(r=>Object.assign(r,this.value));
       if(this.op==='insert'){
         if(this.table==='command_center_card_copy_history'&&tables[this.table].some(r=>r.client_event_id===this.value.client_event_id))return {data:null,error:{code:'23505'}};
+        if(this.table==='command_center_x_candidates'){
+          if(tables[this.table].some(r=>r.candidate_key===this.value.candidate_key))return {data:null,error:{code:'23505'}};
+          this.value={id:'created-'+tables[this.table].length,updated_at:'2026-10-11T00:00:00Z',...this.value};
+        }
         rows=Array.isArray(this.value)?this.value:[this.value];tables[this.table].push(...structuredClone(rows));
       }
       return {data:structuredClone(this.one?rows[0]||null:rows),error:null};
@@ -108,7 +112,14 @@ test('real X handler rejects stale editor writes and returns the same copy recei
     SaveError,saveVersionedRow,saveCopyEvent,validCopyId,expectedVersion
   });
   const exp=String(Date.now()+60000),token=exp+'.'+createHmac('sha256','synthetic-test-key').update('retro|'+exp).digest('hex');
-  const call=body=>handler(new Request('https://example.invalid',{method:'PATCH',headers:{authorization:'Bearer '+token,'content-type':'application/json'},body:JSON.stringify(body)}));
+  const call=(body,method='PATCH')=>handler(new Request('https://example.invalid',{method,headers:{authorization:'Bearer '+token,'content-type':'application/json'},body:JSON.stringify(body)}));
+  const create={candidate:{productName:'new synthetic product',organizer:'synthetic shop'}};
+  const createdResponse=await call(create,'POST');
+  assert.equal(createdResponse.status,200);const created=await createdResponse.json();assert.ok(created.item.id);
+  const afterCreate=structuredClone(tables.command_center_x_candidates);
+  assert.equal((await call(create,'POST')).status,409);
+  assert.equal((await call({candidate:{...create.candidate,userNote:'must not overwrite',xDraft:'must not overwrite'}},'POST')).status,409);
+  assert.deepEqual(tables.command_center_x_candidates,afterCreate);
   assert.equal((await call({id:'c',action:'save',candidate:{productName:'unsaved'}})).status,428);
   const version=tables.command_center_x_candidates[0].updated_at;
   assert.equal((await call({id:'c',action:'save',expectedUpdatedAt:version,candidate:{productName:'saved'}})).status,200);
