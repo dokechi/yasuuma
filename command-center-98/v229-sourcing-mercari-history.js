@@ -65,9 +65,11 @@
   function salePrice(row){
     const raw=first(row,['sold_price_yen','price_yen','sold_price','price']);
     if(raw===null||(typeof raw!=='number'&&typeof raw!=='string'))return null;
-    const text=typeof raw==='string'?raw.trim().replace(/[,，\s]/g,'').replace(/^[¥￥]/,'').replace(/円$/,''):raw;
-    if(typeof text==='string'&&!/^-?\d+(?:\.\d+)?$/.test(text))return null;
-    const n=Number(text);
+    const text=typeof raw==='string'?raw.trim().replace(/^[¥￥]\s*/,'').replace(/\s*円$/,''):raw;
+    // Validate one amount before removing valid thousands separators. Spaces
+    // between digits and malformed grouping must not concatenate amounts.
+    if(typeof text==='string'&&!/^(?:-?\d+(?:\.\d+)?|-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d{1,3}(?:，\d{3})+(?:\.\d+)?)$/.test(text))return null;
+    const n=Number(typeof text==='string'?text.replace(/[,，]/g,''):text);
     return Number.isFinite(n)?n:null;
   }
 

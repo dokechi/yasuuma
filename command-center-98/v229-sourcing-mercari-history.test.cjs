@@ -26,6 +26,15 @@ test('absence of match or differences cannot assert an exact match; explicit evi
   assert.ok(!render(c,{}).includes('完全一致'));
   assert.match(render(c,{match_class:'A',variant_difference:'完全一致'}),/完全一致/);
 });
+test('only a single amount with valid thousands grouping is accepted, without joining digits or prices',()=>{
+  const c=harness();
+  for(const price of ['1,000 2,000円','1,2','1,00','1,000,','1,,000','1234,567','1 000','1\t000','1\n000','1, 000','1,000\u00a02,000円','1，000,000','¥1,000 ¥2,000','1,000円 2,000円']){
+    assert.ok(render(c,{price}).includes('<td class="profit">未確認</td>'),JSON.stringify(price));
+  }
+  for(const [price,expected] of [['  ¥ 1,234 円  ',1234],['￥1，234円',1234],['1,000,000円',1000000],['1，000，000',1000000],['1234',1234],['1,234.50円',1234.5],['0 円',0],[' 1200 ',1200]]){
+    assert.ok(render(c,{price}).includes('<td class="profit">'+expected+'円</td>'),JSON.stringify(price));
+  }
+});
 test('sold, confirmed, updated and untyped dates remain distinct and missing sold dates stay unknown',()=>{
   const c=harness();
   const html=render(c,{confirmed_at:'2026-10-11',updated_age:'2日前',age_text:'昨日'});
