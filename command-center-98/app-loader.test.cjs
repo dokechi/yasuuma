@@ -45,12 +45,13 @@ function successfulFetch(calls = []) {
 
 test('the manifest preserves every legacy asset in order with explicit read-model and progress additions', () => {
   assert.equal(manifest.shell, legacy.shell);
-  assert.equal(manifest.styles.length, 14);
-  assert.equal(manifest.scripts.length, legacy.scripts.length + 6);
+  assert.equal(manifest.styles.length, 15);
+  assert.equal(manifest.scripts.length, legacy.scripts.length + 7);
   const paths=urls=>urls.map(url=>url.split('?')[0]);
-  assert.deepEqual(paths(manifest.styles).filter(path=>!['./v230-request-progress.css','./v231-trade-details.css'].includes(path)), paths(legacy.styles));
-  assert.deepEqual(paths(manifest.scripts).filter(path=>!['./sourcing-display-model.js','./command-center-data.js','./v230-request-progress.js','./v231-trade-details.js','./fp-finished-images.js','./manual-operation-hub.js'].includes(path)), paths(legacy.scripts));
-  assert.equal(manifest.scripts.findIndex(url=>url.startsWith('./sourcing-display-model.js')),manifest.scripts.findIndex(url=>url.startsWith('./v216-sourcing-status-flow.js'))-1);
+  assert.deepEqual(paths(manifest.styles).filter(path=>!['./sourcing-mobile-comparison.css','./v230-request-progress.css','./v231-trade-details.css'].includes(path)), paths(legacy.styles));
+  assert.deepEqual(paths(manifest.scripts).filter(path=>!['./sourcing-mobile-comparison.js','./sourcing-display-model.js','./command-center-data.js','./v230-request-progress.js','./v231-trade-details.js','./fp-finished-images.js','./manual-operation-hub.js'].includes(path)), paths(legacy.scripts));
+  assert.equal(manifest.scripts.findIndex(url=>url.startsWith('./sourcing-display-model.js')),manifest.scripts.findIndex(url=>url.startsWith('./sourcing-mobile-comparison.js'))-1);
+  assert.equal(manifest.scripts.findIndex(url=>url.startsWith('./sourcing-mobile-comparison.js')),manifest.scripts.findIndex(url=>url.startsWith('./v216-sourcing-status-flow.js'))-1);
   assert.equal(manifest.scripts.findIndex(url=>url.startsWith('./command-center-data.js')),manifest.scripts.findIndex(url=>url.startsWith('./v155-home.js'))-1);
 });
 
@@ -68,7 +69,7 @@ test('late feature patches and the latest daily-report entry remain present', ()
     './v223-home-cleanup.js?v=20261003.1',
     './v224-home-menu-fix.js?v=224.2',
     './v228-money-full-copy.js?v=232.2-state',
-    './v229-sourcing-mercari-history.js?v=229.3',
+    './v229-sourcing-mercari-history.js?v=229.4',
     './affiliate-production.js?v=20261008.1-manual',
     './binbo-neko.js?v=20261002.1'
   ]);

@@ -7,6 +7,7 @@ on:
       - 'codex/command-center-hold-count-*'
       - 'codex/command-center-market-evidence-*'
       - 'codex/command-center-sourcing-render-*'
+      - 'codex/command-center-sourcing-mobile-*'
     paths:
       - 'command-center-98/**'
       - 'scripts/**'
@@ -54,6 +55,9 @@ jobs:
           node --check command-center-98/sourcing-display-model.js
           node --check command-center-98/v216-sourcing-status-flow.js
           node --test command-center-98/sourcing-display-model.test.cjs
+          node --check command-center-98/sourcing-mobile-comparison.js
+      - name: Mobile and desktop sourcing in real Chrome
+        run: node --test scripts/sourcing-mobile-browser.test.mjs
       - name: Existing loader, home and FP regressions
         run: |
           node command-center-98/app-loader.test.cjs
