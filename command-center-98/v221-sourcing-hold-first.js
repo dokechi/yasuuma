@@ -167,10 +167,10 @@
           bump(button);button.disabled=true;setStatus('価格待ち条件を保存中...',true);
           try{
             const note='価格待ち：¥'+n.toLocaleString('ja-JP')+'以下';
-            const r=await fetch(API,{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+AUTH},body:JSON.stringify({action:'sourcing_verdict',id:String(x.id),verdict:'close',note})});
+            const r=await window.CCSourcingSave.request(API,{sourcingSnapshot:window.CCSourcingSave.snapshot(x.id,button),method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+AUTH},body:JSON.stringify({action:'sourcing_verdict',id:String(x.id),verdict:'close',note})});
             const d=await r.json();if(!r.ok||!d?.ok)throw new Error(d?.error||'保存失敗');
             toast('価格待ち ¥'+n.toLocaleString('ja-JP')+'以下で保存しました','good');
-            await load('sourcing');sourcingApp.sub='hold';renderSourcing();
+            if(await load('sourcing')){sourcingApp.sub='hold';renderSourcing()}
           }catch(err){setStatus('保存エラー');toast('価格待ち条件を保存できませんでした','bad')}
           finally{button.disabled=false}
         });

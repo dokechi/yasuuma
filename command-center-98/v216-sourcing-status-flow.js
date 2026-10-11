@@ -208,7 +208,7 @@
     bump(btn);
     setStatus(verdict==='close'?'保留として記録中...':'見送りとして記録中...',true);
     try{
-      const r=await fetch(API,{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+AUTH},body:JSON.stringify({action:'sourcing_verdict',id,verdict,note})});
+      const r=await window.CCSourcingSave.request(API,{sourcingSnapshot:window.CCSourcingSave.snapshot(id,btn),method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+AUTH},body:JSON.stringify({action:'sourcing_verdict',id,verdict,note})});
       const d=await r.json();
       if(!r.ok||!d?.ok)throw new Error(d?.error||'保存失敗');
       toast(verdict==='close'?'保留として記録しました。':'見送りとして記録しました。','good');

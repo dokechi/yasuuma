@@ -172,7 +172,8 @@
     if(typeof bump==='function')bump(btn);
     if(typeof setStatus==='function')setStatus('追跡終了として記録中...',true);
     try{
-      const r=await fetch(API,{
+      const r=await window.CCSourcingSave.request(API,{
+        sourcingSnapshot:window.CCSourcingSave.snapshot(id,btn),
         method:'PATCH',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+AUTH},
         body:JSON.stringify({action:'sourcing_verdict',id,verdict:'miss',note:null})
