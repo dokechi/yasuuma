@@ -3,6 +3,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { affiliatePublicAsset, affiliateGet, affiliatePatch } from "./affiliate-production-api.ts";
 import { nekoGet, nekoPatch } from "./binbo-neko-api.ts";
 import { fpImagesGet, fpImagesPatch } from "./fp-finished-images-api.mjs";
+import { saveGuardedPayload, validateSourcingVerdict, mutationFailure } from "./guarded-payload.mjs";
+import { sourcingSuppliers } from "./sourcing-read-model.mjs";
 
 const SUPA = Deno.env.get("SUPABASE_URL") || "";
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -49,11 +51,8 @@ async function fpSignal(id:string){
   const allowed=new Set(["fp_post_candidate","house_post_candidate"]);
   if(error)throw error;if(!data||!allowed.has(String(data.payload?.content_type||"")))throw new Error("content_signal_not_found");return data
 }
-async function saveFpPayload(row:any,payload:any,comparePayload=false){
-  let query=admin.from("command_center_signals").update({payload,updated_at:new Date().toISOString()}).eq("id",row.id);
-  if(comparePayload)query=query.eq("payload",JSON.stringify(row.payload));
-  const {data,error}=await query.select("id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,payload").single();
-  if(error)throw error;return data
+async function saveFpPayload(row:any,payload:any){
+  return saveGuardedPayload(admin,row,payload,"id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,payload");
 }
 function moneyEntranceSnapshot(p:any){
   return {
@@ -265,7 +264,7 @@ Deno.serve(async(req:Request)=>{
         }
         const next={...p,image_ready:true,asset_status:"ready_for_image_generation",pre_image_review:{required:true,status:"approved_by_user",checked_revision:p.draft_revision,checked_locked_at:lock.locked_at,
           screenshot_decisions:decisions,confirmation:"user_read_external_review_unmodified_copy",approved_at:new Date().toISOString()}};
-        const fresh=await saveFpPayload(row,next,true);return json(req,{ok:true,item:mapRow(fresh)});
+        const fresh=await saveFpPayload(row,next);return json(req,{ok:true,item:mapRow(fresh)});
       }
       if(action==="fp_performance"){
         if(!id||!body?.performance||typeof body.performance!=="object")return json(req,{ok:false,error:"invalid_request"},400);
@@ -276,15 +275,25 @@ Deno.serve(async(req:Request)=>{
         const payload={...p,performance};const fresh=await saveFpPayload(row,payload);return json(req,{ok:true,item:mapRow(fresh)});
       }
       if(action==="sourcing_verdict"){
-        const verdict=String(body?.verdict||"");if(!id||!["success","close","miss"].includes(verdict))return json(req,{ok:false,error:"invalid_sourcing_verdict"},400);
-        const out=await sourcingVerdict(id,verdict,body?.note?String(body.note):null);return json(req,{ok:true,id,verdict,supplierKey:out.si.key,state:out.state});
+        const input=validateSourcingVerdict(body);
+        const out=await sourcingVerdict(input.id,input.verdict,input.note);return json(req,{ok:true,id:input.id,verdict:input.verdict,supplierKey:out.si.key,state:out.state});
       }
       if(action==="sourcing_reset"){
-        if(!id)return json(req,{ok:false,error:"invalid_request"},400);const {error:de}=await admin.from("command_center_sourcing_reviews").delete().eq("signal_id",id);if(de)throw de;const {error:se}=await admin.from("command_center_signals").update({review_state:"new",review_note:null,updated_at:new Date().toISOString()}).eq("id",id);if(se)throw se;return json(req,{ok:true,id,verdict:null,state:"new"});
+        if(typeof body?.id!=="string"||!id.trim()||id.length>500)return json(req,{ok:false,error:"invalid_request"},400);
+        const {data:row,error:readError}=await admin.from("command_center_signals").select("id,domain").eq("id",id).maybeSingle();if(readError)throw readError;
+        if(!row)return json(req,{ok:false,error:"sourcing_signal_not_found"},404);
+        if(row.domain!=="sourcing")return json(req,{ok:false,error:"invalid_sourcing_reset"},400);
+        const {error:de}=await admin.from("command_center_sourcing_reviews").delete().eq("signal_id",id);if(de)throw de;
+        const {error:se}=await admin.from("command_center_signals").update({review_state:"new",review_note:null,updated_at:new Date().toISOString()}).eq("id",id);if(se)throw se;
+        // The purchase-ledger API returns persisted scores and the UI merges
+        // them with Math.max. Refresh on this explicit mutation before success;
+        // GET stays read-only. Empty input avoids changing observations/candidates.
+        await syncSupplierLedger([]);
+        return json(req,{ok:true,id,verdict:null,state:"new"});
       }
       const state=String(body?.state||"");if(!id||!["new","read","accepted","rejected"].includes(state)) return json(req,{ok:false,error:"invalid_request"},400);
       const {error}=await admin.from("command_center_signals").update({review_state:state,updated_at:new Date().toISOString()}).eq("id",id);if(error) throw error;return json(req,{ok:true,id,state});
-    }catch(e){return json(req,{ok:false,error:String((e as any)?.message||e)},500)}
+    }catch(e){const failure=mutationFailure(e);return json(req,{ok:false,error:failure.code},failure.status)}
   }
 
   if(req.method==="DELETE"){
@@ -341,8 +350,11 @@ Deno.serve(async(req:Request)=>{
         allSourcingSignals().then(data=>({data,error:null})),
         admin.from("command_center_sourcing_reviews").select("signal_id,verdict,supplier_key,supplier_name,source_url,note,snapshot,judged_at,expires_at")
       ]);if(sg)throw sg;if(rv)throw rv;
-      await syncSupplierLedger(signals||[]);
-      const {data:suppliers,error:sp}=await admin.from("command_center_suppliers").select("supplier_key,supplier_name,canonical_host,homepage_url,first_seen_at,last_seen_at,last_success_at,success_count,close_count,miss_count,candidate_count,trust_score,priority_boost,notes").order("priority_boost",{ascending:false}).order("success_count",{ascending:false}).order("last_seen_at",{ascending:false});if(sp)throw sp;
+      const [{data:storedSuppliers,error:sp},{data:storedCandidates,error:sc}]=await Promise.all([
+        admin.from("command_center_suppliers").select("supplier_key,supplier_name,canonical_host,homepage_url,first_seen_at,last_seen_at,last_success_at,success_count,close_count,miss_count,candidate_count,trust_score,priority_boost,notes"),
+        admin.from("command_center_supplier_candidates").select("signal_id,supplier_key,last_seen_at")
+      ]);if(sp)throw sp;if(sc)throw sc;
+      const suppliers=sourcingSuppliers(signals||[],reviews||[],storedSuppliers||[],storedCandidates||[],supplierInfo);
       const reviewBy=new Map((reviews||[]).map((r:any)=>[r.signal_id,r]));const supplierBy=new Map((suppliers||[]).map((r:any)=>[r.supplier_key,r]));
       const items=(signals||[]).map((x:any)=>{const si=supplierInfo(x.source_title,x.source_url);const r=reviewBy.get(x.id);const sup=supplierBy.get(si.key);const boost=Math.min(10,Math.max(0,Number(sup?.priority_boost||0)));const adjusted=Math.min(100,Number(x.score||0)+boost);return {...mapRow(x,adjusted,0),priority:rankFromScore(adjusted),sourcingVerdict:r?.verdict||null,verdictNote:r?.note||null,judgedAt:r?.judged_at||null,verdictExpiresAt:r?.expires_at||null,supplierKey:si.key,supplierName:si.name,supplierBoost:boost,supplierTrust:Number(sup?.trust_score||50)}});
       return json(req,{ok:true,generatedAt:new Date().toISOString(),items,suppliers:(suppliers||[]).map(mapSupplier),counts:{total:items.length,unjudged:items.filter((x:any)=>!x.sourcingVerdict).length,success:items.filter((x:any)=>x.sourcingVerdict==="success").length,close:items.filter((x:any)=>x.sourcingVerdict==="close").length,miss:items.filter((x:any)=>x.sourcingVerdict==="miss").length,suppliers:(suppliers||[]).length,provenSuppliers:(suppliers||[]).filter((x:any)=>Number(x.success_count)>0).length}});
