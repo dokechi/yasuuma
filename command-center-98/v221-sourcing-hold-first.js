@@ -20,6 +20,15 @@
     try{return sourcingResearchRecords('research').length}catch{return 0}
   }
 
+  function holdItemCount(){
+    return readyItems().length+closeItems().length+researchCount();
+  }
+
+  function syncHoldCount(){
+    const badge=document.getElementById('sourcingHoldCount');
+    if(badge)badge.textContent=String(holdItemCount());
+  }
+
   function removeQueueTab(){
     const queue=tabs?.querySelector('button[data-sourcing-sub="queue"]');
     if(queue){
@@ -63,17 +72,16 @@
     if(!host)return;
 
     const ready=readyItems();
-    const closed=closeItems();
-    const researchN=researchCount();
+    const total=holdItemCount();
 
     const caption=host.querySelector('.sourcing-caption');
     if(caption){
       const count=caption.querySelector('span');
-      if(count)count.textContent=(ready.length+closed.length+researchN)+'件';
+      if(count)count.textContent=total+'件';
     }
 
     const holdCount=document.getElementById('sourcingHoldCount');
-    if(holdCount)holdCount.textContent=String(ready.length+closed.length+researchN);
+    if(holdCount)holdCount.textContent=String(total);
 
     const queueCount=document.getElementById('sourcingQueueCount');
     if(queueCount)queueCount.textContent='0';
@@ -126,6 +134,7 @@
     removeQueueTab();
     updateIntro();
     baseRender();
+    syncHoldCount();
     removeQueueTab();
     injectReadyIntoHold();
   };
