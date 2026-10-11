@@ -4,6 +4,7 @@ on:
     branches:
       - 'codex/manual-confirmation-20261008'
       - 'codex/command-center-save-safety-*'
+      - 'codex/command-center-hold-count-*'
     paths:
       - 'command-center-98/**'
       - 'scripts/**'
@@ -44,6 +45,8 @@ jobs:
           node scripts/fp-finished-images.test.mjs
           node --test scripts/affiliate-production-api.test.mjs scripts/affiliate-production.test.mjs
           node --test scripts/command-center-save-safety.test.mjs
+          node --check command-center-98/v221-sourcing-hold-first.js
+          node --test command-center-98/v221-sourcing-hold-count.test.cjs
       - name: Existing loader, home and FP regressions
         run: |
           node command-center-98/app-loader.test.cjs
