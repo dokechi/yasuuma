@@ -7,6 +7,7 @@ import {runInNewContext} from 'node:vm';
 import {createHmac, webcrypto} from 'node:crypto';
 import {saveGuardedPayload, validateSourcingVerdict, mutationFailure, MutationError} from '../supabase/functions/command-center-retro-api/guarded-payload.mjs';
 import {sourcingSuppliers} from '../supabase/functions/command-center-retro-api/sourcing-read-model.mjs';
+import {SaveError, saveVersionedRow} from '../supabase/functions/_shared/save-consistency.mjs';
 
 // Isolated PostgREST contract simulator. Filters are evaluated at commit time,
 // JSONB comparisons ignore key order, and injected failures commit nothing.
@@ -155,7 +156,7 @@ async function api(s) {
     Deno: {env: {get: name => name === 'SUPABASE_SERVICE_ROLE_KEY' ? 'isolated-test-key' : 'https://example.invalid'}, serve: callback => {handler = callback;}},
     createClient: () => s.admin, crypto: webcrypto, TextEncoder, Headers, Response, URL, structuredClone,
     affiliatePublicAsset: noRoute, affiliatePatch: noRoute, affiliateGet: noRoute, nekoPatch: noRoute, nekoGet: noRoute,
-    fpImagesPatch: noRoute, fpImagesGet: noRoute, saveGuardedPayload, validateSourcingVerdict, mutationFailure, sourcingSuppliers
+    fpImagesPatch: noRoute, fpImagesGet: noRoute, saveGuardedPayload, validateSourcingVerdict, mutationFailure, sourcingSuppliers, SaveError, saveVersionedRow
   });
   const exp = String(Date.now() + 60000), token = exp + '.' + createHmac('sha256', 'isolated-test-key').update('retro|' + exp).digest('hex');
   return (method, body, resource = '') => handler(new Request('https://example.invalid/?resource=' + resource, {
@@ -167,6 +168,20 @@ test('real sourcing GET handler succeeds while every database mutation is forbid
   const call = await api(s), response = await call('GET', undefined, 'sourcing'), body = await response.json();
   assert.equal(response.status, 200); assert.equal(body.ok, true); assert.equal(body.items.length, 1);
   assert.equal(body.suppliers[0].candidateCount, 1); assert.equal(body.items[0].supplierBoost, 0); noWrite(s);
+});
+
+test('real state route refuses old screens and replay; returns the version needed by undo', async () => {
+  const version='2026-10-11T00:00:00.123456Z';
+  const s=store({command_center_signals:[{id:'state-1',review_state:'new',updated_at:version}]});
+  const call=await api(s);
+  assert.equal((await call('PATCH',{id:'state-1',state:'read'})).status,428);noWrite(s);
+  const response=await call('PATCH',{id:'state-1',state:'read',expectedUpdatedAt:version});
+  assert.equal(response.status,200);const result=await response.json();assert.ok(result.updatedAt);
+  assert.equal((await call('PATCH',{id:'state-1',state:'accepted',expectedUpdatedAt:version})).status,409);
+  assert.equal((await call('PATCH',{id:'state-1',state:'read',expectedUpdatedAt:version})).status,409);
+  assert.equal(s.writes.length,1);
+  assert.equal((await call('PATCH',{id:'state-1',state:'new',expectedUpdatedAt:result.updatedAt})).status,200);
+  assert.equal(s.tables.command_center_signals[0].review_state,'new');
 });
 test('real PATCH validates sourcing input before any DB operation', async () => {
   const s = store({}, {readOnly: true}), call = await api(s);

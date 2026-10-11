@@ -189,12 +189,20 @@
     const item=X.state.items.find(value=>value.id===id);
     const text=textOverride??(platform==='threads'?item?.threadsDraft:item?.xDraft);
     if(!text)return;
-    if(item?.deadlinePassed){toast('締切済みのためコピーできません','bad');return}
-    const copiedAt=new Date().toISOString();
-    const copied=await X.clip(text,(platform==='threads'?'Threads':'X')+'の投稿文をコピーしました',button);
-    if(!copied||!id||!item)return;
-    try{await X.patch({action:'copy',id,platform,textSnapshot:text,copiedAt,clientEventId:X.eventId()})}
-    catch(error){toast('コピーはできましたが、履歴を保存できませんでした','bad')}
+    if(item?.deadlinePassed&&!X.copyPending?.has(id+'|'+platform)){toast('締切済みのためコピーできません','bad');return}
+    const key=id+'|'+platform;
+    X.copyPending=X.copyPending||new Map();
+    let pending=X.copyPending.get(key);
+    if(pending?.inFlight)return;
+    if(pending&&pending.body.textSnapshot!==text){toast('前のコピー履歴が未確認です。元の本文で再試行してから変更してください','bad');return}
+    if(!pending){pending={body:{action:'copy',id,platform,textSnapshot:text,copiedAt:new Date().toISOString(),clientEventId:X.eventId(),draftType:item?.draftType||null,deadlineSnapshot:item?.applicationDeadline||null},inFlight:false};X.copyPending.set(key,pending)}
+    pending.inFlight=true;
+    try{
+      const copied=await X.clip(text,(platform==='threads'?'Threads':'X')+'の投稿文をコピーしました',button);
+      if(!copied||!id||!item){X.copyPending.delete(key);return}
+      await X.patch(pending.body);X.copyPending.delete(key);
+    }catch(error){toast('コピー履歴は未確認です。同じ本文でコピーを押すと同じ要求を再送します。'+(error.status===409?'内容の競合があります。最新情報を確認してください。':''),'bad')}
+    finally{pending.inFlight=false}
   };
   X.publish=async(id,platform,button)=>{
     const label=platform==='threads'?'Threads':'X';
@@ -232,7 +240,7 @@
     by('xeChars').classList.toggle('over',xCount>280);by('xeThreadsChars').classList.toggle('over',threadsCount>500);
   };
   X.openEditor=item=>{
-    set('xeId',item?.id);set('xeProduct',item?.productName);set('xeOrganizer',item?.organizer);set('xePriority',item?.priority||'B');set('xeScore',item?.score||0);set('xeFranchise',item?.franchise||'other');set('xeCategory',item?.category||'card_lottery');set('xeDeadline',local(item?.applicationDeadline));set('xeRegion',item?.targetRegion);set('xeConditions',item?.conditions);set('xeApply',item?.applicationUrl);set('xeOfficial',item?.officialUrl);set('xeVerified',String(!!item?.officialVerified));set('xeOfficialChecked',local(item?.officialCheckedAt));set('xeOfficialNote',item?.officialCheckNote);set('xeDiscoverySource',item?.discoverySource);set('xeDiscovery',item?.discoveryUrl);set('xeValueHook',item?.valueHook);set('xeValueKind',item?.valueHookKind);set('xeValueChecked',local(item?.valueHookCheckedAt));set('xeValueSource',item?.valueHookSourceUrl);set('xeAffiliateStatus',item?.affiliateStatus||'check');set('xeAffiliate',item?.affiliateUrl);set('xeDraft',item?.xDraft);set('xeThreadsDraft',item?.threadsDraft);set('xeEditReason','');set('xeNote',item?.userNote);X.chars();modal.classList.add('open');
+    X.editorVersion=item?.updatedAt||null;by('xeConflict')?.remove();set('xeId',item?.id);set('xeProduct',item?.productName);set('xeOrganizer',item?.organizer);set('xePriority',item?.priority||'B');set('xeScore',item?.score||0);set('xeFranchise',item?.franchise||'other');set('xeCategory',item?.category||'card_lottery');set('xeDeadline',local(item?.applicationDeadline));set('xeRegion',item?.targetRegion);set('xeConditions',item?.conditions);set('xeApply',item?.applicationUrl);set('xeOfficial',item?.officialUrl);set('xeVerified',String(!!item?.officialVerified));set('xeOfficialChecked',local(item?.officialCheckedAt));set('xeOfficialNote',item?.officialCheckNote);set('xeDiscoverySource',item?.discoverySource);set('xeDiscovery',item?.discoveryUrl);set('xeValueHook',item?.valueHook);set('xeValueKind',item?.valueHookKind);set('xeValueChecked',local(item?.valueHookCheckedAt));set('xeValueSource',item?.valueHookSourceUrl);set('xeAffiliateStatus',item?.affiliateStatus||'check');set('xeAffiliate',item?.affiliateUrl);set('xeDraft',item?.xDraft);set('xeThreadsDraft',item?.threadsDraft);set('xeEditReason','');set('xeNote',item?.userNote);X.chars();modal.classList.add('open');
   };
   by('xAdd').onclick=()=>X.openEditor(null);
   X.close=()=>modal.classList.remove('open');
@@ -244,8 +252,16 @@
     const id=value('xeId');
     const candidate={productName:value('xeProduct'),organizer:value('xeOrganizer'),priority:value('xePriority'),score:value('xeScore'),franchise:value('xeFranchise'),category:value('xeCategory'),applicationDeadline:value('xeDeadline')?new Date(value('xeDeadline')).toISOString():null,targetRegion:value('xeRegion'),conditions:value('xeConditions'),applicationUrl:value('xeApply'),officialUrl:value('xeOfficial'),officialVerified:value('xeVerified')==='true',officialCheckedAt:value('xeOfficialChecked')?new Date(value('xeOfficialChecked')).toISOString():null,officialCheckNote:value('xeOfficialNote'),discoverySource:value('xeDiscoverySource'),discoveryUrl:value('xeDiscovery'),valueHook:value('xeValueHook'),valueHookKind:value('xeValueKind'),valueHookCheckedAt:value('xeValueChecked')?new Date(value('xeValueChecked')).toISOString():null,valueHookSourceUrl:value('xeValueSource'),affiliateStatus:value('xeAffiliateStatus'),affiliateUrl:value('xeAffiliate'),xDraft:value('xeDraft'),threadsDraft:value('xeThreadsDraft'),userNote:value('xeNote')};
     try{
-      const data=id?await X.request({method:'PATCH',headers:X.headers(),body:JSON.stringify({action:'save',id,candidate,editReason:value('xeEditReason')})}):await X.request({method:'POST',headers:X.headers(),body:JSON.stringify({candidate})});
+      const data=id?await X.request({method:'PATCH',headers:X.headers(),body:JSON.stringify({action:'save',id,candidate,editReason:value('xeEditReason'),expectedUpdatedAt:X.editorVersion})}):await X.request({method:'POST',headers:X.headers(),body:JSON.stringify({candidate})});
       X.update(data.item);X.close();toast(data.reviewWarning?'保存しました（修正履歴のみ記録エラー）':'保存しました',data.reviewWarning?'bad':'good');
-    }catch(error){toast(error.message||'保存できませんでした','bad')}
+        }catch(error){toast(error.message||'保存できませんでした','bad');
+      if(error.status===409||error.status===428){
+        let note=by('xeConflict');
+        if(!note){note=document.createElement('div');note.id='xeConflict';note.setAttribute('role','alert');by('xForm').appendChild(note)}
+        note.textContent='保存されていません。入力は残っています。入力控えをコピーして最新情報を確認してください。自動で再保存はしません。';
+        const copy=document.createElement('button');copy.type='button';copy.className='push-button';copy.textContent='入力控えをコピー';copy.onclick=()=>X.clip(JSON.stringify({candidate,editReason:value('xeEditReason')},null,2),'入力控えをコピーしました',copy);note.appendChild(copy);
+        const refresh=document.createElement('button');refresh.type='button';refresh.className='push-button';refresh.textContent='一覧の最新情報を確認（入力を保持）';refresh.onclick=()=>X.load();note.appendChild(refresh);
+      }
+    }
   };
 })();

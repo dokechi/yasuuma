@@ -4,6 +4,7 @@ on:
     branches:
       - 'codex/manual-confirmation-20261008'
       - 'codex/command-center-save-safety-*'
+      - 'codex/command-center-save-consistency-*'
       - 'codex/command-center-hold-count-*'
       - 'codex/command-center-market-evidence-*'
       - 'codex/command-center-sourcing-render-*'
@@ -37,6 +38,10 @@ jobs:
           tsc --noEmit --allowJs --checkJs --target es2022 --module nodenext --moduleResolution nodenext
           supabase/functions/command-center-retro-api/guarded-payload.mjs
           supabase/functions/command-center-retro-api/sourcing-read-model.mjs
+      - name: Isolated PostgreSQL fixture runtime
+        run: |
+          npm install --prefix "$RUNNER_TEMP/save-fixture" --ignore-scripts --no-audit --no-fund @electric-sql/pglite@0.4.6
+          echo "PGLITE_MODULE=$RUNNER_TEMP/save-fixture/node_modules/@electric-sql/pglite/dist/index.js" >> "$GITHUB_ENV"
       - name: Syntax and manual operation contracts
         run: |
           node --check command-center-98/fp-finished-images.js
@@ -47,7 +52,7 @@ jobs:
           node scripts/manual-operation-hub-ui.test.cjs
           node scripts/fp-finished-images.test.mjs
           node --test scripts/affiliate-production-api.test.mjs scripts/affiliate-production.test.mjs
-          node --test scripts/command-center-save-safety.test.mjs
+          node --test scripts/command-center-save-safety.test.mjs scripts/save-consistency.test.mjs
           node --check command-center-98/v221-sourcing-hold-first.js
           node --test command-center-98/v221-sourcing-hold-count.test.cjs
           node --check command-center-98/v229-sourcing-mercari-history.js
@@ -57,7 +62,7 @@ jobs:
           node --test command-center-98/sourcing-display-model.test.cjs
           node --check command-center-98/sourcing-mobile-comparison.js
       - name: Mobile and desktop sourcing in real Chrome
-        run: node --test scripts/sourcing-mobile-browser.test.mjs
+        run: node --test scripts/sourcing-mobile-browser.test.mjs scripts/save-consistency-browser.test.mjs
       - name: Existing loader, home and FP regressions
         run: |
           node command-center-98/app-loader.test.cjs
