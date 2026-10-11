@@ -52,7 +52,7 @@ jobs:
           node scripts/manual-operation-hub-ui.test.cjs
           node scripts/fp-finished-images.test.mjs
           node --test scripts/affiliate-production-api.test.mjs scripts/affiliate-production.test.mjs
-          node --test scripts/command-center-save-safety.test.mjs scripts/save-consistency.test.mjs
+          node --test scripts/command-center-save-safety.test.mjs scripts/card-jst-display.test.mjs scripts/save-consistency.test.mjs
           node --check command-center-98/v221-sourcing-hold-first.js
           node --test command-center-98/v221-sourcing-hold-count.test.cjs
           node --check command-center-98/v229-sourcing-mercari-history.js

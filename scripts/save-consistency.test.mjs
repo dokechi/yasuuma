@@ -64,8 +64,10 @@ test('actual card editor retains input on 409/428 and copy retries retain the sa
   for(const id of ['xEditor','xForm','xAdd','xeId','xeProduct','xeDraft','xeThreadsDraft','xeChars','xeThreadsChars','xClose','xeCancel','xeCopyX','xeCopyThreads'])elements.set(id,make(id));
   // Execute the real editor block, without the unrelated card renderer.
   const block=source.slice(source.indexOf('  const modal=by('),source.lastIndexOf('})();'));
+  const base=await readFile(new URL('../command-center-98/v142-x-desk.js',import.meta.url),'utf8');
+  const dates=base.slice(base.indexOf(' X.deadlineDate='),base.indexOf(' X.recount='));
   const X={state:{items:[]},headers:()=>({}),twitterLength:value=>value.length,chars(){},clip:async()=>true,load:async()=>{},request:async()=>{throw Object.assign(Error('conflict'),{status:409});},update(){throw Error('conflict must not update UI');}};
-  runInNewContext('(()=>{'+block+'})();',{X,by:id=>elements.get(id),document:{createElement:()=>make('')},toast(){},console});
+  runInNewContext(dates+';(()=>{'+block+'})();',{X,by:id=>elements.get(id),document:{createElement:()=>make('')},toast(){},console});
   X.openEditor({id:'s',updatedAt:'2026-10-11T00:00:00.123456Z',productName:'original'});
   elements.get('xeProduct').value='unsaved edit';
   await elements.get('xForm').onsubmit({preventDefault(){}});
