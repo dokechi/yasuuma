@@ -11,7 +11,7 @@ test('version parsing preserves microseconds and a writer advances past the supp
   const v='2026-10-11T00:00:00.123456+00:00';
   assert.equal(expectedVersion(v),v);
   assert.equal(nextVersion(v,'2026-10-11T00:00:00.123Z'),'2026-10-11T00:00:00.123457Z');
-  for(const value of [null,'',12,'bad','2026-10-11T00:00:00.1234567Z'])assert.throws(()=>expectedVersion(value));
+  for(const value of [null,'',12,'bad','2026-10-11T00:00:00.1234567Z','2026-02-30T00:00:00Z'])assert.throws(()=>expectedVersion(value));
 });
 
 // Only synthetic data; PostgreSQL evaluates conditional updates and UNIQUE.
@@ -53,7 +53,7 @@ test('real PostgreSQL rejects stale/ABA updates, preserves failures, and dedupli
     const intent={client_event_id:'00000000-0000-4000-8000-000000000001',candidate_id:'s',platform:'x',draft_type:'opening',relative_stage:'opening',text_snapshot:'synthetic text',deadline_snapshot:'2026-11-11T00:00:00Z',created_at:'2026-10-11T00:00:00Z'};
     await saveCopyEvent(db,intent);
     await saveCopyEvent(db,intent,()=>{throw Error('expired current candidate must not prevent replay');});
-    for(const [key,value] of [['text_snapshot','other'],['platform','threads'],['candidate_id','other'],['created_at','2026-10-12T00:00:00Z']])await assert.rejects(saveCopyEvent(db,{...intent,[key]:value}),{status:409});
+    for(const [key,value] of [['text_snapshot','other'],['platform','threads'],['candidate_id','other'],['created_at','2026-10-12T00:00:00Z'],['deadline_snapshot','2026-11-11T00:00:00.000001Z']])await assert.rejects(saveCopyEvent(db,{...intent,[key]:value}),{status:409});
     assert.equal((await pg.query('SELECT count(*)::int AS n FROM command_center_card_copy_history')).rows[0].n,1);
   }finally{await pg.close();}
 });

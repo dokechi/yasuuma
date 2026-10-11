@@ -5,10 +5,11 @@ export class SaveError extends Error {
 const timestamp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|\+00:00)$/;
 export function expectedVersion(value) {
   if (value == null || value === '') throw new SaveError('save_version_required', 428);
-  if (typeof value !== 'string' || !timestamp.test(value) || !Number.isFinite(Date.parse(value))) throw new SaveError('invalid_save_version', 400);
+  if (typeof value !== 'string' || !timestamp.test(value) || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0,19) !== value.slice(0,19)) throw new SaveError('invalid_save_version', 400);
   return value; // Preserve PostgreSQL microseconds; never round the predicate.
 }
 function micros(value) {
+  value = typeof value === 'string' ? value : new Date(value).toISOString();
   const fraction = (value.match(/\.(\d+)/)?.[1] || '').padEnd(6, '0');
   return BigInt(Date.parse(value.replace(/\.\d+/, ''))) * 1000n + BigInt(fraction);
 }
@@ -30,7 +31,7 @@ export function validCopyId(value) {
 }
 function sameReceipt(row, intent) {
   return ['candidate_id', 'platform', 'draft_type', 'relative_stage', 'text_snapshot'].every(key => row[key] === intent[key]) &&
-    ['deadline_snapshot', 'created_at'].every(key => row[key] == null && intent[key] == null || row[key] != null && intent[key] != null && new Date(row[key]).toISOString() === new Date(intent[key]).toISOString());
+    ['deadline_snapshot', 'created_at'].every(key => row[key] == null && intent[key] == null || row[key] != null && intent[key] != null && micros(row[key]) === micros(intent[key]));
 }
 export async function saveCopyEvent(db, intent, beforeInsert = () => {}) {
   validCopyId(intent.client_event_id);
