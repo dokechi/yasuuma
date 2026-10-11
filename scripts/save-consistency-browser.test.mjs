@@ -18,8 +18,10 @@ test('real Chrome retains card editor input on conflicts and permits a safe refr
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cc-sourcing-mobile-'));
   const fixture=path.join(dir,'fixture.html');
   const source=read('command-center-98/v160-card-publishing.js');
+  const base=read('command-center-98/v142-x-desk.js');
+  const dates=base.slice(base.indexOf(' X.deadlineDate='),base.indexOf(' X.recount='));
   const editor=source.slice(source.indexOf('  const modal=by('),source.lastIndexOf('})();'));
-  fs.writeFileSync(fixture,'<!doctype html><meta charset="utf-8"><body><button id="xAdd"></button><div id="xEditor"></div><script>var by=id=>document.getElementById(id);var toast=()=>{};var X={state:{items:[]},headers:()=>({}),twitterLength:t=>t.length,update:()=>{throw Error("unexpected update")},load:async()=>{window.refreshed=(window.refreshed||0)+1},clip:async t=>{window.copied=t;return true},request:async()=>{throw Object.assign(Error("conflict"),{status:window.failureStatus})}};(()=>{'+editor+'})();</script>');
+  fs.writeFileSync(fixture,'<!doctype html><meta charset="utf-8"><body><button id="xAdd"></button><div id="xEditor"></div><script>var by=id=>document.getElementById(id);var toast=()=>{};var X={state:{items:[]},headers:()=>({}),twitterLength:t=>t.length,update:()=>{throw Error("unexpected update")},load:async()=>{window.refreshed=(window.refreshed||0)+1},clip:async t=>{window.copied=t;return true},request:async options=>{window.savedBody=JSON.parse(options.body);throw Object.assign(Error("conflict"),{status:window.failureStatus})}};'+dates+';(()=>{'+editor+'})();</script>');
   fs.writeFileSync(fixture,fs.readFileSync(fixture,'utf8').replace('<body>','<meta name="viewport" content="width=device-width,initial-scale=1"><body>'));
   const proc=spawn(chrome,['--headless','--no-sandbox','--disable-gpu','--no-first-run','--disable-background-networking','--disable-component-update','--remote-debugging-port=0','--user-data-dir='+path.join(dir,'profile'),'about:blank'],{windowsHide:true,stdio:'ignore'});
   let ws;let serial=0;const pending=new Map();
@@ -51,6 +53,11 @@ test('real Chrome retains card editor input on conflicts and permits a safe refr
       assert.equal(result.result.value.width,width);
       for(const check of result.result.value.checks)assert.ok(check.pass,width+'px: '+check.name);
       console.log(width+'px: '+result.result.value.checks.length+' browser checks passed');
+    }
+    for(const timezone of ['UTC','Asia/Tokyo','America/Los_Angeles','America/New_York']){
+      await send('Emulation.setTimezoneOverride',{timezoneId:timezone});
+      const result=await send('Runtime.evaluate',{awaitPromise:true,returnByValue:true,expression:'(async()=>{const original="2026-10-18T14:58:12.123Z";window.failureStatus=409;X.openEditor({id:"synthetic",updatedAt:"2026-10-11T00:00:00.123456Z",productName:"synthetic",applicationDeadline:original,officialCheckedAt:original,valueHookCheckedAt:original});const inputValues=["xeDeadline","xeOfficialChecked","xeValueChecked"].map(id=>by(id).value);const labels=["xeDeadline","xeOfficialChecked","xeValueChecked"].every(id=>by(id).closest("label").textContent.includes("JST"));await by("xForm").onsubmit({preventDefault(){}});const saved=window.savedBody.candidate;by("xeDeadline").value="2026-10-19T00:00";await by("xForm").onsubmit({preventDefault(){}});return {inputValues,labels,saved,changed:window.savedBody.candidate.applicationDeadline}})()'});
+      assert.equal(result.exceptionDetails,undefined);const actual=result.result.value;assert.deepEqual(actual.inputValues,['2026-10-18T23:58','2026-10-18T23:58','2026-10-18T23:58']);assert.ok(actual.labels);for(const field of ['applicationDeadline','officialCheckedAt','valueHookCheckedAt'])assert.equal(actual.saved[field],'2026-10-18T14:58:12.123Z');assert.equal(actual.changed,'2026-10-18T15:00:00.000Z');console.log(timezone+': editor no-change ISO and changed JST input passed');
     }
   }finally{ws?.close();proc.kill();}
 });
