@@ -52,7 +52,7 @@ test('real Chrome mobile comparison, disclosure, retained controls and desktop t
       const result=await send('Runtime.evaluate',{returnByValue:true,expression:`(()=>{
         const checks=[];const ok=(name,value)=>{checks.push({name,pass:!!value})};
         const grid=document.querySelector('.sourcing-grid');
-        const items=['S','A','B','C'].map((priority,i)=>Object.freeze({id:'fixture-'+i,priority,title:'合成テスト商品'+i,firstSeen:'2026-10-01T16:00:00Z',lastSeen:'2026-10-11',summary:'長い型番と条件を確認した合成テストの一言根拠です。実データは使いません。',url:'https://example.com/product/'+i,payload:Object.freeze({buy:i?2500:0,quantity:i?2:0,mercari_sold_urls:['https://example.com/market/'+i],yahoo_sold_urls:['https://example.com/yahoo/'+i]})}));
+        const items=[1,2,3,4].map((grade,i)=>Object.freeze({id:'fixture-'+i,priority:'S',title:'合成テスト商品'+i,firstSeen:'2026-10-01T16:00:00Z',lastSeen:'2026-10-11',summary:'長い型番と条件を確認した合成テストの一言根拠です。実データは使いません。',url:'https://example.com/product/'+i,payload:Object.freeze({overall_grade:i%2?String(grade):grade,buy:i?2500:0,quantity:i?2:0,mercari_sold_urls:['https://example.com/market/'+i],yahoo_sold_urls:['https://example.com/yahoo/'+i]})}));
         const before=JSON.stringify(items);let saves=0;
         const controls=[];
         for(const item of items){
@@ -62,11 +62,16 @@ test('real Chrome mobile comparison, disclosure, retained controls and desktop t
           controls.push({input,save});grid.appendChild(article);
           CCSourcingMobileComparison.decorate(article,item);CCSourcingMobileComparison.decorate(article,item);
           ok('one comparison per card',article.querySelectorAll('.sourcing-mobile-facts').length===1);
-          ok('four recorded grades',article.querySelector('.sourcing-mobile-grade').textContent==='総合 '+item.priority);
+          ok('four recorded numeric/string grades',article.querySelector('.sourcing-mobile-grade').textContent==='総合 '+item.payload.overall_grade);
           ok('discovery is not update time',article.querySelector('.sourcing-mobile-date').textContent==='発見 10/2');
           ok('all source links retained',article.querySelectorAll('.sourcing-mobile-links a').length===3);
         }
         const article=grid.firstElementChild,details=article.querySelector('details'),summary=article.querySelector('summary');
+        const unknown=article.cloneNode(true);grid.appendChild(unknown);
+        CCSourcingMobileComparison.decorate(unknown,{id:'unknown',priority:'B',score:100,payload:{}});
+        ok('missing numeric rating is unconfirmed',unknown.querySelector('.sourcing-mobile-grade').textContent==='総合 未確認');
+        ok('legacy rating is separate supplement',unknown.querySelector('.sourcing-mobile-legacy-grade').textContent==='旧評価 B（総合へ未換算）');
+        ok('rating meaning never excludes grade 1',article.querySelector('.sourcing-mobile-grade').getAttribute('aria-label').includes('1も仕入れ候補内'));
         ok('zero price visible',article.querySelector('.sourcing-mobile-buy').textContent==='仕入価格 ¥0');
         ok('zero quantity visible',article.querySelector('.sourcing-mobile-quantity').textContent==='推奨数量 0');
         const anchor=article.querySelector('.sourcing-mobile-links a');anchor.addEventListener('click',e=>e.preventDefault());anchor.click();

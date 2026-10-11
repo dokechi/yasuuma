@@ -24,6 +24,8 @@
     facts.className='sourcing-mobile-facts';facts.dataset.signature=signature;
     const append=(className,text)=>{const node=document.createElement('span');node.className=className;node.textContent=text;facts.appendChild(node)};
     append('sourcing-mobile-grade','総合 '+data.grade);
+    facts.lastElementChild.setAttribute('aria-label','総合 '+data.grade+'。4が最優先。1も仕入れ候補内の相対評価です。');
+    if(data.grade==='未確認'&&data.legacyGrade)append('sourcing-mobile-legacy-grade','旧評価 '+data.legacyGrade+'（総合へ未換算）');
     append('sourcing-mobile-date','発見 '+data.discoveryDate);
     append('sourcing-mobile-buy','仕入価格 '+money(data.buy));
     append('sourcing-mobile-quantity','推奨数量 '+(data.quantity===null?'未確認':String(data.quantity)));

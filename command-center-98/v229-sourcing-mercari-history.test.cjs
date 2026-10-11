@@ -3,15 +3,25 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync(require('node:path').join(__dirname,'v229-sourcing-mercari-history.js'),'utf8');
-function harness(){
+function harness(displayModel=require('./sourcing-display-model.js')){
   const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const c={sourcingCostHtml:()=>'<details>legacy</details>',sourcingEvidence:x=>x.payload,
     isReadySourcing:x=>!!x.ready,safeHttpUrl:x=>/^https?:\/\//.test(String(x))?String(x):'',
     esc,yen:n=>n+'円',sourcingValue:()=>null,sourcingMoney:()=> '未確認',fmtDate:()=>'',
-    document:{createElement:()=>({}),head:{appendChild(){}}},window:{}};
+    document:{createElement:()=>({}),head:{appendChild(){}}},window:{CCSourcingDisplayModel:displayModel}};
   vm.createContext(c);vm.runInContext(source,c);return c;
 }
 const render=(c,row)=>c.sourcingCostHtml({payload:{mercari_sales_history:[row]}});
+test('detail and mobile use the same history normalization, retaining the standalone legacy fallback',()=>{
+  const model=require('./sourcing-display-model.js');
+  const payload={mercari_sales_history:JSON.stringify([{mercari_url:'https://example.com/sale'}, {mercari_item_id:'m123'}])};
+  const c=harness();
+  assert.deepEqual(c.window.CCSourcingMercariHistory.normalizedHistory(payload),model.normalizedMercariHistory(payload));
+  assert.deepEqual(model.comparison({payload},{},payload).links.map(x=>x.url),model.normalizedMercariHistory(payload).map(x=>x.__url));
+  const fallback=harness(undefined);
+  delete fallback.window.CCSourcingDisplayModel;
+  assert.deepEqual(JSON.parse(JSON.stringify(fallback.window.CCSourcingMercariHistory.normalizedHistory(payload))),model.normalizedMercariHistory(payload));
+});
 test('missing and malformed prices are unconfirmed; explicit zero and currency strings remain prices',()=>{
   const c=harness();
   for(const price of [undefined,null,'','   ','未確認','unknown','価格未確認',false,{},'約1000円','1,000～2,000円']){

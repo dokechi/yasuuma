@@ -107,6 +107,7 @@
   }
 
   function normalizedHistory(p){
+    if(window.CCSourcingDisplayModel?.normalizedMercariHistory)return window.CCSourcingDisplayModel.normalizedMercariHistory(p);
     const candidates=[
       p?.mercari_sales_history,
       p?.mercari_sold,
