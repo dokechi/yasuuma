@@ -21,16 +21,28 @@ function store(tables, {failWrite = false, failReadTable = null, readOnly = fals
     order() { return this; }
     range(start, end) { this.bounds = [start, end]; return this; }
     update(value) { if (readOnly) throw new Error('GET attempted a write'); this.op = 'update'; this.value = value; return this; }
-    upsert() { throw new Error('unexpected upsert'); }
-    delete() { throw new Error('unexpected delete'); }
+    upsert(value, {onConflict} = {}) { if (readOnly) throw new Error('GET attempted a write'); this.op = 'upsert'; this.value = value; this.conflict = onConflict; return this; }
+    delete() { if (readOnly) throw new Error('GET attempted a write'); this.op = 'delete'; return this; }
     maybeSingle() { this.one = true; return this; }
     then(resolve, reject) {
       return Promise.resolve().then(async () => {
         if (this.op === 'select' && this.table === failReadTable) return {data: null, error: {message: 'private SQL details'}};
-        if (this.op === 'update' && failWrite) return {data: null, error: {message: 'private SQL details'}};
+        if (this.op !== 'select' && failWrite) return {data: null, error: {message: 'private SQL details'}};
         let matched = (tables[this.table] || []).filter(row => this.filters.every(filter => filter(row)));
         if (this.op === 'update') {
           for (const row of matched) { Object.assign(row, structuredClone(this.value)); writes.push(structuredClone(row)); }
+        }
+        if (this.op === 'delete') {
+          for (const row of matched) { tables[this.table].splice(tables[this.table].indexOf(row), 1); writes.push({deleted: true, table: this.table}); }
+        }
+        if (this.op === 'upsert') {
+          matched = [];
+          for (const value of Array.isArray(this.value) ? this.value : [this.value]) {
+            const row = (tables[this.table] ||= []).find(row => row[this.conflict] === value[this.conflict]);
+            const saved = row || {};
+            Object.assign(saved, structuredClone(value)); if (!row) tables[this.table].push(saved);
+            matched.push(saved); writes.push(structuredClone(saved));
+          }
         }
         if (this.bounds) matched = matched.slice(this.bounds[0], this.bounds[1] + 1);
         const result = {data: structuredClone(this.one ? matched[0] || null : matched), error: null};
@@ -123,6 +135,19 @@ test('supplier scoring caps and timestamp offsets match existing ledger calculat
 });
 
 const source = await readFile(new URL('../supabase/functions/command-center-retro-api/index.ts', import.meta.url), 'utf8');
+const shellSource = await readFile(new URL('../command-center-98/app.html', import.meta.url), 'utf8');
+const purchaseMergeSource = shellSource.slice(shellSource.indexOf('function mergePurchaseSupplierMetrics'), shellSource.indexOf('function purchaseLedgerHtml'));
+function resetTables(purchaseOrders = 2) {
+  return {
+    command_center_signals: [{id: 'reset-1', domain: 'sourcing', title: 'item', score: 80,
+      review_state: 'accepted', review_note: 'sourcing:success', source_url: 'https://shop.example/item', payload: {}, last_seen_at: '2026-10-01T00:00:00Z'}],
+    command_center_sourcing_reviews: [{signal_id: 'reset-1', supplier_key: 'shop.example', verdict: 'success', judged_at: '2026-10-02T00:00:00Z'}],
+    command_center_suppliers: [{supplier_key: 'shop.example', supplier_name: 'shop', success_count: 1, close_count: 0, miss_count: 0,
+      priority_boost: 5, trust_score: 65, purchase_order_count: purchaseOrders, purchase_unit_count: 5, purchase_spend_yen: 1000,
+      last_purchase_at: '2026-09-01T00:00:00Z', last_seen_at: '2026-10-01T00:00:00Z', notes: {memo: 'keep'}}],
+    command_center_supplier_candidates: [{signal_id: 'reset-1', supplier_key: 'shop.example', last_seen_at: '2026-10-01T00:00:00Z'}]
+  };
+}
 async function api(s) {
   let handler;
   const noRoute = async () => null;
@@ -152,6 +177,62 @@ test('sourcing read failure does not partially persist a ledger', async () => {
   const s = store({command_center_signals: [], command_center_sourcing_reviews: []}, {readOnly: true, failReadTable: 'command_center_supplier_candidates'}), call = await api(s);
   const response = await call('GET', undefined, 'sourcing');
   assert.equal(response.status, 500); assert.equal((await response.json()).ok, false); noWrite(s);
+});
+test('reset refreshes persisted scores before success and actual UI merge cannot restore the old score', async () => {
+  const s = store(resetTables()), call = await api(s);
+  const response = await call('PATCH', {action: 'sourcing_reset', id: 'reset-1'});
+  assert.equal(response.status, 200); assert.equal((await response.json()).ok, true);
+  assert.equal(s.tables.command_center_sourcing_reviews.length, 0);
+  assert.equal(s.tables.command_center_signals[0].review_state, 'new');
+  const persisted = s.tables.command_center_suppliers[0];
+  assert.equal(persisted.success_count, 0); assert.equal(persisted.priority_boost, 0); assert.equal(persisted.trust_score, 50);
+  assert.equal(persisted.purchase_order_count, 2); assert.equal(persisted.purchase_unit_count, 5); assert.equal(persisted.purchase_spend_yen, 1000);
+  assert.deepEqual(persisted.notes, {memo: 'keep'}); assert.equal(persisted.last_seen_at, '2026-10-01T00:00:00Z');
+  const writesBeforeRead = s.writes.length;
+  const sourcing = await (await call('GET', undefined, 'sourcing')).json();
+  const state = {suppliers: sourcing.suppliers, purchaseSuppliers: s.tables.command_center_suppliers.filter(row => row.purchase_order_count > 0)};
+  assert.match(purchaseMergeSource, /Math\.max/);
+  runInNewContext(purchaseMergeSource + '\nmergePurchaseSupplierMetrics();', {sourcingApp: state});
+  assert.equal(state.suppliers[0].trustScore, 50); assert.equal(state.suppliers[0].priorityBoost, 0);
+  assert.equal(state.suppliers[0].purchaseOrderCount, 2); assert.equal(state.suppliers[0].successCount, 2, 'real purchases remain counted after judgment reset');
+  assert.equal(s.writes.length, writesBeforeRead, 'read and UI merge do not persist');
+  const repeat = await call('PATCH', {action: 'sourcing_reset', id: 'reset-1'});
+  assert.equal(repeat.status, 200); assert.equal(s.tables.command_center_suppliers.length, 1); assert.equal(s.tables.command_center_supplier_candidates.length, 1);
+  assert.equal(s.tables.command_center_suppliers[0].trust_score, 50);
+});
+test('reset refreshes a supplier without purchases while keeping ledger purchase eligibility unchanged', async () => {
+  const s = store(resetTables(0)), call = await api(s);
+  assert.equal((await call('PATCH', {action: 'sourcing_reset', id: 'reset-1'})).status, 200);
+  assert.equal(s.tables.command_center_suppliers[0].trust_score, 50);
+  assert.equal(s.tables.command_center_suppliers.filter(row => row.purchase_order_count > 0).length, 0);
+});
+test('reset retains other reviews and recalculates their contribution rather than zeroing a whole supplier', async () => {
+  const tables = resetTables();
+  tables.command_center_sourcing_reviews.push({signal_id: 'other', supplier_key: 'shop.example', verdict: 'close', judged_at: '2026-10-03'});
+  const s = store(tables), call = await api(s);
+  assert.equal((await call('PATCH', {action: 'sourcing_reset', id: 'reset-1'})).status, 200);
+  assert.equal(tables.command_center_sourcing_reviews.length, 1); assert.equal(tables.command_center_sourcing_reviews[0].signal_id, 'other');
+  assert.equal(tables.command_center_suppliers[0].priority_boost, 1); assert.equal(tables.command_center_suppliers[0].trust_score, 53);
+});
+test('reset refuses invalid, missing and non-sourcing records without writes', async () => {
+  const tables = resetTables(); tables.command_center_signals.push({...signal(), domain: 'sns'});
+  const s = store(tables), call = await api(s);
+  for (const [id, status] of [[{}, 400], ['missing', 404], ['signal-1', 400]]) {
+    assert.equal((await call('PATCH', {action: 'sourcing_reset', id})).status, status);
+  }
+  noWrite(s); assert.equal(tables.command_center_sourcing_reviews.length, 1);
+});
+test('reset reports supplier-refresh failure and a retry repairs the persisted scores', async () => {
+  const tables = resetTables(), failed = store(tables, {failReadTable: 'command_center_suppliers'}), first = await api(failed);
+  const response = await first('PATCH', {action: 'sourcing_reset', id: 'reset-1'});
+  assert.equal(response.status, 500); assert.deepEqual(await response.json(), {ok: false, error: 'mutation_failed'});
+  // This legacy multi-table flow is not transactional. Never claim rollback:
+  // the judgment was removed but stale persisted scores must be repaired.
+  assert.equal(tables.command_center_sourcing_reviews.length, 0); assert.equal(tables.command_center_suppliers[0].trust_score, 65);
+  const repaired = store(tables), retry = await api(repaired);
+  assert.equal((await retry('PATCH', {action: 'sourcing_reset', id: 'reset-1'})).status, 200);
+  assert.equal(tables.command_center_suppliers[0].trust_score, 50); assert.equal(tables.command_center_suppliers[0].priority_boost, 0);
+  assert.equal(tables.command_center_suppliers[0].purchase_spend_yen, 1000);
 });
 test('real posting performance route remains usable and reports concurrent save as HTTP 409', async () => {
   const row = signal(), s = store({command_center_signals: [structuredClone(row)]}, {signalReadBarrier: 2}), call = await api(s);

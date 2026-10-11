@@ -279,7 +279,17 @@ Deno.serve(async(req:Request)=>{
         const out=await sourcingVerdict(input.id,input.verdict,input.note);return json(req,{ok:true,id:input.id,verdict:input.verdict,supplierKey:out.si.key,state:out.state});
       }
       if(action==="sourcing_reset"){
-        if(!id)return json(req,{ok:false,error:"invalid_request"},400);const {error:de}=await admin.from("command_center_sourcing_reviews").delete().eq("signal_id",id);if(de)throw de;const {error:se}=await admin.from("command_center_signals").update({review_state:"new",review_note:null,updated_at:new Date().toISOString()}).eq("id",id);if(se)throw se;return json(req,{ok:true,id,verdict:null,state:"new"});
+        if(typeof body?.id!=="string"||!id.trim()||id.length>500)return json(req,{ok:false,error:"invalid_request"},400);
+        const {data:row,error:readError}=await admin.from("command_center_signals").select("id,domain").eq("id",id).maybeSingle();if(readError)throw readError;
+        if(!row)return json(req,{ok:false,error:"sourcing_signal_not_found"},404);
+        if(row.domain!=="sourcing")return json(req,{ok:false,error:"invalid_sourcing_reset"},400);
+        const {error:de}=await admin.from("command_center_sourcing_reviews").delete().eq("signal_id",id);if(de)throw de;
+        const {error:se}=await admin.from("command_center_signals").update({review_state:"new",review_note:null,updated_at:new Date().toISOString()}).eq("id",id);if(se)throw se;
+        // The purchase-ledger API returns persisted scores and the UI merges
+        // them with Math.max. Refresh on this explicit mutation before success;
+        // GET stays read-only. Empty input avoids changing observations/candidates.
+        await syncSupplierLedger([]);
+        return json(req,{ok:true,id,verdict:null,state:"new"});
       }
       const state=String(body?.state||"");if(!id||!["new","read","accepted","rejected"].includes(state)) return json(req,{ok:false,error:"invalid_request"},400);
       const {error}=await admin.from("command_center_signals").update({review_state:state,updated_at:new Date().toISOString()}).eq("id",id);if(error) throw error;return json(req,{ok:true,id,state});
