@@ -26,3 +26,20 @@ test('each render reads fresh inputs and the current final predicate without per
   assert.equal(model.snapshot(items,x=>x.ready,[{id:'r'}]).total,3);
   assert.equal(model.snapshot(undefined,undefined,undefined).total,0);
 });
+test('mobile comparison keeps recorded four grades, missing values, zero and discovery time distinct',()=>{
+  for(const grade of ['S','A','B','C'])assert.equal(model.comparison({priority:grade}).grade,grade);
+  assert.equal(model.comparison({priority:'B',payload:{overall_grade:'C'}}).grade,'C');
+  assert.equal(model.comparison({score:100,priority:'unknown'}).grade,'未確認');
+  const item=Object.freeze({firstSeen:'2026-10-01T16:00:00Z',lastSeen:'2026-10-11',summary:'existing reason',payload:Object.freeze({})});
+  const view=model.comparison(item,{buy:0,quantity:0});
+  assert.equal(view.discoveryDate,'10/2');assert.equal(view.buy,0);assert.equal(view.quantity,0);
+  assert.equal(view.reason,'existing reason');
+  assert.equal(model.comparison({lastSeen:'2026-10-11'}).discoveryDate,'未確認');
+  assert.equal(model.comparison({firstSeen:'not a date'}).discoveryDate,'未確認');
+});
+test('comparison retains distinct safe market links without mutating or following them',()=>{
+  const evidence=Object.freeze({mercari_sold_urls:Object.freeze(['https://example.com/market','javascript:alert(1)']),yahoo_sold_urls:Object.freeze(['https://example.com/yahoo'])});
+  const item=Object.freeze({url:'https://example.com/product',payload:evidence});
+  assert.deepEqual(model.comparison(item,{},evidence).links.map(x=>x.url),['https://example.com/product','https://example.com/market','https://example.com/yahoo']);
+  assert.equal(model.comparison({url:'data:text/html,unsafe'}).links.length,0);
+});

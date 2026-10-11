@@ -168,7 +168,11 @@
     }else if(app.view==='reddit'){
       const rows=window.CCReddit.active();by('redditBody').querySelectorAll(':scope > article.reddit-card').forEach((article,i)=>wrapCard(article,rows[i],'reddit'));
     }else if(app.view==='sourcing'){
-      by('sourcingBody').querySelectorAll('.sourcing-grid > article.sourcing-card').forEach(article=>wrapCard(article,sourcingApp.items.find(item=>'card-'+cssSafe(item.id)===article.id),'sourcing'));
+      by('sourcingBody').querySelectorAll('.sourcing-grid > article.sourcing-card').forEach(article=>{
+        const item=sourcingApp.items.find(item=>'card-'+cssSafe(item.id)===article.id);
+        wrapCard(article,item,'sourcing');
+        window.CCSourcingMobileComparison?.decorate(article,item);
+      });
     }
   }
   function reveal(id){
