@@ -34,8 +34,8 @@ body.cc-rpg-theme .rpg-workspace-dialog .push-button{min-height:44px;white-space
 body.cc-rpg-theme #ccDestination.rpg-workspace-heading[data-rpg-desk="fp"],
 body.cc-rpg-theme #ccDestination.rpg-workspace-heading[data-rpg-desk="sourcing"],
 body.cc-rpg-theme #ccDestination.rpg-workspace-heading[data-rpg-desk="reddit"],
-body.cc-rpg-theme #ccDestination.rpg-workspace-heading[data-rpg-desk="x"]{position:relative;isolation:isolate;overflow:hidden;min-height:180px;background:linear-gradient(90deg,#08101af2 5%,#0a121dd9 70%,#121a2744),url('./assets/rpg-home/world.png?v=20261012.3') center 24%/cover}
-.rpg-workspace-heading{--rpg-fp-character:url('./assets/rpg-home/world.png?v=20261012.3');--rpg-sourcing-character:url('./assets/rpg-home/world.png?v=20261012.3')}
+body.cc-rpg-theme #ccDestination.rpg-workspace-heading[data-rpg-desk="x"]{position:relative;isolation:isolate;overflow:hidden;min-height:180px;background:linear-gradient(90deg,#08101af2 5%,#0a121dd9 70%,#121a2744),url('./assets/rpg-home/world.png?v=20261012.4-wardrobe') center 24%/cover}
+.rpg-workspace-heading{--rpg-fp-character:url('./assets/rpg-home/world.png?v=20261012.4-wardrobe');--rpg-sourcing-character:url('./assets/rpg-home/world.png?v=20261012.4-wardrobe')}
 .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{content:"";position:absolute;right:0;top:0;width:190px;height:100%;z-index:-1;pointer-events:none;background-image:var(--rpg-sourcing-character);background-size:310px auto;background-repeat:no-repeat;background-position:right -395px;mask-image:linear-gradient(90deg,transparent,#000 28%)}
 .rpg-workspace-heading[data-rpg-desk="fp"]::after{background-image:var(--rpg-fp-character);background-position:right -301px}
 .rpg-workspace-heading .cc-heading{position:relative;z-index:1}
