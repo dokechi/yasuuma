@@ -53,6 +53,16 @@
     const copies=api.savedCopies(p).filter(copy=>!product||copy.label!=='保存購入リンク');for(const copy of copies){const block=e('section',undefined,'rpg-account-copy');block.append(e('h4',copy.label),e('pre',copy.text));const b=e('button',copy.label+'をコピー','push-button');b.type='button';b.onclick=async()=>{try{await root.navigator.clipboard.writeText(copy.text);status.textContent='原文をコピーしました。';}catch(_){status.textContent='クリップボード未確認。表示全文を選択してコピーしてください。';}};block.append(b);card.append(block);}
     if(!copies.length)card.append(e('p','本文の保存形式は未確認です。元の原稿画面で確認してください。'));
     if(product){const block=e('section',undefined,'rpg-account-product');block.append(e('h4','商品ページ'));const link=e(product.url?'a':'button','商品ページを開く','push-button rpg-product-open');if(product.url){link.href=product.url;link.target='_blank';link.rel='noopener noreferrer';link.setAttribute('aria-label','商品ページを開く（別タブ）');}else{link.type='button';link.disabled=true;}block.append(link,e('p',product.note,'rpg-product-note'));card.append(block);}
+    if(['kyun','choi'].includes(account.key)){
+     const comparisons=api.savedMercariComparisons(item),block=e('section',undefined,'rpg-account-mercari');block.append(e('h4','メルカリ相場（保存時点）'));
+     if(comparisons.length){
+      block.append(e('p','保存時点の価格・販売状況です。現在とは異なる場合があります。成約日は未確認です。掲載日・更新日は成約日ではありません。市場全体の最安値を示すものではありません。','rpg-mercari-caution'));
+      const rows=e('ul',undefined,'rpg-mercari-list');
+      for(const comparison of comparisons){const row=e('li'),link=e('a',comparison.label,'push-button rpg-mercari-open');link.href=comparison.url;link.target='_blank';link.rel='noopener noreferrer';link.setAttribute('aria-label',comparison.label+'のメルカリ商品を開く（保存時点・別タブ）');row.append(link,e('p',comparison.checkedAt?'保存時の確認：'+comparison.checkedAt:'保存時の確認日時：未確認','rpg-mercari-checked'),e('p',comparison.note||'状態・色サイズ差は未確認です。','rpg-mercari-note'));rows.append(row);}
+      block.append(rows);
+     }else block.append(e('p','個別商品のメルカリ比較リンクは保存されていません。','rpg-mercari-caution'));
+     card.append(block);
+    }
     const slides=Array.isArray(p.draft_slides)?p.draft_slides:[];if(slides.length)card.append(e('p','画像の掲載全文 '+slides.length+'枚｜画像保存・検品は元の候補画面で確認'));
     const notes=Array.isArray(p.draft_review_points)?p.draft_review_points:[];if(notes.length){const ul=e('ul');for(const note of notes)ul.append(e('li',typeof note==='string'?note:note.text||note.note||'要確認'));card.append(e('h4','要確認点'),ul);}
     const sources=api.savedSources(item);if(sources.length){const sourceDetails=details('比較根拠・出典を見る');sourceDetails.className='rpg-account-sources';for(const source of sources){const a=e('a',source.label);a.href=source.url;a.target='_blank';a.rel='noopener noreferrer';sourceDetails.append(a);}card.append(sourceDetails);}
@@ -134,6 +144,54 @@
   for(const source of Array.isArray(p.sources)?p.sources:[])if(typeof source==='string')add(source,'保存された出典');else if(source&&typeof source==='object')add(source.url,typeof source.title==='string'?source.title:'保存された出典');
   return result;
  }
+ // Only saved individual Mercari items are eligible; never construct a search result
+ // or derive a price from a shop price, price difference, listing age, or update age.
+ function savedMercariComparisons(item){
+  const p=payload(item),entries=new Map(),text=typeof p.comparison_and_private_evidence==='string'?p.comparison_and_private_evidence:'';
+  const safeUrl=value=>typeof value==='string'&&/^https:\/\/jp\.mercari\.com\/item\/m\d+$/.test(value.trim())?value.trim():null;
+  const validStamp=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)&&Number.isFinite(Date.parse(value))?value:null;
+  const amount=value=>{if(typeof value!=='string'&&typeof value!=='number')return null;const raw=String(value).trim();if(!/^(?:[1-9]\d*|[1-9]\d{0,2}(?:,\d{3})+)$/.test(raw))return null;const n=Number(raw.replace(/,/g,''));return Number.isSafeInteger(n)?n:null;};
+  const state=value=>/^(?:sold|sold_out|成約|売り切れ)$/i.test(value||'')?'sold':/^(?:active|on_sale|selling|販売中|出品中)$/i.test(value||'')?'active':'unknown';
+  const add=url=>{if(!url)return null;if(!entries.has(url))entries.set(url,{url,price:null,state:'unknown',checkedAt:validStamp(p.checked_at_mercari),note:'',structured:false});return entries.get(url);};
+  for(const source of savedSources(item))add(safeUrl(source.url));
+  for(const record of Array.isArray(p.mercari_comparisons)?p.mercari_comparisons:[]){
+   if(!record||typeof record!=='object')continue;const entry=add(safeUrl(record.url));if(!entry)continue;
+   const notes=[['状態',record.condition],['色',record.color],['サイズ',record.size],['比較差',record.differences],['留保',record.caveat]].filter(([,v])=>typeof v==='string'&&v.trim()).map(([label,v])=>label+'：'+v.trim());
+   Object.assign(entry,{price:amount(record.price_jpy),state:state(record.status),checkedAt:validStamp(record.checked_at)||entry.checkedAt,note:notes.join('。'),structured:true});
+  }
+  const urlTokens=value=>Array.from(value.matchAll(/https?:\/\/[^\s<>"「」]+/g),m=>m[0].replace(/[。、）)]+$/,''));
+  const ids=value=>Array.from(value.replace(/https?:\/\/[^\s<>"「」]+/g,' ').matchAll(/\bm\d+\b/g),m=>m[0]);
+  const excluded=value=>/(?:比較から除外|主比較から除外|比較除外|比較対象外|除外候補)/.test(value);
+  function readEvidence(value){
+   // Prefer an explicitly adjoining price/status pair. Other prices in the same
+   // record may be shop prices or differences, so ambiguity stays unknown.
+   const marker='(?:SOLD|成約|販売中|出品中)(?!日|時期|では|でない|か不明|か未確認|未確認|不明|なし|予定)',prices=Array.from(value.matchAll(new RegExp('([\\d,]+)円\\s*('+marker+')|'+marker+'[\\s：:、]*([\\d,]+)円','gi')),m=>({price:amount(m[1]||m[3]),state:/SOLD|成約/i.test(m[0])?'sold':'active'}));
+   if(prices.length===1&&prices[0].price)return prices[0];
+   if(prices.length)return {price:null,state:'unknown'};
+   const active=/(?:販売中|出品中|個人現行)(?!では|でない|か不明|か未確認|未確認|不明|なし|予定)/.test(value),sold=/(?:\bSOLD\b|個人成約)(?!では|でない|か不明|か未確認|未確認|不明|なし|予定)/i.test(value),all=Array.from(value.matchAll(/([\d,]+)円/g),m=>amount(m[1]));
+   return {price:active!==sold&&all.length===1?all[0]:null,state:active===sold?'unknown':sold?'sold':'active'};
+  }
+  function attach(url,note){
+   const entry=add(url);if(!entry||entry.structured)return;
+   const parsed=readEvidence(note),datePattern='\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:Z|[+-]\\d{2}:\\d{2})',datedCheck=note.match(new RegExp('('+datePattern+')[^。\\n]{0,12}(?:確認|読取)'))||note.match(new RegExp('(?:checked_at|確認日時)[：:\\s]*('+datePattern+')')),localStamp=validStamp(datedCheck?.[1]);
+   if(entry.note&&entry.note!==note){entry.price=entry.price===parsed.price?entry.price:null;entry.state=entry.state===parsed.state?entry.state:'unknown';entry.note+='\n'+note;return;}
+   Object.assign(entry,parsed,{note,checkedAt:localStamp||entry.checkedAt});
+  }
+  for(const line of text.split(/\r?\n/).map(v=>v.replace(/^\s*[-*]\s*/, '').trim()).filter(Boolean)){
+   const urls=urlTokens(line).map(safeUrl).filter(Boolean);
+   if(excluded(line)){for(const url of [...urls,...ids(line).map(id=>'https://jp.mercari.com/item/'+id)])if(!entries.get(url)?.structured)entries.delete(url);continue;}
+   if(urls.length===1){attach(urls[0],line);continue;}
+   if(urls.length)continue;
+   // Legacy compact notes save only item IDs. Use one ID per sentence in a
+   // Mercari-specific record, and require an explicit price and sale state.
+   if(!validStamp(p.checked_at_mercari)&&!text.includes('メルカリ'))continue;
+   for(const sentence of line.split(/(?<=。)/)){
+    const itemIds=ids(sentence),parsed=readEvidence(sentence);
+    if(itemIds.length===1&&parsed.price&&parsed.state!=='unknown')attach('https://jp.mercari.com/item/'+itemIds[0],sentence.trim());
+   }
+  }
+  return [...entries.values()].map(({structured,...entry})=>({...entry,label:(entry.state==='active'?'出品中':entry.state==='sold'?'成約':'販売状況未確認')+' '+(entry.price===null?'価格未確認':entry.price.toLocaleString('ja-JP')+'円')}));
+ }
  function savedProductLink(p){
   const raw=[p.ordinary_url,p.purchase_url,p.purchase_link].find(v=>typeof v==='string'&&v.trim());
   if(!raw)return {url:null,note:'商品URLが未確認のため、まだ開けません。'};
@@ -152,5 +210,5 @@
   const link=p.purchase_link||p.purchase_url;if(typeof link==='string'&&/^https:\/\//.test(link))result.push({label:'保存購入リンク',text:link});
   return result;
  }
- return {accounts,payload,matchesAccount,unique,savedCopies,isSuppressed,historyState,savedSources,savedProductLink};
+ return {accounts,payload,matchesAccount,unique,savedCopies,isSuppressed,historyState,savedSources,savedProductLink,savedMercariComparisons};
 });

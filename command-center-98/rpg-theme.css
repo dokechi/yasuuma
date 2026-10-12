@@ -50,7 +50,7 @@ body.cc-rpg-theme :is(.home-feed-row time,.home-feed-row small,.home-feed-more){
 body.cc-rpg-theme #mainWindow :is(.thread,.sourcing-card,.x-card,.reddit-card,.result-record,.affiliate-intro,.affiliate-settings,.affiliate-job,.neko-card,.purchase-order,.supplier-ledger-head,.supplier-candidate-audit,.store-audit-card,.store-products,.sourcing-hold-section,.price-wait-box,.last-check-box,.fp-candidate,.fp-top-card,.fp-question,.fp-evidence,.fp-premises,.fp-demand,.cce-tools,.cce-internal){background:var(--rpg-panel)!important;color:var(--rpg-text)!important;border-color:var(--rpg-line-soft)!important;border-radius:5px!important;box-shadow:none!important}
 body.cc-rpg-theme #mainWindow :is(.cc-item-summary,.thread-head,.sourcing-card-head,.x-card-head,.purchase-order-head,.supplier-candidate-audit-body,.store-audit-body,.fp-head){background:var(--rpg-panel)!important;color:var(--rpg-text)!important;border-color:var(--rpg-line-soft)!important}
 body.cc-rpg-theme #mainWindow .cc-item[open]>.cc-item-summary,body.cc-rpg-theme #mainWindow .cc-item-summary:hover{background:var(--rpg-raised)!important}
-body.cc-rpg-theme :is(.cc-item-summary:before,.cc-item-cue,.cc-open-draft,.task-origin-link,.request-result summary){color:var(--rpg-gold)!important}
+body.cc-rpg-theme :is(.cc-item-cue,.cc-open-draft,.task-origin-link,.request-result summary){color:var(--rpg-gold)!important}
 body.cc-rpg-theme :is(.cc-item-meta,.meta,.sourcing-caption,.sourcing-hold-reason,.sourcing-hold-research,.last-check-meta,.x-value-hook,.x-verify,.neko-card small,.request-artifacts b){color:var(--rpg-muted)!important}
 body.cc-rpg-theme :is(.cc-item-summary>strong,.thread-title,.lead,.sourcing-card-body,.x-card-body,.neko-fit,.fp-draft-dialog main,.manual-operation-review p,.manual-operation-review li){font-size:14px;line-height:1.75}
 body.cc-rpg-theme :is(.cc-item-content,.thread-body,.sourcing-program-body,.x-body,.reddit-program-body,.task-body,.dialog-body,.purchase-drill-body,.reddit-editor-body,.fp-draft-dialog main){color:var(--rpg-text);background:var(--rpg-panel);border-color:var(--rpg-line-soft)}
@@ -152,3 +152,6 @@ body.cc-rpg-theme .ledger-month-tab{background:var(--rpg-raised)!important;color
 body.cc-rpg-theme .ledger-month-tab:hover{background:#343e50!important}
 body.cc-rpg-theme .ledger-month-tab.selected{background:#d6bd88!important;color:#171c26!important;border-color:#e9d3a9!important;box-shadow:none!important}
 body.cc-rpg-theme .ledger-month-loading{color:var(--rpg-muted)!important}
+
+/* Pseudo-elements cannot match inside :is(); keep disclosure arrows readable. */
+body.cc-rpg-theme .cc-item-summary::before{color:var(--rpg-gold)!important}

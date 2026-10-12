@@ -47,15 +47,18 @@
    };
   }
   const shell=by('ccDestination');
-  if(shell){shell.classList.add('rpg-workspace-heading');const settings=button('設定・補助',openSettings);settings.classList.add('rpg-workspace-settings');shell.querySelector('.cc-heading')?.append(settings);}
+  if(shell){const back=shell.querySelector('[data-home-action="home"]');if(back)back.textContent='← 司令塔';shell.classList.add('rpg-workspace-heading');const settings=button('設定・補助',openSettings);settings.classList.add('rpg-workspace-settings');shell.querySelector('.cc-heading')?.append(settings);}
   const auxiliary=make('nav');auxiliary.id='rpgSourcingAux';auxiliary.setAttribute('aria-label','仕入れの補助');
   auxiliary.append(button('仕入れ一覧',openSourcing),button('海外時計・海外差の調査',openWatches),button('カード',openCards),button('紹介用原稿・旧ねこ',()=>openView('binbo-neko')),button('投稿制作',()=>openView('affiliate')));
+  const auxiliaryViews=['sourcing','reddit','x','binbo-neko','affiliate'];
+  for(let index=0;index<auxiliary.children.length;index++)auxiliary.children[index].dataset.rpgAuxView=auxiliaryViews[index];
   shell?.after(auxiliary);
   // Hide its independent navigation only after the replacement route is mounted.
   if(shell&&typeof load==='function')d.body.classList.add('rpg-neko-aux-ready');
   const banner=make('div');banner.id='rpgArchiveBanner';banner.append(make('span','保管庫・元の画面を表示しています'),button('日常へ戻る',home));shell?.before(banner);
   function sync(){const view=typeof app==='undefined'?'':app.view;auxiliary.hidden=!!H.active||!['sourcing','reddit','x','binbo-neko','affiliate'].includes(view);banner.hidden=mode!=='archive';
    if(shell){shell.dataset.rpgWorkspace=view;shell.dataset.rpgDesk=view;}
+   for(const el of auxiliary.children){if(!H.active&&el.dataset.rpgAuxView===view)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');}
    const titles={fp:'FP・TikTok',sourcing:'仕入れ一覧',reddit:'海外時計',x:'カード'};if(!H.active&&titles[view]&&by('ccPageTitle'))by('ccPageTitle').textContent=titles[view];
    // The home render owns its arrays; remove only archived display rows after it runs.
    const source=[...(H.activeItems||[]),...(H.raw?.active?.items||[])];
