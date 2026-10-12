@@ -192,3 +192,7 @@ test('the unchanged public entry URL boots through the external loader in a brow
   assert.deepEqual(document.calls, ['open', 'write', 'close']);
   assert.equal(document.html, loader.composeDocument(shell, manifest));
 });
+
+// Existing CI invokes this loader suite directly. Include responsive HOME
+// CSS-contract/geometry checks here without requiring a separate workflow job.
+require('./rpg-home-responsive.test.cjs');
