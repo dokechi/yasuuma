@@ -39,13 +39,14 @@ const geometry=`(()=>{
  return checks;
 })()`;
 test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:220000},async()=>{
- const requests=[];let diagnose=async()=>{},slowRpg=false,startupCache=false;
+ const requests=[];let diagnose=async()=>{},slowRpg=false,startupCache=false,failRpg=false;
  assert.ok(chrome,'Chrome is required; browser QA must not silently skip');fs.mkdirSync(output,{recursive:true});
  const server=http.createServer((req,res)=>{
   const url=new URL(req.url,'http://localhost'),relative=decodeURIComponent(url.pathname).replace(/^\/+/,''),file=path.resolve(root,relative);
   requests.push({url:url.href,method:req.method,file});
   if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);res.end();return}
   if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return}
+  if(failRpg&&relative==='command-center-98/rpg-home.js'){res.writeHead(503);res.end();return}
   let content=fs.readFileSync(file);
   if(relative==='command-center-98/app.html')content=content.toString().replace('<head>','<head><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script>');
   if(relative==='command-center-98/index.html')content=content.toString().replace('<head>','<head><script>localStorage.removeItem("cc_retro_token");window.__rpgQA={writes:[]};'+(url.searchParams.has('qa-login')?'window.fetch=async()=>({ok:true,status:200,json:async()=>({ok:true,token:"synthetic-qa-only"})});':'')+'</script>');
@@ -90,6 +91,9 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:22
   await capture('startup-cold-ready',`!document.getElementById('ccRpgHome').hidden&&location.hash==='#keep-fragment'&&location.search==='?startup=cold'`);
   await send('Page.reload');await waitFor(`!!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')`);await capture('startup-warm-reload',`!document.getElementById('ccRpgHome').hidden&&location.hash==='#keep-fragment'`);
   await evaluate(`CCRpgWorkspaces.openFp()`);await waitFor(`!app.busy&&app.view==='fp'`);await evaluate(`window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}))`);await capture('startup-preserved-return',`app.view==='fp'&&!CCHome.active&&!document.getElementById('ccStartupStyle')`);
+  const prior=await send('Page.getNavigationHistory');const entryId=prior.entries[prior.currentIndex].id;
+  await send('Page.navigate',{url:'about:blank'});await send('Page.navigateToHistoryEntry',{entryId});await waitFor(`!!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')`);await capture('startup-browser-back',`location.hash==='#keep-fragment'&&(CCHome.active?!document.getElementById('ccRpgHome').hidden:app.view==='fp')`);
+  startupCache=false;failRpg=true;await send('Network.clearBrowserCache');await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html?startup=failed'});await waitFor(`!!document.querySelector('.boot[role="alert"]')&&!document.getElementById('ccStartupStyle')`);await capture('startup-failed-module',`!document.getElementById('mainWindow')&&document.querySelector('.boot button').textContent==='再読み込み'`);failRpg=false;await evaluate(`document.querySelector('.boot button').click()`);await waitFor(`!!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')`);await capture('startup-retry-ready',`!document.getElementById('ccRpgHome').hidden`);
   await send('Page.navigate',{url:origin+'/command-center-98/index.html?qa-login=1'});await waitFor(`!!document.getElementById('code')&&!document.getElementById('loginPane').classList.contains('hidden')`);await evaluate(`document.getElementById('code').value='synthetic-code';document.getElementById('loginForm').requestSubmit()`);await waitFor(`!!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')`);await capture('startup-after-login',`location.pathname.endsWith('/app-v130.html')&&!document.getElementById('ccRpgHome').hidden`);
   startupCache=false;
   for(const [width,height]of [[390,780],[1280,900]]){
