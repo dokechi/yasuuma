@@ -146,3 +146,9 @@ body.cc-rpg-theme .toast-wrap{z-index:450!important}
 body.cc-rpg-theme #ccPrimaryNav .home-nav-button.selected span,body.cc-rpg-theme #ccMore .home-launcher-card.selected span{color:#39352e!important}
 body.cc-rpg-theme :is(.purchase-drill-note,.purchase-drill-titleline span){color:var(--rpg-muted)!important}
 body.cc-rpg-theme .section-title:after{background:var(--rpg-line-soft)!important;border-color:var(--rpg-line-soft)!important}
+/* Month tabs are dynamically injected ledger controls, outside the shared button class. */
+body.cc-rpg-theme .ledger-month-tabs{border-color:var(--rpg-line-soft)!important}
+body.cc-rpg-theme .ledger-month-tab{background:var(--rpg-raised)!important;color:var(--rpg-text)!important;border:1px solid var(--rpg-line)!important;border-radius:4px 4px 0 0;box-shadow:none!important;min-height:34px;height:auto;font:500 13px/1.5 system-ui,sans-serif}
+body.cc-rpg-theme .ledger-month-tab:hover{background:#343e50!important}
+body.cc-rpg-theme .ledger-month-tab.selected{background:#d6bd88!important;color:#171c26!important;border-color:#e9d3a9!important;box-shadow:none!important}
+body.cc-rpg-theme .ledger-month-loading{color:var(--rpg-muted)!important}
