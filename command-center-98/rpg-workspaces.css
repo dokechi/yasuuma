@@ -1,0 +1,61 @@
+/* Narrow presentation layer. Original controls and all source data stay available. */
+body[data-rpg-scope="daily"] #houseDraftViewBtn,
+body[data-rpg-scope="daily"] #careerDraftViewBtn,
+body[data-rpg-scope="daily"] [data-home-action="house-draft"],
+body[data-rpg-scope="daily"] #ccPrimaryNav [data-home-action="career"],
+body[data-rpg-scope="daily"] [data-cce-career],
+body[data-rpg-scope="daily"] .home-feed-card[aria-labelledby="homeHouseTitle"]{display:none!important}
+body.rpg-neko-aux-ready[data-rpg-scope="daily"] #ccPrimaryNav [data-home-action="binbo-neko"],
+body.rpg-neko-aux-ready[data-rpg-scope="daily"] #commandHome .home-workspaces [data-cc-view="binbo-neko"]{display:none!important}
+body.cc-rpg-theme #ccDestination.rpg-workspace-heading{border-bottom:1px solid #c2a164;padding:22px 14px 18px;margin-bottom:16px;background:linear-gradient(110deg,#09111ce8,#121a27d6);border-radius:8px 8px 0 0}
+body.cc-rpg-theme .rpg-workspace-heading .cc-heading{align-items:center;gap:16px}
+body.cc-rpg-theme .rpg-workspace-heading #ccPageTitle{font-family:CCRpgDot,serif;font-weight:400;color:#fff1d1;letter-spacing:.09em;font-size:clamp(24px,4.2vw,38px);line-height:1.35}
+body.cc-rpg-theme .rpg-workspace-heading #ccPageDescription{color:#e2dbcd;max-width:60ch}
+body.cc-rpg-theme .rpg-workspace-heading .push-button{min-height:44px}
+#rpgSourcingAux{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 18px;align-items:stretch}
+#rpgSourcingAux[hidden],#rpgArchiveBanner[hidden]{display:none!important}
+body.cc-rpg-theme #rpgSourcingAux .push-button{min-height:44px;background:linear-gradient(135deg,#49341d,#151b25)!important;border:1px solid #b89a5b!important;color:#fff1d1!important}
+#rpgArchiveBanner{display:flex;gap:12px;justify-content:space-between;align-items:center;border:1px solid #be9e60;border-radius:6px;padding:12px;margin-bottom:12px;color:#f3dfb2;background:#292334}
+body.cc-rpg-theme .rpg-workspace-dialog{width:min(760px,calc(100vw - 24px));max-height:88vh;overflow:auto;box-sizing:border-box;padding:22px;background:linear-gradient(135deg,#162030,#0b111beF)!important;border:1px solid #ba9a5a!important;border-radius:12px!important;color:#f1e6ce!important}
+.rpg-workspace-dialog::backdrop{background:#040911cc}
+.rpg-workspace-dialog h2{font:400 26px/1.5 CCRpgDot,serif;color:#ffedbb;margin:0 0 12px}
+.rpg-workspace-dialog h3{font-size:15px;font-weight:500;letter-spacing:.08em;border-bottom:1px solid #746343;padding-bottom:8px;margin-top:24px}
+.rpg-workspace-dialog p{line-height:1.7;color:#d8d7d3}
+.rpg-workspace-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+body.cc-rpg-theme .rpg-workspace-dialog .push-button{min-height:44px;white-space:normal;text-align:left}
+.rpg-workspace-dialog label{display:grid;gap:8px;margin:18px 0}
+.rpg-workspace-dialog input{width:100%;box-sizing:border-box;min-height:44px;padding:8px;font:inherit}
+.rpg-workspace-dialog details{padding:12px;border:1px solid #706043;margin:10px 0;border-radius:6px}
+.rpg-workspace-dialog summary{cursor:pointer;overflow-wrap:anywhere;min-height:30px}
+.rpg-workspace-dialog pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.6 monospace}
+.rpg-scope-note{font-size:12px;line-height:1.6}
+@media(max-width:600px){body.cc-rpg-theme #ccDestination.rpg-workspace-heading{padding:14px 10px}.rpg-workspace-heading .cc-heading{flex-wrap:wrap}.rpg-workspace-settings{margin-left:auto}#rpgSourcingAux .push-button{flex:1 1 43%;padding:8px}.rpg-workspace-links{grid-template-columns:1fr}.rpg-workspace-dialog{padding:16px!important}#rpgArchiveBanner{align-items:flex-start;flex-direction:column}}
+/* Both portraits are proportional crops of the same approved world image, never separate art. */
+body.cc-rpg-theme #ccDestination.rpg-workspace-heading[data-rpg-desk="fp"],
+body.cc-rpg-theme #ccDestination.rpg-workspace-heading[data-rpg-desk="sourcing"],
+body.cc-rpg-theme #ccDestination.rpg-workspace-heading[data-rpg-desk="reddit"],
+body.cc-rpg-theme #ccDestination.rpg-workspace-heading[data-rpg-desk="x"]{position:relative;isolation:isolate;overflow:hidden;min-height:180px;background:linear-gradient(90deg,#08101af2 5%,#0a121dd9 70%,#121a2744),url('./assets/rpg-home/world.png?v=20261012.3') center 24%/cover}
+.rpg-workspace-heading{--rpg-fp-character:url('./assets/rpg-home/world.png?v=20261012.3');--rpg-sourcing-character:url('./assets/rpg-home/world.png?v=20261012.3')}
+.rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{content:"";position:absolute;right:0;top:0;width:190px;height:100%;z-index:-1;pointer-events:none;background-image:var(--rpg-sourcing-character);background-size:310px auto;background-repeat:no-repeat;background-position:right -395px;mask-image:linear-gradient(90deg,transparent,#000 28%)}
+.rpg-workspace-heading[data-rpg-desk="fp"]::after{background-image:var(--rpg-fp-character);background-position:right -301px}
+.rpg-workspace-heading .cc-heading{position:relative;z-index:1}
+@media(max-width:600px){body.cc-rpg-theme #ccDestination.rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]){min-height:176px}.rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]) #ccPageTitle{max-width:calc(100vw - 168px);font-size:27px}.rpg-workspace-heading #ccPageDescription{max-width:calc(100vw - 168px)}.rpg-workspace-heading::after{opacity:.88}}
+/* Relocate old navigation only; the settings entry restores its original display. */
+body[data-rpg-scope="daily"] #mainWindow>.title-bar,
+body[data-rpg-scope="daily"] #mainWindow>.menu-bar,
+body[data-rpg-scope="daily"] #ccPrimaryNav,
+body[data-rpg-scope="daily"] .home-mobile-nav{display:none!important}
+@media(max-width:600px){#rpgSourcingAux{flex-wrap:nowrap;overflow-x:auto;padding-bottom:5px;scrollbar-width:thin}#rpgSourcingAux .push-button{flex:0 0 auto;white-space:nowrap;max-width:none}}
+/* Reserve a real portrait lane; captions and controls never paint across a face. */
+body.cc-rpg-theme #ccDestination.rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]){background:linear-gradient(110deg,#09111c,#172130);min-height:210px}
+body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{top:30px;height:130px;width:160px}
+body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]) .cc-heading{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px!important;border-bottom:0;margin:0}
+body.cc-rpg-theme .rpg-workspace-heading .cc-heading>[data-home-action="home"]{grid-column:1/-1;justify-self:start}
+body.cc-rpg-theme .rpg-workspace-heading .cc-heading>div{grid-column:1/-1;padding-right:140px;min-height:90px}
+body.cc-rpg-theme .rpg-workspace-heading :is(#ccPageTitle,#ccPageDescription){max-width:none}
+body.cc-rpg-theme .rpg-workspace-heading .cc-heading>.push-button,body.cc-rpg-theme .rpg-workspace-heading #ccRefreshSlot .push-button{margin:0;max-width:100%;white-space:normal}
+@media(max-width:600px){body.cc-rpg-theme .rpg-workspace-heading .cc-heading>div{padding-right:120px}body.cc-rpg-theme .rpg-workspace-heading #ccPageTitle{font-size:23px;letter-spacing:.03em}body.cc-rpg-theme .rpg-workspace-heading .cc-heading>.push-button,body.cc-rpg-theme .rpg-workspace-heading #ccRefreshSlot .push-button{font-size:12px;padding:7px}body.cc-rpg-theme .rpg-workspace-heading::after{width:135px}}
+
+@media(max-width:600px){#rpgSourcingAux{flex-wrap:wrap;overflow:visible;gap:6px}#rpgSourcingAux .push-button{flex:1 1 44%;white-space:normal;font-size:12px;padding:7px}}
+body.cc-rpg-theme .rpg-workspace-heading[data-rpg-desk="fp"]::after{height:104px;mask-image:linear-gradient(90deg,transparent,#000 28%)}
+@media(max-width:600px){#rpgSourcingAux{display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}#rpgSourcingAux .push-button{grid-column:span 2}#rpgSourcingAux .push-button:nth-last-child(-n+2){grid-column:span 3}}

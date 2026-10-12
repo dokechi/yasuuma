@@ -9,14 +9,17 @@
  if(!retainedSourcing)return;
  const page=doc.createElement('section');page.id='ccRpgHome';page.className='cc-rpg-home';page.hidden=true;
  page.setAttribute('aria-label','司令塔のトップページ');
- page.innerHTML=`<div class="rpg-world">
- <header class="rpg-masthead"><button type="button" class="rpg-tools" data-rpg-tools>すべての画面</button><h1 tabindex="-1">司令塔</h1><span class="rpg-title-rule" aria-hidden="true"></span><p>今日の確認</p></header>
+ page.innerHTML=`<div class="rpg-world"><div class="rpg-scene">
+ <header class="rpg-masthead"><button type="button" class="rpg-tools" data-rpg-tools>設定</button><h1 tabindex="-1">司令塔</h1><p>今日の確認</p></header>
  <nav class="rpg-portals" aria-label="四つの入口">
- <button class="rpg-portal" type="button" data-rpg-account="kyun"><span class="rpg-copy"><span class="rpg-heading"><span class="rpg-name">キュン拾い</span><span class="rpg-state">原稿を確認</span></span><span class="rpg-description">好きな一着を、お得に。</span><span class="rpg-detail">保存した原稿を見る</span></span><span class="rpg-edge" aria-hidden="true"></span></button>
- <button class="rpg-portal" type="button" data-rpg-account="choi"><span class="rpg-copy"><span class="rpg-heading"><span class="rpg-name">ちょい上等</span><span class="rpg-state">原稿を確認</span></span><span class="rpg-description">いつもより、少し上等。</span><span class="rpg-detail">保存した原稿を見る</span></span><span class="rpg-edge" aria-hidden="true"></span></button>
- <button class="rpg-portal" type="button" data-rpg-account="tiktok"><span class="rpg-copy"><span class="rpg-heading"><span class="rpg-name">FP・TikTok</span><span class="rpg-state">台本を確認</span></span><span class="rpg-description">暮らしのお金を、<br>わかりやすく。</span></span><span class="rpg-edge" aria-hidden="true"></span></button>
- <button class="rpg-portal" type="button" data-rpg-sourcing><span class="rpg-copy"><span class="rpg-heading"><span class="rpg-name">仕入れ</span><span class="rpg-state">候補を確認</span></span><span class="rpg-description">商品・相場・根拠を見る。</span></span><span class="rpg-edge" aria-hidden="true"></span></button>
- </nav><footer class="rpg-footer"><p>保存済みの情報を確認</p><button type="button" class="rpg-refresh" data-rpg-refresh aria-label="HOMEの情報を再読み込み"><span id="ccRpgReadStatus" aria-live="polite">最新の情報を確認中</span><span aria-hidden="true"> ↻</span></button></footer></div>`;
+ <button class="rpg-portal" type="button" data-rpg-account="kyun"><span class="rpg-copy"><span class="rpg-heading"><span class="rpg-name">キュン拾い ›</span></span><span class="rpg-description">今回の原稿を確認</span><span class="rpg-detail">本文・商品リンク</span></span><span class="rpg-edge" aria-hidden="true"></span></button>
+ <button class="rpg-portal" type="button" data-rpg-account="choi"><span class="rpg-copy"><span class="rpg-heading"><span class="rpg-name">ちょい上等 ›</span></span><span class="rpg-description">今回の原稿を確認</span><span class="rpg-detail">本文・商品リンク</span></span><span class="rpg-edge" aria-hidden="true"></span></button>
+ <button class="rpg-portal" type="button" data-rpg-fp><span class="rpg-copy"><span class="rpg-heading"><span class="rpg-name">FP・TikTok ›</span></span><span class="rpg-description">台本と画像を確認</span></span><span class="rpg-edge" aria-hidden="true"></span></button>
+ <button class="rpg-portal" type="button" data-rpg-sourcing><span class="rpg-copy"><span class="rpg-heading"><span class="rpg-name">仕入れ ›</span></span><span class="rpg-description">候補・購入・在庫・売却</span></span><span class="rpg-edge" aria-hidden="true"></span></button>
+ </nav></div><footer class="rpg-footer">
+ <nav class="rpg-shortcuts" aria-label="仕入れとカード"><button type="button" data-rpg-route="sourcing">仕入れ一覧</button><button type="button" data-rpg-route="watches">海外時計</button><button type="button" data-rpg-route="cards">カード ›</button></nav>
+ <p class="rpg-service-label">別サービス</p><nav class="rpg-services" aria-label="別サービス"><button type="button" data-rpg-service="daily">作業日報</button><button type="button" data-rpg-service="cooney">クーニー</button><button type="button" data-rpg-service="shiire">仕入れ命</button></nav>
+ <button type="button" class="rpg-refresh" data-rpg-refresh aria-label="HOMEの情報を再読み込み"><span id="ccRpgReadStatus" aria-live="polite">情報を確認中</span><span aria-hidden="true"> ↻</span></button></footer></div>`;
  doc.body.append(page);
  const back=doc.createElement('button');back.id='ccRpgLegacyReturn';back.className='push-button';back.type='button';back.textContent='← RPGトップに戻る';back.hidden=true;home.prepend(back);
  let legacy=false;
@@ -41,9 +44,12 @@
  }
  page.addEventListener('click',event=>{
   const button=event.target.closest('button');if(!button)return;
-  if(button.hasAttribute('data-rpg-tools')){showLegacy();return;}
+  if(button.hasAttribute('data-rpg-tools')){if(root.CCRpgWorkspaces)root.CCRpgWorkspaces.openSettings();else showLegacy();return;}
+  if(button.hasAttribute('data-rpg-fp')){if(root.CCRpgWorkspaces)root.CCRpgWorkspaces.openFp();else {root.CCHome.leave();if(typeof load==='function')load('fp');}return;}
+  if(button.dataset.rpgRoute){const w=root.CCRpgWorkspaces;if(w)({sourcing:()=>w.openSourcing(),watches:()=>w.openWatches(),cards:()=>w.openCards()})[button.dataset.rpgRoute]?.();return;}
+  if(button.dataset.rpgService){root.CCRpgWorkspaces?.openService(button.dataset.rpgService);return;}
   if(button.hasAttribute('data-rpg-refresh')){doc.getElementById('refreshBtn')?.click();return;}
-  if(button.hasAttribute('data-rpg-sourcing')){root.CCHomeMenuFixV224?.close();retainedSourcing.click();sync();return;}
+  if(button.hasAttribute('data-rpg-sourcing')){root.CCHomeMenuFixV224?.close();if(root.CCRpgWorkspaces)root.CCRpgWorkspaces.openSourcing();else retainedSourcing.click();sync();return;}
   if(button.dataset.rpgAccount)openAccount(button.dataset.rpgAccount);
  });
  back.addEventListener('click',showRpg);

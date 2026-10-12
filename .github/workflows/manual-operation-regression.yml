@@ -50,6 +50,9 @@ jobs:
           node scripts/manual-posting.test.cjs
           node scripts/manual-operation-state.test.cjs
           node scripts/manual-operation-hub-ui.test.cjs
+          node scripts/manual-operation-hub-safety.test.cjs
+          node scripts/rpg-account-pages.test.cjs
+          node command-center-98/rpg-home.test.cjs
           node scripts/fp-finished-images.test.mjs
           node --test scripts/affiliate-production-api.test.mjs scripts/affiliate-production.test.mjs
           node --test scripts/command-center-save-safety.test.mjs scripts/card-jst-display.test.mjs scripts/save-consistency.test.mjs
