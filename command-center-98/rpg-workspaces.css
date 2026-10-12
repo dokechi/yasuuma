@@ -59,3 +59,6 @@ body.cc-rpg-theme .rpg-workspace-heading .cc-heading>.push-button,body.cc-rpg-th
 @media(max-width:600px){#rpgSourcingAux{flex-wrap:wrap;overflow:visible;gap:6px}#rpgSourcingAux .push-button{flex:1 1 44%;white-space:normal;font-size:12px;padding:7px}}
 body.cc-rpg-theme .rpg-workspace-heading[data-rpg-desk="fp"]::after{height:104px;mask-image:linear-gradient(90deg,transparent,#000 28%)}
 @media(max-width:600px){#rpgSourcingAux{display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}#rpgSourcingAux .push-button{grid-column:span 2}#rpgSourcingAux .push-button:nth-last-child(-n+2){grid-column:span 3}}
+/* New tailored hems extend to the terrace edge: keep neighboring outfits outside each portrait. */
+body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{background-position:right -407px;height:118px}
+body.cc-rpg-theme .rpg-workspace-heading[data-rpg-desk="fp"]::after{background-position:right -313px;height:96px}
