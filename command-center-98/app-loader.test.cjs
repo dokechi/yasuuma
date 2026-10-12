@@ -203,7 +203,7 @@ require('./rpg-theme.test.cjs');
 
 require('./rpg-workspaces.test.cjs');
 
- test('startup completion releases presentation only and fails closed when the final modules are missing',()=>{
-  for(const ready of [true,false]){const removed=[],children=[];let reloads=0;const document={getElementById:id=>({remove:()=>removed.push(id)}),defaultView:{location:{reload:()=>reloads++}},body:{replaceChildren:n=>children.push(n)},createElement:()=>({setAttribute(){},append(n){this.child=n},addEventListener(name,fn){this.click=fn}})};assert.equal(loader.finishStartup(document,ready),ready);assert.deepEqual(removed,['ccStartupNotice','ccStartupStyle']);assert.equal(children.length,ready?0:1);if(!ready){assert.match(children[0].textContent,/再読み込み/);children[0].child.click();assert.equal(reloads,1);}}
-  assert.doesNotMatch(loader.finishStartup.toString(),/showRpg|\bload\(|history\.|localStorage|sessionStorage/);
- });
+test('startup completion releases presentation only and fails closed when the final modules are missing',()=>{
+ for(const ready of [true,false]){const removed=[];let reloads=0;const notice={setAttribute(){},append(n){this.child=n},remove:()=>removed.push('ccStartupNotice')};const document={getElementById:id=>id==='ccStartupNotice'?notice:{remove:()=>removed.push(id)},defaultView:{location:{reload:()=>reloads++}},createElement:()=>({addEventListener(name,fn){this.click=fn}})};assert.equal(loader.finishStartup(document,ready),ready);assert.deepEqual(removed,ready?['ccStartupNotice','ccStartupStyle']:[]);if(!ready){assert.match(notice.textContent,/再読み込み/);notice.child.click();assert.equal(reloads,1);}}
+ assert.doesNotMatch(loader.finishStartup.toString(),/showRpg|\bload\(|history\.|localStorage|sessionStorage|replaceChildren/);
+});

@@ -45,12 +45,13 @@
   const STARTUP_NOTICE = '<div id="ccStartupNotice" role="status" aria-live="polite">司令塔を開いています…</div>';
   function finishStartup(document, ready) {
     if (!ready) {
-      const notice = document.createElement('div');
-      notice.className = 'boot'; notice.setAttribute('role', 'alert');
+      const notice = document.getElementById('ccStartupNotice');
+      notice.setAttribute('role', 'alert');
       notice.textContent = '画面を読み込めませんでした。再読み込みしてください。';
       const retry = document.createElement('button'); retry.type = 'button'; retry.textContent = '再読み込み';
       retry.addEventListener('click', () => document.defaultView.location.reload());
-      notice.append(retry); document.body.replaceChildren(notice);
+      notice.append(retry);
+      return false;
     }
     document.getElementById('ccStartupNotice')?.remove();
     document.getElementById('ccStartupStyle')?.remove();
