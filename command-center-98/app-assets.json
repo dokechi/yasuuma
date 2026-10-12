@@ -16,10 +16,10 @@
     "./binbo-neko.css?v=20261002.2",
     "./v230-request-progress.css?v=20261004.1",
     "./v231-trade-details.css?v=20261004.1",
-    "./rpg-home.css?v=20261012.3-workspaces",
+    "./rpg-home.css?v=20261012.4-wardrobe",
     "./rpg-theme.css?v=20261012.1",
-    "./rpg-account-pages.css?v=20261012.1",
-    "./rpg-workspaces.css?v=20261012.1"
+    "./rpg-account-pages.css?v=20261012.4-wardrobe",
+    "./rpg-workspaces.css?v=20261012.4-wardrobe"
   ],
   "scripts": [
     "./sourcing-atomic-save.js?v=20261011.atomic2",

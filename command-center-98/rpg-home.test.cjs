@@ -136,3 +136,16 @@ test('approved homepage routes dispatch to existing workspace and external servi
  p.querySelector('[data-rpg-tools]').click();p.querySelector('[data-rpg-fp]').click();p.querySelectorAll('[data-rpg-route]').forEach(b=>b.click());p.querySelectorAll('[data-rpg-service]').forEach(b=>b.click());
  assert.deepEqual(calls,['settings','fp','sourcing','watches','cards','daily','cooney','shiire']);
 });
+
+test('approved wardrobe is shared by HOME and every character header with refreshed cache keys',()=>{
+ const styleFiles=['rpg-home.css','rpg-account-pages.css','rpg-workspaces.css'];
+ const manifest=JSON.parse(fs.readFileSync(path.join(__dirname,'app-assets.json'),'utf8'));
+ for(const file of styleFiles){
+  const css=fs.readFileSync(path.join(__dirname,file),'utf8');
+  const references=[...css.matchAll(/world\.png\?([^'"\s)]+)/g)].map(m=>m[1]);
+  assert.ok(references.length>0,file);assert.ok(references.every(v=>v==='v=20261012.4-wardrobe'),file);
+  assert.ok(manifest.styles.includes('./'+file+'?v=20261012.4-wardrobe'),file);
+ }
+ const png=fs.readFileSync(path.join(__dirname,'assets/rpg-home/world.png'));
+ assert.equal(require('node:crypto').createHash('sha1').update(Buffer.concat([Buffer.from('blob '+png.length+'\0'),png])).digest('hex'),'b0b9dff9109f3a03af7e0732bdf6c616cd52c723');
+});
