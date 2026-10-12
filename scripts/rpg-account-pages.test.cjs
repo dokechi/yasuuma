@@ -60,10 +60,30 @@ function mercariParsingTests(){
  const structured=parse({...base,mercari_comparisons:[{url:url('m10000000009'),price_jpy:9100,status:'sold',checked_at:'2026-10-03T10:00:00Z',condition:'室内試着',color:'紺',size:'M',differences:'同色、サイズ違い',caveat:'店より安い例'}],comparison_and_private_evidence:url('m10000000009')+' 10,000円販売中'})[0];
  assert.equal(structured.label,'成約 9,100円');assert.equal(structured.checkedAt,'2026-10-03T10:00:00Z');assert.ok(structured.note.includes('同色、サイズ違い'));assert.ok(structured.note.includes('店より安い例'));
 }
+function mercariSummaryTests(){
+ const summary=note=>api.mercariComparisonSummary({note});
+ const raw='https://jp.mercari.com/item/m10000000021 8,200円販売中、新品未使用、seller100000001。掲載200日前／更新2日前。同色・1サイズ小さい。別途6,000円の中古例もあり、最安とはしない。';
+ const value=summary(raw);assert.equal(value.condition,'新品未使用');assert.ok(value.differences.includes('同色・1サイズ小さい'));assert.ok(!JSON.stringify(value).includes('https:'));assert.ok(!JSON.stringify(value).includes('seller100000001'));assert.ok(!JSON.stringify(value).includes('掲載200日前'));assert.ok(!value.condition.includes('中古'),'another listing cannot change this condition');
+ const lower=summary('https://jp.mercari.com/item/m10000000022 5,200円SOLD。未使用に近い、室内試着のみ・保管時の擦れ留保。同型同色同サイズで店舗新品より1,000円安い下振れ例。成約日不明。');
+ assert.equal(lower.condition,'未使用に近い・室内試着のみ');assert.ok(lower.differences.includes('同型同色同サイズ'));assert.ok(JSON.stringify(lower).includes('1,000円安い下振れ例'));assert.ok(lower.cautions.some(x=>x.includes('擦れ留保')));
+ const ambiguous=summary('https://jp.mercari.com/item/m10000000023 9,000円販売中、新品未使用。カテゴリLと本文Sが矛盾。実物タグ写真はなく、色番不明。サイズ・色の完全一致相場にはしない。');
+ assert.equal(ambiguous.condition,'新品未使用');assert.ok(ambiguous.differences.includes('色番不明'));assert.ok(ambiguous.differences.includes('サイズ差は未確認'));for(const phrase of ['カテゴリLと本文Sが矛盾','実物タグ写真はなく','完全一致相場にはしない'])assert.ok(JSON.stringify(ambiguous).includes(phrase));
+ const compact=summary('一方m10000000024は本文「タグは取ってしまいましたが、未使用品」、成約6,300円（型番なし、同モデルとみられる）で店より900円安い下振れ。');
+ assert.equal(compact.condition,'未使用品');assert.ok(compact.cautions.includes('本文「タグは取ってしまいましたが、未使用品」'),'quoted caveats must not be split mid-quote');assert.ok(compact.cautions.some(x=>x.includes('型番なし、同モデルとみられる')));
+ assert.deepEqual(summary(''),{condition:'未確認',differences:'色差は未確認。サイズ差は未確認',cautions:[]});
+ assert.equal(summary('黒M。同型の商品。').differences,'色差は未確認。サイズ差は未確認','matching model or a size is not proof of matching color or size');
+ for(const note of ['新品未使用ではない。','未使用に近いか未確認。','中古か不明。','新品未使用と記載されるが状態は不明。']){const parsed=summary(note);assert.equal(parsed.condition,'未確認',note);assert.ok(parsed.cautions.some(x=>x.includes(note.replace(/。$/,''))),note);}
+ assert.equal(summary('状態は未確認。別途6,000円の中古例。').condition,'未確認');
+}
+
 async function mercariUiTests(){
  const url='https://jp.mercari.com/item/m10000000011',main='原文\n本文は変更しない',reply='原文の自己返信';
  const fixture=setup([],[{ok:true,events:[item('comparison',{payload:{account_name:'キュン拾い',main_post:main,self_reply:reply,purchase_url:'https://example.com/product',checked_at_mercari:'2026-10-02T09:00:00+09:00',comparison_and_private_evidence:url+' 5,200円SOLD、同色・サイズ違い。傷あり、店より安い下振れ。'}})],total:1,nextOffset:null}]);
  const dialog=await fixture.open(),link=all(dialog,'a').find(n=>n.className?.includes('rpg-mercari-open'));
+ const overview=all(dialog,'div').find(n=>n.className==='rpg-mercari-overview'),evidence=all(dialog,'details').find(n=>n.className==='rpg-mercari-evidence');
+ assert.ok(overview);assert.ok(evidence);assert.ok(!evidence.open,'full evidence starts closed');assert.ok(!text(overview).includes(url));assert.ok(text(overview).includes('同色・サイズ違い'));assert.ok(text(overview).includes('傷あり'));assert.ok(text(overview).includes('下振れ'));
+ const original=url+' 5,200円SOLD、同色・サイズ違い。傷あり、店より安い下振れ。';assert.equal(all(evidence,'p').find(n=>n.className==='rpg-mercari-note').textContent,original);assert.equal(all(evidence,'p').find(n=>n.className==='rpg-mercari-source-url').textContent,url);
+ for(let i=0;i<2;i++){evidence.open=true;assert.equal(text(all(evidence,'p')[0]),original+' ');evidence.open=false;}assert.ok(!evidence.open);
  assert.equal(link.href,url);assert.equal(link.textContent,'成約 5,200円');assert.equal(link.target,'_blank');assert.equal(link.rel,'noopener noreferrer');assert.ok(link.attributes['aria-label'].includes('保存時点'));
  for(const phrase of ['メルカリ相場（保存時点）','現在とは異なる場合','成約日は未確認','掲載日・更新日は成約日ではありません','市場全体の最安値を示すものではありません','同色・サイズ違い','傷あり','下振れ','2026-10-02T09:00:00+09:00'])assert.ok(text(dialog).includes(phrase),phrase);
  await all(dialog,'button').find(b=>b.textContent==='保存主投稿をコピー').onclick();await all(dialog,'button').find(b=>b.textContent==='保存自己返信をコピー').onclick();assert.deepEqual(fixture.copied,[main,reply]);
@@ -74,7 +94,7 @@ async function mercariUiTests(){
 }
 
 async function run(){
- mercariParsingTests();await mercariUiTests();
+ mercariParsingTests();mercariSummaryTests();await mercariUiTests();
  const event=item('original',{title:'保存済みの商品',payload:{account_name:'キュン拾い',main_post:'本文\nそのまま',purchase_url:'https://example.com/buy?q=1',affiliate_url:null,source_url:'https://example.com/source',sources:[{url:'https://example.com/comparison',title:'価格の比較記録'},{url:'javascript:alert(1)',title:'危険なURL'}]}});
  const fixture=setup([],[{ok:true,events:[event,item('past',{status:'posted'})],total:2,nextOffset:null}]);
  const d=await fixture.open();assert.ok(d.className.includes('rpg-account-page'));assert.equal(d.dataset.account,'kyun');

@@ -111,3 +111,20 @@ body.cc-rpg-theme .rpg-workspace-heading #ccRefreshSlot{position:relative;align-
  body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{top:60px;right:0;width:166px;height:190px;background-size:520px auto;background-position:right -691px}
  body.cc-rpg-theme .rpg-workspace-heading[data-rpg-desk="fp"]::after{top:76px;height:154px;background-position:right -530px}
 }
+
+/* Secondary destinations stay reachable, with less emphasis than the current work. */
+body.cc-rpg-theme .rpg-workspace-heading .cc-heading>:is(.cc-more-button,.rpg-workspace-settings){background:#0b1420b8!important;color:#e2dbcd!important;border-color:#746c5c!important;font-weight:400;font-size:12px}
+body.cc-rpg-theme .rpg-workspace-heading #ccRefreshSlot .push-button{background:#3a3024!important;color:#fff2d7!important;border-color:#bd9c5b!important}
+@media(max-width:600px){
+ body.cc-rpg-theme #ccDestination.rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]){padding:8px 10px;margin-bottom:12px}
+ body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]) .cc-heading{row-gap:4px!important}
+ body.cc-rpg-theme .rpg-workspace-heading .cc-heading>div{min-height:162px}
+ body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{top:30px}
+ body.cc-rpg-theme .rpg-workspace-heading[data-rpg-desk="fp"]::after{top:46px}
+ body.cc-rpg-theme #rpgSourcingAux{margin:8px 0}
+ /* Account artwork retains its existing space; tighten only the controls below it. */
+ body.cc-rpg-theme dialog.rpg-account-page .rpg-account-tabs{margin-bottom:12px}
+ body.cc-rpg-theme dialog.rpg-account-page .rpg-account-tabs button{min-height:44px}
+ body.cc-rpg-theme dialog.rpg-account-page .rpg-account-status{margin:8px 0;padding-block:10px}
+ body.cc-rpg-theme dialog.rpg-account-page .rpg-account-coverage-details{margin-bottom:8px}
+}
