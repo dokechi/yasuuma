@@ -36,6 +36,14 @@ const geometry=`(()=>{
  for(const e of samples){const st=getComputedStyle(e);let n=e,bg=st.backgroundColor;while((bg==='transparent'||bg==='rgba(0, 0, 0, 0)')&&n.parentElement){n=n.parentElement;bg=getComputedStyle(n).backgroundColor}const fore=rgb(st.color),back=rgb(bg);add('readable content contrast',fore.length===3&&back.length===3&&contrast(fore,back)>=4.5,{selector:e.className||e.tagName,text:e.textContent.slice(0,45),color:st.color,background:bg});}
  const homeScene=document.querySelector('#ccRpgHome .rpg-scene');
  if(homeScene&&visible(homeScene))add('HOME keeps original dress artwork',getComputedStyle(homeScene).backgroundImage.includes('world.png?v=20261012.4-wardrobe')&&!getComputedStyle(homeScene).backgroundImage.includes('detail-swimwear'));
+ if(homeScene&&visible(homeScene)&&matchMedia('(min-aspect-ratio:4/5) and (min-height:600px)').matches){
+  const world=document.querySelector('#ccRpgHome .rpg-world'),r=world.getBoundingClientRect(),bg=getComputedStyle(homeScene),decor=getComputedStyle(homeScene,'::before');
+  add('wide HOME fills available width without black side gutters',Math.abs(r.width-innerWidth)<=1&&Math.abs(r.left)<=1,{width:r.width,viewport:innerWidth,left:r.left});
+  add('wide HOME retains proportional right artwork',bg.backgroundSize==='100% 100%, auto 100%'&&bg.backgroundPosition.includes('100% 50%'),{size:bg.backgroundSize,position:bg.backgroundPosition});
+  add('wide decorative backdrop excludes all characters',decor.backgroundSize==='100% 100%, 180% auto'&&decor.backgroundPosition.includes('0% 50%'),{size:decor.backgroundSize,position:decor.backgroundPosition});
+  const artWidth=homeScene.getBoundingClientRect().height*941/1672,figureLeft=r.right-artWidth*(1-620/941);
+  for(const copy of homeScene.querySelectorAll('.rpg-copy'))add('wide HOME copy stays outside character lane',copy.getBoundingClientRect().right<figureLeft,{copyRight:copy.getBoundingClientRect().right,figureLeft});
+ }
  for(const e of document.querySelectorAll('dialog[open][data-account="kyun"] .rpg-account-character,dialog[open][data-account="choi"] .rpg-account-character'))if(visible(e))add('account opens alternate swimwear artwork',getComputedStyle(e).backgroundImage.includes('detail-swimwear.png?v=20261012.5-detail-swimwear'));
  const desk=document.querySelector('#ccDestination.rpg-workspace-heading');
  if(desk&&visible(desk)&&['fp','sourcing','reddit','x'].includes(desk.dataset.rpgDesk))add('workspace opens alternate swimwear artwork',getComputedStyle(desk,'::after').backgroundImage.includes('detail-swimwear.png?v=20261012.5-detail-swimwear'));
@@ -139,6 +147,10 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:22
    for(const mode of ['empty','error']){await evaluate(`window.__rpgQA.mode='${mode}'`);await route('active');await capture(prefix+mode,`document.querySelector('#list .empty')!==null`)}
    await evaluate(`window.__rpgQA.mode='loading';void load('active')`);await sleep(100);await capture(prefix+'loading',`!!document.querySelector('#list .loading-lines')`);await evaluate(`window.__rpgQA.mode='normal';window.__rpgQA.release.forEach(r=>r());window.__rpgQA.release=[]`);await waitFor('!app.busy');
    await evaluate('CCRpgHome.showRpg()');await capture(prefix+'return-top',`!document.getElementById('ccRpgHome').hidden`);
+  }
+  for(const [width,height] of [[686,644],[834,900],[1440,900]]){
+   await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
+   await evaluate('CCRpgHome.showRpg()');await capture(width+'x'+height+'-wide-home',`!document.getElementById('ccRpgHome').hidden`);
   }
   results.push({name:'network-isolation',checks:[{name:'no attempted external network request',pass:blocked.length===0,detail:blocked},{name:'no uncaught browser exceptions',pass:errors.length===0,detail:errors}]});
  }catch(error){await diagnose(error.message);throw error;}finally{fs.writeFileSync(path.join(output,'results.json'),JSON.stringify({results,blocked,errors,requests},null,2));ws?.close();proc.kill();server.close();}
