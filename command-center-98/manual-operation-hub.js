@@ -53,6 +53,12 @@
   }
   more.onclick=fetchMore;render();fetchMore();
  }
+ // Presentation-only bridge: reuse the existing explicitly matched account review.
+ api.openAccount=function(key){
+  const account=api.accounts.find(item=>item.key===key&&item.key!=='sourcing');
+  if(!account)return false;
+  open(account);return true;
+ };
  const style=e('style');style.textContent='.manual-operation-hub{margin:12px 0;padding:14px;background:#fff;color:#16324f;border:3px double #0f756d}.manual-operation-hub h2{margin-top:0}.manual-operation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.manual-operation-grid article{padding:12px;border:1px solid #16324f;display:grid;gap:8px}.manual-operation-grid h3,.manual-operation-grid p{margin:0}.manual-operation-grid small{display:block}.manual-operation-review{width:min(880px,90vw);max-height:90vh;overflow:auto;background:#fff;color:#16324f;border:3px solid #0f756d}.manual-operation-review::backdrop{background:rgba(0,0,0,.55)}.manual-operation-review article{border-top:2px solid #0f756d;padding:12px 0}.manual-operation-review pre{white-space:pre-wrap;line-height:1.7}@media(max-width:650px){.manual-operation-grid{grid-template-columns:1fr}}';doc.head.append(style);
 })(typeof window==='undefined'?null:window,function(){
  const accounts=[
