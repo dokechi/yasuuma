@@ -18,7 +18,7 @@
     "./v231-trade-details.css?v=20261004.1",
     "./rpg-home.css?v=20261013.1-wide",
     "./rpg-theme.css?v=20261012.1",
-    "./rpg-account-pages.css?v=20261012.5-detail-swimwear",
+    "./rpg-account-pages.css?v=20261013.2-product-link",
     "./rpg-workspaces.css?v=20261012.5-detail-swimwear"
   ],
   "scripts": [
@@ -78,7 +78,7 @@
     "./v230-request-progress.js?v=20261004.1",
     "./v231-trade-details.js?v=20261004.1",
     "./fp-finished-images.js?v=20261008.4-state",
-    "./manual-operation-hub.js?v=20261012.2-pages",
+    "./manual-operation-hub.js?v=20261013.2-product-link",
     "./rpg-home.js?v=20261012.3-workspaces",
     "./rpg-workspaces.js?v=20261012.1"
   ]
