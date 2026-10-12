@@ -93,8 +93,9 @@ test('composition reflects only declared assets and leaves the base shell intact
   const styles = manifest.styles.map(url => '<link rel="stylesheet" href="' + url + '">').join('');
   const scripts = manifest.scripts.map(url => '<script src="' + url + '"></script>').join('');
   const actual = loader.composeDocument(shell, manifest);
-  assert.equal(actual, shell.replace('</head>', styles + '</head>').replace('</body>', scripts + '</body>'));
-  assert.equal(actual.replace(styles, '').replace(scripts, ''), shell);
+  assert.ok(actual.indexOf(loader.STARTUP_STYLE)<actual.indexOf('<body'));
+  assert.ok(actual.indexOf(loader.STARTUP_FINISH)>actual.lastIndexOf('<script src='));
+  assert.equal(actual.replace(styles, '').replace(scripts, '').replace(loader.STARTUP_STYLE,'').replace(loader.STARTUP_NOTICE,'').replace(loader.STARTUP_FINISH,''), shell);
   assert.ok(actual.includes('<meta charset="utf-8">'));
   assert.ok(actual.includes('<title>司令塔</title>'));
 });
@@ -102,7 +103,7 @@ test('composition reflects only declared assets and leaves the base shell intact
 test('generated scripts remain classic blocking parser-inserted tags', () => {
   const html = loader.composeDocument('<head></head><body></body>', manifest);
   const tags = [...html.matchAll(/<script\b[^>]*>/g)].map(match => match[0]);
-  assert.deepEqual(tags, manifest.scripts.map(url => '<script src="' + url + '">'));
+  assert.deepEqual(tags, [...manifest.scripts.map(url => '<script src="' + url + '">'), '<script>']);
   assert.ok(!/\b(?:async|defer|type)=/.test(tags.join('')));
 });
 
@@ -183,7 +184,7 @@ test('malformed shell responses keep the loading document available for the erro
 test('the unchanged public entry URL boots through the external loader in a browser context', async () => {
   const wrapper = fs.readFileSync(path.join(__dirname, 'app-v130.html'), 'utf8');
   const scripts = [...wrapper.matchAll(/<script src="([^"]+)"><\/script>/g)].map(match => match[1]);
-  assert.deepEqual(scripts, ['./app-loader.js?v=20261003.1']);
+  assert.deepEqual(scripts, ['./app-loader.js?v=20261012.4-startup']);
   assert.ok(!wrapper.includes('h.replace'));
   const document = documentStub();
   const window = {document, fetch: successfulFetch()};
@@ -201,3 +202,8 @@ require('./rpg-home-responsive.test.cjs');
 require('./rpg-theme.test.cjs');
 
 require('./rpg-workspaces.test.cjs');
+
+ test('startup completion releases presentation only and fails closed when the final modules are missing',()=>{
+  for(const ready of [true,false]){const removed=[],children=[];let reloads=0;const document={getElementById:id=>({remove:()=>removed.push(id)}),defaultView:{location:{reload:()=>reloads++}},body:{replaceChildren:n=>children.push(n)},createElement:()=>({setAttribute(){},append(n){this.child=n},addEventListener(name,fn){this.click=fn}})};assert.equal(loader.finishStartup(document,ready),ready);assert.deepEqual(removed,['ccStartupNotice','ccStartupStyle']);assert.equal(children.length,ready?0:1);if(!ready){assert.match(children[0].textContent,/再読み込み/);children[0].child.click();assert.equal(reloads,1);}}
+  assert.doesNotMatch(loader.finishStartup.toString(),/showRpg|\bload\(|history\.|localStorage|sessionStorage/);
+ });

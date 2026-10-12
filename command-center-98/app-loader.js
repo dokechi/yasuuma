@@ -41,6 +41,23 @@
     return manifest;
   }
 
+  const STARTUP_STYLE = '<style id="ccStartupStyle">html,body{background:#0b111b!important}body{overflow:hidden!important}body>*:not(#ccStartupNotice){opacity:0!important;pointer-events:none!important}#ccStartupNotice{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;margin:0;padding:24px;background:#0b111b;color:#f4e5c5;font:16px/1.7 system-ui,sans-serif}</style>';
+  const STARTUP_NOTICE = '<div id="ccStartupNotice" role="status" aria-live="polite">司令塔を開いています…</div>';
+  function finishStartup(document, ready) {
+    if (!ready) {
+      const notice = document.createElement('div');
+      notice.className = 'boot'; notice.setAttribute('role', 'alert');
+      notice.textContent = '画面を読み込めませんでした。再読み込みしてください。';
+      const retry = document.createElement('button'); retry.type = 'button'; retry.textContent = '再読み込み';
+      retry.addEventListener('click', () => document.defaultView.location.reload());
+      notice.append(retry); document.body.replaceChildren(notice);
+    }
+    document.getElementById('ccStartupNotice')?.remove();
+    document.getElementById('ccStartupStyle')?.remove();
+    return ready;
+  }
+  const STARTUP_FINISH = '<script>(' + finishStartup.toString() + ')(document,!!(window.CCRpgHome&&window.CCRpgWorkspaces));</script>';
+
   function composeDocument(html, manifest) {
     validateManifest(manifest);
     if (typeof html !== 'string' || !html.includes('</head>') || !html.includes('</body>')) {
@@ -49,7 +66,9 @@
     const styles = manifest.styles.map(url => '<link rel="stylesheet" href="' + escapeAttribute(url) + '">').join('');
     const scripts = manifest.scripts.map(url => '<script src="' + escapeAttribute(url) + '"></script>').join('');
     // A single insertion per section preserves the shell and the legacy cascade/order.
-    return html.replace('</head>', () => styles + '</head>').replace('</body>', () => scripts + '</body>');
+    const guarded = manifest.scripts.some(url => url.split('?')[0] === './rpg-home.js');
+    if (guarded) html = html.replace('<head>', '<head>' + STARTUP_STYLE).replace(/<body([^>]*)>/, '<body$1>' + STARTUP_NOTICE);
+    return html.replace('</head>', () => styles + '</head>').replace('</body>', () => scripts + (guarded ? STARTUP_FINISH : '') + '</body>');
   }
 
   function showBootError(document, error) {
@@ -82,5 +101,5 @@
     }
   }
 
-  return {MANIFEST_URL, validateManifest, composeDocument, boot};
+  return {MANIFEST_URL, STARTUP_STYLE, STARTUP_NOTICE, STARTUP_FINISH, finishStartup, validateManifest, composeDocument, boot};
 });
