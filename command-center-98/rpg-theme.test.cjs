@@ -14,10 +14,19 @@ test('shared theme loads once after legacy cascade and entry pages only add pres
 test('dark theme is scoped away from approved RPG illustration and does not override functional visibility',()=>{
  assert(!/#ccRpgHome\s*\{/.test(css));assert(!/\.rpg-world\s*\{/.test(css));
  assert(!/display\s*:\s*(?:none|block|flex|grid)/.test(css));
- assert(!/z-index\s*:/.test(css));assert(!/visibility\s*:\s*(?:hidden|visible)/.test(css));
+ assert(!/visibility\s*:\s*(?:hidden|visible)/.test(css));
  assert(!/url\([^)]*world\.png/.test(css),'Do not tile background artwork in every dialog');
  assert(css.includes('prefers-reduced-motion:reduce'));
  assert(css.includes('background-image:none!important'),'Remove legacy checkerboard button texture');
+});
+test('only modal backdrops and toast root gain stacking above the legacy menu',()=>{
+ const stacking=[...css.matchAll(/([^{}]+)\{([^{}]*z-index\s*:[^{}]*)\}/g)].map(m=>[m[1].trim(),m[2].trim()]);
+ assert.deepEqual(stacking,[
+  ['body.cc-rpg-theme :is(.modal-backdrop,.fp-draft-modal)','z-index:400!important'],
+  ['body.cc-rpg-theme .toast-wrap','z-index:450!important']
+ ]);
+ assert.match(read('v225-menu-layer-fix.css'),/z-index:330!important/);
+ assert.match(read('rpg-home.css'),/#ccRpgHome\{[^}]*z-index:100/);
 });
 test('all dialog families, controls, feedback, and ledger wrappers are covered',()=>{
  for(const selector of ['.manual-operation-review','.task-window','.dialog-window','.purchase-drill-window','.reddit-editor-window','.x-editor','.fp-draft-dialog','.affiliate-preview','.cce-dialog','#nekoCopyDialog','.retro-menu','.toast','.home-empty-row','.reddit-editor-error','.loading-line','.supplier-table-wrap','.trade-table-wrap','.mercari-history-scroll','.fp-finished-panel','.request-result'])assert(css.includes(selector),selector);

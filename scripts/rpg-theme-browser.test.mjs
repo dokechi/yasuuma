@@ -23,6 +23,9 @@ const geometry=`(()=>{
  add('no horizontal page overflow',document.documentElement.scrollWidth<=innerWidth+1,{width:innerWidth,scroll:document.documentElement.scrollWidth});
  for(const e of document.querySelectorAll('dialog[open],.modal-backdrop.open>[role="dialog"],.fp-draft-modal>[role="dialog"]'))if(visible(e)){
   const r=e.getBoundingClientRect();add('dialog fits viewport',r.left>=-1&&r.top>=-1&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1,{selector:e.id||e.className,rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom}});
+  const probes=[{label:'top interior',x:r.left+r.width/2,y:r.top+Math.min(18,r.height/2)}];
+  for(const target of Array.from(e.querySelectorAll('header button,.title-bar button,h2,h3,[aria-label="閉じる"],[data-close],[data-cancel],.fp-close-draft')).slice(0,4)){const t=target.getBoundingClientRect();if(visible(target)&&t.width&&t.height){const x=t.left+t.width/2,y=t.top+t.height/2;if(x>r.left&&x<r.right&&y>r.top&&y<r.bottom)probes.push({label:target.id||target.className||target.tagName,x,y});}}
+  for(const p of probes)if(p.x>=0&&p.y>=0&&p.x<innerWidth&&p.y<innerHeight){const hit=document.elementFromPoint(p.x,p.y);add('dialog header and close controls are above other layers',hit===e||e.contains(hit),{dialog:e.id||e.className,probe:p.label,hit:hit?{tag:hit.tagName,id:hit.id,class:hit.className}:null});}
   add('dialog content can scroll',e.scrollHeight<=e.clientHeight+1||['auto','scroll'].includes(getComputedStyle(e).overflowY)||Array.from(e.children).some(c=>['auto','scroll'].includes(getComputedStyle(c).overflowY)));
  }
  for(const e of document.querySelectorAll('input:not([type=checkbox]):not([type=radio]),textarea,select'))if(visible(e)&&!e.disabled){
@@ -31,7 +34,8 @@ const geometry=`(()=>{
  }
  const samples=Array.from(document.querySelectorAll('.card-body p,.thread-body p,.task-pane td,.fp-draft-dialog p,.fp-draft-slide,.cce-dialog pre,.sourcing-card p,.affiliate-job p,.neko-card p')).filter(e=>visible(e)&&e.textContent.trim()).slice(0,30);
  for(const e of samples){const st=getComputedStyle(e);let n=e,bg=st.backgroundColor;while((bg==='transparent'||bg==='rgba(0, 0, 0, 0)')&&n.parentElement){n=n.parentElement;bg=getComputedStyle(n).backgroundColor}const fore=rgb(st.color),back=rgb(bg);add('readable content contrast',fore.length===3&&back.length===3&&contrast(fore,back)>=4.5,{selector:e.className||e.tagName,text:e.textContent.slice(0,45),color:st.color,background:bg});}
- add('no API writes',window.__rpgQA.writes.length===0,window.__rpgQA.writes);
+ add('no unmocked API writes',window.__rpgQA.writes.length===0,window.__rpgQA.writes);
+ add('workflow initialization is fixture-only',true,window.__rpgQA.simulatedInitializations||[]);
  return checks;
 })()`;
 test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:220000},async()=>{

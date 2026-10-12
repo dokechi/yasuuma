@@ -101,7 +101,7 @@ body.cc-rpg-theme .boot{padding:22px;min-width:0;width:min(420px,calc(100vw - 32
 
 /* Audited nested surfaces: explicit selectors avoid touching approved HOME and artwork. */
 /* Nested card and modal surfaces. */
-body.cc-rpg-theme :is(.sourcing-card-body,.x-card-body,.reddit-card-body,.reddit-card-head,.task-pane,.task-detail dt,.help-grid dt,.review-card-host .actions,.help-note,.purchase-table-wrap,.cashflow-purpose,.result-history-note,.list-filter,.result-task-index,.fp-draft-cover,.fp-draft-slide,.fp-publish-copy,.fp-copy-box pre,.fp-grid dt,.fp-grid dd,.fp-premises li,.fp-draft-actions,.fp-shot,.fp-performance-context,.fp-design-reference,.fp-cover-reason,.fp-top-board){background:var(--rpg-panel)!important;color:var(--rpg-text)!important;border-color:var(--rpg-line-soft)!important;box-shadow:none!important}
+body.cc-rpg-theme :is(.sourcing-card-body,.x-card-body,.reddit-card-body,.reddit-card-head,.task-pane,.task-detail dt,.help-grid dt,.review-card-host .actions,.help-note,.purchase-table-wrap,.cashflow-purpose,.result-history-note,.list-filter,.result-task-index,.fp-draft-cover,.fp-draft-slide,.fp-publish-copy,.fp-copy-box pre,.fp-grid dt,.fp-grid dd,.fp-premises li,.fp-draft-actions,.fp-shot,.fp-performance-context,.fp-design-reference,.fp-cover-reason,.fp-top-board,.fp-demand,.fp-demand p){background:var(--rpg-panel)!important;color:var(--rpg-text)!important;border-color:var(--rpg-line-soft)!important;box-shadow:none!important}
 /* Explicit production choices; palette swatch b elements retain their inline colors. */
 body.cc-rpg-theme :is(.fp-design-option span,.fp-palette-option>span,.fp-cover-option>span,.fp-entrance-option,.fp-story-beats>div,[data-zankure-image-gate]){background:var(--rpg-sunken)!important;color:var(--rpg-text)!important;border-color:var(--rpg-line-soft)!important;box-shadow:none!important}
 /* Selected production choices. */
@@ -138,3 +138,11 @@ body.cc-rpg-theme #mainWindow .priority.a{background:#303747!important;color:var
  body.cc-rpg-theme .title-left{min-width:0}body.cc-rpg-theme .win-controls{flex-shrink:0}
 }
 @media(prefers-reduced-motion:reduce){body.cc-rpg-theme :is(.push-button,.win-control,.home-nav-button,.home-launcher-card,.menu-item,.retro-menu-item,dialog button,.btn){transition:none}body.cc-rpg-theme :is(.fp-draft-modal,.modal-backdrop).open>*,body.cc-rpg-theme dialog[open]{animation:none}}
+
+/* Screenshot QA: keep background chrome below overlays and retain legible detail copy. */
+html:has(body.cc-rpg-theme){background:#121723}
+body.cc-rpg-theme :is(.modal-backdrop,.fp-draft-modal){z-index:400!important}
+body.cc-rpg-theme .toast-wrap{z-index:450!important}
+body.cc-rpg-theme #ccPrimaryNav .home-nav-button.selected span,body.cc-rpg-theme #ccMore .home-launcher-card.selected span{color:#39352e!important}
+body.cc-rpg-theme :is(.purchase-drill-note,.purchase-drill-titleline span){color:var(--rpg-muted)!important}
+body.cc-rpg-theme .section-title:after{background:var(--rpg-line-soft)!important;border-color:var(--rpg-line-soft)!important}
