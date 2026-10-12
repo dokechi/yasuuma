@@ -49,8 +49,10 @@
    status.textContent=readError?'読取未確認：'+readError:matches.length?'確認用 '+active.length+'件｜履歴 '+archived.length+'件':!checked?'保存原稿を確認中…':'この保存先では原稿を確認できません。別保存先の原稿はまだ連携されていません。';
    coverage.textContent='保存イベント：読込 '+loaded+'件 / 全 '+(total===null?'件数未確認':total+'件')+'｜'+(loading?'読込中':readError?'続きの読取未確認':!checked?'未確認':hasMore?'続きあり':'読込完了')+'｜画面内の読込済み原稿も照合';
    for(const item of [...active,...archived]){const p=api.payload(item),card=e('article',undefined,'rpg-account-card'),state=api.historyState(item,account.key);card.append(e('h3',item.title||p.post_title||'保存原稿'),e('p',state||'投稿状態未確認'));
-    const copies=api.savedCopies(p);for(const copy of copies){const block=e('section',undefined,'rpg-account-copy');block.append(e('h4',copy.label),e('pre',copy.text));const b=e('button',copy.label+'をコピー','push-button');b.type='button';b.onclick=async()=>{try{await root.navigator.clipboard.writeText(copy.text);status.textContent='原文をコピーしました。';}catch(_){status.textContent='クリップボード未確認。表示全文を選択してコピーしてください。';}};block.append(b);card.append(block);}
+    const product=['kyun','choi'].includes(account.key)?api.savedProductLink(p):null;
+    const copies=api.savedCopies(p).filter(copy=>!product||copy.label!=='保存購入リンク');for(const copy of copies){const block=e('section',undefined,'rpg-account-copy');block.append(e('h4',copy.label),e('pre',copy.text));const b=e('button',copy.label+'をコピー','push-button');b.type='button';b.onclick=async()=>{try{await root.navigator.clipboard.writeText(copy.text);status.textContent='原文をコピーしました。';}catch(_){status.textContent='クリップボード未確認。表示全文を選択してコピーしてください。';}};block.append(b);card.append(block);}
     if(!copies.length)card.append(e('p','本文の保存形式は未確認です。元の原稿画面で確認してください。'));
+    if(product){const block=e('section',undefined,'rpg-account-product');block.append(e('h4','商品ページ'));const link=e(product.url?'a':'button','商品ページを開く','push-button rpg-product-open');if(product.url){link.href=product.url;link.target='_blank';link.rel='noopener noreferrer';link.setAttribute('aria-label','商品ページを開く（別タブ）');}else{link.type='button';link.disabled=true;}block.append(link,e('p',product.note,'rpg-product-note'));card.append(block);}
     const slides=Array.isArray(p.draft_slides)?p.draft_slides:[];if(slides.length)card.append(e('p','画像の掲載全文 '+slides.length+'枚｜画像保存・検品は元の候補画面で確認'));
     const notes=Array.isArray(p.draft_review_points)?p.draft_review_points:[];if(notes.length){const ul=e('ul');for(const note of notes)ul.append(e('li',typeof note==='string'?note:note.text||note.note||'要確認'));card.append(e('h4','要確認点'),ul);}
     const sources=api.savedSources(item);if(sources.length){const sourceDetails=details('比較根拠・出典を見る');sourceDetails.className='rpg-account-sources';for(const source of sources){const a=e('a',source.label);a.href=source.url;a.target='_blank';a.rel='noopener noreferrer';sourceDetails.append(a);}card.append(sourceDetails);}
@@ -132,6 +134,15 @@
   for(const source of Array.isArray(p.sources)?p.sources:[])if(typeof source==='string')add(source,'保存された出典');else if(source&&typeof source==='object')add(source.url,typeof source.title==='string'?source.title:'保存された出典');
   return result;
  }
+ function savedProductLink(p){
+  const raw=[p.ordinary_url,p.purchase_url,p.purchase_link].find(v=>typeof v==='string'&&v.trim());
+  if(!raw)return {url:null,note:'商品URLが未確認のため、まだ開けません。'};
+  let u;try{u=new URL(raw.trim());}catch(_){return {url:null,note:'商品URLの形式が未確認のため、まだ開けません。'};}
+  if(u.protocol!=='https:'||u.username||u.password)return {url:null,note:'安全な商品URLを確認できないため、まだ開けません。'};
+  const unissued=p.affiliate_url===null||p.affiliate_url==='';
+  const isAffiliate=typeof p.affiliate_url==='string'&&p.affiliate_url.trim()===u.href;
+  return {url:u.href,note:isAffiliate?'保存されたアフィリエイトURLです。別タブで開きます。':unissued?'通常の商品URLです。アフィリエイトリンクは未発行です。別タブで開きます。':'保存された商品URLです。アフィリエイト発行状況は未確認です。別タブで開きます。'};
+ }
  function savedCopies(p){
   const result=[],variants=Array.isArray(p.body_variants)?p.body_variants:Array.isArray(p.body_options)?p.body_options:[];
   variants.forEach((v,i)=>{const t=typeof v==='string'?v:v.text||v.body;if(t)result.push({label:'保存本文案'+(i+1),text:String(t)});});
@@ -141,5 +152,5 @@
   const link=p.purchase_link||p.purchase_url;if(typeof link==='string'&&/^https:\/\//.test(link))result.push({label:'保存購入リンク',text:link});
   return result;
  }
- return {accounts,payload,matchesAccount,unique,savedCopies,isSuppressed,historyState,savedSources};
+ return {accounts,payload,matchesAccount,unique,savedCopies,isSuppressed,historyState,savedSources,savedProductLink};
 });

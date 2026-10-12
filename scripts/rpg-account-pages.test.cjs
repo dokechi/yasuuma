@@ -24,7 +24,7 @@ function setup(local,responses){
  return {root,doc,calls,copied,open:async()=>{root.CCManualOperationHub.openAccount('kyun');await flush();return doc.body.children.find(n=>n.tagName==='dialog');}};
 }
 async function run(){
- const event=item('original',{title:'保存済みの商品',payload:{account_name:'キュン拾い',main_post:'本文\nそのまま',purchase_url:'https://example.com/buy?q=1',source_url:'https://example.com/source',sources:[{url:'https://example.com/comparison',title:'価格の比較記録'},{url:'javascript:alert(1)',title:'危険なURL'}]}});
+ const event=item('original',{title:'保存済みの商品',payload:{account_name:'キュン拾い',main_post:'本文\nそのまま',purchase_url:'https://example.com/buy?q=1',affiliate_url:null,source_url:'https://example.com/source',sources:[{url:'https://example.com/comparison',title:'価格の比較記録'},{url:'javascript:alert(1)',title:'危険なURL'}]}});
  const fixture=setup([],[{ok:true,events:[event,item('past',{status:'posted'})],total:2,nextOffset:null}]);
  const d=await fixture.open();assert.ok(d.className.includes('rpg-account-page'));assert.equal(d.dataset.account,'kyun');
  assert.equal(all(d,'h2')[0].textContent,'キュン拾い');
@@ -35,12 +35,18 @@ async function run(){
  tab('history').onclick();history=all(d,'details').find(n=>n.className==='rpg-account-history');current=all(d,'div').find(n=>n.className==='rpg-account-current');
  assert.equal(history.hidden,false);assert.equal(history.open,true);assert.equal(current.hidden,true);assert.ok(text(history).includes('past'));assert.equal(tab('history').attributes['aria-pressed'],'true');
  tab('current').onclick();
- const links=all(d,'a');assert.deepEqual(links.map(a=>a.href),['https://example.com/source','https://example.com/comparison']);assert.ok(links.every(a=>a.rel==='noopener noreferrer'&&a.target==='_blank'));
- await all(d,'button').find(b=>b.textContent==='保存主投稿をコピー').onclick();await all(d,'button').find(b=>b.textContent==='保存購入リンクをコピー').onclick();assert.deepEqual(fixture.copied,['本文\nそのまま','https://example.com/buy?q=1']);
+ const links=all(d,'a').filter(a=>!a.className?.includes('rpg-product-open'));assert.deepEqual(links.map(a=>a.href),['https://example.com/source','https://example.com/comparison']);assert.ok(links.every(a=>a.rel==='noopener noreferrer'&&a.target==='_blank'));
+ await all(d,'button').find(b=>b.textContent==='保存主投稿をコピー').onclick();assert.deepEqual(fixture.copied,['本文\nそのまま']);assert.ok(!all(d,'button').some(b=>b.textContent==='保存購入リンクをコピー'));
+ const product=all(d,'a').find(a=>a.className.includes('rpg-product-open'));assert.equal(product.href,'https://example.com/buy?q=1');assert.equal(product.target,'_blank');assert.equal(product.rel,'noopener noreferrer');assert.ok(text(d).includes('アフィリエイトリンクは未発行'));
  assert.ok(!all(d,'button').some(b=>/投稿済みに|投稿する/.test(b.textContent)));
  assert.deepEqual(api.savedSources({url:'javascript:alert(1)',payload:{source_url:'https://u:p@example.com/private',sources:[null,{url:'data:text/html,no'},'https://example.com/public','https://example.com/public']}}),[{url:'https://example.com/public',label:'保存された出典'}]);
  all(d,'button').find(b=>b.textContent==='← 司令塔').onclick();assert.equal(d.open,false);
  const choi=setup([],[{ok:true,events:[],total:0,nextOffset:null}]);choi.root.CCManualOperationHub.openAccount('choi');await flush();const c=choi.doc.body.children.find(n=>n.tagName==='dialog');assert.equal(c.dataset.account,'choi');assert.equal(all(c,'h2')[0].textContent,'ちょい上等');assert.ok(text(c).includes('別保存先の原稿はまだ連携されていません。'));assert.equal(all(c,'a').length,0);
+ for(const url of ['', 'javascript:alert(1)','data:text/html,hi','http://example.com','https://user:pass@example.com/product','/relative','file:///tmp/x'])assert.equal(api.savedProductLink({purchase_url:url}).url,null,url);
+ assert.equal(api.savedProductLink({ordinary_url:'https://example.com/right?a=1&b=2',purchase_url:'https://example.com/other',affiliate_url:null}).url,'https://example.com/right?a=1&b=2');
+ assert.ok(api.savedProductLink({purchase_url:'https://example.com/right'}).note.includes('発行状況は未確認'));
+ const noUrl=setup([],[{ok:true,events:[item('no-url')],total:1,nextOffset:null}]);const nd=await noUrl.open();assert.equal(all(nd,'button').find(b=>b.textContent==='商品ページを開く').disabled,true);assert.ok(text(nd).includes('商品URLが未確認'));
+ const choiLink=setup([],[{ok:true,events:[item('choi-link',{payload:{account_name:'ちょい上等',main_post:'メンズ原文',purchase_url:'https://example.com/mens',affiliate_url:null}})],total:1,nextOffset:null}]);choiLink.root.CCManualOperationHub.openAccount('choi');await flush();const cl=choiLink.doc.body.children.find(n=>n.tagName==='dialog');assert.equal(all(cl,'a').find(a=>a.className.includes('rpg-product-open')).href,'https://example.com/mens');
  const css=fs.readFileSync(path.join(__dirname,'../command-center-98/rpg-account-pages.css'),'utf8');assert.ok(css.includes('[data-account="choi"]'));assert.ok(css.includes('[hidden]{display:none!important}'));assert.ok(css.includes('100dvh'));assert.ok(css.includes('detail-swimwear.png'));assert.ok(!css.includes('position:fixed'));
  for(const {o} of fixture.calls){assert.equal(o.method,undefined);assert.equal(o.body,undefined);}
  console.log('PASS: account page titles, real tabs/counts/history, original body/link copy, saved safe source links, no publication control, close and responsive art hooks');
