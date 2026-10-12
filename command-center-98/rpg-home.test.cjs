@@ -137,15 +137,25 @@ test('approved homepage routes dispatch to existing workspace and external servi
  assert.deepEqual(calls,['settings','fp','sourcing','watches','cards','daily','cooney','shiire']);
 });
 
-test('approved wardrobe is shared by HOME and every character header with refreshed cache keys',()=>{
- const styleFiles=['rpg-home.css','rpg-account-pages.css','rpg-workspaces.css'];
+test('HOME keeps approved dresses while detail pages use a distinct cached swimwear asset',()=>{
  const manifest=JSON.parse(fs.readFileSync(path.join(__dirname,'app-assets.json'),'utf8'));
- for(const file of styleFiles){
+ const home=fs.readFileSync(path.join(__dirname,'rpg-home.css'),'utf8');
+ assert.ok(home.includes('world.png?v=20261012.4-wardrobe'));
+ assert.ok(!home.includes('detail-swimwear.png'));
+ assert.ok(manifest.styles.includes('./rpg-home.css?v=20261012.4-wardrobe'));
+ for(const file of ['rpg-account-pages.css','rpg-workspaces.css']){
   const css=fs.readFileSync(path.join(__dirname,file),'utf8');
-  const references=[...css.matchAll(/world\.png\?([^'"\s)]+)/g)].map(m=>m[1]);
-  assert.ok(references.length>0,file);assert.ok(references.every(v=>v==='v=20261012.4-wardrobe'),file);
-  assert.ok(manifest.styles.includes('./'+file+'?v=20261012.4-wardrobe'),file);
+  const references=[...css.matchAll(/detail-swimwear\.png\?([^'"\s)]+)/g)].map(m=>m[1]);
+  assert.ok(references.length>0,file);
+  assert.ok(references.every(v=>v==='v=20261012.5-detail-swimwear'),file);
+  assert.ok(!css.includes('world.png'),file+' must not fall back to HOME dresses');
+  assert.ok(manifest.styles.includes('./'+file+'?v=20261012.5-detail-swimwear'),file);
  }
  const png=fs.readFileSync(path.join(__dirname,'assets/rpg-home/world.png'));
- assert.equal(require('node:crypto').createHash('sha1').update(Buffer.concat([Buffer.from('blob '+png.length+'\0'),png])).digest('hex'),'b0b9dff9109f3a03af7e0732bdf6c616cd52c723');
+ const detail=fs.readFileSync(path.join(__dirname,'assets/rpg-home/detail-swimwear.png'));
+ const hash=b=>require('node:crypto').createHash('sha1').update(Buffer.concat([Buffer.from('blob '+b.length+'\0'),b])).digest('hex');
+ assert.equal(hash(png),'b0b9dff9109f3a03af7e0732bdf6c616cd52c723','approved HOME bytes must not change');
+ assert.notEqual(hash(detail),hash(png),'detail clothing must differ from HOME');
+ assert.equal(detail.readUInt32BE(16),png.readUInt32BE(16),'portrait crop width');
+ assert.equal(detail.readUInt32BE(20),png.readUInt32BE(20),'portrait crop height');
 });
