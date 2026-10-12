@@ -1,36 +1,38 @@
-/* Scoped HOME-only skin. Legacy pages, dialogs and auth keep their existing styles. */
+/* Scoped HOME-only skin. Legacy pages, dialogs and auth keep their existing styles.
+   The 941x1672 artwork keeps a uniform scale. Narrow phones crop only unused left
+   scenery; wide screens use the artwork's natural width. Limit extreme portrait
+   frames to 2.2:1 so the right-side figures never crowd the real text. */
 @font-face{font-family:CCRpgDot;src:url('./assets/rpg-home/DotGothic16-Regular.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
 body.rpg-home-active{overflow:hidden!important}
 body.rpg-home-active #mainWindow,body.rpg-home-active .home-mobile-nav{display:none!important}
 #ccRpgHome[hidden],#ccRpgLegacyReturn[hidden]{display:none!important}
-#ccRpgHome{--rpg-ivory:#fff8e8;--rpg-gold:#f5dc86;--rpg-line:#eadbaba6;position:fixed;inset:0;z-index:100;display:flex;justify-content:center;background:#15121a;color:var(--rpg-ivory);font:400 16px CCRpgDot,monospace;text-align:left;overflow:auto}
+#ccRpgHome{--rpg-ivory:#fff8e8;--rpg-gold:#f5dc86;--rpg-line:#eadbaba6;position:fixed;inset:0;z-index:100;display:flex;justify-content:center;align-items:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);background:#15121a;color:var(--rpg-ivory);font:400 16px CCRpgDot,monospace;text-align:left;overflow:auto;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 #ccRpgHome *{box-sizing:border-box}
 #ccRpgHome button{font:inherit;font-weight:400;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:none;text-transform:none;letter-spacing:normal;transform:none}
-#ccRpgHome .rpg-world{width:100%;max-width:720px;height:100svh;height:100dvh;min-height:620px;display:grid;grid-template-rows:20% 72% 8%;background-image:linear-gradient(90deg,#12101b50 0%,#12101b20 55%,#12101b05 100%),url('./assets/rpg-home/world.png');background-size:100% 100%,100% 100%;background-position:center;position:relative;isolation:isolate;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#ccRpgHome .rpg-world{--rpg-frame-h:min(calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)),220vw);width:min(100%,calc(var(--rpg-frame-h) * 941 / 1672));height:var(--rpg-frame-h);flex:none;container-type:inline-size;display:grid;grid-template-rows:20% 72% 8%;background-image:linear-gradient(90deg,#12101b50 0%,#12101b20 55%,#12101b05 100%),url('./assets/rpg-home/world.png');background-size:100% 100%,auto 100%;background-position:center,right center;background-repeat:no-repeat;position:relative;isolation:isolate;padding:0}
 #ccRpgHome .rpg-masthead{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;text-shadow:0 2px 3px #100e19,0 0 16px #110c18a0}
-#ccRpgHome h1{font-size:clamp(32px,5.2vh,51px);font-weight:400;letter-spacing:.12em;margin:0 0 3px .12em;line-height:1.2;color:var(--rpg-ivory)}
-#ccRpgHome .rpg-masthead p{font-size:clamp(17px,2.6vh,24px);letter-spacing:.09em;margin:7px 0 0}
+#ccRpgHome h1{font-size:clamp(28px,11cqw,53px);font-weight:400;letter-spacing:.12em;margin:0 0 3px .12em;line-height:1.2;color:var(--rpg-ivory)}
+#ccRpgHome .rpg-masthead p{font-size:clamp(15px,5.8cqw,24px);letter-spacing:.09em;margin:7px 0 0}
 #ccRpgHome .rpg-title-rule{width:110px;border-top:1px solid #eadbbb;position:relative;margin-top:3px}
 #ccRpgHome .rpg-title-rule:after{content:'';position:absolute;width:6px;height:6px;background:#292029;border:1px solid #ffefd1;transform:rotate(45deg);left:calc(50% - 3px);top:-4px}
-#ccRpgHome .rpg-tools{position:absolute;top:max(8px,env(safe-area-inset-top));right:12px;min-height:32px;padding:4px 8px;border:0;background:#15121a65;font-size:11px;text-shadow:0 1px 2px #000}
+#ccRpgHome .rpg-tools{position:absolute;top:8px;right:12px;min-height:32px;padding:4px 8px;border:0;background:#15121a65;font-size:11px;text-shadow:0 1px 2px #000}
 #ccRpgHome .rpg-portals{display:grid;grid-template-rows:repeat(4,minmax(0,1fr));padding:0 12px;min-height:0}
-#ccRpgHome .rpg-portal{position:relative;display:flex;align-items:center;isolation:isolate;text-align:left;border:0;background:transparent;border-radius:0;padding:12px 8px;min-width:0;min-height:0;appearance:none;outline-offset:-4px;width:100%;line-height:normal}
+#ccRpgHome .rpg-portal{position:relative;display:flex;align-items:center;isolation:isolate;text-align:left;border:0;background:transparent;border-radius:0;padding:clamp(6px,2.2cqw,12px) 8px;min-width:0;min-height:0;appearance:none;outline-offset:-4px;width:100%;line-height:normal}
 #ccRpgHome .rpg-portal:before{content:'';position:absolute;inset:0;z-index:-1;background:transparent;transition:background-color .2s}
-#ccRpgHome .rpg-portal:first-child:after{content:'';position:absolute;top:-1dvh;left:0;right:0;border-top:1px solid var(--rpg-line)}
+#ccRpgHome .rpg-portal:first-child:after{content:'';position:absolute;top:calc(var(--rpg-frame-h) * -.01);left:0;right:0;border-top:1px solid var(--rpg-line)}
 #ccRpgHome .rpg-edge{position:absolute;bottom:0;left:0;right:0;border-bottom:1px solid var(--rpg-line);z-index:3;filter:drop-shadow(0 1px 1px #0a0710)}
 #ccRpgHome .rpg-edge:before,#ccRpgHome .rpg-edge:after{content:'';position:absolute;width:4px;height:4px;transform:rotate(45deg);border:1px solid #ffedbc;background:#36291b;top:-2px}
 #ccRpgHome .rpg-edge:before{left:-3px}#ccRpgHome .rpg-edge:after{right:-3px}
-#ccRpgHome .rpg-copy{display:flex;flex-direction:column;gap:8px;position:relative;z-index:2;pointer-events:none;text-shadow:0 2px 3px #08080b,0 0 6px #08080b;white-space:nowrap}
+#ccRpgHome .rpg-copy{display:flex;flex-direction:column;gap:clamp(5px,2cqw,10px);position:relative;z-index:2;pointer-events:none;text-shadow:0 2px 3px #08080b,0 0 6px #08080b;white-space:nowrap}
 #ccRpgHome .rpg-heading{display:flex;align-items:baseline;gap:9px}
-#ccRpgHome .rpg-name{font-size:clamp(21px,5.75vw,34px);line-height:1.3;letter-spacing:.035em}
-#ccRpgHome .rpg-state{font-size:clamp(11px,2.82vw,16px);color:var(--rpg-gold)}
-#ccRpgHome .rpg-description,#ccRpgHome .rpg-detail{font-size:clamp(15px,4.1vw,23px);line-height:1.5;letter-spacing:0}
+#ccRpgHome .rpg-name{font-size:clamp(18px,5.75cqw,34px);line-height:1.3;letter-spacing:.035em}
+#ccRpgHome .rpg-state{font-size:clamp(10px,2.82cqw,16px);color:var(--rpg-gold)}
+#ccRpgHome .rpg-description,#ccRpgHome .rpg-detail{font-size:clamp(12px,4.1cqw,23px);line-height:1.5;letter-spacing:0}
 #ccRpgHome button:focus-visible{outline:2px solid #ffe3a0;outline-offset:-4px}
 #ccRpgHome .rpg-portal:hover:before{background-color:#e6a55210}#ccRpgHome .rpg-portal:active:before{background-color:#e6a55220}
 #ccRpgHome .rpg-footer{display:flex;flex-direction:column;align-items:center;justify-content:center;text-shadow:0 2px 3px #000;gap:2px}
-#ccRpgHome .rpg-footer p{margin:0;font-size:clamp(13px,3.5vw,19px);letter-spacing:.035em}
+#ccRpgHome .rpg-footer p{margin:0;font-size:clamp(11px,3.5cqw,19px);letter-spacing:.035em}
 #ccRpgHome .rpg-refresh{border:0;background:transparent;font-size:10px;color:#f7e9b2;min-height:26px;padding:3px 10px}
 #ccRpgLegacyReturn{margin:6px 0 12px}
-@media(min-width:600px){#ccRpgHome .rpg-world{max-width:min(760px,calc(100vh * .8));box-shadow:0 0 100px 35px #080711a0}#ccRpgHome .rpg-portals{padding:0 22px}#ccRpgHome .rpg-portal{padding:14px}#ccRpgHome .rpg-copy{gap:10px}#ccRpgHome .rpg-name{font-size:clamp(24px,3.4vh,36px)}#ccRpgHome .rpg-state{font-size:clamp(12px,1.6vh,17px)}#ccRpgHome .rpg-description,#ccRpgHome .rpg-detail{font-size:clamp(18px,2.4vh,25px)}#ccRpgHome h1{font-size:clamp(35px,5.2vh,53px)}}
-@media(max-height:700px){#ccRpgHome .rpg-world{min-height:540px}#ccRpgHome .rpg-copy{gap:5px}#ccRpgHome h1{font-size:30px}#ccRpgHome .rpg-masthead p{font-size:16px;margin-top:5px}#ccRpgHome .rpg-description,#ccRpgHome .rpg-detail{font-size:15px}#ccRpgHome .rpg-name{font-size:21px}#ccRpgHome .rpg-footer p{font-size:13px}}
+@media(min-width:600px){#ccRpgHome .rpg-world{box-shadow:0 0 100px 35px #080711a0}}
 @media(prefers-reduced-motion:reduce){#ccRpgHome *,#ccRpgHome *:before{transition:none!important}}
