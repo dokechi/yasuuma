@@ -21,12 +21,12 @@ const world=rule('#ccRpgHome .rpg-world');
 const page=rule('#ccRpgHome'),scene=rule('#ccRpgHome .rpg-scene');
 const compact=value=>value.replace(/\s+/g,'');
 const close=(actual,expected,label)=>assert.ok(Math.abs(actual-expected)<1e-7,`${label}: ${actual} != ${expected}`);
-const cases=[[360,780],[390,844],[412,915],[320,950],[980,980],[1440,900],[390,700],[390,780]];
+const cases=[[686,644],[834,900],[360,780],[390,844],[412,915],[320,950],[980,980],[1440,900],[390,700],[390,780]];
 function geometry(vw,vh,{top=0,right=0,bottom=0,left=0}={}){
  const innerWidth=vw-left-right,innerHeight=vh-top-bottom;
- const height=Math.min(innerHeight,2.2*vw),width=Math.min(innerWidth,height*.84*artwork.width/artwork.height);
+ const height=Math.min(innerHeight,2.2*vw),wide=vw/vh>=.8&&vh>=600,width=wide?innerWidth:Math.min(innerWidth,height*.84*artwork.width/artwork.height);
  const scale=height*.84/artwork.height,imageWidth=artwork.width*scale;
- return {width,height,scale,imageWidth,left:left+(innerWidth-width)/2,top:top+(innerHeight-height)/2,crop:imageWidth-width};
+ return {wide,width,height,scale,imageWidth,left:left+(innerWidth-width)/2,top:top+(innerHeight-height)/2,crop:imageWidth-width};
 }
 function fontSize(selector,width){
  const value=rule(selector)['font-size'];
@@ -50,7 +50,8 @@ test('frame CSS is dynamic-height bounded and has no legacy minimum-height/deskt
  assert.equal(world['grid-template-rows'],'84% 16%');assert.equal(scene['grid-template-rows'],'20% 72% 8%');
  assert.equal(rule('#ccRpgHome .rpg-portals')['grid-template-rows'],'repeat(4,minmax(0,1fr))');
  for(const override of [...css.matchAll(/#ccRpgHome \.rpg-world\s*\{([^}]+)\}/g)].slice(1)){
-  assert.doesNotMatch(override[1],/(?:^|;)\s*(?:width|height|max-width|max-height|min-width|min-height|padding|background-size|background-position|grid-template-rows|--rpg-frame-h)\s*:/,'media rules cannot silently override modeled geometry');
+  if(/(?:^|;)\s*width:/.test(override[1]))assert.match(override[1],/width:100%/,'wide frame is the only modeled override');
+  assert.doesNotMatch(override[1],/(?:^|;)\s*(?:height|max-height|min-height|padding|background-size|background-position|grid-template-rows|--rpg-frame-h)\s*:/,'wide frame preserves height and artwork ratio');
  }
  assert.equal(compact(scene['background-size']),'100%100%,auto100%');
  assert.match(scene['background-position'],/right center/);
@@ -64,7 +65,7 @@ for(const [vw,vh] of cases){
   assert.ok(g.width<=vw&&g.height<=vh,'frame cannot produce page scroll');
   assert.ok(g.left>=0&&g.top>=0,'centered frame stays inside viewport');
   close(g.imageWidth/artwork.width,g.height*.84/artwork.height,'equal artwork X/Y scale');
-  assert.ok(g.crop>=-1e-7,'artwork is never narrower than the frame');
+  assert.ok(g.wide?g.width===vw:g.crop>=-1e-7,'wide frame fills width; narrow frame crops only scenery');
   close(g.imageWidth-g.crop,g.width,'right artwork edge stays aligned with frame');
   const visibleSourceLeft=g.crop/g.scale;
   assert.ok(visibleSourceLeft<=640,'left edge of full character region stays visible');
@@ -89,9 +90,9 @@ test('real text and footer fit the proportional scene without covering the chara
  const names=[...js.matchAll(/class="rpg-name">([^<]+)</g)].map(m=>m[1]);
  const lines=[...js.matchAll(/class="rpg-(?:description|detail)">([^<]+)</g)].map(m=>m[1]);assert.equal(names.length,4);
  const em=s=>[...s].reduce((n,c)=>n+(c.codePointAt(0)<128?.5:1),0);
- for(const [vw,vh]of cases){const g=geometry(vw,vh),name=fontSize('#ccRpgHome .rpg-name',g.width),desc=fontSize('#ccRpgHome .rpg-description,#ccRpgHome .rpg-detail',g.width),limit=640*g.scale-g.crop-20;
+ for(const [vw,vh]of cases){const g=geometry(vw,vh),typeWidth=Math.min(g.width,g.imageWidth),name=g.wide?Math.min(34,Math.max(18,.03*vh)):fontSize('#ccRpgHome .rpg-name',typeWidth),desc=g.wide?Math.min(20,Math.max(11,.0173*vh)):fontSize('#ccRpgHome .rpg-description,#ccRpgHome .rpg-detail',typeWidth),limit=640*g.scale-g.crop-(g.wide?Math.min(80,Math.max(24,.05*vw))+20:20);
   names.forEach(s=>assert.ok(em(s)*name<limit,`${vw}x${vh}: ${s} fits left of characters`));lines.forEach(s=>assert.ok(em(s)*desc<limit,`${vw}x${vh}: ${s} fits`));
-  const gap=Math.min(10,Math.max(5,g.width*.02)),pad=Math.min(12,Math.max(6,g.width*.022));assert.ok(name*1.3+2*desc*1.5+2*gap+2*pad<=g.height*.84*.18,'copy fits scene row');assert.ok(g.height*.16>=90,'footer contains two route rows and status');
+  const gap=Math.min(10,Math.max(5,(g.wide?.0095*vh:g.width*.02))),pad=Math.min(12,Math.max(6,(g.wide?.0104*vh:g.width*.022)));assert.ok(name*1.3+2*desc*1.5+2*gap+2*pad<=g.height*.84*.18,'copy fits scene row');assert.ok(g.height*.16>=90,'footer contains two route rows and status');
  }
  assert.match(js,/data-rpg-service="daily"/);assert.match(js,/data-rpg-service="cooney"/);assert.match(js,/data-rpg-service="shiire"/);assert.match(js,/data-rpg-route="watches"/);assert.match(js,/data-rpg-route="cards"/);
 });
@@ -114,3 +115,13 @@ test('safe-area model leaves top, bottom and side insets outside the artwork',()
   close(g.imageWidth/g.height,941/1672*.84,'safe area does not stretch artwork');
  }
 });
+
+ test('wide background is scenery-only, full-width and keeps figure art unstretched',()=>{
+ assert.match(css,/@media \(min-aspect-ratio:4\/5\) and \(min-height:600px\)/);
+ assert.match(css,/background-size:100% 100%,180% auto/);
+ assert.ok(artwork.width/1.8<620,'decorative source crop cannot reach the first character');
+ for(const [vw,vh]of [[686,644],[834,900],[1280,900],[1440,900]]){
+  const g=geometry(vw,vh);assert.equal(g.width,vw);assert.equal(g.left,0);
+  assert.ok(g.imageWidth<g.width);assert.equal(g.imageWidth/artwork.width,g.scale);
+ }
+ });
