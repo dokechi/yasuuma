@@ -1,0 +1,109 @@
+/** Full real-loader visual regression, with synthetic data and fail-closed network.
+ * Run in CI with Chrome. Does not read credentials or contact production services. */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import http from 'node:http';
+import {spawn} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+const root=fileURLToPath(new URL('../',import.meta.url));
+const chrome=process.env.CC_TEST_CHROME||['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser','C:/Program Files/Google/Chrome/Application/chrome.exe'].find(p=>fs.existsSync(p));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const output=path.join(root,'artifacts/rpg-theme');
+const mime={'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.woff2':'font/woff2'};
+const geometry=`(()=>{
+ const visible=e=>!!e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden';
+ const rgb=s=>(s.match(/[\\d.]+/g)||[]).slice(0,3).map(Number);
+ const luminance=c=>c.map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4}).reduce((s,x,i)=>s+x*[.2126,.7152,.0722][i],0);
+ const contrast=(a,b)=>{const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+ const checks=[],add=(name,pass,detail)=>checks.push({name,pass,detail});
+ add('RPG theme is active',document.body.classList.contains('cc-rpg-theme'));
+ add('no horizontal page overflow',document.documentElement.scrollWidth<=innerWidth+1,{width:innerWidth,scroll:document.documentElement.scrollWidth});
+ for(const e of document.querySelectorAll('dialog[open],.modal-backdrop.open>[role="dialog"],.fp-draft-modal>[role="dialog"]'))if(visible(e)){
+  const r=e.getBoundingClientRect();add('dialog fits viewport',r.left>=-1&&r.top>=-1&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1,{selector:e.id||e.className,rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom}});
+  add('dialog content can scroll',e.scrollHeight<=e.clientHeight+1||['auto','scroll'].includes(getComputedStyle(e).overflowY)||Array.from(e.children).some(c=>['auto','scroll'].includes(getComputedStyle(c).overflowY)));
+ }
+ for(const e of document.querySelectorAll('input:not([type=checkbox]):not([type=radio]),textarea,select'))if(visible(e)&&!e.disabled){
+  const s=getComputedStyle(e);let n=e,bg=s.backgroundColor;while((bg==='transparent'||bg==='rgba(0, 0, 0, 0)')&&n.parentElement){n=n.parentElement;bg=getComputedStyle(n).backgroundColor}
+  const color=rgb(s.color),back=rgb(bg);add('readable form text',parseFloat(s.fontSize)>=12&&color.length===3&&back.length===3&&contrast(color,back)>=4.5,{selector:e.id||e.name||e.tagName,font:s.fontSize,color:s.color,background:bg});
+ }
+ const samples=Array.from(document.querySelectorAll('.card-body p,.thread-body p,.task-pane td,.fp-draft-dialog p,.fp-draft-slide,.cce-dialog pre,.sourcing-card p,.affiliate-job p,.neko-card p')).filter(e=>visible(e)&&e.textContent.trim()).slice(0,30);
+ for(const e of samples){const st=getComputedStyle(e);let n=e,bg=st.backgroundColor;while((bg==='transparent'||bg==='rgba(0, 0, 0, 0)')&&n.parentElement){n=n.parentElement;bg=getComputedStyle(n).backgroundColor}const fore=rgb(st.color),back=rgb(bg);add('readable content contrast',fore.length===3&&back.length===3&&contrast(fore,back)>=4.5,{selector:e.className||e.tagName,text:e.textContent.slice(0,45),color:st.color,background:bg});}
+ add('no API writes',window.__rpgQA.writes.length===0,window.__rpgQA.writes);
+ return checks;
+})()`;
+test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:220000},async()=>{
+ assert.ok(chrome,'Chrome is required; browser QA must not silently skip');fs.mkdirSync(output,{recursive:true});
+ const server=http.createServer((req,res)=>{
+  const url=new URL(req.url,'http://localhost'),relative=decodeURIComponent(url.pathname).replace(/^\/+/,''),file=path.resolve(root,relative);
+  if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);res.end();return}
+  if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return}
+  let content=fs.readFileSync(file);
+  if(relative==='command-center-98/app.html')content=content.toString().replace('<head>','<head><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script>');
+  if(relative==='command-center-98/index.html')content=content.toString().replace('<head>','<head><script>localStorage.removeItem("cc_retro_token");window.__rpgQA={writes:[]};</script>');
+  if(relative==='command-center-98/app-v130.html'&&url.searchParams.has('qa-boot'))content=content.toString().replace('<head>','<head><script>window.__rpgQA={writes:[]};window.fetch=()=>new Promise(()=>{});</script>');
+  // Read-only access to the actual fallback renderer; its normal packet action writes.
+  // This test-only export is never written to or loaded from production source.
+  if(relative==='command-center-98/binbo-neko.js')content=content.toString().replace('window.CCBinboNeko={','window.__rpgQA.openNekoCopy=copyFallback;window.CCBinboNeko={');
+  // No visual banner: screenshots must represent the actual application layout.
+  if(relative==='scripts/ui-fixtures.js')content=content.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
+  res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store'});res.end(content);
+ });
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cc-rpg-browser-'));
+ const proc=spawn(chrome,['--headless','--no-sandbox','--disable-gpu','--no-first-run','--disable-background-networking','--disable-component-update','--remote-debugging-port=0','--user-data-dir='+path.join(dir,'profile'),'about:blank'],{stdio:'ignore'});
+ let ws,serial=0;const pending=new Map(),results=[],blocked=[],errors=[];
+ try{
+  const portFile=path.join(dir,'profile/DevToolsActivePort'),deadline=Date.now()+15000;
+  while(!fs.existsSync(portFile)&&Date.now()<deadline&&proc.exitCode===null)await sleep(50);
+  assert.ok(fs.existsSync(portFile),'headless Chrome did not start');
+  const port=fs.readFileSync(portFile,'utf8').split('\n')[0],targets=await(await fetch('http://127.0.0.1:'+port+'/json/list')).json();
+  ws=new WebSocket(targets.find(t=>t.type==='page').webSocketDebuggerUrl);await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j});
+  const send=(method,params={})=>new Promise((resolve,reject)=>{const id=++serial;pending.set(id,{resolve,reject});ws.send(JSON.stringify({id,method,params}))});
+  ws.onmessage=event=>{const m=JSON.parse(event.data);if(m.id&&pending.has(m.id)){const p=pending.get(m.id);pending.delete(m.id);m.error?p.reject(Error(m.error.message)):p.resolve(m.result)}
+   if(m.method==='Fetch.requestPaused'){const p=m.params,u=new URL(p.request.url),allowed=u.origin===origin&&['GET','HEAD'].includes(p.request.method);if(!allowed)blocked.push({url:p.request.url,method:p.request.method});send(allowed?'Fetch.continueRequest':'Fetch.failRequest',allowed?{requestId:p.requestId}:{requestId:p.requestId,errorReason:'BlockedByClient'}).catch(e=>errors.push(e.message))}
+   if(m.method==='Runtime.exceptionThrown')errors.push(m.params.exceptionDetails.exception?.description||m.params.exceptionDetails.text);
+  };
+  await send('Page.enable');await send('Runtime.enable');await send('Fetch.enable',{patterns:[{urlPattern:'http*',requestStage:'Request'}]});
+  const evaluate=async expression=>{const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result.value};
+  const waitFor=async expression=>{for(let i=0;i<100;i++){if(await evaluate(expression))return;await sleep(50)}throw Error('Timed out: '+expression)};
+  const capture=async(name,extra)=>{await sleep(120);await evaluate('window.scrollTo(0,0)');const checks=await evaluate(geometry);if(extra)checks.push({name:'expected route content',pass:!!await evaluate(extra)});const png=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(output,name+'.png'),Buffer.from(png.data,'base64'));results.push({name,checks});console.log(name+': '+checks.filter(x=>x.pass).length+'/'+checks.length)};
+  const route=async(view)=>{await evaluate(`CCHome.leave();load(${JSON.stringify(view)})`);await waitFor('!app.busy');await sleep(180)};
+  for(const [width,height]of [[390,780],[1280,900]]){
+   const prefix=width+'x'+height+'-';await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
+   await send('Page.navigate',{url:origin+'/command-center-98/index.html'});await waitFor(`!!document.getElementById('loginPane')&&!document.getElementById('loginPane').classList.contains('hidden')`);await capture(prefix+'login',`location.pathname.endsWith('/index.html')`);
+   await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html?qa-boot=1'});await waitFor(`!!document.querySelector('.boot')&&!!window.__rpgQA`);await capture(prefix+'bootstrap',`!!document.querySelector('.boot .bar')`);
+   await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});await waitFor('!!window.CCRpgHome && !!window.__rpgQA && !app.busy');await evaluate('document.fonts.ready');await sleep(350);
+   // Compare computed top geometry/paint with the new theme disabled, in the same browser.
+   const signature=`JSON.stringify(Array.from(document.querySelectorAll('#ccRpgHome,#ccRpgHome *')).map(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return [e.tagName,e.className,r.x,r.y,r.width,r.height,s.color,s.backgroundColor,s.fontFamily,s.fontSize,s.border,s.padding,s.margin]}))`;
+   const themed=await evaluate(signature);await evaluate(`document.body.classList.remove('cc-rpg-theme');document.querySelectorAll('link[href*="rpg-theme.css"]').forEach(x=>x.disabled=true)`);const original=await evaluate(signature);await evaluate(`document.querySelectorAll('link[href*="rpg-theme.css"]').forEach(x=>x.disabled=false);document.body.classList.add('cc-rpg-theme')`);
+   results.push({name:prefix+'top-preserved',checks:[{name:'approved RPG top computed layout and paint unchanged',pass:themed===original}]});
+   await capture(prefix+'top',`!document.getElementById('ccRpgHome').hidden`);
+   for(const key of ['kyun','choi','tiktok']){await evaluate(`CCRpgHome.openAccount('${key}')`);await waitFor(`document.querySelector('dialog[open] article')!==null`);await capture(prefix+'account-'+key,`document.querySelector('dialog[open]').textContent.includes('合成')`);await evaluate(`document.querySelector('dialog[open] button').click()`);await waitFor(`!document.querySelector('dialog[open]')`)}
+   await evaluate('CCRpgHome.showLegacy()');await capture(prefix+'legacy-home',`!document.getElementById('commandHome').hidden`);
+   await evaluate('CCNavigation.toggleMore()');await capture(prefix+'all-tools',`!document.getElementById('ccMore').hidden`);await evaluate('CCNavigation.toggleMore()');
+   for(const view of ['fp','house','career','x','reddit','history','accepted','rejected','saved','events','affiliate','binbo-neko']){try{await route(view);await capture(prefix+view,`app.view===${JSON.stringify(view)}`)}catch(e){results.push({name:prefix+view,checks:[{name:'route rendered',pass:false,detail:e.message}]})}}
+   await route('career');await evaluate(`document.querySelector('[data-cce-open]')?.click()`);await capture(prefix+'career-dialog',`!!document.querySelector('.cce-dialog[open]')`);await evaluate(`document.querySelector('.cce-dialog [data-close]')?.click()`);
+   await route('x');await evaluate('CCX.openEditor(CCX.state.items[0])');await capture(prefix+'cards-editor',`document.getElementById('xEditor').classList.contains('open')`);await evaluate('CCX.close()');
+   await route('reddit');for(const tab of ['inbox','candidate','draft','tracking','posted','miss']){await evaluate(`CCReddit.state.tab='${tab}';CCReddit.render()`);await capture(prefix+'reddit-'+tab)}
+   await evaluate('CCReddit.openEditor(CCReddit.state.items[0])');await capture(prefix+'reddit-editor',`document.getElementById('redditEditorModal').classList.contains('open')`);await evaluate('CCReddit.closeEditor()');
+   await route('fp');await evaluate(`document.querySelector('[data-fp-open]')?.click()`);await capture(prefix+'fp-draft-modal',`!!document.querySelector('.fp-draft-dialog')`);await evaluate(`document.querySelector('.fp-close-draft')?.click()`);
+   await route('affiliate');await evaluate(`document.querySelector('.affiliate-settings').open=true`);await capture(prefix+'settings',`!!document.querySelector('.affiliate-settings[open] input')`);
+   await waitFor(`!!document.querySelector('[data-page]')`);await evaluate(`document.querySelector('[data-page]').click()`);await capture(prefix+'affiliate-preview',`!!document.querySelector('#affiliatePreview[open]')`);await evaluate(`document.getElementById('affiliatePreviewClose').click()`);
+   await evaluate(`document.querySelector('[data-import]').click()`);await capture(prefix+'affiliate-import',`!!document.querySelector('.affiliate-import[open]')`);await evaluate(`document.querySelector('.affiliate-import [data-cancel]').click()`);
+   await route('binbo-neko');await evaluate(`window.__rpgQA.openNekoCopy('検証用の制作セットです。\\n原稿・商品条件・注意点を確認します。')`);await capture(prefix+'neko-copy-dialog',`!!document.querySelector('#nekoCopyDialog[open]')`);await evaluate(`document.querySelector('#nekoCopyDialog button').click()`);
+   await route('sourcing');for(const sub of ['queue','hold','purchases','suppliers','research','discoveries','success','close','miss']){await evaluate(`sourcingApp.sub='${sub}';renderSourcing()`);await capture(prefix+'sourcing-'+sub,`!document.getElementById('sourcingHub').hidden`)}
+   await evaluate(`sourcingApp.sub='purchases';renderSourcing();document.querySelector('[data-purchase-drill]')?.click()`);await capture(prefix+'purchase-drill',`!!document.querySelector('#purchaseDrillModal.open')`);await evaluate(`document.getElementById('purchaseDrillClose')?.click()`);
+   await route('active');for(const [menu,button]of [['fileMenu','menuFile'],['viewMenu','menuView']]){await evaluate(`toggleMenu('${menu}','${button}')`);await capture(prefix+menu,`document.getElementById('${menu}').classList.contains('open')`);await evaluate('closeMenus()')}
+   for(const [name,open,close]of [['help','openHelp()','helpClose'],['task','openTasks()','taskClose'],['review','openReview()','reviewClose']]){await evaluate(open);await capture(prefix+name+'-modal',`document.getElementById('${name}Modal').classList.contains('open')`);await evaluate(`document.getElementById('${close}').click()`);await waitFor(`!document.getElementById('${name}Modal').classList.contains('open')`)}
+   for(const mode of ['empty','error']){await evaluate(`window.__rpgQA.mode='${mode}'`);await route('active');await capture(prefix+mode,`document.querySelector('#list .empty')!==null`)}
+   await evaluate(`window.__rpgQA.mode='loading';void load('active')`);await sleep(100);await capture(prefix+'loading',`!!document.querySelector('#list .loading-lines')`);await evaluate(`window.__rpgQA.mode='normal';window.__rpgQA.release.forEach(r=>r());window.__rpgQA.release=[]`);await waitFor('!app.busy');
+   await evaluate('CCRpgHome.showRpg()');await capture(prefix+'return-top',`!document.getElementById('ccRpgHome').hidden`);
+  }
+  results.push({name:'network-isolation',checks:[{name:'no attempted external network request',pass:blocked.length===0,detail:blocked},{name:'no uncaught browser exceptions',pass:errors.length===0,detail:errors}]});
+ }finally{fs.writeFileSync(path.join(output,'results.json'),JSON.stringify({results,blocked,errors},null,2));ws?.close();proc.kill();server.close();}
+ const failures=results.flatMap(r=>r.checks.filter(c=>!c.pass).map(c=>({route:r.name,...c})));
+ assert.deepEqual(failures,[],'See artifacts/rpg-theme/results.json and per-route PNGs');
+});

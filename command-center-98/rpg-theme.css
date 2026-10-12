@@ -1,0 +1,140 @@
+/* Whole-application RPG presentation. No routing, data, auth, visibility or image-content changes. */
+@font-face{font-family:CCRpgDot;src:url('./assets/rpg-home/DotGothic16-Regular.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
+body.cc-rpg-theme{
+ --rpg-bg:#121723;--rpg-panel:#202633;--rpg-raised:#293141;--rpg-sunken:#171d28;--rpg-line:#695d48;--rpg-line-soft:#3e4654;--rpg-text:#eee8da;--rpg-muted:#b6b8bc;--rpg-gold:#e2c68c;--rpg-link:#f0ce88;--rpg-good:#a9ddba;--rpg-bad:#ffb8ac;--rpg-warning:#f1d293;
+ --win-gray:var(--rpg-panel);--win-light:var(--rpg-line);--win-mid:var(--rpg-raised);--win-dark:var(--rpg-line);--win-black:var(--rpg-line);--win-blue:var(--rpg-raised);--desktop:var(--rpg-bg);
+ --cc-face:var(--rpg-panel);--cc-light:var(--rpg-line);--cc-light-mid:var(--rpg-panel);--cc-shadow:var(--rpg-muted);--cc-dark:var(--rpg-line);--cc-active-title:#252a39;--cc-active-title-end:#1b202c;--cc-inactive-title:#242834;--cc-inactive-title-end:#1c202a;--cc-selection:#6e5833;--cc-selection-text:#fff5df;
+ color-scheme:dark;background:radial-gradient(ellipse at 85% 0,#59432935,transparent 55%),linear-gradient(150deg,#171c29,#0e131d)!important;color:var(--rpg-text);font-family:system-ui,-apple-system,"Noto Sans CJK JP","Yu Gothic",sans-serif;font-size:14px;line-height:1.6;
+}
+/* Chrome and large surfaces. The approved #ccRpgHome is intentionally outside every target. */
+body.cc-rpg-theme :is(.window,.task-window,.dialog-window,.sourcing-program,.reddit-program,.reddit-editor-window,.x-program,.x-editor,.purchase-drill-window,.fp-draft-dialog,.home-window,.home-panel,.toast,dialog,.boot,.box){background:var(--rpg-panel)!important;color:var(--rpg-text)!important;border:1px solid var(--rpg-line)!important;border-radius:6px!important;box-shadow:0 16px 48px #05080e55!important}
+body.cc-rpg-theme #mainWindow{overflow:visible;box-shadow:0 12px 55px #05080e55!important}
+body.cc-rpg-theme #mainWindow .window-body{padding:16px}
+body.cc-rpg-theme :is(.title-bar,.home-window-title,.home-panel-title,.sourcing-program-head,.reddit-program-head,.x-head,.fp-draft-dialog>header,.box>.title){background:linear-gradient(90deg,#282d3b,#1a202d)!important;color:var(--rpg-gold)!important;border:0!important;border-bottom:1px solid var(--rpg-line)!important;box-shadow:none!important;text-shadow:none!important;font-family:CCRpgDot,monospace;font-weight:400;min-height:38px;height:auto;padding:7px 10px;letter-spacing:.035em}
+body.cc-rpg-theme .title-bar .title-text{font-size:15px}
+body.cc-rpg-theme :is(.title-bar small,.home-window-title small,.home-panel-title small){color:var(--rpg-muted)!important;font:12px/1.5 system-ui,sans-serif}
+body.cc-rpg-theme .app-icon{background:transparent!important;color:var(--rpg-gold)!important;border:0!important;box-shadow:none!important}
+body.cc-rpg-theme :is(.menu-bar,.home-primary-nav,.home-mobile-nav,.toolbar,.status-bar,.dialog-footer,.reddit-editor-actions,.x-editor-actions,.fp-draft-dialog>footer){background:var(--rpg-sunken)!important;color:var(--rpg-text)!important;border:0!important;border-bottom:1px solid var(--rpg-line-soft)!important;box-shadow:none!important}
+body.cc-rpg-theme .menu-bar{height:auto;min-height:38px;flex-wrap:wrap;padding:3px 7px}
+body.cc-rpg-theme .status-bar{border-top:1px solid var(--rpg-line-soft)!important;gap:8px;padding:6px 9px}
+body.cc-rpg-theme .status-panel{border:0!important;color:var(--rpg-muted);font-size:12px}
+body.cc-rpg-theme .retro-menu{background:var(--rpg-raised)!important;color:var(--rpg-text)!important;border:1px solid var(--rpg-line)!important;border-radius:5px!important;box-shadow:0 12px 30px #0008!important;padding:5px!important;max-width:calc(100vw - 24px)}
+body.cc-rpg-theme .menu-shortcut{color:var(--rpg-muted)!important}
+body.cc-rpg-theme .menu-separator-line{background:var(--rpg-line-soft)!important;border:0!important;height:1px!important;margin:5px!important}
+/* Shared controls, retaining disabled, selected and keyboard-focus semantics. */
+body.cc-rpg-theme :is(.push-button,.win-control,.home-nav-button,.home-launcher-card,.home-metric,.home-mobile-nav button,.menu-item,.retro-menu-item,dialog button,.btn){background:var(--rpg-raised)!important;background-image:none!important;color:var(--rpg-text)!important;border:1px solid var(--rpg-line)!important;border-radius:4px!important;box-shadow:none!important;text-shadow:none!important;font:500 13px/1.5 system-ui,sans-serif;min-height:34px;padding:6px 11px;transition:background-color .12s,border-color .12s}
+body.cc-rpg-theme :is(.win-control){min-height:29px;height:29px;width:30px;padding:2px;line-height:1}
+body.cc-rpg-theme :is(.menu-item,.retro-menu-item){border-color:transparent!important;text-align:left}
+body.cc-rpg-theme :is(.push-button,.win-control,.home-nav-button,.home-launcher-card,.home-metric,.home-mobile-nav button,.menu-item,.retro-menu-item,dialog button,.btn):not(:disabled):hover{background:#343e50!important;color:#fff6e5!important;border-color:#ad9566!important;outline:none!important}
+body.cc-rpg-theme :is(.push-button,.home-nav-button,.home-mobile-nav button).selected,body.cc-rpg-theme :is(.push-button,.home-nav-button,.home-mobile-nav button)[aria-pressed=true],body.cc-rpg-theme .menu-item[aria-expanded=true],body.cc-rpg-theme #ccPrimaryNav [data-home-action="binbo-neko"].selected{background:#d6bd88!important;background-image:none!important;color:#171c26!important;border-color:#e9d3a9!important;box-shadow:none!important;text-shadow:none!important}
+body.cc-rpg-theme :is(.push-button,.win-control,.home-mobile-nav button):active{transform:none!important;background:#4d4434!important;color:#fff3d8!important;box-shadow:none!important}
+body.cc-rpg-theme :is(button,input,textarea,select):disabled:not(#ccRpgHome *){color:#aeb3bd!important;background:#252b37!important;text-shadow:none!important;border-color:#48505e!important;box-shadow:none!important;opacity:.7!important;cursor:not-allowed}
+body.cc-rpg-theme :is(button,a,summary,input,textarea,select,[role=button]):focus-visible:not(#ccRpgHome *){outline:2px solid #f2d49b!important;outline-offset:2px!important}
+body.cc-rpg-theme :is(input:not([type=hidden]):not([type=checkbox]):not([type=radio]),textarea,select){background:#151c28!important;color:#f4eddc!important;border:1px solid #7a715e!important;border-radius:4px!important;box-shadow:none!important;min-height:36px;padding:7px 9px;font:14px/1.6 system-ui,sans-serif;max-width:100%}
+body.cc-rpg-theme :is(input,textarea)::placeholder{color:#a6aab3;opacity:1}
+body.cc-rpg-theme :is(input[type=checkbox],input[type=radio]){appearance:auto;width:17px;height:17px;accent-color:#d6bd88;background:none!important;border:0!important;box-shadow:none!important;vertical-align:middle}
+body.cc-rpg-theme fieldset{border:1px solid var(--rpg-line-soft)!important;border-radius:4px!important}body.cc-rpg-theme legend{color:var(--rpg-gold);padding:0 6px}
+/* Destination headings and legacy HOME. */
+body.cc-rpg-theme #mainWindow :is(.cc-heading,.cc-more-head,.neko-header){border-color:var(--rpg-line)!important}
+body.cc-rpg-theme #mainWindow :is(h1,h2,h3,.section-title,.supplier-ledger-head b,.purchase-order-head b){color:var(--rpg-gold);font-family:CCRpgDot,monospace;font-weight:400;line-height:1.5}
+body.cc-rpg-theme :is(dialog h2,.fp-draft-dialog h2,.dialog-window h2,.task-window h2,.purchase-drill-window h2){color:var(--rpg-gold);font:400 23px/1.5 CCRpgDot,monospace}
+body.cc-rpg-theme #ccPageTitle{color:var(--rpg-gold)!important;font-size:25px}
+body.cc-rpg-theme :is(#ccPageDescription,.cc-guide,.cc-route-heading,.home-launcher-card span,.home-nav-button span,.neko-operation,.neko-run small,.neko-identity,.neko-price small,.neko-card footer small,.trade-basis-note,.trade-table small,.request-times dt,.request-artifacts>span,.request-priority,.help-note,.purchase-note){color:var(--rpg-muted)!important;line-height:1.65}
+body.cc-rpg-theme :is(.home-nav-button.selected span,.home-launcher-card.selected span){color:#39352e!important}
+body.cc-rpg-theme :is(#ccMore,.manual-operation-hub,.manual-operation-grid article,.home-workspace,.request-card,.request-sync,.request-help,.request-result,#requestProgressModal,.trade-details,.trade-table-wrap){background:var(--rpg-panel)!important;color:var(--rpg-text)!important;border:1px solid var(--rpg-line-soft)!important;border-radius:5px!important;box-shadow:none!important}
+body.cc-rpg-theme .manual-operation-hub{padding:18px}.cc-rpg-theme .manual-operation-grid{gap:12px}
+body.cc-rpg-theme :is(.home-window-body,.home-other-list,.home-feed-list,.home-feed-card,.home-feed-row,.home-feed-card>header,.home-feed-more,.home-launcher-grid){background:var(--rpg-panel)!important;color:var(--rpg-text)!important;border-color:var(--rpg-line-soft)!important;box-shadow:none!important}
+body.cc-rpg-theme .home-feed-card>header button{color:var(--rpg-gold)!important}body.cc-rpg-theme .home-feed-card>header span{background:var(--rpg-sunken)!important;color:var(--rpg-muted)!important;border-color:var(--rpg-line-soft)!important}
+body.cc-rpg-theme :is(.home-feed-row time,.home-feed-row small,.home-feed-more){color:var(--rpg-muted)!important;font-size:12px}
+/* Data cards retain their layout and disclosure controls. */
+body.cc-rpg-theme #mainWindow :is(.thread,.sourcing-card,.x-card,.reddit-card,.result-record,.affiliate-intro,.affiliate-settings,.affiliate-job,.neko-card,.purchase-order,.supplier-ledger-head,.supplier-candidate-audit,.store-audit-card,.store-products,.sourcing-hold-section,.price-wait-box,.last-check-box,.fp-candidate,.fp-top-card,.fp-question,.fp-evidence,.fp-premises,.fp-demand,.cce-tools,.cce-internal){background:var(--rpg-panel)!important;color:var(--rpg-text)!important;border-color:var(--rpg-line-soft)!important;border-radius:5px!important;box-shadow:none!important}
+body.cc-rpg-theme #mainWindow :is(.cc-item-summary,.thread-head,.sourcing-card-head,.x-card-head,.purchase-order-head,.supplier-candidate-audit-body,.store-audit-body,.fp-head){background:var(--rpg-panel)!important;color:var(--rpg-text)!important;border-color:var(--rpg-line-soft)!important}
+body.cc-rpg-theme #mainWindow .cc-item[open]>.cc-item-summary,body.cc-rpg-theme #mainWindow .cc-item-summary:hover{background:var(--rpg-raised)!important}
+body.cc-rpg-theme :is(.cc-item-summary:before,.cc-item-cue,.cc-open-draft,.task-origin-link,.request-result summary){color:var(--rpg-gold)!important}
+body.cc-rpg-theme :is(.cc-item-meta,.meta,.sourcing-caption,.sourcing-hold-reason,.sourcing-hold-research,.last-check-meta,.x-value-hook,.x-verify,.neko-card small,.request-artifacts b){color:var(--rpg-muted)!important}
+body.cc-rpg-theme :is(.cc-item-summary>strong,.thread-title,.lead,.sourcing-card-body,.x-card-body,.neko-fit,.fp-draft-dialog main,.manual-operation-review p,.manual-operation-review li){font-size:14px;line-height:1.75}
+body.cc-rpg-theme :is(.cc-item-content,.thread-body,.sourcing-program-body,.x-body,.reddit-program-body,.task-body,.dialog-body,.purchase-drill-body,.reddit-editor-body,.fp-draft-dialog main){color:var(--rpg-text);background:var(--rpg-panel);border-color:var(--rpg-line-soft)}
+body.cc-rpg-theme :is(.affiliate-state,.neko-state,.state-tag,.domain-tag,.priority,.fp-state,.request-state,.sourcing-tab-count,.store-status){background:#303747!important;color:var(--rpg-text)!important;border-color:#697080!important;border-radius:3px!important;text-shadow:none!important}
+/* Reading panels and finished content: preserve images and author-selected swatches. */
+body.cc-rpg-theme :is(.affiliate-caption,.affiliate-production-actions,.neko-card pre,.neko-card section,.task-prompt,.result-full-text,.x-draft,.x-copy-box,.x-info,.reddit-ja-preview,.reddit-reaction-preview,.fp-copy-box,.fp-preflight,.fp-draft-sources,.fp-draft-notes,.fp-performance,.fp-finished-panel,.fp-finished-evidence,.fp-entrance-picker,.fp-story-spine,.fp-money-logic-review,.fp-canonical-page,.fp-canonical-status,.cc-review-manual-copy,.cc-image-manual-copy,.cc-research-manual-copy,.cce-dialog,.groupbox){background:var(--rpg-sunken)!important;color:var(--rpg-text)!important;border-color:var(--rpg-line-soft)!important;box-shadow:none!important;border-radius:4px!important}
+body.cc-rpg-theme :is(dialog pre,.result-full-text,.affiliate-caption,.task-prompt,.fp-copy-box){white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;font-size:14px}
+body.cc-rpg-theme :is(#affiliateDesk,#binboNekoDesk,.request-progress,.trade-details){color:var(--rpg-text)!important}
+body.cc-rpg-theme :is(#mainWindow,.modal-backdrop,.fp-draft-modal,dialog) a[href]{color:var(--rpg-link)!important;text-underline-offset:3px;overflow-wrap:anywhere}
+body.cc-rpg-theme #sourcingBody .sourcing-mobile-links>a,body.cc-rpg-theme .sourcing-mobile-links>button{background:var(--rpg-raised)!important;color:var(--rpg-link)!important;border-color:var(--rpg-line)!important}
+body.cc-rpg-theme :is(.sourcing-mobile-facts,.sourcing-mobile-grade,.task-stat,.purchase-stat,.reddit-stat,.reddit-scorebar,.x-stats>div,.x-facts>div,.hero,.review-toolbar,.help-grid,.sourcing-intro,.reddit-intro,.x-intro,.purchase-drill-titleline,.purchase-drill-table-wrap,.supplier-table-wrap){background:var(--rpg-sunken)!important;color:var(--rpg-text)!important;border:1px solid var(--rpg-line-soft)!important;border-radius:4px!important;box-shadow:none!important}
+/* Dense ledgers are low-glare, tabular and scroll only inside their retained wrappers. */
+body.cc-rpg-theme :is(#mainWindow,.modal-backdrop,.fp-draft-modal,dialog) table{background:var(--rpg-panel);color:var(--rpg-text);border-color:var(--rpg-line-soft);font-size:13px;line-height:1.55;font-variant-numeric:tabular-nums}
+body.cc-rpg-theme :is(#mainWindow,.modal-backdrop,.fp-draft-modal,dialog) :is(th,td){border-color:var(--rpg-line-soft)!important;box-shadow:none!important}
+body.cc-rpg-theme :is(#mainWindow,.modal-backdrop,.fp-draft-modal,dialog) th{background:#2c3240!important;color:var(--rpg-gold)!important;padding:8px}
+body.cc-rpg-theme :is(#mainWindow,.modal-backdrop,.fp-draft-modal,dialog) td{background:var(--rpg-panel);color:var(--rpg-text);padding:8px}
+body.cc-rpg-theme :is(.task-row:hover,.x-row:hover,tr.clickable:hover,.purchase-drill-table tr.order-drill-row:hover,.task-row.selected){background:var(--rpg-raised)!important;color:var(--rpg-text)!important;outline-color:var(--rpg-gold)!important}
+body.cc-rpg-theme :is(.task-row:hover,.task-row.selected,tr.clickable:hover) td{background:var(--rpg-raised)!important}
+body.cc-rpg-theme :is(.purchase-cost-columns-v211 .ledger-total-cost,.ledger-total-cell,.ledger-cost-cell,.order-total){color:var(--rpg-gold)!important}
+body.cc-rpg-theme :is(.purchase-table-wrap,.supplier-table-wrap,.trade-table-wrap,.mercari-history-scroll,.ledger-sale-scroll,.cce-scroll){max-width:100%;border-color:var(--rpg-line-soft)!important}
+/* All body-mounted dialog families, including native account review and copy fallbacks. */
+body.cc-rpg-theme :is(.modal-backdrop,.fp-draft-modal){background:#080d18b8!important;backdrop-filter:blur(4px);padding:16px}
+body.cc-rpg-theme dialog::backdrop{background:#080d18b8;backdrop-filter:blur(4px)}
+body.cc-rpg-theme :is(.task-window,.dialog-window,.reddit-editor-window,.x-editor,.purchase-drill-window,.fp-draft-dialog,dialog){max-width:calc(100vw - 32px)!important;max-height:calc(100dvh - 32px)!important;min-width:0!important}
+body.cc-rpg-theme dialog{padding:20px;line-height:1.7;overflow:auto}
+body.cc-rpg-theme :is(.manual-operation-review,.affiliate-preview,.cce-dialog,#nekoCopyDialog){width:min(880px,calc(100vw - 32px));font-family:system-ui,sans-serif}
+body.cc-rpg-theme .manual-operation-review article{border-top:1px solid var(--rpg-line)!important;padding:16px 0}
+body.cc-rpg-theme .manual-operation-review h3,body.cc-rpg-theme .manual-operation-review h4{color:var(--rpg-gold)}
+body.cc-rpg-theme :is(.fp-draft-dialog>header,.dialog-window>.title-bar,.task-window>.title-bar){flex-shrink:0}
+body.cc-rpg-theme :is(.fp-draft-dialog,.task-window,.dialog-window,.purchase-drill-window,.reddit-editor-window,.x-editor){overflow:auto}
+body.cc-rpg-theme :is(.fp-draft-modal,.modal-backdrop).open>*,body.cc-rpg-theme dialog[open]{animation:rpg-panel-in .16s ease-out}
+@keyframes rpg-panel-in{from{opacity:.3;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+/* Honest status states use contrast, words and warm color rather than bright XP panels. */
+body.cc-rpg-theme :is(.empty,.dialog-empty,.task-empty,.reddit-empty,.reddit-loading,.x-empty,.fp-empty,.last-check-empty,.request-empty,.home-empty-row,.sourcing-hold-empty,.sale-empty){background:var(--rpg-sunken)!important;color:var(--rpg-muted)!important;border:1px solid var(--rpg-line-soft)!important;border-radius:4px!important;box-shadow:none!important;padding:20px;font:14px/1.75 system-ui,sans-serif}
+body.cc-rpg-theme :is(.home-feed-error,.reddit-editor-error,[data-sourcing-load-error],.request-blocked .request-state,.toast.bad,.status.err){background:#3a252a!important;color:var(--rpg-bad)!important;border-color:#93645e!important}
+body.cc-rpg-theme :is(.home-feed-warning,.affiliate-warning,.neko-warning,.request-warning,.request-decision,.trade-unavailable,.request-needs_review .request-state){background:#383027!important;color:var(--rpg-warning)!important;border-color:#8d7852!important}
+body.cc-rpg-theme :is(.toast.good,.neko-ready,.request-completed .request-state,.request-verified){color:var(--rpg-good)!important;background:#23392f!important;border-color:#527462!important}
+body.cc-rpg-theme :is(.neko-price strong,.profit-positive){color:var(--rpg-good)!important}
+body.cc-rpg-theme :is(.cc-chat-title,.profit-negative){color:var(--rpg-bad)!important}
+body.cc-rpg-theme .toast-title{background:transparent!important;color:inherit!important;border-bottom:1px solid currentColor;opacity:.9}
+body.cc-rpg-theme .toast-body{color:inherit!important;background:transparent!important;line-height:1.65}
+body.cc-rpg-theme .loading-line{background:linear-gradient(90deg,#2b3343,#6a5c40,#2b3343)!important;border:0!important;border-radius:2px}
+body.cc-rpg-theme .spinner{border-color:#596171!important;border-top-color:var(--rpg-gold)!important}
+body.cc-rpg-theme .bar{background:var(--rpg-sunken)!important;border:1px solid var(--rpg-line)!important;box-shadow:none!important}
+body.cc-rpg-theme .fill{background:var(--rpg-gold)!important}
+body.cc-rpg-theme .box{width:min(520px,100%)}body.cc-rpg-theme .box .body{padding:22px}body.cc-rpg-theme :is(.box .note,.boot .note){color:var(--rpg-muted)!important}
+body.cc-rpg-theme .boot{padding:22px;min-width:0;width:min(420px,calc(100vw - 32px))}
+
+/* Audited nested surfaces: explicit selectors avoid touching approved HOME and artwork. */
+/* Nested card and modal surfaces. */
+body.cc-rpg-theme :is(.sourcing-card-body,.x-card-body,.reddit-card-body,.reddit-card-head,.task-pane,.task-detail dt,.help-grid dt,.review-card-host .actions,.help-note,.purchase-table-wrap,.cashflow-purpose,.result-history-note,.list-filter,.result-task-index,.fp-draft-cover,.fp-draft-slide,.fp-publish-copy,.fp-copy-box pre,.fp-grid dt,.fp-grid dd,.fp-premises li,.fp-draft-actions,.fp-shot,.fp-performance-context,.fp-design-reference,.fp-cover-reason,.fp-top-board){background:var(--rpg-panel)!important;color:var(--rpg-text)!important;border-color:var(--rpg-line-soft)!important;box-shadow:none!important}
+/* Explicit production choices; palette swatch b elements retain their inline colors. */
+body.cc-rpg-theme :is(.fp-design-option span,.fp-palette-option>span,.fp-cover-option>span,.fp-entrance-option,.fp-story-beats>div,[data-zankure-image-gate]){background:var(--rpg-sunken)!important;color:var(--rpg-text)!important;border-color:var(--rpg-line-soft)!important;box-shadow:none!important}
+/* Selected production choices. */
+body.cc-rpg-theme :is(.fp-design-option input:checked+span,.fp-palette-option input:checked+span,.fp-cover-option input:checked+span,.fp-entrance-option.selected){background:var(--rpg-raised)!important;color:var(--rpg-text)!important;border-color:var(--rpg-gold)!important}
+/* Nested badges and ledger summaries. */
+body.cc-rpg-theme :is(.fp-signal,.fp-stage,.fp-ready,.fp-package-status,.fp-page-sticky,.fp-demand header span,.fp-shot>div>b,.fp-cover-option mark,.fp-top-status,.sourcing-verdict,.boost,.trust,.sourcing-tab-group,.sourcing-tab-group-label,.sourcing-count-main,.sourcing-count-pending,.sourcing-hold-section-title b,.sourcing-hold-research,.sourcing-hold-research summary b,.sourcing-hold-reason,.legacy-success-note,.price-wait-chip,.store-audit-head,.store-audit-note,.store-audit-summary .push-button b,.sale-kpis>div,.sale-confidence,.ledger-sales-note,.ledger-sale-tag,.ledger-sale-tip,.bundle-global-summary,.bundle-components-panel,.bundle-component,.mercari-history-head span,.mercari-history-status-v229,.last-check-card,.last-check-head,.last-check-body,.last-check-intro,.last-check-summary span,.last-check-ai,.last-check-ai>summary,.reddit-toolbar,.reddit-price-box,.reddit-draft-preview,.reddit-status,.reddit-count,.reddit-top-badge,.reddit-duplicate,.x-badge,.x-verify,.x-source,.x-freshness,.x-posted-mark,.x-value-hook,.x-posting-state,.x-decision,.x-copy-moment,.x-copy-warning,.x-copy-history,.x-copy-entry pre,.x-copy-entry summary span:last-child,.home-system-alert){background:var(--rpg-sunken)!important;color:var(--rpg-text)!important;border-color:var(--rpg-line-soft)!important;box-shadow:none!important}
+/* Readable secondary copy in dynamically injected panels. */
+body.cc-rpg-theme :is(.task-stat small,.task-legend,.review-scope,.purchase-stat small,.action-label,.no,.task-origin,.home-workspace>small,.fp-question small,.fp-demand small,.fp-draft-status span,.fp-draft-cover small,.fp-preflight>p,.fp-performance>p,.fp-design-option small,.fp-design-option em,.fp-design-reference>small,.fp-shot dt,.fp-slide-visual,.fp-slide-source,.fp-comment-list small,.fp-evidence h4 small,.fp-premises li small,.fp-draft-sources p,.fp-draft-sources small,.fp-palette-option small,.fp-cover-option small,.fp-cover-option em,.fp-entrance-picker>p,.fp-entrance-option small,.fp-entrance-option em,.fp-story-beats small,.fp-canonical-page details,.fp-money-logic-review small,.fp-top-title span,.reddit-stat small,.reddit-price-box small,.reddit-price-box .sub,.x-stats small,.x-facts small,.x-copy-meta,.x-copy-empty,.ledger-sale-sub,.ledger-sale-zero,.bundle-global-summary small,.bundle-global-summary .bundle-before,.bundle-component span,.bundle-component small,.bundle-components-panel p,.store-audit-foot,.store-audit-table .store-no,.sale-kpis b,.last-check-intro small,.last-check-ai>summary span,.last-check-ai-row span,.price-wait-box>small){color:var(--rpg-muted)!important}
+/* Readable emphasized copy. */
+body.cc-rpg-theme :is(.home-launcher-card b,.home-workspace>b,.fp-head>b,.fp-draft-status b,.reddit-intro b,.reddit-draft-preview strong,.ledger-sale-money,.bundle-global-summary strong,.bundle-global-summary b,.bundle-components-title b,.store-audit-total,.sale-kpis strong,.supplier-legend,.boost-cell,.last-check-summary b,.last-check-status span,.kpi-sourcing-link,.impact,.sourcing-meta .profit,.last-check-meta .profit,.reddit-price-box.gap b,.fp-top-title b){color:var(--rpg-gold)!important}
+/* Verified successful and ready states. */
+body.cc-rpg-theme :is(.fp-stage.pass,.fp-stage.done,.fp-package-status.ready,.fp-demand.strong header span,.fp-top-card.action .fp-top-status,.x-verify.ok,.x-posted-mark,.ledger-sale-tag.exact,.ledger-sale-tag.bundle,.sale-confidence.accepted,.store-status.accepted,.fp-premises li>b,.ledger-sale-sub.done,.ledger-sale-sub.bundle-sub){background:#23392f!important;color:var(--rpg-good)!important;border-color:#527462!important}
+/* Verified caution and pending states. */
+body.cc-rpg-theme :is(.fp-stage.ready,.fp-ready,.fp-package-status.blocked,.fp-shot.required>div>b,.fp-page-sticky,.fp-cover-option mark,.sourcing-count-pending,.price-wait-chip,.x-freshness,.x-copy-moment.day_before,.x-copy-warning,.ledger-sale-tag.component,.ledger-sale-sub.warn,.mercari-history-status-v229,.fp-top-status){background:#383027!important;color:var(--rpg-warning)!important;border-color:#8d7852!important}
+/* Verified failed and urgent states. */
+body.cc-rpg-theme :is(.fp-stage.fail,.x-verify.ng,.x-copy-moment.deadline_day,.reddit-duplicate,.priority.s,.ledger-sale-sub.bad,.fp-premises li.contradicted>b,.fp-premises li.unknown>b,.home-system-alert){background:#3a252a!important;color:var(--rpg-bad)!important;border-color:#93645e!important}
+/* Preserve priority hierarchy. */
+body.cc-rpg-theme :is(.priority.a,.ledger-sale-tag.high,.sale-confidence.separate,.store-status.separate){background:#303747!important;color:var(--rpg-gold)!important;border-color:var(--rpg-line)!important}
+/* Blocked text without a panel. */
+body.cc-rpg-theme :is(.fp-draft-status.blocked b,.x-draft .over,#xeChars.over,#xeThreadsChars.over,.new){color:var(--rpg-bad)!important}
+body.cc-rpg-theme #mainWindow .priority.s{background:#3a252a!important;color:var(--rpg-bad)!important;border-color:#93645e!important}
+body.cc-rpg-theme #mainWindow .priority.a{background:#303747!important;color:var(--rpg-gold)!important}
+@media(max-width:700px){
+ body.cc-rpg-theme{padding:8px 8px 78px!important;font-size:14px}body.cc-rpg-theme #mainWindow .window-body{padding:10px}
+ body.cc-rpg-theme .cc-heading{gap:9px!important}body.cc-rpg-theme #ccPageTitle{font-size:22px}
+ body.cc-rpg-theme :is(.push-button,.home-mobile-nav button,.home-nav-button,dialog button,.btn){min-height:40px}
+ body.cc-rpg-theme .home-mobile-nav{padding:6px!important;gap:4px!important;border:1px solid var(--rpg-line)!important;border-radius:6px!important;background:#171e2aef!important;backdrop-filter:blur(8px)}
+ body.cc-rpg-theme .home-mobile-nav button{font-size:11px;padding:4px}
+ body.cc-rpg-theme :is(.modal-backdrop,.fp-draft-modal){padding:10px}
+ body.cc-rpg-theme :is(.task-window,.dialog-window,.reddit-editor-window,.x-editor,.purchase-drill-window,.fp-draft-dialog,dialog){max-width:calc(100vw - 20px)!important;max-height:calc(100dvh - 20px)!important}
+ body.cc-rpg-theme dialog{padding:15px}
+ body.cc-rpg-theme .manual-operation-review{width:calc(100vw - 20px)}
+ body.cc-rpg-theme :is(.task-layout,.fp-performance-grid){grid-template-columns:minmax(0,1fr)}
+ body.cc-rpg-theme .title-left{min-width:0}body.cc-rpg-theme .win-controls{flex-shrink:0}
+}
+@media(prefers-reduced-motion:reduce){body.cc-rpg-theme :is(.push-button,.win-control,.home-nav-button,.home-launcher-card,.menu-item,.retro-menu-item,dialog button,.btn){transition:none}body.cc-rpg-theme :is(.fp-draft-modal,.modal-backdrop).open>*,body.cc-rpg-theme dialog[open]{animation:none}}
