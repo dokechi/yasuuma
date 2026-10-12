@@ -30,12 +30,12 @@ body.cc-rpg-theme .rpg-workspace-dialog .push-button{min-height:44px;white-space
 .rpg-workspace-dialog pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.6 monospace}
 .rpg-scope-note{font-size:12px;line-height:1.6}
 @media(max-width:600px){body.cc-rpg-theme #ccDestination.rpg-workspace-heading{padding:14px 10px}.rpg-workspace-heading .cc-heading{flex-wrap:wrap}.rpg-workspace-settings{margin-left:auto}#rpgSourcingAux .push-button{flex:1 1 43%;padding:8px}.rpg-workspace-links{grid-template-columns:1fr}.rpg-workspace-dialog{padding:16px!important}#rpgArchiveBanner{align-items:flex-start;flex-direction:column}}
-/* Both portraits are proportional crops of the same approved world image, never separate art. */
+/* Detail portraits share alternate-costume artwork; the HOME dress artwork is deliberately separate. */
 body.cc-rpg-theme #ccDestination.rpg-workspace-heading[data-rpg-desk="fp"],
 body.cc-rpg-theme #ccDestination.rpg-workspace-heading[data-rpg-desk="sourcing"],
 body.cc-rpg-theme #ccDestination.rpg-workspace-heading[data-rpg-desk="reddit"],
-body.cc-rpg-theme #ccDestination.rpg-workspace-heading[data-rpg-desk="x"]{position:relative;isolation:isolate;overflow:hidden;min-height:180px;background:linear-gradient(90deg,#08101af2 5%,#0a121dd9 70%,#121a2744),url('./assets/rpg-home/world.png?v=20261012.4-wardrobe') center 24%/cover}
-.rpg-workspace-heading{--rpg-fp-character:url('./assets/rpg-home/world.png?v=20261012.4-wardrobe');--rpg-sourcing-character:url('./assets/rpg-home/world.png?v=20261012.4-wardrobe')}
+body.cc-rpg-theme #ccDestination.rpg-workspace-heading[data-rpg-desk="x"]{position:relative;isolation:isolate;overflow:hidden;min-height:180px;background:linear-gradient(90deg,#08101af2 5%,#0a121dd9 70%,#121a2744),url('./assets/rpg-home/detail-swimwear.png?v=20261012.5-detail-swimwear') center 24%/cover}
+.rpg-workspace-heading{--rpg-fp-character:url('./assets/rpg-home/detail-swimwear.png?v=20261012.5-detail-swimwear');--rpg-sourcing-character:url('./assets/rpg-home/detail-swimwear.png?v=20261012.5-detail-swimwear')}
 .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{content:"";position:absolute;right:0;top:0;width:190px;height:100%;z-index:-1;pointer-events:none;background-image:var(--rpg-sourcing-character);background-size:310px auto;background-repeat:no-repeat;background-position:right -395px;mask-image:linear-gradient(90deg,transparent,#000 28%)}
 .rpg-workspace-heading[data-rpg-desk="fp"]::after{background-image:var(--rpg-fp-character);background-position:right -301px}
 .rpg-workspace-heading .cc-heading{position:relative;z-index:1}
@@ -59,6 +59,6 @@ body.cc-rpg-theme .rpg-workspace-heading .cc-heading>.push-button,body.cc-rpg-th
 @media(max-width:600px){#rpgSourcingAux{flex-wrap:wrap;overflow:visible;gap:6px}#rpgSourcingAux .push-button{flex:1 1 44%;white-space:normal;font-size:12px;padding:7px}}
 body.cc-rpg-theme .rpg-workspace-heading[data-rpg-desk="fp"]::after{height:104px;mask-image:linear-gradient(90deg,transparent,#000 28%)}
 @media(max-width:600px){#rpgSourcingAux{display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}#rpgSourcingAux .push-button{grid-column:span 2}#rpgSourcingAux .push-button:nth-last-child(-n+2){grid-column:span 3}}
-/* New tailored hems extend to the terrace edge: keep neighboring outfits outside each portrait. */
+/* Keep neighboring characters outside each detail portrait crop. */
 body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{background-position:right -407px;height:118px}
 body.cc-rpg-theme .rpg-workspace-heading[data-rpg-desk="fp"]::after{background-position:right -313px;height:96px}

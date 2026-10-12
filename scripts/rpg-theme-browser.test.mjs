@@ -34,6 +34,11 @@ const geometry=`(()=>{
  }
  const samples=[...document.querySelectorAll('.ledger-month-tab:not(:disabled)'),...document.querySelectorAll('.card-body p,.thread-body p,.task-pane td,.fp-draft-dialog p,.fp-draft-slide,.cce-dialog pre,.sourcing-card p,.affiliate-job p,.neko-card p')].filter(e=>visible(e)&&e.textContent.trim()).slice(0,30);
  for(const e of samples){const st=getComputedStyle(e);let n=e,bg=st.backgroundColor;while((bg==='transparent'||bg==='rgba(0, 0, 0, 0)')&&n.parentElement){n=n.parentElement;bg=getComputedStyle(n).backgroundColor}const fore=rgb(st.color),back=rgb(bg);add('readable content contrast',fore.length===3&&back.length===3&&contrast(fore,back)>=4.5,{selector:e.className||e.tagName,text:e.textContent.slice(0,45),color:st.color,background:bg});}
+ const homeScene=document.querySelector('#ccRpgHome .rpg-scene');
+ if(homeScene&&visible(homeScene))add('HOME keeps original dress artwork',getComputedStyle(homeScene).backgroundImage.includes('world.png?v=20261012.4-wardrobe')&&!getComputedStyle(homeScene).backgroundImage.includes('detail-swimwear'));
+ for(const e of document.querySelectorAll('dialog[open][data-account="kyun"] .rpg-account-character,dialog[open][data-account="choi"] .rpg-account-character'))if(visible(e))add('account opens alternate swimwear artwork',getComputedStyle(e).backgroundImage.includes('detail-swimwear.png?v=20261012.5-detail-swimwear'));
+ const desk=document.querySelector('#ccDestination.rpg-workspace-heading');
+ if(desk&&visible(desk)&&['fp','sourcing','reddit','x'].includes(desk.dataset.rpgDesk))add('workspace opens alternate swimwear artwork',getComputedStyle(desk,'::after').backgroundImage.includes('detail-swimwear.png?v=20261012.5-detail-swimwear'));
  add('no unmocked API writes',window.__rpgQA.writes.length===0,window.__rpgQA.writes);
  add('workflow initialization is fixture-only',true,window.__rpgQA.simulatedInitializations||[]);
  return checks;

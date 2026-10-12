@@ -41,7 +41,7 @@ async function run(){
  assert.deepEqual(api.savedSources({url:'javascript:alert(1)',payload:{source_url:'https://u:p@example.com/private',sources:[null,{url:'data:text/html,no'},'https://example.com/public','https://example.com/public']}}),[{url:'https://example.com/public',label:'保存された出典'}]);
  all(d,'button').find(b=>b.textContent==='← 司令塔').onclick();assert.equal(d.open,false);
  const choi=setup([],[{ok:true,events:[],total:0,nextOffset:null}]);choi.root.CCManualOperationHub.openAccount('choi');await flush();const c=choi.doc.body.children.find(n=>n.tagName==='dialog');assert.equal(c.dataset.account,'choi');assert.equal(all(c,'h2')[0].textContent,'ちょい上等');assert.ok(text(c).includes('別保存先の原稿はまだ連携されていません。'));assert.equal(all(c,'a').length,0);
- const css=fs.readFileSync(path.join(__dirname,'../command-center-98/rpg-account-pages.css'),'utf8');assert.ok(css.includes('[data-account="choi"]'));assert.ok(css.includes('[hidden]{display:none!important}'));assert.ok(css.includes('100dvh'));assert.ok(css.includes('world.png'));assert.ok(!css.includes('position:fixed'));
+ const css=fs.readFileSync(path.join(__dirname,'../command-center-98/rpg-account-pages.css'),'utf8');assert.ok(css.includes('[data-account="choi"]'));assert.ok(css.includes('[hidden]{display:none!important}'));assert.ok(css.includes('100dvh'));assert.ok(css.includes('detail-swimwear.png'));assert.ok(!css.includes('position:fixed'));
  for(const {o} of fixture.calls){assert.equal(o.method,undefined);assert.equal(o.body,undefined);}
  console.log('PASS: account page titles, real tabs/counts/history, original body/link copy, saved safe source links, no publication control, close and responsive art hooks');
 }
