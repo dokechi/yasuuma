@@ -79,9 +79,9 @@ test('module performs no direct network, data persistence, imports or credential
  assert.doesNotMatch(source,/library_file_id|api_key|service_role|sk-[A-Za-z0-9]{10}/);
 });
 
-test('neko original controls are untouched and all art uses approved proportional world crop',()=>{
+test('neko original controls are untouched and detail art uses proportional alternate-costume crop',()=>{
  assert.match(source,/紹介用原稿・旧ねこ/);assert.match(source,/openView\('binbo-neko'\)/);assert.match(source,/rpg-neko-aux-ready/);
- assert.match(css,/--rpg-fp-character:url\('\.\/assets\/rpg-home\/world\.png(?:\?v=[^']+)?'\)/);assert.match(css,/background-size:310px auto/);assert.match(css,/data-rpg-desk="reddit"/);assert.match(css,/data-rpg-desk="x"/);
+ assert.match(css,/--rpg-fp-character:url\('\.\/assets\/rpg-home\/detail-swimwear\.png(?:\?v=[^']+)?'\)/);assert.match(css,/background-size:310px auto/);assert.match(css,/data-rpg-desk="reddit"/);assert.match(css,/data-rpg-desk="x"/);
  assert.doesNotMatch(css,/\[data-rpg-scope="daily"\][^{]*sourcing[^{]*\{display:none/);
 });
 
