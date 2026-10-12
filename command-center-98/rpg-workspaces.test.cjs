@@ -44,7 +44,7 @@ function mount(){
  const ids=new Map(),targets=new Map(),calls=[],listeners=[];
  class Element{
   constructor(tag='div'){this.tagName=tag.toUpperCase();this.dataset={};this.children=[];this.textContent='';this.hidden=false;this.events={};this.classList={add(){},remove(){},toggle(){}};}
-  append(...items){this.children.push(...items);}after(){}before(){}setAttribute(k,v){this[k]=v;}
+  append(...items){this.children.push(...items);}after(el){ids.set(el.id,el);}before(){}setAttribute(k,v){this[k]=v;}removeAttribute(k){delete this[k];}
   querySelector(selector){if(selector==='.cc-heading')return this;return null;}querySelectorAll(){return [];}
   addEventListener(name,fn){this.events[name]=fn;}replaceChildren(...items){this.children=items;}remove(){}focus(){}showModal(){}close(){this.events.close?.();}click(){this.events.click?.();}
  }
@@ -94,4 +94,15 @@ test('old navigation relocates only in daily mode and existing logout remains re
 test('original-screen return from a subpage reopens home before legacy presentation',()=>{
  const {root,calls}=mount();root.CCHome.active=false;root.CCRpgWorkspaces.showOriginal();
  assert.deepEqual(calls,['H.show','original']);assert.equal(root.CCHome.active,true);assert.equal(root.CCRpgWorkspaces.mode,'archive');
+});
+
+test('sourcing auxiliary current state tracks each route without altering navigation',()=>{
+ const {root,app}=mount();root.CCHome.active=false;
+ const aux=root.document.getElementById('rpgSourcingAux');
+ for(const view of ['sourcing','reddit','x','binbo-neko','affiliate','fp']){app.view=view;root.CCRpgWorkspaces.setMode('daily');const selected=aux.children.filter(el=>el['aria-current']==='page');assert.equal(selected.length,view==='fp'?0:1);if(selected.length)assert.equal(selected[0].dataset.rpgAuxView,view);}root.CCHome.active=true;root.CCRpgWorkspaces.setMode('daily');assert.equal(aux.children.some(el=>el['aria-current']),false);
+ assert.match(source,/back.textContent='← 司令塔'/);
+ assert.match(source,/el.setAttribute\('aria-current','page'\)/);
+ assert.match(source,/el.removeAttribute\('aria-current'\)/);
+ assert.match(css,/\[aria-current="page"\]/);
+ assert.match(css,/--rpg-detail-title:clamp\(27px,4vw,38px\)/);
 });

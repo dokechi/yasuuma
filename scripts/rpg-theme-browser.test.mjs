@@ -48,6 +48,18 @@ const geometry=`(()=>{
  for(const e of document.querySelectorAll('dialog[open][data-account="kyun"] .rpg-account-character,dialog[open][data-account="choi"] .rpg-account-character'))if(visible(e))add('account opens alternate swimwear artwork',getComputedStyle(e).backgroundImage.includes('detail-swimwear.png?v=20261012.5-detail-swimwear'));
  const desk=document.querySelector('#ccDestination.rpg-workspace-heading');
  if(desk&&visible(desk)&&['fp','sourcing','reddit','x'].includes(desk.dataset.rpgDesk))add('workspace opens alternate swimwear artwork',getComputedStyle(desk,'::after').backgroundImage.includes('detail-swimwear.png?v=20261012.5-detail-swimwear'));
+
+ for(const back of document.querySelectorAll('.rpg-account-back,.rpg-workspace-heading [data-home-action="home"]'))if(visible(back)){
+  add('shared return label and touch target',back.textContent==='← 司令塔'&&back.getBoundingClientRect().height>=44,{text:back.textContent,height:back.getBoundingClientRect().height});
+ }
+ for(const title of document.querySelectorAll('.rpg-account-header h2,#ccDestination.rpg-workspace-heading #ccPageTitle'))if(visible(title))add('shared detail title scale',parseFloat(getComputedStyle(title).fontSize)>=27);
+ if(desk&&visible(desk)&&['fp','sourcing','reddit','x'].includes(desk.dataset.rpgDesk)){
+  for(const button of desk.querySelectorAll('.cc-heading>.push-button,#ccRefreshSlot .push-button'))add('workspace utility touch targets',button.getBoundingClientRect().height>=44);
+  if(innerWidth>600)for(const button of desk.querySelectorAll('.cc-more-button,.rpg-workspace-settings'))add('desktop utility buttons do not stretch',button.getBoundingClientRect().width<220);
+  const aux=document.getElementById('rpgSourcingAux'),selected=aux.querySelectorAll('[aria-current="page"]');
+  if(!aux.hidden)add('sourcing current route is distinct',selected.length===1&&selected[0].dataset.rpgAuxView===desk.dataset.rpgDesk);
+  for(const summary of document.querySelectorAll('.cc-item-summary'))if(visible(summary))add('disclosure arrows use readable gold',getComputedStyle(summary,'::before').color==='rgb(226, 198, 140)');
+ }
  add('no unmocked API writes',window.__rpgQA.writes.length===0,window.__rpgQA.writes);
  add('workflow initialization is fixture-only',true,window.__rpgQA.simulatedInitializations||[]);
  return checks;
