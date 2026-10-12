@@ -39,23 +39,25 @@ const geometry=`(()=>{
  return checks;
 })()`;
 test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:220000},async()=>{
- const requests=[];let diagnose=async()=>{};
+ const requests=[];let diagnose=async()=>{},slowRpg=false,startupCache=false,failRpg=false;
  assert.ok(chrome,'Chrome is required; browser QA must not silently skip');fs.mkdirSync(output,{recursive:true});
  const server=http.createServer((req,res)=>{
   const url=new URL(req.url,'http://localhost'),relative=decodeURIComponent(url.pathname).replace(/^\/+/,''),file=path.resolve(root,relative);
   requests.push({url:url.href,method:req.method,file});
   if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);res.end();return}
+  if(url.pathname==='/qa-return'){res.writeHead(200,{'Content-Type':'text/html'});res.end('<!doctype html><title>Return test</title><p>Browser history fixture</p>');return}
   if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return}
+  if(failRpg&&relative==='command-center-98/rpg-home.js'){res.writeHead(503);res.end();return}
   let content=fs.readFileSync(file);
   if(relative==='command-center-98/app.html')content=content.toString().replace('<head>','<head><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script>');
-  if(relative==='command-center-98/index.html')content=content.toString().replace('<head>','<head><script>localStorage.removeItem("cc_retro_token");window.__rpgQA={writes:[]};</script>');
+  if(relative==='command-center-98/index.html')content=content.toString().replace('<head>','<head><script>localStorage.removeItem("cc_retro_token");window.__rpgQA={writes:[]};'+(url.searchParams.has('qa-login')?'window.fetch=async()=>({ok:true,status:200,json:async()=>({ok:true,token:"synthetic-qa-only"})});':'')+'</script>');
   if(relative==='command-center-98/app-v130.html'&&url.searchParams.has('qa-boot'))content=content.toString().replace('<head>','<head><script>window.__rpgQA={writes:[]};window.fetch=()=>new Promise(()=>{});</script>');
   // Read-only access to the actual fallback renderer; its normal packet action writes.
   // This test-only export is never written to or loaded from production source.
   if(relative==='command-center-98/binbo-neko.js')content=content.toString().replace('window.CCBinboNeko={','window.__rpgQA.openNekoCopy=copyFallback;window.CCBinboNeko={');
   // No visual banner: screenshots must represent the actual application layout.
   if(relative==='scripts/ui-fixtures.js')content=content.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
-  res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store'});res.end(content);
+  const respond=()=>{res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':startupCache&&/\.(?:js|css)$/.test(file)?'private,max-age=60':'no-store'});res.end(content);};if(slowRpg&&relative==='command-center-98/rpg-home.js')setTimeout(respond,2000);else respond();
  });
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cc-rpg-browser-'));
@@ -78,6 +80,23 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:22
   const waitFor=async expression=>{for(let i=0;i<100;i++){if(await evaluate(expression))return;await sleep(50)}throw Error('Timed out: '+expression)};
   const capture=async(name,extra)=>{await sleep(120);await evaluate('window.scrollTo(0,0)');const checks=await evaluate(geometry);if(extra)checks.push({name:'expected route content',pass:!!await evaluate(extra)});const png=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(output,name+'.png'),Buffer.from(png.data,'base64'));results.push({name,checks});console.log(name+': '+checks.filter(x=>x.pass).length+'/'+checks.length)};
   const route=async(view)=>{await evaluate(`CCHome.leave();load(${JSON.stringify(view)})`);await waitFor('!app.busy');await sleep(180)};
+  // Cold startup, cache reuse, reload and successful fixture-only login all use the real loader.
+  await send('Emulation.setDeviceMetricsOverride',{width:390,height:780,deviceScaleFactor:1,mobile:true});
+  startupCache=true;slowRpg=true;
+  await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html?startup=cold#keep-fragment'});
+  await waitFor(`!!document.getElementById('commandHome')&&!window.CCRpgHome`);
+  const guarded=await evaluate(`(()=>{const n=document.getElementById('ccStartupNotice');return !!n&&document.elementFromPoint(innerWidth/2,innerHeight/2)===n&&getComputedStyle(document.querySelector('.desktop')).opacity==='0'})()`);
+  results.push({name:'startup-cold-delayed-module',checks:[{name:'legacy HOME stays concealed before RPG mounts',pass:guarded}]});
+  const early=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(output,'startup-cold-gate.png'),Buffer.from(early.data,'base64'));
+  await waitFor(`!!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')`);slowRpg=false;
+  await capture('startup-cold-ready',`!document.getElementById('ccRpgHome').hidden&&location.hash==='#keep-fragment'&&location.search==='?startup=cold'`);
+  await send('Page.reload');await waitFor(`!!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')`);await capture('startup-warm-reload',`!document.getElementById('ccRpgHome').hidden&&location.hash==='#keep-fragment'`);
+  await evaluate(`CCRpgWorkspaces.openFp()`);await waitFor(`!app.busy&&app.view==='fp'`);await evaluate(`window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}))`);await capture('startup-preserved-return',`app.view==='fp'&&!CCHome.active&&!document.getElementById('ccStartupStyle')`);
+  const prior=await send('Page.getNavigationHistory');const entryId=prior.entries[prior.currentIndex].id;
+  await send('Page.navigate',{url:origin+'/qa-return'});await waitFor(`document.title==='Return test'`);await send('Page.navigateToHistoryEntry',{entryId});await waitFor(`!!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')`);await capture('startup-browser-back',`location.hash==='#keep-fragment'&&(CCHome.active?!document.getElementById('ccRpgHome').hidden:app.view==='fp')`);
+  startupCache=false;failRpg=true;await send('Network.clearBrowserCache');await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html?startup=failed'});await waitFor(`!!document.querySelector('#ccStartupNotice[role="alert"]')`);await capture('startup-failed-module',`getComputedStyle(document.querySelector('.desktop')).opacity==='0'&&document.querySelector('#ccStartupNotice button').textContent==='再読み込み'`);failRpg=false;await evaluate(`document.querySelector('#ccStartupNotice button').click()`);await waitFor(`!!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')`);await capture('startup-retry-ready',`!document.getElementById('ccRpgHome').hidden`);
+  await send('Page.navigate',{url:origin+'/command-center-98/index.html?qa-login=1'});await waitFor(`!!document.getElementById('code')&&!document.getElementById('loginPane').classList.contains('hidden')`);await evaluate(`document.getElementById('code').value='synthetic-code';document.getElementById('loginForm').requestSubmit()`);await waitFor(`!!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')`);await capture('startup-after-login',`location.pathname.endsWith('/app-v130.html')&&!document.getElementById('ccRpgHome').hidden`);
+  startupCache=false;
   for(const [width,height]of [[390,780],[1280,900]]){
    const prefix=width+'x'+height+'-';await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
    await send('Page.navigate',{url:origin+'/command-center-98/index.html'});await waitFor(`!!document.getElementById('loginPane')&&!document.getElementById('loginPane').classList.contains('hidden')`);await capture(prefix+'login',`location.pathname.endsWith('/index.html')`);
