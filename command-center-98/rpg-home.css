@@ -57,4 +57,8 @@ body.rpg-home-active #mainWindow,body.rpg-home-active .home-mobile-nav{display:n
  #ccRpgHome .rpg-copy{gap:clamp(5px,.95dvh,10px)}
  #ccRpgHome .rpg-portal{padding-block:clamp(6px,1.04dvh,12px)}
  #ccRpgHome .rpg-edge{right:calc(var(--rpg-art-w) * .34)}
+ #ccRpgHome .rpg-shortcuts,#ccRpgHome .rpg-services{min-height:28px}
+ #ccRpgHome .rpg-shortcuts button,#ccRpgHome .rpg-services button{font-size:clamp(11px,1.68dvh,19px);min-height:28px;padding-block:3px}
+ #ccRpgHome .rpg-footer .rpg-service-label{font-size:clamp(10px,1.2dvh,12px);line-height:1.4}
+
 }

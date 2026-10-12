@@ -39,6 +39,7 @@ const geometry=`(()=>{
  if(homeScene&&visible(homeScene)&&matchMedia('(min-aspect-ratio:4/5) and (min-height:600px)').matches){
   const world=document.querySelector('#ccRpgHome .rpg-world'),r=world.getBoundingClientRect(),bg=getComputedStyle(homeScene),decor=getComputedStyle(homeScene,'::before');
   add('wide HOME fills available width without black side gutters',Math.abs(r.width-innerWidth)<=1&&Math.abs(r.left)<=1,{width:r.width,viewport:innerWidth,left:r.left});
+  add('wide HOME footer fits without vertical overflow',document.getElementById('ccRpgHome').scrollHeight<=document.getElementById('ccRpgHome').clientHeight+1);
   add('wide HOME retains proportional right artwork',bg.backgroundSize==='100% 100%, auto 100%'&&bg.backgroundPosition.includes('100% 50%'),{size:bg.backgroundSize,position:bg.backgroundPosition});
   add('wide decorative backdrop excludes all characters',decor.backgroundSize==='100% 100%, 180% auto'&&decor.backgroundPosition.includes('0% 50%'),{size:decor.backgroundSize,position:decor.backgroundPosition});
   const artWidth=homeScene.getBoundingClientRect().height*941/1672,figureLeft=r.right-artWidth*(1-620/941);
@@ -150,7 +151,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:22
   }
   for(const [width,height] of [[686,644],[834,900],[1440,900]]){
    await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
-   await evaluate('CCRpgHome.showRpg()');await capture(width+'x'+height+'-wide-home',`!document.getElementById('ccRpgHome').hidden`);
+   await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});await waitFor('!!window.CCRpgHome && !!window.__rpgQA && !app.busy');await evaluate('document.fonts.ready');await capture(width+'x'+height+'-wide-home',`!document.getElementById('ccRpgHome').hidden`);
   }
   results.push({name:'network-isolation',checks:[{name:'no attempted external network request',pass:blocked.length===0,detail:blocked},{name:'no uncaught browser exceptions',pass:errors.length===0,detail:errors}]});
  }catch(error){await diagnose(error.message);throw error;}finally{fs.writeFileSync(path.join(output,'results.json'),JSON.stringify({results,blocked,errors,requests},null,2));ws?.close();proc.kill();server.close();}
