@@ -63,7 +63,7 @@ body.cc-rpg-theme .rpg-workspace-heading[data-rpg-desk="fp"]::after{height:104px
 body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{background-position:right -407px;height:118px}
 body.cc-rpg-theme .rpg-workspace-heading[data-rpg-desk="fp"]::after{background-position:right -313px;height:96px}
 
-/* Shared post-click presentation. Existing routes, disclosures and portrait crops stay intact. */
+/* Shared post-click presentation. Existing routes, disclosures and original artwork stay intact. */
 body.cc-rpg-theme{--rpg-detail-title:clamp(27px,4vw,38px);--rpg-detail-surface:linear-gradient(150deg,#101924f5,#0c121ef5);--rpg-detail-border:#89734e}
 body.cc-rpg-theme #ccDestination.rpg-workspace-heading #ccPageTitle,
 body.cc-rpg-theme dialog.rpg-account-page .rpg-account-header h2{font:400 var(--rpg-detail-title)/1.35 CCRpgDot,monospace!important;letter-spacing:.05em;color:#fff1d1!important;margin:3px 0 8px}
@@ -87,4 +87,27 @@ body.cc-rpg-theme #mainWindow[data-cc-view="fp"] .cc-open-draft{min-height:46px;
 @media(max-width:600px){
  body.cc-rpg-theme .rpg-workspace-heading #ccPageDescription,body.cc-rpg-theme dialog.rpg-account-page .rpg-account-subtitle{font-size:12px}
  body.cc-rpg-theme #mainWindow:is([data-cc-view="sourcing"],[data-cc-view="reddit"],[data-cc-view="x"]) :is(#sourcingTabs,#redditTabs,#xTabs) button{min-height:44px}
+}
+
+/* Immersive detail heroes reuse the original bitmap: scenery plus a readable portrait lane. */
+body.cc-rpg-theme #ccDestination.rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]){
+ padding:16px;min-height:0;
+ background:linear-gradient(90deg,#09111cc9,#09111c59 72%,#09111c26),url('./assets/rpg-home/detail-swimwear.png?v=20261012.5-detail-swimwear') center top/max(940px,100%) auto no-repeat;
+}
+body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]) .cc-heading{padding:0!important;row-gap:10px!important}
+body.cc-rpg-theme .rpg-workspace-heading .cc-heading>div{display:flex;flex-direction:column;justify-content:center;padding-right:220px;min-height:220px}
+body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{
+ top:65px;right:8px;width:220px;height:225px;background-size:620px auto;background-position:right -824px;opacity:1;
+ mask-image:linear-gradient(90deg,transparent,#000 15%),linear-gradient(0deg,transparent,#000 9%);mask-composite:intersect;
+}
+body.cc-rpg-theme .rpg-workspace-heading[data-rpg-desk="fp"]::after{top:85px;height:180px;background-position:right -632px}
+body.cc-rpg-theme .rpg-workspace-heading :is(#ccPageTitle,#ccPageDescription){text-shadow:0 2px 5px #000}
+body.cc-rpg-theme .rpg-workspace-heading .cc-heading>.cc-more-button,
+body.cc-rpg-theme .rpg-workspace-heading .cc-heading>.rpg-workspace-settings,
+body.cc-rpg-theme .rpg-workspace-heading #ccRefreshSlot{position:relative;align-self:end}
+@media(max-width:600px){
+ body.cc-rpg-theme #ccDestination.rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]){padding:12px 10px}
+ body.cc-rpg-theme .rpg-workspace-heading .cc-heading>div{padding-right:152px;min-height:180px}
+ body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{top:60px;right:0;width:166px;height:190px;background-size:520px auto;background-position:right -691px}
+ body.cc-rpg-theme .rpg-workspace-heading[data-rpg-desk="fp"]::after{top:76px;height:154px;background-position:right -530px}
 }

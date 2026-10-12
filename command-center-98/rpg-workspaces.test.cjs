@@ -106,3 +106,11 @@ test('sourcing auxiliary current state tracks each route without altering naviga
  assert.match(css,/\[aria-current="page"\]/);
  assert.match(css,/--rpg-detail-title:clamp\(27px,4vw,38px\)/);
 });
+
+test('workspace heroes reuse large scene and portraits with dedicated text and action lanes',()=>{
+ assert.match(css,/center top\/max\(940px,100%\) auto no-repeat/);
+ assert.match(css,/width:220px;height:225px;background-size:620px auto/);
+ assert.match(css,/width:166px;height:190px;background-size:520px auto/);
+ assert.match(css,/height:154px;background-position:right -530px/);
+ assert.match(css,/padding-right:152px;min-height:180px/);
+});
