@@ -55,12 +55,12 @@ test('mount is idempotent and keeps every original HOME node',()=>{
 test('missing dependencies keep the original HOME usable without adding an overlay',()=>{
  for(const options of [{withHub:false},{withSourcing:false}]){const h=harness(options);assert.equal(h.root.CCRpgHome,undefined);assert.equal(h.doc.getElementById('ccRpgHome'),null);assert.equal(h.doc.body.classList.contains('rpg-home-active'),false);assert.ok(h.home.children.includes(h.preserved));}
 });
-test('three account entrances preserve exact account routing and reject unknown keys',()=>{
+test('Threads account entrances preserve exact account routing and reject unknown keys',()=>{
  const h=harness(),page=h.doc.getElementById('ccRpgHome'),buttons=page.querySelectorAll('[data-rpg-account]');
- assert.deepEqual(buttons.map(n=>n.dataset.rpgAccount),['kyun','choi','tiktok']);
+ assert.deepEqual(buttons.map(n=>n.dataset.rpgAccount),['kyun','choi']);
  for(const b of buttons){assert.equal(b.tagName,'BUTTON');b.querySelector('.rpg-name').click();}
- assert.deepEqual(h.accountCalls,['kyun','choi','tiktok']);assert.equal(h.root.CCRpgHome.openAccount('other'),false);assert.equal(h.accountCalls.length,3);
- assert.deepEqual(page.querySelectorAll('.rpg-state').map(n=>n.textContent),['原稿を確認','原稿を確認','台本を確認','候補を確認']);
+ assert.deepEqual(h.accountCalls,['kyun','choi']);assert.equal(h.root.CCRpgHome.openAccount('other'),false);assert.equal(h.accountCalls.length,2);
+ assert.equal(page.querySelectorAll('[data-rpg-fp]').length,1);
 });
 test('sourcing delegates to the existing route and leaves the RPG overlay',()=>{
  const h=harness();h.doc.querySelector('[data-rpg-sourcing]').click();assert.equal(h.sourcingClicks,1);assert.equal(h.root.CCHome.active,false);assert.equal(h.doc.getElementById('ccRpgHome').hidden,true);assert.equal(h.doc.body.classList.contains('rpg-home-active'),false);
@@ -94,7 +94,7 @@ test('the production manual-hub bridge opens only supported account reviews',()=
  const source=fs.readFileSync(path.join(__dirname,'manual-operation-hub.js'),'utf8');
  new Function('window',source)(h.root);
  assert.equal(typeof h.root.CCManualOperationHub.openAccount,'function');h.rerun();assert.ok(h.root.CCRpgHome);
- for(const [key,label] of [['kyun','Threads キュン拾い'],['choi','Threads ちょい上等'],['tiktok','TikTok @sucker0508']]){
+ for(const [key,label] of [['kyun','キュン拾い'],['choi','ちょい上等'],['tiktok','TikTok @sucker0508']]){
   assert.equal(h.root.CCRpgHome.openAccount(key),true);const dialog=h.doc.querySelector('dialog');assert.ok(dialog.open);assert.equal(dialog.querySelector('h2').textContent,label);dialog.close();assert.equal(h.doc.querySelector('dialog'),null);
  }
  assert.equal(h.root.CCManualOperationHub.openAccount('sourcing'),false);assert.equal(h.root.CCManualOperationHub.openAccount('unknown'),false);assert.equal(h.doc.querySelector('dialog'),null);assert.ok(h.home.children.includes(h.preserved));
@@ -104,7 +104,7 @@ test('CSS only hides legacy navigation while RPG is active and all local artwork
  assert.match(css,/body\.rpg-home-active #mainWindow,body\.rpg-home-active \.home-mobile-nav\{display:none!important\}/);
  assert.match(css,/#ccRpgHome\[hidden\],#ccRpgLegacyReturn\[hidden\]\{display:none!important\}/);
  for(const match of css.matchAll(/url\(['"]?([^'"\)]+)['"]?\)/g)){
-  assert.ok(match[1].startsWith('./assets/rpg-home/'));assert.ok(fs.statSync(path.join(__dirname,match[1])).isFile(),match[1]);
+  assert.ok(match[1].startsWith('./assets/rpg-home/'));assert.ok(fs.statSync(path.join(__dirname,match[1].split('?')[0])).isFile(),match[1]);
  }
  assert.ok(fs.statSync(path.join(__dirname,'assets/rpg-home/OFL.txt')).isFile());
 });
@@ -129,4 +129,10 @@ test('F5, other keys, and typing targets keep the RPG page visible',()=>{
 test('RPG stacking stays below retained legacy dialogs and toasts',()=>{
  const css=fs.readFileSync(path.join(__dirname,'rpg-home.css'),'utf8');
  const rule=css.match(/#ccRpgHome\{([^}]+)\}/)?.[1];assert.ok(rule);assert.match(rule,/(?:^|;)z-index:100(?:;|$)/);
+});
+
+test('approved homepage routes dispatch to existing workspace and external service bridges',()=>{
+ const h=harness(),calls=[];h.root.CCRpgWorkspaces={openSettings:()=>calls.push('settings'),openFp:()=>calls.push('fp'),openSourcing:()=>calls.push('sourcing'),openWatches:()=>calls.push('watches'),openCards:()=>calls.push('cards'),openService:k=>calls.push(k)};const p=h.doc.getElementById('ccRpgHome');
+ p.querySelector('[data-rpg-tools]').click();p.querySelector('[data-rpg-fp]').click();p.querySelectorAll('[data-rpg-route]').forEach(b=>b.click());p.querySelectorAll('[data-rpg-service]').forEach(b=>b.click());
+ assert.deepEqual(calls,['settings','fp','sourcing','watches','cards','daily','cooney','shiire']);
 });

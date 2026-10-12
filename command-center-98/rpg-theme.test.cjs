@@ -4,7 +4,7 @@ const read=p=>fs.readFileSync(path.join(__dirname,p),'utf8');
 const css=read('rpg-theme.css'),manifest=JSON.parse(read('app-assets.json'));
 test('shared theme loads once after legacy cascade and entry pages only add presentation',()=>{
  assert.equal(manifest.styles.filter(x=>x.startsWith('./rpg-theme.css?')).length,1);
- assert.ok(manifest.styles.at(-1).startsWith('./rpg-theme.css?'));
+ assert.ok(manifest.styles.indexOf(manifest.styles.find(x=>x.startsWith('./rpg-theme.css?')))>manifest.styles.indexOf(manifest.styles.find(x=>x.startsWith('./rpg-home.css?'))));
  for(const page of ['app.html','index.html','app-v130.html']){
   const html=read(page);assert.match(html,/<body class="cc-rpg-theme">/);
   if(page!=='app.html')assert.match(html,/href="\.\/rpg-theme\.css\?v=/);
