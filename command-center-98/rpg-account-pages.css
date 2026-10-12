@@ -70,3 +70,12 @@ body dialog.rpg-account-page .rpg-mercari-open{display:inline-flex;align-items:c
 body dialog.rpg-account-page .rpg-mercari-checked{font-size:11px;line-height:1.7;color:#cfc8b8;margin:8px 0 5px;overflow-wrap:anywhere}
 body dialog.rpg-account-page .rpg-mercari-note{font-size:13px;line-height:1.8;color:#eee5d2;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:600px){body dialog.rpg-account-page .rpg-mercari-open{width:100%}}
+
+/* The decision facts stay visible; saved URLs and full wording are optional. */
+body dialog.rpg-account-page .rpg-mercari-overview{margin:10px 0 8px;font-size:13px;line-height:1.75;overflow-wrap:anywhere}
+body dialog.rpg-account-page .rpg-mercari-overview>p{margin:4px 0;color:#eee5d2}
+body dialog.rpg-account-page .rpg-mercari-overview .rpg-mercari-warning{color:#f3d59e;padding-left:9px;border-left:2px solid #bc9858}
+body dialog.rpg-account-page details.rpg-mercari-evidence{margin:8px 0 0;padding:0 10px;background:#0e1721;border:1px solid #645c48;border-radius:4px}
+body dialog.rpg-account-page .rpg-mercari-evidence>summary{display:list-item;min-height:44px;padding:10px 0;color:#dbc99f;font-size:12px}
+body dialog.rpg-account-page .rpg-mercari-evidence .rpg-mercari-note{margin:2px 0 10px;font-size:12px}
+body dialog.rpg-account-page .rpg-mercari-source-url{margin:0 0 10px;font-size:11px;line-height:1.6;color:#c4bcaa;overflow-wrap:anywhere}

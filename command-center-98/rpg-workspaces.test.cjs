@@ -114,3 +114,10 @@ test('workspace heroes reuse large scene and portraits with dedicated text and a
  assert.match(css,/height:154px;background-position:right -530px/);
  assert.match(css,/padding-right:152px;min-height:180px/);
 });
+
+test('mobile refinement keeps portrait dimensions and touch targets while tightening whitespace',()=>{
+ const refinement=css.split('/* Secondary destinations stay reachable')[1];
+ assert.match(refinement,/min-height:162px/);assert.match(refinement,/row-gap:4px!important/);
+ assert.match(refinement,/min-height:44px/);assert.doesNotMatch(refinement,/display:none|visibility:hidden|height:154px|height:190px|background-size/);
+ assert.match(refinement,/\.cc-more-button,\.rpg-workspace-settings/);assert.match(refinement,/#ccRefreshSlot/);
+});

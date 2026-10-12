@@ -58,7 +58,14 @@
      if(comparisons.length){
       block.append(e('p','保存時点の価格・販売状況です。現在とは異なる場合があります。成約日は未確認です。掲載日・更新日は成約日ではありません。市場全体の最安値を示すものではありません。','rpg-mercari-caution'));
       const rows=e('ul',undefined,'rpg-mercari-list');
-      for(const comparison of comparisons){const row=e('li'),link=e('a',comparison.label,'push-button rpg-mercari-open');link.href=comparison.url;link.target='_blank';link.rel='noopener noreferrer';link.setAttribute('aria-label',comparison.label+'のメルカリ商品を開く（保存時点・別タブ）');row.append(link,e('p',comparison.checkedAt?'保存時の確認：'+comparison.checkedAt:'保存時の確認日時：未確認','rpg-mercari-checked'),e('p',comparison.note||'状態・色サイズ差は未確認です。','rpg-mercari-note'));rows.append(row);}
+      for(const comparison of comparisons){
+       const row=e('li'),link=e('a',comparison.label,'push-button rpg-mercari-open'),summary=api.mercariComparisonSummary(comparison);
+       link.href=comparison.url;link.target='_blank';link.rel='noopener noreferrer';link.setAttribute('aria-label',comparison.label+'のメルカリ商品を開く（保存時点・別タブ）');
+       const overview=e('div',undefined,'rpg-mercari-overview');overview.append(e('p','状態：'+summary.condition,'rpg-mercari-condition'),e('p','色・サイズ差：'+summary.differences,'rpg-mercari-differences'));
+       for(const caution of summary.cautions)overview.append(e('p',caution,'rpg-mercari-warning'));
+       const evidence=details('比較の根拠を読む',e('p',comparison.note||'状態・色サイズ差の根拠は未確認です。','rpg-mercari-note'),e('p',comparison.url,'rpg-mercari-source-url'));evidence.className='rpg-mercari-evidence';
+       row.append(link,overview,e('p',comparison.checkedAt?'保存時の確認：'+comparison.checkedAt:'保存時の確認日時：未確認','rpg-mercari-checked'),evidence);rows.append(row);
+      }
       block.append(rows);
      }else block.append(e('p','個別商品のメルカリ比較リンクは保存されていません。','rpg-mercari-caution'));
      card.append(block);
@@ -192,6 +199,32 @@
   }
   return [...entries.values()].map(({structured,...entry})=>({...entry,label:(entry.state==='active'?'出品中':entry.state==='sold'?'成約':'販売状況未確認')+' '+(entry.price===null?'価格未確認':entry.price.toLocaleString('ja-JP')+'円')}));
  }
+ // A deterministic reading aid only: surface saved wording and explicit unknowns.
+ // The full item evidence remains unchanged in the adjacent disclosure. No shop
+ // comparison, model match, sale date, or new price calculation is inferred here.
+ function mercariComparisonSummary(comparison){
+  const note=typeof comparison?.note==='string'?comparison.note:'',unique=values=>[...new Set(values)];
+  const clean=note.replace(/https?:\/\/[^\s<>"「」]+/g,'').replace(/\b(?:seller\d+|m\d+)\b/g,'').replace(/^(?:一方|補足)\s*(?:は)?/,'');
+  const parts=[],brackets=[],pairs={'「':'」','『':'』','（':'）','(':')'};let part='';
+  for(const char of clean){if(pairs[char])brackets.push(pairs[char]);else if(char===brackets[brackets.length-1])brackets.pop();if(/[。、\n]/.test(char)&&!brackets.length){if(part.trim())parts.push(part.trim());part='';}else part+=char;}if(part.trim())parts.push(part.trim());
+  const conditionPattern=/(?:新品未使用(?:タグ付き)?|新品タグ付き|未使用に近い|未使用品|室内試着(?:のみ)?|試着程度|(?:数回|\d+回|数分屋外)使用|目立つ傷汚れなし|目立った傷や汚れなし|傷あり|箱なし|中古)/g;
+  // Later sentences can discuss a different, cheaper listing. Take condition
+  // wording only from the first descriptive sentence, never that other example.
+  const conditionText=clean.split(/(?:別途|別の出品|他の出品)/)[0],conditionSentence=conditionText.split(/[。\n]/).find(sentence=>!/(?:店価格|店舗新品|新品店価格)/.test(sentence)&&Array.from(sentence.matchAll(conditionPattern)).length)||'';
+  const uncertainCondition=/(?:状態[^。]*(?:不明|未確認)|(?:新品|未使用|中古|試着)[^。]*(?:ではない|ではなく|と(?:は)?断定|か不明|か未確認))/.test(conditionSentence);
+  const conditions=uncertainCondition?[]:unique(Array.from(conditionSentence.matchAll(conditionPattern),m=>m[0]));
+  if(!/(?:状態[^。]*(?:不明|未確認)|新品[^。]*(?:ではない|ではなく|と(?:は)?断定|か不明|か未確認))/.test(conditionText)&&/個人(?:現行|成約)新品(?!未使用|タグ付き)(?!では|と(?:は)?断定|か不明|か未確認)/.test(conditionText))conditions.unshift('新品');
+  const colorParts=parts.filter(part=>/(?:同色|色違い|色・状態違い|別色|色[^。]*(?:異なる|矛盾|不明)|色・規格表記の留保)/.test(part));
+  const sizeParts=parts.filter(part=>/(?:同サイズ|サイズ差|サイズ違い|\d+(?:\.\d+)?(?:cm|サイズ)[大小上下]|店[^。]*から|対象[^。]*から)/.test(part));
+  const differences=unique([...colorParts,...sizeParts]);
+  if(!colorParts.length)differences.push('色差は未確認');if(!sizeParts.length)differences.push('サイズ差は未確認');
+  const cautions=parts.filter(part=>/(?:矛盾|不明|未確認|留保|下振れ|(?:より|への)[^。]*安い|擦れ|擦り|欠損|型番なし|みられる|想定|(?:最安|回転)[^。]*(?:断定|しない|ではない|未判定)|タグ[^。]*(?:取って|なし|なく)|完全一致[^。]*しない)/.test(part));
+  // Repeated caveats already visible in a difference line do not need a second
+  // copy. Sale-date uncertainty is always stated above the entire comparison list.
+  if(uncertainCondition&&conditionSentence.trim())cautions.push(conditionSentence.trim());
+  const visibleCautions=unique(cautions).filter(part=>!differences.includes(part)&&!/^成約(?:日|時期)(?:は|が)?(?:不明|未確認)(?:で)?$/.test(part));
+  return {condition:unique(conditions).join('・')||'未確認',differences:differences.join('。'),cautions:visibleCautions};
+ }
  function savedProductLink(p){
   const raw=[p.ordinary_url,p.purchase_url,p.purchase_link].find(v=>typeof v==='string'&&v.trim());
   if(!raw)return {url:null,note:'商品URLが未確認のため、まだ開けません。'};
@@ -210,5 +243,5 @@
   const link=p.purchase_link||p.purchase_url;if(typeof link==='string'&&/^https:\/\//.test(link))result.push({label:'保存購入リンク',text:link});
   return result;
  }
- return {accounts,payload,matchesAccount,unique,savedCopies,isSuppressed,historyState,savedSources,savedProductLink,savedMercariComparisons};
+ return {accounts,payload,matchesAccount,unique,savedCopies,isSuppressed,historyState,savedSources,savedProductLink,savedMercariComparisons,mercariComparisonSummary};
 });
