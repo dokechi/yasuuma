@@ -56,7 +56,7 @@
   const banner=make('div');banner.id='rpgArchiveBanner';banner.append(make('span','保管庫・元の画面を表示しています'),button('日常へ戻る',home));shell?.before(banner);
   function sync(){const view=typeof app==='undefined'?'':app.view;auxiliary.hidden=!!H.active||!['sourcing','reddit','x','binbo-neko','affiliate'].includes(view);banner.hidden=mode!=='archive';
    if(shell){shell.dataset.rpgWorkspace=view;shell.dataset.rpgDesk=view;}
-   const titles={fp:'FP・TikTok',sourcing:'仕入れ一覧',reddit:'海外時計・海外差',x:'カード'};if(!H.active&&titles[view]&&by('ccPageTitle'))by('ccPageTitle').textContent=titles[view];
+   const titles={fp:'FP・TikTok',sourcing:'仕入れ一覧',reddit:'海外時計',x:'カード'};if(!H.active&&titles[view]&&by('ccPageTitle'))by('ccPageTitle').textContent=titles[view];
    // The home render owns its arrays; remove only archived display rows after it runs.
    const source=[...(H.activeItems||[]),...(H.raw?.active?.items||[])];
    if(mode==='daily')by('homeOtherList')?.querySelectorAll('[data-home-item]').forEach(el=>{const row=source.find(x=>String(x.id)===el.dataset.homeItem);if(row&&M.isArchived(row))el.remove();});

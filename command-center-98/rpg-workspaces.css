@@ -46,3 +46,14 @@ body[data-rpg-scope="daily"] #mainWindow>.menu-bar,
 body[data-rpg-scope="daily"] #ccPrimaryNav,
 body[data-rpg-scope="daily"] .home-mobile-nav{display:none!important}
 @media(max-width:600px){#rpgSourcingAux{flex-wrap:nowrap;overflow-x:auto;padding-bottom:5px;scrollbar-width:thin}#rpgSourcingAux .push-button{flex:0 0 auto;white-space:nowrap;max-width:none}}
+/* Reserve a real portrait lane; captions and controls never paint across a face. */
+body.cc-rpg-theme #ccDestination.rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]){background:linear-gradient(110deg,#09111c,#172130);min-height:210px}
+body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{top:30px;height:130px;width:160px}
+body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]) .cc-heading{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px!important;border-bottom:0;margin:0}
+body.cc-rpg-theme .rpg-workspace-heading .cc-heading>[data-home-action="home"]{grid-column:1/-1;justify-self:start}
+body.cc-rpg-theme .rpg-workspace-heading .cc-heading>div{grid-column:1/-1;padding-right:140px;min-height:90px}
+body.cc-rpg-theme .rpg-workspace-heading :is(#ccPageTitle,#ccPageDescription){max-width:none}
+body.cc-rpg-theme .rpg-workspace-heading .cc-heading>.push-button,body.cc-rpg-theme .rpg-workspace-heading #ccRefreshSlot .push-button{margin:0;max-width:100%;white-space:normal}
+@media(max-width:600px){body.cc-rpg-theme .rpg-workspace-heading .cc-heading>div{padding-right:120px}body.cc-rpg-theme .rpg-workspace-heading #ccPageTitle{font-size:23px;letter-spacing:.03em}body.cc-rpg-theme .rpg-workspace-heading .cc-heading>.push-button,body.cc-rpg-theme .rpg-workspace-heading #ccRefreshSlot .push-button{font-size:12px;padding:7px}body.cc-rpg-theme .rpg-workspace-heading::after{width:135px}}
+
+@media(max-width:600px){#rpgSourcingAux{flex-wrap:wrap;overflow:visible;gap:6px}#rpgSourcingAux .push-button{flex:1 1 44%;white-space:normal;font-size:12px;padding:7px}}

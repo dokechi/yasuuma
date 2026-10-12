@@ -34,7 +34,8 @@
   const tabs=e('nav',undefined,'rpg-account-tabs'),currentTab=e('button','今回','push-button'),historyTab=e('button','履歴','push-button');tabs.setAttribute('aria-label','原稿の表示切替');
   currentTab.type=historyTab.type='button';currentTab.dataset.accountTab='current';historyTab.dataset.accountTab='history';tabs.append(currentTab,historyTab);
   status.className='rpg-account-status';coverage.className='rpg-account-coverage';list.className='rpg-account-list';close.className+=' rpg-account-close';
-  status.setAttribute('aria-live','polite');dialog.append(back,header,close,tabs,status,coverage,list,policy);doc.body.append(dialog);dialog.onclose=()=>dialog.remove();dialog.showModal();
+  const toolbar=e('div',undefined,'rpg-account-toolbar');toolbar.append(back,close);const coverageDetails=details('読取状況',coverage);coverageDetails.className='rpg-account-coverage-details';
+  status.setAttribute('aria-live','polite');dialog.append(toolbar,header,tabs,status,coverageDetails,list,policy);doc.body.append(dialog);dialog.onclose=()=>dialog.remove();dialog.showModal();
   if(account.key==='tiktok'){const f=e('button','FP原稿を見る（既存FP）','push-button');f.type='button';f.dataset.homeAction='fp-draft';f.onclick=()=>dialog.close();dialog.append(f);}
   let items=localItems(),offset=0,hasMore=true,loading=false,loaded=0,total=null,checked=false,readError='',selectedTab='current';
   currentTab.onclick=()=>{selectedTab='current';render();};historyTab.onclick=()=>{selectedTab='history';render();};

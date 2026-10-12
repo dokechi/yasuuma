@@ -36,7 +36,7 @@ async function run(){
  await more.onclick();await flush();assert.equal(more.disabled,true);assert.ok(!text(dialog).includes('メンズ本文'));
  for(const c of calls){const u=new URLClass(c.url);assert.equal(u.searchParams.get('resource'),'task-events');assert.equal(c.options.method,undefined);assert.equal(c.options.cache,'no-store');assert.ok(!c.options.body);}
  assert.equal(calls[0].url.includes('offset=0'),true);assert.equal(calls[1].url.includes('offset=100'),true);
- dialog.children.find(n=>n.textContent==='閉じる').onclick();assert.equal(doc.body.children.includes(dialog),false);assert.equal(home.children[1],legacy);
+ dialog.children.find(n=>n.className==='rpg-account-toolbar').children.find(n=>n.textContent==='閉じる').onclick();assert.equal(doc.body.children.includes(dialog),false);assert.equal(home.children[1],legacy);
  await grid.children[2].children.find(n=>n.tagName==='button').onclick();await flush();dialog=doc.body.children.find(n=>n.tagName==='dialog');
  assert.ok(text(dialog).includes('ちょい上等'));assert.ok(!text(dialog).includes('機能の案'));assert.equal(calls.length,3);
  console.log('PASS: four entrances, preserved legacy DOM, account separation, text pair, pagination and read-only requests');

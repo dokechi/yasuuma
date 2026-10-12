@@ -47,3 +47,8 @@ body dialog.rpg-account-page :is(button,a,summary):focus-visible{outline:2px sol
 @media(max-width:600px){body dialog.manual-operation-review.rpg-account-page{padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 28px);border-inline:0!important}body dialog.rpg-account-page .rpg-account-header{min-height:162px;padding-right:112px}body dialog.rpg-account-page .rpg-account-header h2{font-size:27px}body dialog.rpg-account-page .rpg-account-subtitle{font-size:12px;max-width:210px}body dialog.rpg-account-page .rpg-account-character{width:142px;height:190px;right:-8px;background-size:520px auto;background-position:-340px -150px}body dialog.rpg-account-page article.rpg-account-card{padding:15px}body dialog.rpg-account-page .rpg-account-close{top:calc(env(safe-area-inset-top) + 14px)}body dialog.rpg-account-page .rpg-account-copy button{width:100%}}
 @media(max-width:600px){body dialog.rpg-account-page[data-account="choi"] .rpg-account-character{background-position:-340px -350px}}
 @media(prefers-reduced-motion:reduce){body dialog.rpg-account-page *{transition:none!important}}
+
+body dialog.rpg-account-page .rpg-account-toolbar{position:sticky;top:-28px;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#0b111bef;padding:6px 0}
+body dialog.rpg-account-page .rpg-account-toolbar .rpg-account-close{position:static;flex:none}
+body dialog.rpg-account-page .rpg-account-coverage-details{padding:4px 10px;margin:0 0 12px;background:transparent;border:0}
+@media(max-width:600px){body dialog.rpg-account-page .rpg-account-toolbar{top:calc(-12px - env(safe-area-inset-top))}}
