@@ -45,10 +45,10 @@ function successfulFetch(calls = []) {
 
 test('the manifest preserves every legacy asset in order with explicit read-model and progress additions', () => {
   assert.equal(manifest.shell.split('?')[0], legacy.shell.split('?')[0]);
-  assert.equal(manifest.styles.length, 16);
+  assert.equal(manifest.styles.length, 17);
   assert.equal(manifest.scripts.length, legacy.scripts.length + 9);
   const paths=urls=>urls.map(url=>url.split('?')[0]);
-  assert.deepEqual(paths(manifest.styles).filter(path=>!['./sourcing-mobile-comparison.css','./v230-request-progress.css','./v231-trade-details.css','./rpg-home.css'].includes(path)), paths(legacy.styles));
+  assert.deepEqual(paths(manifest.styles).filter(path=>!['./sourcing-mobile-comparison.css','./v230-request-progress.css','./v231-trade-details.css','./rpg-home.css','./rpg-theme.css'].includes(path)), paths(legacy.styles));
   assert.deepEqual(paths(manifest.scripts).filter(path=>!['./sourcing-atomic-save.js','./sourcing-mobile-comparison.js','./sourcing-display-model.js','./command-center-data.js','./v230-request-progress.js','./v231-trade-details.js','./fp-finished-images.js','./manual-operation-hub.js','./rpg-home.js'].includes(path)), paths(legacy.scripts));
   assert.equal(manifest.scripts.findIndex(url=>url.startsWith('./sourcing-display-model.js')),manifest.scripts.findIndex(url=>url.startsWith('./sourcing-mobile-comparison.js'))-1);
   assert.equal(manifest.scripts.findIndex(url=>url.startsWith('./sourcing-mobile-comparison.js')),manifest.scripts.findIndex(url=>url.startsWith('./v216-sourcing-status-flow.js'))-1);
@@ -84,7 +84,7 @@ test('manual review additions load after existing home and FP dependencies',()=>
  assert.ok(paths.indexOf('./manual-operation-hub.js')>paths.indexOf('./v155-home.js'));
 });
 test('RPG assets append last after the manual hub without replacing legacy assets',()=>{
- assert.equal(manifest.styles.at(-1).split('?')[0],'./rpg-home.css');
+ assert.deepEqual(manifest.styles.slice(-2).map(url=>url.split('?')[0]),['./rpg-home.css','./rpg-theme.css']);
  assert.equal(manifest.scripts.at(-1).split('?')[0],'./rpg-home.js');
  assert.notEqual(manifest.scripts.find(url=>url.startsWith('./manual-operation-hub.js?')),'./manual-operation-hub.js?v=20261008.3-state');
 });
@@ -196,3 +196,6 @@ test('the unchanged public entry URL boots through the external loader in a brow
 // Existing CI invokes this loader suite directly. Include responsive HOME
 // CSS-contract/geometry checks here without requiring a separate workflow job.
 require('./rpg-home-responsive.test.cjs');
+
+// Whole-application theme contracts share this established CI entry.
+require('./rpg-theme.test.cjs');

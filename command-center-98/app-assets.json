@@ -1,5 +1,5 @@
 {
-  "shell": "./app.html?v=20261011.atomic2",
+  "shell": "./app.html?v=20261012.rpg-theme1",
   "styles": [
     "./v140-reddit.css?v=175",
     "./v141-reddit-mobile.css?v=175",
@@ -16,7 +16,8 @@
     "./binbo-neko.css?v=20261002.2",
     "./v230-request-progress.css?v=20261004.1",
     "./v231-trade-details.css?v=20261004.1",
-    "./rpg-home.css?v=20261012.2-galaxy"
+    "./rpg-home.css?v=20261012.2-galaxy",
+    "./rpg-theme.css?v=20261012.1"
   ],
   "scripts": [
     "./sourcing-atomic-save.js?v=20261011.atomic2",
