@@ -62,14 +62,21 @@ async function run(){
  }
  // Coverage must stay visible independently from copy/save feedback, including a failed next page.
  const savedTime='2026-10-02T09:12:34+09:00',source=Object.freeze({checked_at_price_stock:savedTime});
- assert.equal(api.savedPriceStockCheck(source).value,savedTime);assert.equal(api.savedPriceStockCheck(source).label,api.displayTime(savedTime));assert.equal(source.checked_at_price_stock,savedTime);
+ assert.equal(api.savedPriceStockCheck(source).value,savedTime);assert.equal(api.savedPriceStockCheck(source).label,'2026/10/02 09:12:34（日本時間）');assert.equal(source.checked_at_price_stock,savedTime);
  for(const bad of [undefined,null,'',0,Date.now(),{},'now','today','2026-10-13','2026-10-13T09:00:00','2026-02-30T09:00:00Z','2026-13-01T09:00:00Z','2026-10-13T24:00:00Z','2026-10-13T09:60:00Z','2026-10-13T09:00:60Z','2026-10-13T09:00:00Z trailing'])assert.deepEqual(api.savedPriceStockCheck({checked_at_price_stock:bad}),{value:null,label:'未確認'},String(bad));
  assert.equal(api.savedPriceStockCheck({checked_at_mercari:savedTime,updatedAt:savedTime}).label,'未確認','other observation/update times cannot become price/stock confirmation');
+ for(const tz of ['UTC','Asia/Tokyo','America/Los_Angeles']){
+  const {spawnSync}=require('node:child_process'),result=spawnSync(process.execPath,['-e',`const a=require(${JSON.stringify(file)}),raw='2026-10-02T00:12:34Z',p=Object.freeze({checked_at_price_stock:raw});console.log(JSON.stringify({checked:a.savedPriceStockCheck(p),original:p.checked_at_price_stock,localInput:a.localDateTime(raw)}));`],{env:{...process.env,TZ:tz},encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr);const value=JSON.parse(result.stdout);assert.deepEqual(value.checked,{value:'2026-10-02T00:12:34Z',label:'2026/10/02 09:12:34（日本時間）'},tz);assert.equal(value.original,'2026-10-02T00:12:34Z');
+  if(tz==='UTC')assert.equal(value.localInput,'2026-10-02T00:12','existing local datetime inputs must remain device-local');
+ }
+ assert.equal(api.savedPriceStockCheck({checked_at_price_stock:'2026-10-01T15:00:00Z'}).label,'2026/10/02 00:00:00（日本時間）','JST midnight is the next calendar day, not 24:00');
+
  let releaseRetry;const pendingRetry=new Promise(resolve=>{releaseRetry=resolve;});
  const readFixture=setup([],[{ok:true,events:[item('kept-first',{payload:{account_name:'キュン拾い',main_post:'kept-first',checked_at_price_stock:savedTime}})],total:3,nextOffset:1},new Error('next-page-offline'),pendingRetry]);
  const rd=await readFixture.open(),summary=all(rd,'div').find(n=>n.className==='rpg-account-read-summary'),more=all(rd,'button').find(b=>b.textContent.startsWith('保存原稿の続き'));
  assert.equal(summary.parent,rd,'coverage is not folded inside details');assert.ok(text(summary).includes('確認用 1件'));assert.ok(text(summary).includes('読込 1件 / 全 3件'));assert.ok(text(summary).includes('続きあり'));
- const card=all(rd,'article')[0],stampBlock=all(card,'section').find(n=>n.className==='rpg-account-price-stock-check');assert.ok(text(stampBlock).includes('保存時点'));assert.ok(text(stampBlock).includes(api.displayTime(savedTime)));assert.ok(card.children.indexOf(stampBlock)<card.children.findIndex(n=>n.className==='rpg-account-copy'));
+ const card=all(rd,'article')[0],stampBlock=all(card,'section').find(n=>n.className==='rpg-account-price-stock-check');assert.ok(text(stampBlock).includes('保存時点'));assert.ok(text(stampBlock).includes('2026/10/02 09:12:34（日本時間）'));assert.ok(card.children.indexOf(stampBlock)<card.children.findIndex(n=>n.className==='rpg-account-copy'));
  await more.onclick();await flush();assert.ok(text(summary).includes('読取未確認'));assert.ok(text(summary).includes('読込 1件 / 全 3件'));assert.ok(text(rd).includes('kept-first'));assert.equal(more.disabled,false);
  await all(rd,'button').find(b=>b.textContent==='保存主投稿をコピー').onclick();assert.ok(text(all(rd,'p').find(n=>n.className==='rpg-account-status')).includes('原文をコピーしました'));assert.ok(text(summary).includes('next-page-offline'),'copy feedback cannot replace the persistent read warning');assert.equal(readFixture.copied[0],'kept-first');
  const retry=more.onclick();await flush();assert.ok(text(summary).includes('読込中'));assert.ok(text(summary).includes('読取未確認'),'starting a retry is not a successful read');
