@@ -6,13 +6,16 @@
   window.__rpgQA={mode:'normal',requests:[],writes:[],simulatedInitializations:[]};
   localStorage.setItem('cc_retro_token','isolated-rpg-fixture');
   const stamp='2026-10-12T08:00:00Z';
-  const events=['キュン拾い','ちょい上等','@sucker0508'].map((account,i)=>({taskId:'fixture-account',eventKey:'account-'+i,title:'合成保存原稿 '+account,occurredAt:stamp,domain:'money',payload:{account_name:account,main_post:'合成データの保存主投稿です。長い日本語でも読みやすい余白と折り返しを確認します。'.repeat(3),body_variants:['本文案Aです。','本文案Bです。'],self_reply:'購入条件と送料を確認してください。',purchase_link:'https://example.com/product',affiliate_url:null,draft_review_points:['価格・在庫は検証専用データです。']}}));
+  const events=['キュン拾い','ちょい上等','@sucker0508'].map((account,i)=>({id:201+i,taskId:'fixture-account',eventKey:'account-'+i,title:'合成保存原稿 '+account,occurredAt:stamp,domain:'money',payload:{account_name:account,main_post:'合成データの保存主投稿です。長い日本語でも読みやすい余白と折り返しを確認します。'.repeat(3),body_variants:['本文案Aです。','本文案Bです。'],self_reply:'購入条件と送料を確認してください。',purchase_link:'https://example.com/product',affiliate_url:null,draft_review_points:['価格・在庫は検証専用データです。']}}));
   // Synthetic saved-market evidence; never copied from private production data.
   for(const event of events.slice(0,2))Object.assign(event.payload,{
     checked_at_mercari:'2026-10-02T09:00:00+09:00',
     comparison_and_private_evidence:'https://jp.mercari.com/item/m10000000001 8,200円販売中、新品未使用。黒M、店舗は紺Lで色違い・1サイズ差。\nhttps://jp.mercari.com/item/m10000000002 7,400円SOLD、室内試着のみ。紺L、同色同サイズ。成約日不明。\n一方m10000000003は成約6,100円、同型中古・色違いの下振れ例。更新日は成約日ではありません。',
     sources:[{url:'https://jp.mercari.com/item/m10000000001',title:'合成比較記録'}]
   });
+  const threadAccounts=['kyun','choi'].map((key,i)=>({accountKey:key,id:201,revision:1,profile_url:'https://www.threads.com/@'+key+'_fixture',handle:key+'_fixture'}));
+  window.__rpgQA.threads={accounts:threadAccounts,events,simulatedWrites:[],failSave:false};
+  const threadResponse=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
   const campaign={id:'fixture-campaign',offer_name:'確認用の住宅比較',name:'合成商材',affiliate_url:'https://example.com/affiliate',media_approval_note:'検証用の接続設定',media_approval_scope:'unknown',publisher_channel:'fixture-channel',terms_url:'https://example.com/terms',link_label:'比較案内'};
   const job={id:'fixture-job',campaign_id:campaign.id,title:'家づくりの確認用原稿',revision:'fixture-revision',copy_revision:'fixture-copy',state:'review',label:'合成画像の確認待ち',handoff:{copy_revision:'fixture-copy',exported_at:stamp},content_issues:[],finish_issues:[],delivery_issues:[],slides:[{headline:'検証用の完成画像',body:'合成データです。'}],sources:[],commercial_fit:{reader_need:'家づくりの比較を始める方',offer_reason:'条件を整理するため'},caption:'合成データの原稿本文です。',metrics:{},updated_at:stamp};
   const neko={id:'fixture-neko',source_id:'fixture-source',revision:'fixture',state_key:'ready',state_label:'届いた原稿',product:{name:'検証用トートバッグ',brand:'Example',color:'ネイビー',size:'35×39cm',condition:'新品'},offer:{url:'https://example.com/bag',price_yen:1980,shipping_yen:770,payable_yen:2750,checked_at:stamp},fit:{reader:'バッグを探している人',use:'普段の持ち運び',reason:'必要な荷物が入るサイズ',cautions:['送料込みで比較']},copy:{title:'合成データのバッグ紹介',pages:[{page:1,headline:'使いやすい大きさ',body:'送料とサイズを確認します。',visual_intent:'文字の折り返しを確認'}],threads_caption:'確認用の原稿です。',tiktok_caption:'合成データの台本です。'},evidence:[],source_judgment:{}};
@@ -25,6 +28,23 @@
     let body;try{body=typeof options.body==='string'?JSON.parse(options.body):null}catch{}
     const initialization=method==='POST'&&url.href==='https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-workflow-api'&&body?.action==='ensure'&&['fp_content','house_content','card_lottery','sourcing_candidate','sourcing_research_check'].includes(body.entityType)&&Array.isArray(body.items);
     if(initialization){window.__rpgQA.simulatedInitializations.push({url:url.href,method,action:body.action,entityType:body.entityType,count:body.items.length});return new Response(JSON.stringify({ok:true,states:[]}),{status:200,headers:{'Content-Type':'application/json'}})}
+    // Only these explicit synthetic actions may mutate fixture memory. No transport.
+    if(method==='PATCH'&&url.href==='https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-retro-api'&&['threads_account_profile','threads_manual_result'].includes(body?.action)){
+      const qa=window.__rpgQA.threads,account=threadAccounts.find(a=>a.accountKey===body.accountKey),event=events.find(e=>e.id===body.id);
+      if(!account||!event)throw Error('QA unsupported synthetic Threads target');
+      qa.simulatedWrites.push(structuredClone(body));if(qa.holdSave)await new Promise(resolve=>qa.releaseSave=resolve);
+      if(qa.failSave)return threadResponse({ok:false,error:'synthetic_failure'},503);
+      if(body.action==='threads_account_profile'){
+        if(body.confirmAccount!==true)throw Error('QA profile lacks explicit confirmation');
+        Object.assign(account,{profile_url:body.profileUrl,revision:account.revision+1,handle:body.profileUrl.split('@')[1]});return threadResponse({ok:true,account});
+      }
+      if(body.confirmPosted!==true||!body.postUrl.startsWith(account.profile_url+'/post/'))throw Error('QA result lacks explicit matching confirmation');
+      const prev=event.payload.threads_manual_result,receipt=qa.lastReceipt;
+      if(receipt?.mutationId===body.mutationId)return threadResponse({ok:true,item:event,result:event.payload.threads_manual_result});
+      event.payload.threads_manual_result={contract:'threads-manual-result-v1',source:'manual',status:'posted_manual',confirmed_at:stamp,account_profile_url:account.profile_url,account_key:body.accountKey,revision:(prev?.revision||0)+1,post_url:body.postUrl,actual_text:body.actualText??prev?.actual_text??null,posted_at:body.postedAt??prev?.posted_at??null,original_copies:prev?.original_copies||structuredClone(event.payload),metrics:body.metrics?{...Object.fromEntries(['views','likes','replies','reposts','quotes','clicks'].map(k=>[k,null])),...body.metrics,source:'manual',observed_at:body.observedAt||stamp}:prev?.metrics||null};
+      qa.lastReceipt=body;return threadResponse({ok:true,item:event,result:event.payload.threads_manual_result});
+    }
+    if(method==='GET'&&url.searchParams.get('resource')==='threads-manual-accounts')return threadResponse({ok:true,accounts:threadAccounts});
     if(!['GET','HEAD'].includes(method)){window.__rpgQA.writes.push({url:url.href,method,action:body?.action});throw Error('QA blocked write '+method)}
     if(url.origin===location.origin)return previous(url.href,options);
     window.__rpgQA.requests.push(url.href);

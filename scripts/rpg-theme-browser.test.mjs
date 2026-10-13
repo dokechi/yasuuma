@@ -25,7 +25,7 @@ const geometry=`(()=>{
   const r=e.getBoundingClientRect();add('dialog fits viewport',r.left>=-1&&r.top>=-1&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1,{selector:e.id||e.className,rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom}});
   const probes=[{label:'top interior',x:r.left+r.width/2,y:r.top+Math.min(18,r.height/2)}];
   for(const target of Array.from(e.querySelectorAll('header button,.title-bar button,h2,h3,[aria-label="閉じる"],[data-close],[data-cancel],.fp-close-draft')).slice(0,4)){const t=target.getBoundingClientRect();if(visible(target)&&t.width&&t.height){const x=t.left+t.width/2,y=t.top+t.height/2;if(x>r.left&&x<r.right&&y>r.top&&y<r.bottom)probes.push({label:target.id||target.className||target.tagName,x,y});}}
-  for(const p of probes)if(p.x>=0&&p.y>=0&&p.x<innerWidth&&p.y<innerHeight){const hit=document.elementFromPoint(p.x,p.y);add('dialog header and close controls are above other layers',hit===e||e.contains(hit),{dialog:e.id||e.className,probe:p.label,hit:hit?{tag:hit.tagName,id:hit.id,class:hit.className}:null});}
+  for(const p of probes)if((!document.querySelector('dialog[open]')||e===[...document.querySelectorAll('dialog[open]')].at(-1))&&p.x>=0&&p.y>=0&&p.x<innerWidth&&p.y<innerHeight){const hit=document.elementFromPoint(p.x,p.y);add('dialog header and close controls are above other layers',hit===e||e.contains(hit),{dialog:e.id||e.className,probe:p.label,hit:hit?{tag:hit.tagName,id:hit.id,class:hit.className}:null});}
   add('dialog content can scroll',e.scrollHeight<=e.clientHeight+1||['auto','scroll'].includes(getComputedStyle(e).overflowY)||Array.from(e.children).some(c=>['auto','scroll'].includes(getComputedStyle(c).overflowY)));
  }
  for(const e of document.querySelectorAll('input:not([type=checkbox]):not([type=radio]),textarea,select'))if(visible(e)&&!e.disabled){
@@ -202,6 +202,41 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:22
     }
     await evaluate(`document.querySelector('#ccDestination [data-home-action="home"]').click()`);await waitFor(`!document.getElementById('ccRpgHome').hidden`);await capture(prefix+key+'-return');
    }
+  }
+  // The only writes below are explicit, allowlisted in-memory fixture actions.
+  for(const [width,height] of [[360,800],[412,915],[1440,900]]){
+   const prefix=width+'x'+height+'-threads-';await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
+   await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});await waitFor('!!window.CCRpgWorkspaces && !!window.__rpgQA && !app.busy');await evaluate('document.fonts.ready');
+   for(const key of ['kyun','choi']){
+    await evaluate(`CCRpgHome.openAccount('${key}')`);await waitFor(`!!document.querySelector('.rpg-threads-profile-open[href]')`);
+    await capture(prefix+key+'-header',`document.querySelector('.rpg-threads-profile-open').href==='https://www.threads.com/@${key}_fixture'&&window.__rpgQA.threads.simulatedWrites.length===${key==='kyun'?0:2}`);
+    await evaluate(`document.querySelector('.rpg-thread-record').click()`);await waitFor(`!!document.querySelector('.rpg-thread-editor[open]')`);
+    await capture(prefix+key+'-url-first',`(()=>{const e=document.querySelector('.rpg-thread-editor');return !e.querySelector('details').open&&e.textContent.includes('URLだけで保存')&&e.querySelector('[name=postUrl]').getBoundingClientRect().width<=innerWidth})()`);
+    await evaluate(`document.querySelector('.rpg-thread-editor [name=postUrl]').value='https://evil.test/@${key}_fixture/post/one';document.querySelector('.rpg-thread-save').click()`);
+    await capture(prefix+key+'-invalid-url',`document.querySelector('.rpg-thread-message').textContent.includes('Threadsの投稿URL')`);
+    await evaluate(`document.querySelector('.rpg-thread-editor [name=postUrl]').value='https://threads.net/@${key}_fixture/post/Example123';document.querySelector('.rpg-thread-save').click()`);
+    await capture(prefix+key+'-confirmation-required',`document.querySelector('.rpg-thread-message').textContent.includes('投稿済みで')`);
+    await evaluate(`window.__rpgQA.threads.failSave=true;document.querySelector('[name=confirmPosted]').checked=true;document.querySelector('.rpg-thread-save').click()`);await waitFor(`document.querySelector('.rpg-thread-message').textContent.includes('保存は未確認')`);
+    await capture(prefix+key+'-failed-save',`document.querySelector('[name=postUrl]').value==='https://threads.net/@${key}_fixture/post/Example123'&&document.querySelector('[data-account-tab=history]').textContent==='履歴（0）'`);
+    await evaluate(`window.__rpgQA.threads.failSave=false;window.__rpgQA.threads.holdSave=true;document.querySelector('.rpg-thread-save').click();document.querySelector('.rpg-thread-save').click()`);
+    await capture(prefix+key+'-saving',`document.querySelector('.rpg-thread-save').disabled&&document.querySelector('.rpg-thread-cancel').disabled`);
+    await evaluate(`window.__rpgQA.threads.holdSave=false;window.__rpgQA.threads.releaseSave()`);await waitFor(`!document.querySelector('.rpg-thread-editor')`);
+    await capture(prefix+key+'-saved-url-only',`(()=>{const r=window.__rpgQA.threads.events[${key==='kyun'?0:1}].payload.threads_manual_result,w=window.__rpgQA.threads.simulatedWrites;return r.actual_text===null&&r.posted_at===null&&r.metrics===null&&w.at(-1).mutationId===w.at(-2).mutationId&&!('metrics' in w.at(-1))&&document.querySelector('[data-account-tab=history]').getAttribute('aria-pressed')==='true'})()`);
+    await evaluate(`document.querySelector('.rpg-account-back').click()`);await waitFor(`!document.querySelector('dialog[open]')`);
+    await evaluate(`CCRpgHome.openAccount('${key}')`);await waitFor(`!!document.querySelector('.rpg-thread-record')`);await evaluate(`document.querySelector('[data-account-tab=history]').click();document.querySelector('.rpg-thread-record').click();document.querySelector('.rpg-thread-optional').open=true`);
+    await capture(prefix+key+'-optional-fields',`document.querySelector('[name=postUrl]').readOnly&&document.querySelector('[name=likes]').value===''`);
+    await evaluate(`document.querySelector('[name=likes]').scrollIntoView({block:'center'})`);await capture(prefix+key+'-optional-metrics',`(()=>{const b=document.querySelector('.rpg-thread-cancel').getBoundingClientRect(),e=document.querySelector('[name=likes]').getBoundingClientRect();return b.top>=0&&b.bottom<innerHeight&&e.width<innerWidth})()`);
+    await evaluate(`document.querySelector('.rpg-thread-cancel').click();document.querySelector('.rpg-account-back').click()`);await waitFor(`!document.querySelector('dialog[open]')`);
+   }
+   await evaluate(`CCRpgHome.openAccount('kyun')`);await waitFor(`!!document.querySelector('.rpg-thread-record')`);await evaluate(`document.querySelector('[data-account-tab=history]').click();document.querySelector('.rpg-thread-record').click();document.querySelector('.rpg-thread-optional').open=true;document.querySelector('[name=actualText]').value='本人が編集した合成本文。';document.querySelector('[name=likes]').value='0';document.querySelector('[name=confirmPosted]').checked=true;document.querySelector('.rpg-thread-save').click()`);await waitFor(`!document.querySelector('.rpg-thread-editor')`);
+   await evaluate(`document.querySelector('.rpg-thread-comparison').open=true;document.querySelector('.rpg-thread-comparison').scrollIntoView({block:'start'})`);
+   await capture(prefix+'manual-comparison',`(()=>{const r=window.__rpgQA.threads.events[0].payload.threads_manual_result;return r.metrics.likes===0&&r.metrics.views===null&&r.actual_text==='本人が編集した合成本文。'&&document.querySelector('.rpg-thread-comparison').textContent.includes('未確認')&&document.querySelector('.rpg-thread-text-comparison').textContent.includes('本文案Aです。')})()`);
+   await evaluate(`document.querySelector('.rpg-account-back').click();window.__rpgQA.threads.accounts[1].profile_url=null;window.__rpgQA.threads.accounts[1].revision=0;CCRpgHome.openAccount('choi')`);await waitFor(`document.querySelector('.rpg-threads-profile-open')?.disabled`);
+   await capture(prefix+'unset-profile',`document.querySelector('.rpg-threads-account-note').textContent.includes('未登録')`);
+   await evaluate(`document.querySelector('.rpg-threads-profile-setting').click()`);await capture(prefix+'profile-settings',`!!document.querySelector('.rpg-thread-editor [name=profileUrl]')`);
+   await evaluate(`document.querySelector('[name=profileUrl]').value='https://threads.net/@choi_fixture';document.querySelector('.rpg-thread-confirm input').checked=true;document.querySelector('.rpg-thread-save').click()`);await waitFor(`!document.querySelector('.rpg-thread-editor')`);
+   await capture(prefix+'profile-saved',`document.querySelector('.rpg-threads-profile-open').href==='https://www.threads.com/@choi_fixture'`);
+   await evaluate(`document.querySelector('.rpg-account-back').click()`);await waitFor(`!document.querySelector('dialog[open]')`);
   }
   for(const [width,height] of [[686,644],[834,900],[1440,900]]){
    await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});

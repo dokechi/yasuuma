@@ -79,3 +79,45 @@ body dialog.rpg-account-page details.rpg-mercari-evidence{margin:8px 0 0;padding
 body dialog.rpg-account-page .rpg-mercari-evidence>summary{display:list-item;min-height:44px;padding:10px 0;color:#dbc99f;font-size:12px}
 body dialog.rpg-account-page .rpg-mercari-evidence .rpg-mercari-note{margin:2px 0 10px;font-size:12px}
 body dialog.rpg-account-page .rpg-mercari-source-url{margin:0 0 10px;font-size:11px;line-height:1.6;color:#c4bcaa;overflow-wrap:anywhere}
+
+/* URL-first manual Threads records. All text/metrics remain explicitly manual. */
+body dialog.rpg-account-page .rpg-threads-account-actions{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;align-items:center}
+body dialog.rpg-account-page .rpg-threads-account-actions .push-button,body dialog.rpg-account-page .rpg-threads-result .push-button,body dialog.rpg-thread-editor .push-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;max-width:100%;padding:9px 12px;border:1px solid #ddc18a!important;border-radius:5px!important;background:#26302d!important;color:#fff3d6!important;font:14px/1.5 system-ui,sans-serif!important;text-decoration:none!important;white-space:normal;overflow-wrap:anywhere;text-align:center;cursor:pointer}
+body dialog.rpg-account-page .rpg-threads-account-actions .rpg-threads-profile-setting{background:#101924!important;border-color:#8f805e!important}
+body dialog.rpg-account-page .rpg-threads-account-note{flex-basis:100%;margin:0;color:#ded2b9;font-size:11px;line-height:1.6}
+body dialog.rpg-account-page .rpg-threads-result{padding:0 0 16px;margin-bottom:18px;border-bottom:1px solid #7e7055;display:flex;flex-wrap:wrap;gap:8px}
+body dialog.rpg-account-page .rpg-threads-result>.rpg-thread-help,body dialog.rpg-account-page .rpg-thread-comparison{flex-basis:100%;margin:0}
+body dialog.rpg-account-page .rpg-thread-help,body dialog.rpg-thread-editor .rpg-thread-help{font-size:12px;line-height:1.7;color:#ded2b9;margin:4px 0 12px}
+body dialog.rpg-account-page .rpg-thread-comparison pre{font:14px/1.8 system-ui,sans-serif;color:#fff1db;background:#0b121d;padding:12px;border:1px solid #72684f;white-space:pre-wrap;overflow-wrap:anywhere}
+body dialog.rpg-account-page .rpg-thread-text-comparison{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+body dialog.rpg-account-page .rpg-thread-text-comparison h4,body dialog.rpg-account-page .rpg-thread-text-comparison h5{margin:8px 0}
+body dialog.rpg-account-page .rpg-thread-metrics{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:13px}
+body dialog.rpg-account-page .rpg-thread-metrics dd{margin:0;text-align:right}
+body dialog.rpg-thread-editor{box-sizing:border-box;width:min(620px,calc(100vw - 24px));max-width:100vw;max-height:calc(100dvh - 24px);margin:auto;padding:22px;border:1px solid #d3b477;border-radius:8px;background:#101924!important;color:#fff3d6!important;color-scheme:dark;overflow:auto;overscroll-behavior:contain;font:15px/1.7 system-ui,sans-serif;box-shadow:0 16px 70px #000b}
+body dialog.rpg-thread-editor::backdrop{background:#070914de}
+body dialog.rpg-thread-editor *{box-sizing:border-box;min-width:0}
+body dialog.rpg-thread-editor h2{font:25px/1.5 CCRpgDot,monospace;margin:0 0 18px;color:#fff3d6}
+body dialog.rpg-thread-editor h3{font-size:15px;margin:18px 0 4px}
+body dialog.rpg-thread-editor .rpg-thread-field{display:grid;gap:5px;margin-bottom:14px;font-size:13px;color:#eddfc5}
+body dialog.rpg-thread-editor :is(input:not([type=checkbox]),textarea){display:block;width:100%;max-width:100%;min-height:44px;margin:0;padding:10px;border:1px solid #9a8d73;border-radius:4px;background:#060e1b!important;color:#fff6e5!important;font:16px/1.6 system-ui,sans-serif;box-shadow:none!important}
+body dialog.rpg-thread-editor textarea{resize:vertical;min-height:130px}
+body dialog.rpg-thread-editor input[readonly]{color:#d2c9b6!important}
+body dialog.rpg-thread-editor details{padding:12px;margin:14px 0;background:#0b1421;border:1px solid #77694c;border-radius:5px}
+body dialog.rpg-thread-editor summary{cursor:pointer;min-height:44px;line-height:1.7;font-size:14px;padding:8px 0}
+body dialog.rpg-thread-editor .rpg-thread-metric-inputs{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+body dialog.rpg-thread-editor .rpg-thread-confirm{display:flex;align-items:flex-start;gap:10px;padding:12px 0;min-height:48px;font-size:13px;line-height:1.8}
+body dialog.rpg-thread-editor input[type=checkbox]{appearance:auto;width:22px;height:22px;flex:none;margin:2px 0;accent-color:#ccb06c}
+body dialog.rpg-thread-editor .rpg-thread-save{width:100%;background:#364636!important;border-color:#dcdba1!important;font-weight:700!important}
+body dialog.rpg-thread-editor .rpg-thread-cancel{margin-top:10px;background:#141e2a!important}
+body dialog.rpg-thread-editor .rpg-thread-message{color:#ffe1aa;white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0}
+body dialog.rpg-thread-editor button:disabled{opacity:.5;cursor:wait}
+body dialog.rpg-thread-editor :is(button,input,textarea,summary):focus-visible{outline:2px solid #ffedac!important;outline-offset:3px}
+@media(max-width:600px){body dialog.rpg-account-page .rpg-thread-text-comparison{grid-template-columns:1fr}body dialog.rpg-account-page .rpg-threads-account-actions .rpg-threads-profile-open{flex:1}body dialog.rpg-account-page .rpg-threads-account-actions .rpg-threads-profile-setting{font-size:12px!important}body dialog.rpg-thread-editor{padding:18px 14px}body dialog.rpg-account-page .rpg-threads-result .rpg-thread-record{width:100%}}
+
+body dialog.rpg-thread-editor .rpg-thread-editor-bar{position:sticky;top:-22px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#101924;padding:10px 0;margin-bottom:12px}
+body dialog.rpg-thread-editor .rpg-thread-editor-bar h2{margin:0;font-size:23px}
+body dialog.rpg-thread-editor .rpg-thread-editor-bar .rpg-thread-cancel{margin:0;flex:none}
+@media(max-width:600px){body dialog.rpg-thread-editor .rpg-thread-editor-bar{top:-18px}}
+body dialog.rpg-thread-editor :is(input:not([type=checkbox]):not([type=radio]),textarea){font-size:16px!important;min-height:44px!important}
+
+body dialog.rpg-account-page .rpg-thread-comparison{scroll-margin-top:74px}
