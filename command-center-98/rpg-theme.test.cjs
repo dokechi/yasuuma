@@ -42,6 +42,8 @@ test('declared reading, input, muted, selected, and feedback colors have readabl
 test('career overlays, close labels and native file buttons have scoped readable treatment',()=>{
  assert.match(css,/body\.cc-rpg-theme \.cce-dialog \.cce-internal\{background:var\(--rpg-panel\)!important;color:var\(--rpg-text\)!important/);
  assert.match(css,/\.fp-draft-dialog>header \.fp-close-draft\{flex:0 0 auto;min-width:76px;min-height:44px;white-space:nowrap!important/);
+ assert.match(css,/input\[type=file\]\{box-sizing:border-box;width:100%;min-width:0/);
+ assert.match(css,/\.fp-finished-controls\{grid-template-columns:minmax\(0,1fr\)/);
  assert.match(css,/input\[type=file\]::file-selector-button\{min-height:44px/);
  assert.match(css,/input\[type=file\]:focus-visible::file-selector-button/);
  assert.match(css,/input\[type=file\]:disabled::file-selector-button/);

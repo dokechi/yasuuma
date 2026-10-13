@@ -65,7 +65,7 @@ const geometry=`(()=>{
  for(const e of document.querySelectorAll('input[type=file]'))if(visible(e)){
   const st=getComputedStyle(e,'::file-selector-button'),r=e.getBoundingClientRect();
   add('native file button has navy gold treatment and 44px target',st.backgroundColor==='rgb(41, 49, 65)'&&st.color==='rgb(244, 229, 197)'&&parseFloat(st.minHeight)>=44,{color:st.color,background:st.backgroundColor,minHeight:st.minHeight});
-  add('file chooser fits its input panel',r.left>=0&&r.right<=innerWidth+1&&e.scrollWidth<=e.clientWidth+1,{left:r.left,right:r.right,scrollWidth:e.scrollWidth,clientWidth:e.clientWidth});
+  add('file chooser fits its input panel',r.left>=0&&r.right<=innerWidth+1&&e.scrollWidth<=e.clientWidth+1&&(!e.closest('.fp-finished-panel')||e.closest('.fp-finished-panel').scrollWidth<=e.closest('.fp-finished-panel').clientWidth+1),{left:r.left,right:r.right,scrollWidth:e.scrollWidth,clientWidth:e.clientWidth});
  }
  for(const back of document.querySelectorAll('.rpg-account-back,.rpg-workspace-heading [data-home-action="home"]'))if(visible(back)){
   add('shared return label and touch target',back.textContent==='← 司令塔'&&back.getBoundingClientRect().height>=43.99,{text:back.textContent,height:back.getBoundingClientRect().height});
@@ -206,6 +206,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:30
     await evaluate(`document.querySelector('[data-cce-open]').click()`);await waitFor(`!!document.querySelector('.cce-dialog[open]')`);
     await keyboardFocus('.cce-dialog[open] .cce-internal>summary');await capture(prefix+'career-focus-'+repeat,focusCheck('.cce-dialog[open] .cce-internal>summary'));
     await key('Enter');await capture(prefix+'career-internal-'+repeat,`document.querySelector('.cce-dialog[open] .cce-internal').open&&!!document.querySelector('.cce-dialog[open] .cce-internal table')`);
+    if(repeat===1){await evaluate(`document.querySelector('.cce-dialog[open] .cce-scroll').scrollIntoView({block:'center'})`);await capture(prefix+'career-internal-table',`(()=>{const d=document.querySelector('.cce-dialog[open]'),t=d.querySelector('.cce-scroll');return t.checkVisibility()&&t.clientWidth<=d.clientWidth&&getComputedStyle(t).overflowX==='auto'})()`);}
     await keyboardFocus('.cce-dialog[open] [data-close]');await key('Enter');await waitFor(`!document.querySelector('.cce-dialog[open]')`);
    }
    await route('fp');
