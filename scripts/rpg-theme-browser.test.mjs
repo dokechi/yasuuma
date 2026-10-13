@@ -238,6 +238,34 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:22
    await capture(prefix+'profile-saved',`document.querySelector('.rpg-threads-profile-open').href==='https://www.threads.com/@choi_fixture'`);
    await evaluate(`document.querySelector('.rpg-account-back').click()`);await waitFor(`!document.querySelector('dialog[open]')`);
   }
+  // Saved observations and read coverage are independent from operation notifications.
+  for(const [width,height] of [[360,800],[412,915],[1440,900]]){
+   const prefix=width+'x'+height+'-read-status-';await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
+   await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});await waitFor('!!window.CCRpgWorkspaces && !!window.__rpgQA && !app.busy');await evaluate('document.fonts.ready');
+   await evaluate(`window.__rpgQA.threads.readPages=true;window.__rpgQA.threads.failNextRead=true;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__rpgQA.lastCopy=text}}});CCRpgHome.openAccount('kyun')`);
+   await waitFor(`document.querySelector('.rpg-account-load-coverage')?.textContent.includes('続きあり')`);
+   await capture(prefix+'partial-coverage',`(()=>{const s=document.querySelector('.rpg-account-read-summary');return s.checkVisibility()&&!s.closest('details')&&s.textContent.includes('保存先全体：読込 1件 / 全 3件')&&document.querySelector('.rpg-account-counts').textContent.includes('確認用 1件')})()`);
+   await evaluate(`document.querySelector('.rpg-account-price-stock-check').scrollIntoView({block:'center'})`);
+   await capture(prefix+'saved-price-stock',`(()=>{const stamp=document.querySelector('.rpg-account-price-stock-check'),copy=document.querySelector('.rpg-account-copy'),saved=window.__rpgQA.threads.events[0].payload.checked_at_price_stock;return stamp.textContent.includes('保存時点')&&stamp.querySelector('.rpg-account-price-stock-time').textContent===CCManualOperationHub.displayTime(saved)&&(stamp.compareDocumentPosition(copy)&Node.DOCUMENT_POSITION_FOLLOWING)!==0&&stamp.getBoundingClientRect().width<innerWidth})()`);
+   await evaluate(`Array.from(document.querySelectorAll('dialog[open]>button')).find(b=>b.textContent.startsWith('保存原稿の続き')).click()`);
+   await waitFor(`!!document.querySelector('.rpg-account-read-warning')`);await evaluate(`document.querySelector('.rpg-account-copy button').click()`);await waitFor(`document.querySelector('.rpg-account-status').textContent.includes('原文をコピーしました')`);
+   await evaluate(`document.querySelector('.rpg-account-read-summary').scrollIntoView({block:'center'})`);
+   await capture(prefix+'copy-keeps-read-error',`document.querySelector('.rpg-account-read-warning').checkVisibility()&&document.querySelector('.rpg-account-load-coverage').textContent.includes('読込 1件 / 全 3件')&&document.querySelector('.rpg-account-copy pre').textContent===window.__rpgQA.lastCopy&&document.querySelectorAll('.rpg-account-card').length===1`);
+   await evaluate(`document.querySelector('.rpg-thread-record').click();document.querySelector('[name=postUrl]').value='https://www.threads.com/@kyun_fixture/post/ReadWarning';document.querySelector('[name=confirmPosted]').checked=true;document.querySelector('.rpg-thread-save').click()`);await waitFor(`!document.querySelector('.rpg-thread-editor')`);
+   await evaluate(`document.querySelector('.rpg-account-read-summary').scrollIntoView({block:'center'})`);
+   await capture(prefix+'save-keeps-read-error',`document.querySelector('.rpg-account-read-warning').checkVisibility()&&document.querySelector('.rpg-account-status').textContent.includes('投稿結果を保存しました')&&document.querySelector('.rpg-account-counts').textContent.includes('履歴 1件')`);
+   await evaluate(`window.__rpgQA.threads.failNextRead=false;window.__rpgQA.threads.holdRead=true;Array.from(document.querySelectorAll('dialog[open]>button')).find(b=>b.textContent.startsWith('保存原稿の続き')).click()`);await waitFor(`document.querySelector('.rpg-account-load-coverage').textContent.includes('読込中')`);
+   await capture(prefix+'retry-pending',`document.querySelector('.rpg-account-read-warning').checkVisibility()&&document.querySelectorAll('.rpg-account-card').length===1`);
+   await evaluate(`window.__rpgQA.threads.holdRead=false;window.__rpgQA.threads.releaseRead()`);await waitFor(`document.querySelector('.rpg-account-load-coverage').textContent.includes('読込完了')`);
+   await capture(prefix+'retry-complete',`!document.querySelector('.rpg-account-read-warning')&&document.querySelector('.rpg-account-load-coverage').textContent.includes('読込 3件 / 全 3件')&&document.querySelector('.rpg-account-counts').textContent.includes('履歴 1件')&&document.querySelector('.rpg-account-copy pre').textContent===window.__rpgQA.lastCopy`);
+   await evaluate(`document.querySelector('.rpg-account-back').click()`);await waitFor(`!document.querySelector('dialog[open]')`);
+   for(const [name,value] of [['invalid-time','2026-02-30T09:00:00Z'],['missing-time',null]]){
+    await evaluate(`window.__rpgQA.threads.events[0].payload.checked_at_price_stock=${JSON.stringify(value)};CCRpgHome.openAccount('kyun')`);await waitFor(`document.querySelector('.rpg-account-load-coverage')?.textContent.includes('続きあり')`);
+    await evaluate(`document.querySelector('[data-account-tab=history]').click();document.querySelector('.rpg-account-price-stock-check').scrollIntoView({block:'center'})`);
+    await capture(prefix+name,`document.querySelector('.rpg-account-price-stock-time').textContent==='未確認'&&document.querySelector('.rpg-account-price-stock-check').checkVisibility()`);
+    await evaluate(`document.querySelector('.rpg-account-back').click()`);await waitFor(`!document.querySelector('dialog[open]')`);
+   }
+  }
   for(const [width,height] of [[686,644],[834,900],[1440,900]]){
    await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
    await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});await waitFor('!!window.CCRpgHome && !!window.__rpgQA && !app.busy');await evaluate('document.fonts.ready');await capture(width+'x'+height+'-wide-home',`!document.getElementById('ccRpgHome').hidden`);
