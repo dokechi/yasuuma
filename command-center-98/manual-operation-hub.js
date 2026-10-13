@@ -125,7 +125,7 @@
   }
   function mutation(){return root.crypto?.randomUUID?.()||'threads-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);}
   function openProfile(){
-   const form=editor(account.label+'のURL設定');if(!form)return;
+   const form=editor('Threads URL設定');if(!form)return;form.d.setAttribute('aria-label',account.label+'のプロフィールURL設定');
    const input=field(form.body,'profileUrl','自分のThreadsプロフィールURL','url',accountConfig?.profile_url);input.placeholder='https://www.threads.com/@your_handle';
    form.body.append(e('p','この媒体の本人のプロフィールURLを登録します。ログイン連携や自動投稿は行いません。','rpg-thread-help'));
    const confirm=e('label',undefined,'rpg-thread-confirm'),checkbox=e('input');checkbox.type='checkbox';confirm.append(checkbox,e('span',account.label+'の自分のアカウントです'));form.body.append(confirm);

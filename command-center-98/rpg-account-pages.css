@@ -119,3 +119,5 @@ body dialog.rpg-thread-editor .rpg-thread-editor-bar h2{margin:0;font-size:23px}
 body dialog.rpg-thread-editor .rpg-thread-editor-bar .rpg-thread-cancel{margin:0;flex:none}
 @media(max-width:600px){body dialog.rpg-thread-editor .rpg-thread-editor-bar{top:-18px}}
 body dialog.rpg-thread-editor :is(input:not([type=checkbox]):not([type=radio]),textarea){font-size:16px!important;min-height:44px!important}
+
+body dialog.rpg-account-page .rpg-thread-comparison{scroll-margin-top:74px}
