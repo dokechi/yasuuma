@@ -37,3 +37,12 @@ function contrast(a,b){const x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.m
 test('declared reading, input, muted, selected, and feedback colors have readable contrast',()=>{
  for(const [fg,bg,label]of [['eee8da','202633','body'],['b6b8bc','202633','muted'],['e2c68c','293141','heading'],['f4eddc','151c28','input'],['171c26','d6bd88','selected'],['ffb8ac','3a252a','error'],['f1d293','383027','warning'],['a9ddba','23392f','success']])assert(contrast(fg,bg)>=4.5,label+' '+contrast(fg,bg));
 });
+
+
+test('career overlays, close labels and native file buttons have scoped readable treatment',()=>{
+ assert.match(css,/body\.cc-rpg-theme \.cce-dialog \.cce-internal\{background:var\(--rpg-panel\)!important;color:var\(--rpg-text\)!important/);
+ assert.match(css,/\.fp-draft-dialog>header \.fp-close-draft\{flex:0 0 auto;min-width:76px;min-height:44px;white-space:nowrap!important/);
+ assert.match(css,/input\[type=file\]::file-selector-button\{min-height:44px/);
+ assert.match(css,/input\[type=file\]:focus-visible::file-selector-button/);
+ assert.match(css,/input\[type=file\]:disabled::file-selector-button/);
+});

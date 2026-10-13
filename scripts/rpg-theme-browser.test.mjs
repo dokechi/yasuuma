@@ -32,7 +32,7 @@ const geometry=`(()=>{
   const s=getComputedStyle(e);let n=e,bg=s.backgroundColor;while((bg==='transparent'||bg==='rgba(0, 0, 0, 0)')&&n.parentElement){n=n.parentElement;bg=getComputedStyle(n).backgroundColor}
   const color=rgb(s.color),back=rgb(bg);add('readable form text',parseFloat(s.fontSize)>=12&&color.length===3&&back.length===3&&contrast(color,back)>=4.5,{selector:e.id||e.name||e.tagName,font:s.fontSize,color:s.color,background:bg});
  }
- const samples=[...document.querySelectorAll('.ledger-month-tab:not(:disabled)'),...document.querySelectorAll('.card-body p,.thread-body p,.task-pane td,.fp-draft-dialog p,.fp-draft-slide,.cce-dialog pre,.sourcing-card p,.affiliate-job p,.neko-card p')].filter(e=>visible(e)&&e.textContent.trim()).slice(0,30);
+ const samples=[...document.querySelectorAll('.ledger-month-tab:not(:disabled)'),...document.querySelectorAll('.card-body p,.thread-body p,.task-pane td,.fp-draft-dialog p,.fp-draft-slide,.cce-dialog pre,.cce-internal summary,.cce-internal p,.cce-internal th,.cce-internal td,.sourcing-card p,.affiliate-job p,.neko-card p')].filter(e=>visible(e)&&e.textContent.trim()).slice(0,30);
  for(const e of samples){const st=getComputedStyle(e);let n=e,bg=st.backgroundColor;while((bg==='transparent'||bg==='rgba(0, 0, 0, 0)')&&n.parentElement){n=n.parentElement;bg=getComputedStyle(n).backgroundColor}const fore=rgb(st.color),back=rgb(bg);add('readable content contrast',fore.length===3&&back.length===3&&contrast(fore,back)>=4.5,{selector:e.className||e.tagName,text:e.textContent.slice(0,45),color:st.color,background:bg});}
  const homeScene=document.querySelector('#ccRpgHome .rpg-scene');
  if(homeScene&&visible(homeScene))add('HOME keeps original dress artwork',getComputedStyle(homeScene).backgroundImage.includes('world.png?v=20261012.4-wardrobe')&&!getComputedStyle(homeScene).backgroundImage.includes('detail-swimwear'));
@@ -49,6 +49,24 @@ const geometry=`(()=>{
  const desk=document.querySelector('#ccDestination.rpg-workspace-heading');
  if(desk&&visible(desk)&&['fp','sourcing','reddit','x'].includes(desk.dataset.rpgDesk))add('workspace opens alternate swimwear artwork',getComputedStyle(desk,'::after').backgroundImage.includes('detail-swimwear.png?v=20261012.5-detail-swimwear'));
 
+ // Detail audit regressions cover both portrait and ordinary destinations.
+ if(desk&&visible(desk)&&!['fp','sourcing','reddit','x'].includes(desk.dataset.rpgDesk)){
+  const title=desk.querySelector('#ccPageTitle'),copy=title.parentElement,st=getComputedStyle(copy),r=title.getBoundingClientRect();
+  add('nonportrait heading has no reserved portrait lane',st.paddingRight==='0px'&&st.minHeight==='0px',{desk:desk.dataset.rpgDesk,padding:st.paddingRight,minHeight:st.minHeight});
+  add('nonportrait title uses a full row without vertical wrapping',r.width>=desk.clientWidth-40&&r.height<=parseFloat(getComputedStyle(title).lineHeight)*2+1,{width:r.width,height:r.height,deskWidth:desk.clientWidth});
+  add('nonportrait header stays compact',desk.getBoundingClientRect().height<=300,{height:desk.getBoundingClientRect().height});
+ }
+ for(const d of document.querySelectorAll('dialog[open]:is([data-account="kyun"],[data-account="choi"])'))if(d.scrollTop===0){
+  const toolbar=d.querySelector('.rpg-account-toolbar').getBoundingClientRect(),header=d.querySelector('.rpg-account-header').getBoundingClientRect(),art=d.querySelector('.rpg-account-character').getBoundingClientRect();
+  add('Threads portrait stays below toolbar inside existing header',art.top>=toolbar.bottom&&art.top>=header.top&&art.bottom<=header.bottom+1,{toolbarBottom:toolbar.bottom,artTop:art.top,artBottom:art.bottom,headerBottom:header.bottom});
+  add('Threads header does not grow to fix overlap',header.height<=190,{height:header.height});
+ }
+ for(const e of document.querySelectorAll('.fp-draft-dialog>header .fp-close-draft'))if(visible(e)){const r=e.getBoundingClientRect();add('FP close stays on one line with touch target',getComputedStyle(e).whiteSpace==='nowrap'&&r.width>=76&&r.height>=44,{width:r.width,height:r.height});}
+ for(const e of document.querySelectorAll('input[type=file]'))if(visible(e)){
+  const st=getComputedStyle(e,'::file-selector-button'),r=e.getBoundingClientRect();
+  add('native file button has navy gold treatment and 44px target',st.backgroundColor==='rgb(41, 49, 65)'&&st.color==='rgb(244, 229, 197)'&&parseFloat(st.minHeight)>=44,{color:st.color,background:st.backgroundColor,minHeight:st.minHeight});
+  add('file chooser fits its input panel',r.left>=0&&r.right<=innerWidth+1&&e.scrollWidth<=e.clientWidth+1,{left:r.left,right:r.right,scrollWidth:e.scrollWidth,clientWidth:e.clientWidth});
+ }
  for(const back of document.querySelectorAll('.rpg-account-back,.rpg-workspace-heading [data-home-action="home"]'))if(visible(back)){
   add('shared return label and touch target',back.textContent==='← 司令塔'&&back.getBoundingClientRect().height>=43.99,{text:back.textContent,height:back.getBoundingClientRect().height});
  }
@@ -71,8 +89,8 @@ const geometry=`(()=>{
  add('workflow initialization is fixture-only',true,window.__rpgQA.simulatedInitializations||[]);
  return checks;
 })()`;
-test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:220000},async()=>{
- const requests=[];let diagnose=async()=>{},slowRpg=false,startupCache=false,failRpg=false;
+test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:300000},async()=>{
+ const requests=[];let diagnose=async()=>{},slowRpg=false,startupCache=false,failRpg=false,failStyles=false;
  assert.ok(chrome,'Chrome is required; browser QA must not silently skip');fs.mkdirSync(output,{recursive:true});
  const server=http.createServer((req,res)=>{
   const url=new URL(req.url,'http://localhost'),relative=decodeURIComponent(url.pathname).replace(/^\/+/,''),file=path.resolve(root,relative);
@@ -80,6 +98,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:22
   if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);res.end();return}
   if(url.pathname==='/qa-return'){res.writeHead(200,{'Content-Type':'text/html'});res.end('<!doctype html><title>Return test</title><p>Browser history fixture</p>');return}
   if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return}
+  if(failStyles&&relative.endsWith('.css')){res.writeHead(503);res.end();return}
   if(failRpg&&relative==='command-center-98/rpg-home.js'){res.writeHead(503);res.end();return}
   let content=fs.readFileSync(file);
   if(relative==='command-center-98/app.html')content=content.toString().replace('<head>','<head><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script>');
@@ -112,6 +131,14 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:22
   diagnose=async(reason)=>{const label='failure-'+Date.now();const info={reason,requests,blocked,errors};try{info.page=await evaluate(`({url:location.href,readyState:document.readyState,title:document.title,body:document.body?.innerText?.slice(0,12000),html:document.documentElement.outerHTML.slice(0,25000),qa:window.__rpgQA?{writes:window.__rpgQA.writes,mode:window.__rpgQA.mode}:null})`)}catch(e){info.pageError=e.message}try{const png=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(output,label+'.png'),Buffer.from(png.data,'base64'))}catch(e){info.screenshotError=e.message}fs.writeFileSync(path.join(output,label+'.json'),JSON.stringify(info,null,2));console.error(JSON.stringify({reason,page:info.page?.url,title:info.page?.title,body:info.page?.body?.slice(0,1000),errors,blocked}));};
   const waitFor=async expression=>{for(let i=0;i<100;i++){if(await evaluate(expression))return;await sleep(50)}throw Error('Timed out: '+expression)};
   const capture=async(name,extra)=>{await sleep(120);await evaluate('window.scrollTo(0,0)');const checks=await evaluate(geometry);if(extra)checks.push({name:'expected route content',pass:!!await evaluate(extra)});const png=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(output,name+'.png'),Buffer.from(png.data,'base64'));results.push({name,checks});console.log(name+': '+checks.filter(x=>x.pass).length+'/'+checks.length)};
+  const key=async(value,modifiers=0)=>{const code=value==='Tab'?9:value==='Enter'?13:27;await send('Input.dispatchKeyEvent',{type:'keyDown',key:value,code:value,windowsVirtualKeyCode:code,nativeVirtualKeyCode:code,modifiers});await send('Input.dispatchKeyEvent',{type:'keyUp',key:value,code:value,windowsVirtualKeyCode:code,nativeVirtualKeyCode:code,modifiers});};
+  const keyboardFocus=async selector=>{
+   if(await evaluate(`document.activeElement?.matches(${JSON.stringify(selector)})`))await key('Tab',8);
+   for(let i=0;i<100;i++){await key('Tab');if(await evaluate(`document.activeElement?.matches(${JSON.stringify(selector)})`))return;}
+   throw Error('Keyboard target not reachable: '+selector);
+  };
+  const focusCheck=selector=>`(()=>{const e=document.querySelector(${JSON.stringify(selector)}),st=getComputedStyle(e),r=e.getBoundingClientRect();return document.activeElement===e&&e.matches(':focus-visible')&&parseFloat(st.outlineWidth)>=2&&r.top>=0&&r.bottom<=innerHeight})()`;
+  const startupCapture=async name=>{await sleep(120);const checks=await evaluate(`(()=>{const n=document.getElementById('ccStartupNotice'),b=n.querySelector('button'),st=getComputedStyle(b),r=b.getBoundingClientRect();return [{name:'fallback retry is readable and 44px without any external styles',pass:st.backgroundColor==='rgb(41, 49, 65)'&&st.color==='rgb(244, 229, 197)'&&r.height>=44&&r.width>=120},{name:'actual keyboard focus is visible on retry',pass:document.activeElement===b&&b.matches(':focus-visible')&&parseFloat(st.outlineWidth)>=2},{name:'failure text and retry stay within viewport',pass:r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth&&n.scrollHeight<=n.clientHeight},{name:'incomplete app is hidden from keyboard and display',pass:[...document.body.children].filter(e=>e!==n).every(e=>getComputedStyle(e).visibility==='hidden')}];})()`);const png=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(output,name+'.png'),Buffer.from(png.data,'base64'));results.push({name,checks});};
   const route=async(view)=>{await evaluate(`CCHome.leave();load(${JSON.stringify(view)})`);await waitFor('!app.busy');await sleep(180)};
   // Cold startup, cache reuse, reload and successful fixture-only login all use the real loader.
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:780,deviceScaleFactor:1,mobile:true});
@@ -167,6 +194,39 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:22
    for(const mode of ['empty','error']){await evaluate(`window.__rpgQA.mode='${mode}'`);await route('active');await capture(prefix+mode,`document.querySelector('#list .empty')!==null`)}
    await evaluate(`window.__rpgQA.mode='loading';void load('active')`);await sleep(100);await capture(prefix+'loading',`!!document.querySelector('#list .loading-lines')`);await evaluate(`window.__rpgQA.mode='normal';window.__rpgQA.release.forEach(r=>r());window.__rpgQA.release=[]`);await waitFor('!app.busy');
    await evaluate('CCRpgHome.showRpg()');await capture(prefix+'return-top',`!document.getElementById('ccRpgHome').hidden`);
+  }
+  // The detail audit is keyboard-operated with both repeated and interrupted journeys.
+  for(const [width,height] of [[360,800],[390,780],[412,915],[1440,900]]){
+   const prefix=width+'x'+height+'-world-detail-';await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
+   await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});await waitFor('!!window.CCRpgWorkspaces && !app.busy');await evaluate('document.fonts.ready');
+   await capture(prefix+'top-before',`document.documentElement.scrollHeight<=innerHeight+1&&document.getElementById('ccRpgHome').scrollHeight<=document.getElementById('ccRpgHome').clientHeight+1`);
+   for(const view of ['active','history','accepted','rejected','saved','events','house','career','affiliate','binbo-neko']){await route(view);await capture(prefix+'view-'+view,`app.view===${JSON.stringify(view)}`);}
+   await route('career');
+   for(let repeat=1;repeat<=2;repeat++){
+    await evaluate(`document.querySelector('[data-cce-open]').click()`);await waitFor(`!!document.querySelector('.cce-dialog[open]')`);
+    await keyboardFocus('.cce-dialog[open] .cce-internal>summary');await capture(prefix+'career-focus-'+repeat,focusCheck('.cce-dialog[open] .cce-internal>summary'));
+    await key('Enter');await capture(prefix+'career-internal-'+repeat,`document.querySelector('.cce-dialog[open] .cce-internal').open&&!!document.querySelector('.cce-dialog[open] .cce-internal table')`);
+    await keyboardFocus('.cce-dialog[open] [data-close]');await key('Enter');await waitFor(`!document.querySelector('.cce-dialog[open]')`);
+   }
+   await route('fp');
+   for(let repeat=1;repeat<=2;repeat++){
+    await evaluate(`document.querySelector('[data-fp-open]').click()`);await waitFor(`!!document.querySelector('.fp-draft-dialog')`);
+    await keyboardFocus('.fp-draft-dialog>header .fp-close-draft');await capture(prefix+'fp-close-focus-'+repeat,focusCheck('.fp-draft-dialog>header .fp-close-draft'));
+    if(repeat===1){await keyboardFocus('.fp-draft-dialog input[type=file]');await capture(prefix+'file-focus',focusCheck('.fp-draft-dialog input[type=file]'));await keyboardFocus('.fp-draft-dialog>header .fp-close-draft');}
+    await key('Enter');await waitFor(`!document.querySelector('.fp-draft-dialog')`);
+   }
+   await evaluate('CCRpgHome.showRpg()');
+   for(const account of ['kyun','choi'])for(let repeat=1;repeat<=2;repeat++){
+    await evaluate(`CCRpgHome.openAccount('${account}')`);await waitFor(`!!document.querySelector('.rpg-account-copy')`);
+    await keyboardFocus('.rpg-account-back');await capture(prefix+account+'-focus-'+repeat,focusCheck('.rpg-account-back'));
+    await key('Enter');await waitFor(`!document.querySelector('dialog[open]')`);
+   }
+   await evaluate('CCRpgWorkspaces.openArchive()');await keyboardFocus('.rpg-workspace-dialog button');await capture(prefix+'archive-focus',focusCheck('.rpg-workspace-dialog button'));await key('Enter');await waitFor(`!document.querySelector('.rpg-workspace-dialog[open]')`);
+   await route('history');await keyboardFocus('#ccDestination [data-home-action="home"]');await key('Enter');await waitFor(`!document.getElementById('ccRpgHome').hidden`);
+   await capture(prefix+'return-top',`document.documentElement.scrollHeight<=innerHeight+1&&document.getElementById('ccRpgHome').scrollHeight<=document.getElementById('ccRpgHome').clientHeight+1&&!document.querySelector('dialog[open]')&&!document.querySelector('.fp-draft-dialog')`);
+   failRpg=true;failStyles=true;await send('Network.clearBrowserCache');await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html?startup=no-css'});await waitFor(`!!document.querySelector('#ccStartupNotice[role="alert"]')`);await keyboardFocus('#ccStartupNotice button');await startupCapture(prefix+'startup-no-css-focus');
+   await key('Tab');await key('Tab');await startupCapture(prefix+'startup-no-css-focus-loop');
+   failRpg=false;failStyles=false;await key('Enter');await waitFor(`!!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')`);await capture(prefix+'startup-retry-ready',`!document.getElementById('ccRpgHome').hidden`);
   }
   // Focused Galaxy-sized and desktop refinement journeys use the same isolated fixtures.
   for(const [width,height] of [[360,800],[412,915],[1440,900]]){
