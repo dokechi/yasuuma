@@ -60,6 +60,23 @@ async function run(){
  for(const bad of [new Error('offline'),{ok:true,events:null,nextOffset:null},{ok:true,events:[],nextOffset:0},{ok:true,events:[]}]){
   const failure=setup([item('retained')],[bad]);const fd=await failure.open();assert.ok(text(fd).includes('読取未確認'));assert.ok(text(fd).includes('retained'));assert.ok(!text(fd).includes('読込完了'));assert.equal(all(fd,'button').find(b=>b.textContent.startsWith('保存原稿の続き')).disabled,false);
  }
+ // Coverage must stay visible independently from copy/save feedback, including a failed next page.
+ const savedTime='2026-10-02T09:12:34+09:00',source=Object.freeze({checked_at_price_stock:savedTime});
+ assert.equal(api.savedPriceStockCheck(source).value,savedTime);assert.equal(api.savedPriceStockCheck(source).label,api.displayTime(savedTime));assert.equal(source.checked_at_price_stock,savedTime);
+ for(const bad of [undefined,null,'',0,Date.now(),{},'now','today','2026-10-13','2026-10-13T09:00:00','2026-02-30T09:00:00Z','2026-13-01T09:00:00Z','2026-10-13T24:00:00Z','2026-10-13T09:60:00Z','2026-10-13T09:00:60Z','2026-10-13T09:00:00Z trailing'])assert.deepEqual(api.savedPriceStockCheck({checked_at_price_stock:bad}),{value:null,label:'未確認'},String(bad));
+ assert.equal(api.savedPriceStockCheck({checked_at_mercari:savedTime,updatedAt:savedTime}).label,'未確認','other observation/update times cannot become price/stock confirmation');
+ let releaseRetry;const pendingRetry=new Promise(resolve=>{releaseRetry=resolve;});
+ const readFixture=setup([],[{ok:true,events:[item('kept-first',{payload:{account_name:'キュン拾い',main_post:'kept-first',checked_at_price_stock:savedTime}})],total:3,nextOffset:1},new Error('next-page-offline'),pendingRetry]);
+ const rd=await readFixture.open(),summary=all(rd,'div').find(n=>n.className==='rpg-account-read-summary'),more=all(rd,'button').find(b=>b.textContent.startsWith('保存原稿の続き'));
+ assert.equal(summary.parent,rd,'coverage is not folded inside details');assert.ok(text(summary).includes('確認用 1件'));assert.ok(text(summary).includes('読込 1件 / 全 3件'));assert.ok(text(summary).includes('続きあり'));
+ const card=all(rd,'article')[0],stampBlock=all(card,'section').find(n=>n.className==='rpg-account-price-stock-check');assert.ok(text(stampBlock).includes('保存時点'));assert.ok(text(stampBlock).includes(api.displayTime(savedTime)));assert.ok(card.children.indexOf(stampBlock)<card.children.findIndex(n=>n.className==='rpg-account-copy'));
+ await more.onclick();await flush();assert.ok(text(summary).includes('読取未確認'));assert.ok(text(summary).includes('読込 1件 / 全 3件'));assert.ok(text(rd).includes('kept-first'));assert.equal(more.disabled,false);
+ await all(rd,'button').find(b=>b.textContent==='保存主投稿をコピー').onclick();assert.ok(text(all(rd,'p').find(n=>n.className==='rpg-account-status')).includes('原文をコピーしました'));assert.ok(text(summary).includes('next-page-offline'),'copy feedback cannot replace the persistent read warning');assert.equal(readFixture.copied[0],'kept-first');
+ const retry=more.onclick();await flush();assert.ok(text(summary).includes('読込中'));assert.ok(text(summary).includes('読取未確認'),'starting a retry is not a successful read');
+ releaseRetry({ok:true,events:[item('next-ok'),item('missing-time')],total:3,nextOffset:null});await retry;await flush();
+ assert.ok(text(summary).includes('読込 3件 / 全 3件'));assert.ok(text(summary).includes('読込完了'));assert.ok(!text(summary).includes('読取未確認'));assert.ok(text(rd).includes('kept-first'));assert.ok(text(rd).includes('next-ok'));assert.equal(more.disabled,true);
+ const missingStamp=all(rd,'section').filter(n=>n.className==='rpg-account-price-stock-check')[1];assert.ok(text(missingStamp).includes('未確認'));
+ for(const {o} of readFixture.calls){assert.equal(o.method,undefined);assert.equal(o.body,undefined);}
  const fp=setup([],[{ok:true,events:[],total:0,nextOffset:null}]);fp.root.CCManualOperationHub.openAccount('tiktok');await flush();const fpDialog=fp.doc.body.children.find(n=>n.tagName==='dialog');const route=all(fpDialog,'button').find(b=>b.dataset.homeAction==='fp-draft');assert.equal(route.textContent,'FP原稿を見る（既存FP）');route.onclick();assert.ok(!fp.doc.body.children.includes(fpDialog));
  console.log('PASS: suppression tie, explicit accounts, folded posted/skipped/rejected history, unknown state, original copy, honest coverage/empty/error states and GET-only access');
 }

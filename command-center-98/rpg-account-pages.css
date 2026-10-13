@@ -121,3 +121,14 @@ body dialog.rpg-thread-editor .rpg-thread-editor-bar .rpg-thread-cancel{margin:0
 body dialog.rpg-thread-editor :is(input:not([type=checkbox]):not([type=radio]),textarea){font-size:16px!important;min-height:44px!important}
 
 body dialog.rpg-account-page .rpg-thread-comparison{scroll-margin-top:74px}
+
+/* Persistent read coverage never shares the copy/save feedback slot. */
+body dialog.rpg-account-page .rpg-account-read-summary{padding:11px 14px;margin:12px 0;background:#0b121bed;border-left:2px solid #d7b46e;color:#eee5d2;overflow-wrap:anywhere}
+body dialog.rpg-account-page .rpg-account-read-summary p{margin:0;font-size:12px;line-height:1.8}
+body dialog.rpg-account-page .rpg-account-read-summary .rpg-account-counts{font-size:14px}
+body dialog.rpg-account-page .rpg-account-read-summary[data-read-state="error"]{border-color:#f1c07d;background:#302319ed}
+body dialog.rpg-account-page .rpg-account-read-summary .rpg-account-read-warning{color:#ffdda8;margin-top:6px}
+body dialog.rpg-account-page .rpg-account-price-stock-check{padding:10px 12px;margin:0 0 16px;border:1px solid #7f6f51;border-radius:5px;background:#101b27}
+body dialog.rpg-account-page .rpg-account-price-stock-check h4{margin:0;color:#e1c88f;font-size:12px;font-weight:500}
+body dialog.rpg-account-page .rpg-account-price-stock-time{margin:4px 0;font-size:14px;color:#fff2d9;overflow-wrap:anywhere}
+body dialog.rpg-account-page .rpg-account-price-stock-note{margin:0;font-size:11px;line-height:1.7;color:#d8ccb6}

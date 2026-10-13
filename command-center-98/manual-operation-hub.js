@@ -35,8 +35,8 @@
   currentTab.type=historyTab.type='button';currentTab.dataset.accountTab='current';historyTab.dataset.accountTab='history';tabs.append(currentTab,historyTab);
   status.className='rpg-account-status';coverage.className='rpg-account-coverage';list.className='rpg-account-list';close.className+=' rpg-account-close';
   const toolbar=e('div',undefined,'rpg-account-toolbar');toolbar.append(back,close);const coverageDetails=details('読取状況',coverage);coverageDetails.className='rpg-account-coverage-details';
-  const isThreads=['kyun','choi'].includes(account.key),accountActions=e('div',undefined,'rpg-threads-account-actions');
-  status.setAttribute('aria-live','polite');dialog.append(toolbar,header,...(isThreads?[accountActions]:[]),tabs,status,coverageDetails,list,policy);doc.body.append(dialog);dialog.onclose=()=>dialog.remove();dialog.showModal();
+  const isThreads=['kyun','choi'].includes(account.key),accountActions=e('div',undefined,'rpg-threads-account-actions'),readSummary=e('div',undefined,'rpg-account-read-summary');readSummary.setAttribute('aria-live','polite');
+  status.setAttribute('aria-live','polite');dialog.append(toolbar,header,...(isThreads?[accountActions]:[]),tabs,...(isThreads?[readSummary]:[]),status,coverageDetails,list,policy);doc.body.append(dialog);dialog.onclose=()=>dialog.remove();dialog.showModal();
   if(account.key==='tiktok'){const f=e('button','FP原稿を見る（既存FP）','push-button');f.type='button';f.dataset.homeAction='fp-draft';f.onclick=()=>dialog.close();dialog.append(f);}
   let accountConfig=null,accountError='',accountLoading=isThreads,childDialog=null;
   const closeParent=dialog.onclose;dialog.onclose=()=>{if(childDialog)childDialog.close();closeParent();};
@@ -49,12 +49,18 @@
    current.hidden=selectedTab!=='current';history.hidden=selectedTab!=='history';history.className='rpg-account-history';history.open=selectedTab==='history';
    currentTab.textContent='今回（'+active.length+'）';historyTab.textContent='履歴（'+archived.length+'）';currentTab.setAttribute('aria-pressed',String(selectedTab==='current'));historyTab.setAttribute('aria-pressed',String(selectedTab==='history'));
    list.append(current);
-   status.textContent=readError?'読取未確認：'+readError:matches.length?'確認用 '+active.length+'件｜履歴 '+archived.length+'件':!checked?'保存原稿を確認中…':'この保存先では原稿を確認できません。別保存先の原稿はまだ連携されていません。';
+   const readState=loading?'読込中':readError?'続きの読取未確認':!checked?'未確認':hasMore?'続きあり':'読込完了';
+   if(isThreads){
+    readSummary.dataset.readState=readError?'error':loading?'loading':hasMore?'partial':'complete';
+    readSummary.replaceChildren(e('p','この媒体：確認用 '+active.length+'件｜履歴 '+archived.length+'件','rpg-account-counts'),e('p','保存先全体：読込 '+loaded+'件 / 全 '+(total===null?'件数未確認':total+'件')+'｜'+readState,'rpg-account-load-coverage'));
+    if(readError)readSummary.append(e('p','読取未確認：'+readError+'。読込済みの原稿は表示しています。','rpg-account-read-warning'));
+    showOperation(!matches.length&&checked?'この保存先では原稿を確認できません。別保存先の原稿はまだ連携されていません。':'');
+   }else status.textContent=readError?'読取未確認：'+readError:matches.length?'確認用 '+active.length+'件｜履歴 '+archived.length+'件':!checked?'保存原稿を確認中…':'この保存先では原稿を確認できません。別保存先の原稿はまだ連携されていません。';
    coverage.textContent='保存イベント：読込 '+loaded+'件 / 全 '+(total===null?'件数未確認':total+'件')+'｜'+(loading?'読込中':readError?'続きの読取未確認':!checked?'未確認':hasMore?'続きあり':'読込完了')+'｜画面内の読込済み原稿も照合';
    for(const item of [...active,...archived]){const p=api.payload(item),card=e('article',undefined,'rpg-account-card'),state=api.historyState(item,account.key);card.append(e('h3',item.title||p.post_title||'保存原稿'),e('p',state||'投稿状態未確認'));
-    if(isThreads)appendResult(card,item);
+    if(isThreads){const checked=api.savedPriceStockCheck(p);const stamp=e('section',undefined,'rpg-account-price-stock-check');stamp.append(e('h4','価格・在庫の確認（保存時点）'),e('p',checked.label,'rpg-account-price-stock-time'),e('p','現在の価格・在庫は、商品ページで確認してください。','rpg-account-price-stock-note'));card.append(stamp);appendResult(card,item);}
     const product=['kyun','choi'].includes(account.key)?api.savedProductLink(p):null;
-    const copies=api.savedCopies(p).filter(copy=>!product||copy.label!=='保存購入リンク');for(const copy of copies){const block=e('section',undefined,'rpg-account-copy');block.append(e('h4',copy.label),e('pre',copy.text));const b=e('button',copy.label+'をコピー','push-button');b.type='button';b.onclick=async()=>{try{await root.navigator.clipboard.writeText(copy.text);status.textContent='原文をコピーしました。';}catch(_){status.textContent='クリップボード未確認。表示全文を選択してコピーしてください。';}};block.append(b);card.append(block);}
+    const copies=api.savedCopies(p).filter(copy=>!product||copy.label!=='保存購入リンク');for(const copy of copies){const block=e('section',undefined,'rpg-account-copy');block.append(e('h4',copy.label),e('pre',copy.text));const b=e('button',copy.label+'をコピー','push-button');b.type='button';b.onclick=async()=>{try{await root.navigator.clipboard.writeText(copy.text);showOperation('原文をコピーしました。');}catch(_){showOperation('クリップボード未確認。表示全文を選択してコピーしてください。');}};block.append(b);card.append(block);}
     if(!copies.length)card.append(e('p','本文の保存形式は未確認です。元の原稿画面で確認してください。'));
     if(product){const block=e('section',undefined,'rpg-account-product');block.append(e('h4','商品ページ'));const link=e(product.url?'a':'button','商品ページを開く','push-button rpg-product-open');if(product.url){link.href=product.url;link.target='_blank';link.rel='noopener noreferrer';link.setAttribute('aria-label','商品ページを開く（別タブ）');}else{link.type='button';link.disabled=true;}block.append(link,e('p',product.note,'rpg-product-note'));card.append(block);}
     if(['kyun','choi'].includes(account.key)){
@@ -84,6 +90,7 @@
    list.append(history);
    more.disabled=loading||!hasMore;
   }
+  function showOperation(message){status.textContent=message;status.hidden=!message;}
   function externalLink(url,label,cls){const a=e('a',label,'push-button '+cls);a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;}
   function renderAccount(){
    accountActions.replaceChildren();const profile=api.threadsUrl(accountConfig?.profile_url,'profile');
@@ -135,7 +142,7 @@
     if(saving||!accountConfig?.id)return;const parsed=api.threadsUrl(input.value,'profile');if(!parsed){form.message.textContent='ThreadsのプロフィールURL（https://www.threads.com/@名前）を入力してください。';return;}if(!checkbox.checked){form.message.textContent='この媒体の本人のアカウントか確認してください。';return;}
     const body={action:'threads_account_profile',id:accountConfig.id,accountKey:account.key,expectedRevision:accountConfig.revision,profileUrl:parsed.url,confirmAccount:true},signature=JSON.stringify(body);if(signature!==lastSignature){lastSignature=signature;mutationId=mutation();}
     saving=true;save.disabled=true;form.setBusy(true);form.message.textContent='保存中…';
-    try{const data=await patch({...body,mutationId});if(data.account?.accountKey!==account.key||api.threadsUrl(data.account?.profile_url,'profile')?.url!==parsed.url||!Number.isSafeInteger(data.account?.revision)||data.account.revision<=body.expectedRevision)throw Error('保存結果を確認できませんでした。入力は残っています。');accountConfig=data.account;accountError='';renderAccount();form.d.close();status.textContent='プロフィールURLを保存しました。投稿後はURLだけで結果を記録できます。';}
+    try{const data=await patch({...body,mutationId});if(data.account?.accountKey!==account.key||api.threadsUrl(data.account?.profile_url,'profile')?.url!==parsed.url||!Number.isSafeInteger(data.account?.revision)||data.account.revision<=body.expectedRevision)throw Error('保存結果を確認できませんでした。入力は残っています。');accountConfig=data.account;accountError='';renderAccount();form.d.close();showOperation('プロフィールURLを保存しました。投稿後はURLだけで結果を記録できます。');}
     catch(error){form.message.textContent=error.message;}
     finally{saving=false;save.disabled=false;form.setBusy(false);}
    };
@@ -143,8 +150,8 @@
   function appendResult(card,item){
    const result=api.manualResult(item,account.key),invalid=api.payload(item).threads_manual_result!=null&&!result,block=e('section',undefined,'rpg-threads-result');
    const record=e('button',result?'投稿結果を更新':'投稿結果を記録','push-button rpg-thread-record');record.type='button';record.disabled=invalid;record.onclick=()=>{if(invalid)return;
-    if(accountLoading||accountError){status.textContent='URL設定の読込を確認してから記録してください。';return;}
-    if(!api.threadsUrl(accountConfig?.profile_url,'profile')){status.textContent='最初に、この媒体のプロフィールURLを登録してください。';openProfile();return;}openResult(item);
+    if(accountLoading||accountError){showOperation('URL設定の読込を確認してから記録してください。');return;}
+    if(!api.threadsUrl(accountConfig?.profile_url,'profile')){showOperation('最初に、この媒体のプロフィールURLを登録してください。');openProfile();return;}openResult(item);
    };block.append(record);
    if(result){
     block.append(externalLink(result.post_url,'記録した投稿を開く','rpg-thread-post-open'),e('p','本人確認で記録済み｜自動取得なし','rpg-thread-help'));
@@ -187,13 +194,13 @@
     saving=true;save.disabled=true;form.setBusy(true);form.message.textContent='保存中…';
     try{const data=await patch({...body,mutationId});const saved=api.manualResult(data.item,account.key);if(!saved||saved.post_url!==parsed.url||saved.revision<=body.expectedRevision||data.result?.post_url!==parsed.url||(item.taskId&&data.item.taskId!==item.taskId)||(item.eventKey&&data.item.eventKey!==item.eventKey))throw Error('保存結果を確認できませんでした。入力は残っています。');
      const updated={...data.item,eventRecordId:data.item.id,id:item.id};items=items.filter(x=>String(x.id).replace(/^(sns:)+/,'')!==String(item.id).replace(/^(sns:)+/,''));items.push(updated);
-     selectedTab='history';form.d.close();render();status.textContent='投稿結果を保存しました。履歴から確認・追記できます。';
+     selectedTab='history';form.d.close();render();showOperation('投稿結果を保存しました。履歴から確認・追記できます。');
     }catch(error){form.message.textContent=error.message;}
     finally{saving=false;save.disabled=false;form.setBusy(false);}
    };
   }
   async function fetchMore(){
-   if(loading||!hasMore)return;loading=true;readError='';render();
+   if(loading||!hasMore)return;loading=true;render();
    try{
     if(typeof API!=='string'||typeof authHeaders!=='function')throw new Error('読取APIが未設定');
     const url=new URL(API);url.searchParams.set('resource','task-events');url.searchParams.set('limit','100');url.searchParams.set('offset',String(offset));
@@ -202,7 +209,7 @@
     const next=data.nextOffset;if(next!==null&&(!Number.isInteger(next)||next<=offset))throw new Error('続きの読取位置が未確認');
     items.push(...data.events.map(i=>({...i,eventRecordId:i.id,id:'task:'+i.taskId+':'+i.eventKey})));
     loaded+=data.events.length;total=Number.isInteger(data.total)&&data.total>=0?data.total:null;checked=true;
-    offset=next??offset;hasMore=next!==null;
+    offset=next??offset;hasMore=next!==null;readError='';
    }catch(error){readError=error.message;}
    finally{loading=false;render();}
   }
@@ -361,6 +368,15 @@
   const visibleCautions=unique(cautions).filter(part=>!differences.includes(part)&&!/^成約(?:日|時期)(?:は|が)?(?:不明|未確認)(?:で)?$/.test(part));
   return {condition:unique(conditions).join('・')||'未確認',differences:differences.join('。'),cautions:visibleCautions};
  }
+ function savedPriceStockCheck(p){
+  const value=p?.checked_at_price_stock;
+  if(typeof value!=='string'||value.length>100)return {value:null,label:'未確認'};
+  const match=value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/);
+  if(!match||!Number.isFinite(Date.parse(value)))return {value:null,label:'未確認'};
+  const [year,month,day,hour,minute,second]=match.slice(1).map(Number);
+  if(month<1||month>12||day<1||day>new Date(Date.UTC(year,month,0)).getUTCDate()||hour>23||minute>59||second>59)return {value:null,label:'未確認'};
+  return {value,label:displayTime(value)};
+ }
  function savedProductLink(p){
   const raw=[p.ordinary_url,p.purchase_url,p.purchase_link].find(v=>typeof v==='string'&&v.trim());
   if(!raw)return {url:null,note:'商品URLが未確認のため、まだ開けません。'};
@@ -379,5 +395,5 @@
   const link=p.purchase_link||p.purchase_url;if(typeof link==='string'&&/^https:\/\//.test(link))result.push({label:'保存購入リンク',text:link});
   return result;
  }
- return {accounts,payload,matchesAccount,unique,savedCopies,isSuppressed,historyState,savedSources,savedProductLink,savedMercariComparisons,mercariComparisonSummary,metricLabels,threadsUrl,manualResult,metricNumber,isoFromLocal,localDateTime,displayTime,originalCopies};
+ return {accounts,payload,matchesAccount,unique,savedCopies,isSuppressed,historyState,savedSources,savedProductLink,savedMercariComparisons,mercariComparisonSummary,savedPriceStockCheck,metricLabels,threadsUrl,manualResult,metricNumber,isoFromLocal,localDateTime,displayTime,originalCopies};
 });
