@@ -17,9 +17,9 @@
     "./v230-request-progress.css?v=20261004.1",
     "./v231-trade-details.css?v=20261004.1",
     "./rpg-home.css?v=20261013.1-wide",
-    "./rpg-theme.css?v=20261013.3-consistency",
-    "./rpg-account-pages.css?v=20261013.7-read-status",
-    "./rpg-workspaces.css?v=20261013.5-refinement"
+    "./rpg-theme.css?v=20261013.9-detail",
+    "./rpg-account-pages.css?v=20261013.9-detail",
+    "./rpg-workspaces.css?v=20261013.9-detail"
   ],
   "scripts": [
     "./sourcing-atomic-save.js?v=20261011.atomic2",

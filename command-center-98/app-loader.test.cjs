@@ -184,7 +184,7 @@ test('malformed shell responses keep the loading document available for the erro
 test('the unchanged public entry URL boots through the external loader in a browser context', async () => {
   const wrapper = fs.readFileSync(path.join(__dirname, 'app-v130.html'), 'utf8');
   const scripts = [...wrapper.matchAll(/<script src="([^"]+)"><\/script>/g)].map(match => match[1]);
-  assert.deepEqual(scripts, ['./app-loader.js?v=20261012.4-startup']);
+  assert.deepEqual(scripts, ['./app-loader.js?v=20261013.9-detail']);
   assert.ok(!wrapper.includes('h.replace'));
   const document = documentStub();
   const window = {document, fetch: successfulFetch()};
@@ -206,4 +206,16 @@ require('./rpg-workspaces.test.cjs');
 test('startup completion releases presentation only and fails closed when the final modules are missing',()=>{
  for(const ready of [true,false]){const removed=[];let reloads=0;const notice={setAttribute(){},append(n){this.child=n},remove:()=>removed.push('ccStartupNotice')};const document={getElementById:id=>id==='ccStartupNotice'?notice:{remove:()=>removed.push(id)},defaultView:{location:{reload:()=>reloads++}},createElement:()=>({addEventListener(name,fn){this.click=fn}})};assert.equal(loader.finishStartup(document,ready),ready);assert.deepEqual(removed,ready?['ccStartupNotice','ccStartupStyle']:[]);if(!ready){assert.match(notice.textContent,/再読み込み/);notice.child.click();assert.equal(reloads,1);}}
  assert.doesNotMatch(loader.finishStartup.toString(),/showRpg|\bload\(|history\.|localStorage|sessionStorage|replaceChildren/);
+});
+
+
+test('startup failure retry is self-contained, touch-sized, and keyboard visible without external CSS',()=>{
+ assert.match(loader.STARTUP_STYLE,/#ccStartupNotice button\{[^}]*min-height:44px/);
+ assert.match(loader.STARTUP_STYLE,/#ccStartupNotice button:focus-visible\{outline:2px solid #f2d49b/);
+ assert.match(loader.STARTUP_STYLE,/align-content:center;gap:20px/);
+ assert.match(loader.STARTUP_STYLE,/body>\*:not\(#ccStartupNotice\)\{[^}]*visibility:hidden!important/);
+ assert.doesNotMatch(loader.STARTUP_STYLE,/var\(|url\(/);
+ const wrapper=fs.readFileSync(path.join(__dirname,'app-v130.html'),'utf8');
+ assert.match(wrapper,/html,body\{[^}]*background:#0b111b/);
+ assert.doesNotMatch(wrapper,/#008080|#c0c0c0/);
 });

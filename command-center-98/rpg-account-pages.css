@@ -132,3 +132,6 @@ body dialog.rpg-account-page .rpg-account-price-stock-check{padding:10px 12px;ma
 body dialog.rpg-account-page .rpg-account-price-stock-check h4{margin:0;color:#e1c88f;font-size:12px;font-weight:500}
 body dialog.rpg-account-page .rpg-account-price-stock-time{margin:4px 0;font-size:14px;color:#fff2d9;overflow-wrap:anywhere}
 body dialog.rpg-account-page .rpg-account-price-stock-note{margin:0;font-size:11px;line-height:1.7;color:#d8ccb6}
+
+/* Keep portraits inside the header below the sticky return toolbar, at every width. */
+body dialog.rpg-account-page:is([data-account="kyun"],[data-account="choi"]) .rpg-account-character{top:0;bottom:auto;height:100%;max-height:190px}

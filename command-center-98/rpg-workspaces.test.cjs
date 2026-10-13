@@ -121,3 +121,13 @@ test('mobile refinement keeps portrait dimensions and touch targets while tighte
  assert.match(refinement,/min-height:44px/);assert.doesNotMatch(refinement,/display:none|visibility:hidden|height:154px|height:190px|background-size/);
  assert.match(refinement,/\.cc-more-button,\.rpg-workspace-settings/);assert.match(refinement,/#ccRefreshSlot/);
 });
+
+
+test('only portrait desks reserve title padding and minimum height',()=>{
+ const blocks=[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(m=>m[1].includes('.cc-heading>div'));
+ assert.ok(blocks.length>3);
+ for(const [,selector,body] of blocks)if(/padding-right|min-height/.test(body)){
+  for(const key of ['fp','sourcing','reddit','x'])assert.ok(selector.includes('[data-rpg-desk="'+key+'"]'),selector);
+ }
+ assert.match(css,/\.rpg-workspace-heading \.cc-heading>div\{grid-column:1\/-1;min-width:0\}/);
+});

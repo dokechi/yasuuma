@@ -155,3 +155,16 @@ body.cc-rpg-theme .ledger-month-loading{color:var(--rpg-muted)!important}
 
 /* Pseudo-elements cannot match inside :is(); keep disclosure arrows readable. */
 body.cc-rpg-theme .cc-item-summary::before{color:var(--rpg-gold)!important}
+
+/* Body-mounted career review keeps the same contrast as its in-page counterpart. */
+body.cc-rpg-theme .cce-dialog .cce-internal{background:var(--rpg-panel)!important;color:var(--rpg-text)!important;border-color:var(--rpg-line-soft)!important;border-radius:5px;box-shadow:none}
+/* Preserve the mobile close label and the native file input's keyboard behavior. */
+body.cc-rpg-theme .fp-draft-dialog>header>div{min-width:0}
+body.cc-rpg-theme .fp-draft-dialog>header .fp-close-draft{flex:0 0 auto;min-width:76px;min-height:44px;white-space:nowrap!important}
+body.cc-rpg-theme .fp-finished-controls{grid-template-columns:minmax(0,1fr)}
+body.cc-rpg-theme .fp-finished-controls>label{min-width:0}
+body.cc-rpg-theme input[type=file]{box-sizing:border-box;width:100%;min-width:0}
+body.cc-rpg-theme input[type=file]::file-selector-button{min-height:44px;margin:0 10px 0 0;padding:8px 14px;border:1px solid #c2a164;border-radius:4px;background:#293141;color:#f4e5c5;font:14px/1.5 system-ui,sans-serif;cursor:pointer}
+body.cc-rpg-theme input[type=file]:hover::file-selector-button{background:#343e50}
+body.cc-rpg-theme input[type=file]:focus-visible::file-selector-button{outline:2px solid #f2d49b;outline-offset:2px}
+body.cc-rpg-theme input[type=file]:disabled::file-selector-button{background:#252b37;color:#aeb3bd;border-color:#48505e;cursor:not-allowed}

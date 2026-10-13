@@ -41,7 +41,7 @@
     return manifest;
   }
 
-  const STARTUP_STYLE = '<style id="ccStartupStyle">html,body{background:#0b111b!important}body{overflow:hidden!important}body>*:not(#ccStartupNotice){opacity:0!important;pointer-events:none!important}#ccStartupNotice{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;margin:0;padding:24px;background:#0b111b;color:#f4e5c5;font:16px/1.7 system-ui,sans-serif}</style>';
+  const STARTUP_STYLE = '<style id="ccStartupStyle">html,body{background:#0b111b!important}body{overflow:hidden!important}body>*:not(#ccStartupNotice){opacity:0!important;visibility:hidden!important;pointer-events:none!important}#ccStartupNotice{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;align-content:center;gap:20px;box-sizing:border-box;margin:0;padding:24px;background:#0b111b;color:#f4e5c5;font:16px/1.7 system-ui,sans-serif}#ccStartupNotice button{box-sizing:border-box;min-width:120px;min-height:44px;padding:10px 18px;border:1px solid #c2a164;border-radius:5px;background:#293141;color:#f4e5c5;font:16px/1.5 system-ui,sans-serif;cursor:pointer}#ccStartupNotice button:hover{background:#343e50}#ccStartupNotice button:focus-visible{outline:2px solid #f2d49b;outline-offset:3px}</style>';
   const STARTUP_NOTICE = '<div id="ccStartupNotice" role="status" aria-live="polite">司令塔を開いています…</div>';
   function finishStartup(document, ready) {
     if (!ready) {

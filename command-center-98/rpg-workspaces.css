@@ -8,7 +8,10 @@ body[data-rpg-scope="daily"] .home-feed-card[aria-labelledby="homeHouseTitle"]{d
 body.rpg-neko-aux-ready[data-rpg-scope="daily"] #ccPrimaryNav [data-home-action="binbo-neko"],
 body.rpg-neko-aux-ready[data-rpg-scope="daily"] #commandHome .home-workspaces [data-cc-view="binbo-neko"]{display:none!important}
 body.cc-rpg-theme #ccDestination.rpg-workspace-heading{border-bottom:1px solid #c2a164;padding:22px 14px 18px;margin-bottom:16px;background:linear-gradient(110deg,#09111ce8,#121a27d6);border-radius:8px 8px 0 0}
-body.cc-rpg-theme .rpg-workspace-heading .cc-heading{align-items:center;gap:16px}
+body.cc-rpg-theme .rpg-workspace-heading .cc-heading{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;gap:16px}
+/* Auxiliary and history titles use the whole row; only portrait desks reserve a lane. */
+body.cc-rpg-theme .rpg-workspace-heading .cc-heading>div{grid-column:1/-1;min-width:0}
+body.cc-rpg-theme .rpg-workspace-heading #ccPageTitle{overflow-wrap:anywhere}
 body.cc-rpg-theme .rpg-workspace-heading #ccPageTitle{font-family:CCRpgDot,serif;font-weight:400;color:#fff1d1;letter-spacing:.09em;font-size:clamp(24px,4.2vw,38px);line-height:1.35}
 body.cc-rpg-theme .rpg-workspace-heading #ccPageDescription{color:#e2dbcd;max-width:60ch}
 body.cc-rpg-theme .rpg-workspace-heading .push-button{min-height:44px}
@@ -51,10 +54,10 @@ body.cc-rpg-theme #ccDestination.rpg-workspace-heading:is([data-rpg-desk="fp"],[
 body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{top:30px;height:130px;width:160px}
 body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]) .cc-heading{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px!important;border-bottom:0;margin:0}
 body.cc-rpg-theme .rpg-workspace-heading .cc-heading>[data-home-action="home"]{grid-column:1/-1;justify-self:start}
-body.cc-rpg-theme .rpg-workspace-heading .cc-heading>div{grid-column:1/-1;padding-right:140px;min-height:90px}
+body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]) .cc-heading>div{grid-column:1/-1;padding-right:140px;min-height:90px}
 body.cc-rpg-theme .rpg-workspace-heading :is(#ccPageTitle,#ccPageDescription){max-width:none}
 body.cc-rpg-theme .rpg-workspace-heading .cc-heading>.push-button,body.cc-rpg-theme .rpg-workspace-heading #ccRefreshSlot .push-button{margin:0;max-width:100%;white-space:normal}
-@media(max-width:600px){body.cc-rpg-theme .rpg-workspace-heading .cc-heading>div{padding-right:120px}body.cc-rpg-theme .rpg-workspace-heading #ccPageTitle{font-size:23px;letter-spacing:.03em}body.cc-rpg-theme .rpg-workspace-heading .cc-heading>.push-button,body.cc-rpg-theme .rpg-workspace-heading #ccRefreshSlot .push-button{font-size:12px;padding:7px}body.cc-rpg-theme .rpg-workspace-heading::after{width:135px}}
+@media(max-width:600px){body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]) .cc-heading>div{padding-right:120px}body.cc-rpg-theme .rpg-workspace-heading #ccPageTitle{font-size:23px;letter-spacing:.03em}body.cc-rpg-theme .rpg-workspace-heading .cc-heading>.push-button,body.cc-rpg-theme .rpg-workspace-heading #ccRefreshSlot .push-button{font-size:12px;padding:7px}body.cc-rpg-theme .rpg-workspace-heading::after{width:135px}}
 
 @media(max-width:600px){#rpgSourcingAux{flex-wrap:wrap;overflow:visible;gap:6px}#rpgSourcingAux .push-button{flex:1 1 44%;white-space:normal;font-size:12px;padding:7px}}
 body.cc-rpg-theme .rpg-workspace-heading[data-rpg-desk="fp"]::after{height:104px;mask-image:linear-gradient(90deg,transparent,#000 28%)}
@@ -95,7 +98,7 @@ body.cc-rpg-theme #ccDestination.rpg-workspace-heading:is([data-rpg-desk="fp"],[
  background:linear-gradient(90deg,#09111cc9,#09111c59 72%,#09111c26),url('./assets/rpg-home/detail-swimwear.png?v=20261012.5-detail-swimwear') center top/max(940px,100%) auto no-repeat;
 }
 body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]) .cc-heading{padding:0!important;row-gap:10px!important}
-body.cc-rpg-theme .rpg-workspace-heading .cc-heading>div{display:flex;flex-direction:column;justify-content:center;padding-right:220px;min-height:220px}
+body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]) .cc-heading>div{display:flex;flex-direction:column;justify-content:center;padding-right:220px;min-height:220px}
 body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{
  top:65px;right:8px;width:220px;height:225px;background-size:620px auto;background-position:right -824px;opacity:1;
  mask-image:linear-gradient(90deg,transparent,#000 15%),linear-gradient(0deg,transparent,#000 9%);mask-composite:intersect;
@@ -107,7 +110,7 @@ body.cc-rpg-theme .rpg-workspace-heading .cc-heading>.rpg-workspace-settings,
 body.cc-rpg-theme .rpg-workspace-heading #ccRefreshSlot{position:relative;align-self:end}
 @media(max-width:600px){
  body.cc-rpg-theme #ccDestination.rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]){padding:12px 10px}
- body.cc-rpg-theme .rpg-workspace-heading .cc-heading>div{padding-right:152px;min-height:180px}
+ body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]) .cc-heading>div{padding-right:152px;min-height:180px}
  body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{top:60px;right:0;width:166px;height:190px;background-size:520px auto;background-position:right -691px}
  body.cc-rpg-theme .rpg-workspace-heading[data-rpg-desk="fp"]::after{top:76px;height:154px;background-position:right -530px}
 }
@@ -118,7 +121,7 @@ body.cc-rpg-theme .rpg-workspace-heading #ccRefreshSlot .push-button{background:
 @media(max-width:600px){
  body.cc-rpg-theme #ccDestination.rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]){padding:8px 10px;margin-bottom:12px}
  body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]) .cc-heading{row-gap:4px!important}
- body.cc-rpg-theme .rpg-workspace-heading .cc-heading>div{min-height:162px}
+ body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"]) .cc-heading>div{min-height:162px}
  body.cc-rpg-theme .rpg-workspace-heading:is([data-rpg-desk="fp"],[data-rpg-desk="sourcing"],[data-rpg-desk="reddit"],[data-rpg-desk="x"])::after{top:30px}
  body.cc-rpg-theme .rpg-workspace-heading[data-rpg-desk="fp"]::after{top:46px}
  body.cc-rpg-theme #rpgSourcingAux{margin:8px 0}
