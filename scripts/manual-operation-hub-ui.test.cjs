@@ -19,7 +19,7 @@ async function run(){
   {ok:true,events:[{taskId:'media',eventKey:'two',payload:{account_name:'ちょい上等',body_options:['メンズ本文'],self_reply:'メンズ返信'}}],nextOffset:null},
   {ok:true,events:[],nextOffset:null}
  ];
- const root={document:doc,navigator:{clipboard:{writeText:async s=>{root.copied=s;}}},fetch:async(u,o)=>{calls.push({url:String(u),options:o});return{ok:true,json:async()=>responses.shift()};}};
+ const root={document:doc,navigator:{clipboard:{writeText:async s=>{root.copied=s;}}},fetch:async(u,o)=>{if(new URL(String(u)).searchParams.get('resource')==='threads-manual-accounts')return {ok:true,json:async()=>({ok:true,accounts:[{accountKey:'kyun',id:1,revision:0,profile_url:null},{accountKey:'choi',id:2,revision:0,profile_url:null}]})};calls.push({url:String(u),options:o});return{ok:true,json:async()=>responses.shift()};}};
  const source=fs.readFileSync(path.join(__dirname,'../command-center-98/manual-operation-hub.js'),'utf8');
  const URLClass=typeof URL==='function'?URL:null;
  new Function('window','app','API','authHeaders','URL',source)(root,{items:[local]},'https://example.com/api',()=>({'X-Test-Auth':'private-test-only'}),URLClass);

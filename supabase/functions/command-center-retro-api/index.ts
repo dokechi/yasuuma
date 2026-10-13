@@ -3,6 +3,9 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { affiliatePublicAsset, affiliateGet, affiliatePatch } from "./affiliate-production-api.ts";
 import { nekoGet, nekoPatch } from "./binbo-neko-api.ts";
 import { fpImagesGet, fpImagesPatch } from "./fp-finished-images-api.mjs";
+import { threadsManualGet, threadsManualPatch } from "./threads-manual-api.mjs";
+import { saveThreadsPayload } from "./threads-payload-store.mjs";
+import postgres from "npm:postgres@3.4.7";
 import { saveGuardedPayload, mutationFailure } from "./guarded-payload.mjs";
 import { sourcingSuppliers } from "./sourcing-read-model.mjs";
 import { SaveError, saveVersionedRow } from "../_shared/save-consistency.mjs";
@@ -12,6 +15,20 @@ import { saveSourcingRoute } from "./sourcing-atomic-route.mjs";
 const SUPA = Deno.env.get("SUPABASE_URL") || "";
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const admin = createClient(SUPA, KEY, { auth: { persistSession:false, autoRefreshToken:false } });
+// Uses only the function's existing internal database connection. No credential
+// is created, changed, returned, or logged; unrelated routes never connect here.
+let threadsDatabaseClient:any;
+function threadsDatabase(){
+  if(!threadsDatabaseClient){
+    const connection=Deno.env.get("SUPABASE_DB_URL");
+    if(!connection)throw new Error("threads_storage_unavailable");
+    threadsDatabaseClient=postgres(connection,{prepare:false,max:1,idle_timeout:20,connect_timeout:10});
+  }
+  return threadsDatabaseClient;
+}
+async function saveThreadsEvent(row:any,payload:any){
+  return saveThreadsPayload((statement:string,parameters:any[])=>threadsDatabase().unsafe(statement,parameters),row,payload);
+}
 const enc = new TextEncoder();
 const TTL = 60 * 60 * 24 * 30;
 const ALLOWED_ORIGINS = new Set(["https://dokechi.github.io"]);
@@ -148,6 +165,8 @@ Deno.serve(async(req:Request)=>{
   if(req.method==="PATCH"){
     try{
       const body=await req.json().catch(()=>({}));const id=String(body?.id||"");const action=String(body?.action||"");
+      const threadsResult=await threadsManualPatch(req,body,{admin,json,sha256,mapEvent,saveThreadsPayload:saveThreadsEvent});
+      if(threadsResult)return threadsResult;
       const fpImagesResult=await fpImagesPatch(req,body,{admin,json,sha256});
       if(fpImagesResult)return fpImagesResult;
       const affiliateResult=await affiliatePatch(req,body,affiliateDeps);
@@ -281,6 +300,8 @@ Deno.serve(async(req:Request)=>{
   if(req.method!=="GET") return json(req,{ok:false,error:"method_not_allowed"},405);
   try{
     const resource=u.searchParams.get("resource")||"signals";
+    const threadsResult=await threadsManualGet(req,{admin,json});
+    if(threadsResult)return threadsResult;
     const fpImagesResult=await fpImagesGet(req,{admin,json,sha256});
     if(fpImagesResult)return fpImagesResult;
     const affiliateResult=await affiliateGet(req,affiliateDeps);

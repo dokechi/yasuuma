@@ -43,6 +43,8 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/save-fixture" --ignore-scripts --no-audit --no-fund @electric-sql/pglite@0.4.6
           echo "PGLITE_MODULE=$RUNNER_TEMP/save-fixture/node_modules/@electric-sql/pglite/dist/index.js" >> "$GITHUB_ENV"
       - name: Syntax and manual operation contracts
+        env:
+          REQUIRE_THREADS_SQL: "1"
         run: |
           node --check command-center-98/fp-finished-images.js
           node --check command-center-98/manual-operation-hub.js
@@ -52,6 +54,8 @@ jobs:
           node scripts/manual-operation-hub-ui.test.cjs
           node scripts/manual-operation-hub-safety.test.cjs
           node scripts/rpg-account-pages.test.cjs
+          node scripts/threads-manual-ui.test.cjs
+          node --test scripts/threads-manual-api.test.mjs
           node command-center-98/rpg-home.test.cjs
           node scripts/fp-finished-images.test.mjs
           node --test scripts/affiliate-production-api.test.mjs scripts/affiliate-production.test.mjs
