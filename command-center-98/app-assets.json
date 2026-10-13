@@ -78,7 +78,7 @@
     "./v230-request-progress.js?v=20261004.1",
     "./v231-trade-details.js?v=20261004.1",
     "./fp-finished-images.js?v=20261008.4-state",
-    "./manual-operation-hub.js?v=20261013.7-read-status",
+    "./manual-operation-hub.js?v=20261013.8-jst-check",
     "./rpg-home.js?v=20261012.3-workspaces",
     "./rpg-workspaces.js?v=20261013.3-consistency"
   ]

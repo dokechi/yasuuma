@@ -375,7 +375,8 @@
   if(!match||!Number.isFinite(Date.parse(value)))return {value:null,label:'未確認'};
   const [year,month,day,hour,minute,second]=match.slice(1).map(Number);
   if(month<1||month>12||day<1||day>new Date(Date.UTC(year,month,0)).getUTCDate()||hour>23||minute>59||second>59)return {value:null,label:'未確認'};
-  return {value,label:displayTime(value)};
+  const label=new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(new Date(value))+'（日本時間）';
+  return {value,label};
  }
  function savedProductLink(p){
   const raw=[p.ordinary_url,p.purchase_url,p.purchase_link].find(v=>typeof v==='string'&&v.trim());
