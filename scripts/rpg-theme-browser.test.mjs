@@ -90,7 +90,7 @@ const geometry=`(()=>{
  return checks;
 })()`;
 test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:480000},async()=>{
- const requests=[];let diagnose=async()=>{},slowRpg=false,startupCache=false,failRpg=false,failStyles=false;
+ const requests=[];let diagnose=async()=>{},slowRpg=false,startupCache=false,failRpg=false,failStyles=false,modernStartup=false,slowCastle=false;
  assert.ok(chrome,'Chrome is required; browser QA must not silently skip');fs.mkdirSync(output,{recursive:true});
  const server=http.createServer((req,res)=>{
   const url=new URL(req.url,'http://localhost'),relative=decodeURIComponent(url.pathname).replace(/^\/+/,''),file=path.resolve(root,relative,relative.endsWith('/')?'index.html':'');
@@ -101,7 +101,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:48
   if(failStyles&&relative.endsWith('.css')){res.writeHead(503);res.end();return}
   if(failRpg&&relative==='command-center-98/rpg-home.js'){res.writeHead(503);res.end();return}
   let content=fs.readFileSync(file);
-  if(relative==='command-center-98/app.html')content=content.toString().replace('<head>','<head><script>localStorage.setItem("cc-castle-mode","classic")</script><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script>');
+  if(relative==='command-center-98/app.html')content=content.toString().replace('<head>','<head><script>localStorage.setItem("cc-castle-mode","'+(modernStartup?'castle':'classic')+'")</script><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script>');
   if(relative==='command-center-98/index.html')content=content.toString().replace('<head>','<head><script>localStorage.removeItem("cc_retro_token");window.__rpgQA={writes:[]};'+(url.searchParams.has('qa-login')?'window.fetch=async()=>({ok:true,status:200,json:async()=>({ok:true,token:"synthetic-qa-only"})});':'')+'</script>');
   if(relative==='command-center-98/app-v130.html'&&url.searchParams.has('qa-boot'))content=content.toString().replace('<head>','<head><script>window.__rpgQA={writes:[]};window.fetch=()=>new Promise(()=>{});</script>');
   // Read-only access to the actual fallback renderer; its normal packet action writes.
@@ -109,7 +109,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:48
   if(relative==='command-center-98/binbo-neko.js')content=content.toString().replace('window.CCBinboNeko={','window.__rpgQA.openNekoCopy=copyFallback;window.CCBinboNeko={');
   // No visual banner: screenshots must represent the actual application layout.
   if(relative==='scripts/ui-fixtures.js')content=content.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
-  const respond=()=>{res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':startupCache&&/\.(?:js|css)$/.test(file)?'private,max-age=60':'no-store'});res.end(content);};if(slowRpg&&relative==='command-center-98/rpg-home.js')setTimeout(respond,2000);else respond();
+  const respond=()=>{res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':startupCache&&/\.(?:js|css)$/.test(file)?'private,max-age=60':'no-store'});res.end(content);};if((slowRpg&&relative==='command-center-98/rpg-home.js')||(slowCastle&&relative==='command-center-98/castle/app.js'))setTimeout(respond,2000);else respond();
  });
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cc-rpg-browser-'));
@@ -157,6 +157,20 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:48
   startupCache=false;failRpg=true;await send('Network.clearBrowserCache');await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html?startup=failed'});await waitFor(`!!document.querySelector('#ccStartupNotice[role="alert"]')`);await capture('startup-failed-module',`getComputedStyle(document.querySelector('.desktop')).opacity==='0'&&document.querySelector('#ccStartupNotice button').textContent==='再読み込み'`);failRpg=false;await evaluate(`document.querySelector('#ccStartupNotice button').click()`);await waitFor(`!!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')`);await capture('startup-retry-ready',`!document.getElementById('ccRpgHome').hidden`);
   await send('Page.navigate',{url:origin+'/command-center-98/index.html?qa-login=1'});await waitFor(`!!document.getElementById('code')&&!document.getElementById('loginPane').classList.contains('hidden')`);await evaluate(`document.getElementById('code').value='synthetic-code';document.getElementById('loginForm').requestSubmit()`);await waitFor(`!!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')`);await capture('startup-after-login',`location.pathname.endsWith('/app-v130.html')&&!document.getElementById('ccRpgHome').hidden`);
   startupCache=false;
+  // Exercise the actual default opening path, not just the classic QA routes.
+  modernStartup=true;slowCastle=true;
+  for(const [width,height]of [[390,780],[1280,900]]){
+   await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
+   await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html?startup=castle#keep-fragment'});
+   await waitFor(`!!window.CCCastle`);
+   // A warm child service worker may already have finished; either state must conceal legacy HOME.
+   await capture(width+'x'+height+'-startup-castle-loading',`(()=>{const n=document.getElementById('ccStartupNotice'),f=document.getElementById('ccCastleFrame'),hit=document.elementFromPoint(innerWidth/2,innerHeight/2);return n?hit===n&&getComputedStyle(document.getElementById('ccRpgHome')).visibility==='hidden'&&f.hidden:!f.hidden&&hit===f})()`);
+   await waitFor(`!document.getElementById('ccStartupStyle')&&!document.getElementById('ccCastleFrame').hidden`);
+   await capture(width+'x'+height+'-startup-castle-ready',`document.elementFromPoint(innerWidth/2,innerHeight/2)===document.getElementById('ccCastleFrame')&&location.hash==='#keep-fragment'`);
+   await send('Page.reload');await waitFor(`!!window.CCCastle&&!document.getElementById('ccStartupStyle')&&!document.getElementById('ccCastleFrame').hidden`);
+   await capture(width+'x'+height+'-startup-castle-reload',`document.elementFromPoint(innerWidth/2,innerHeight/2)===document.getElementById('ccCastleFrame')&&localStorage.getItem('cc-castle-mode')==='castle'`);
+  }
+  modernStartup=false;slowCastle=false;
   for(const [width,height]of [[390,780],[1280,900]]){
    const prefix=width+'x'+height+'-';await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
    await send('Page.navigate',{url:origin+'/command-center-98/index.html'});await waitFor(`!!document.getElementById('loginPane')&&!document.getElementById('loginPane').classList.contains('hidden')`);await capture(prefix+'login',`location.pathname.endsWith('/index.html')`);
@@ -394,7 +408,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:48
   await evaluate(`document.getElementById('ccCastleReturn').click()`);
   await evaluate(`Promise.race([${C}.navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Castle offline shell did not install')),10000))])`);
   await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
-  await evaluate(`document.getElementById('ccCastleFrame').src='./castle/index.html?offline=1'`);await waitFor(`!!${C}.CCCastleApp`);
+  await evaluate(`document.getElementById('ccCastleFrame').src='./castle/index.html?offline=1'`);await waitFor(`${C}.location.search==='?offline=1'&&!!${C}.CCCastleApp`);
   await capture('castle-offline',`${C}.CCCastleApp.notebook.all().some(x=>x.title==='本番統合・確認用の端末原稿')&&${C}.navigator.onLine===false`);
   await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
   results.push({name:'network-isolation',checks:[{name:'no attempted external network request',pass:blocked.length===0,detail:blocked},{name:'no uncaught browser exceptions',pass:errors.length===0,detail:errors}]});

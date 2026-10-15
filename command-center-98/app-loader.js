@@ -57,7 +57,24 @@
     document.getElementById('ccStartupStyle')?.remove();
     return ready;
   }
-  const STARTUP_FINISH = '<script>(' + finishStartup.toString() + ')(document,!!(window.CCRpgHome&&window.CCRpgWorkspaces));</script>';
+  function completeStartup(document, finish) {
+    const w = document.defaultView;
+    if (!w.CCRpgHome || !w.CCRpgWorkspaces) return finish(document, false);
+    // The legacy modules mount first. Keep their UI covered until the chosen
+    // castle surface is actually ready; saved records load independently.
+    const pending = w.CCCastle?.whenReady?.();
+    if (!pending) return finish(document, true);
+    let settled = false;
+    const done = ready => {
+      if (settled) return;
+      settled = true;
+      w.clearTimeout(timer);
+      finish(document, ready);
+    };
+    const timer = w.setTimeout(() => done(false), 30000);
+    pending.then(() => done(true), () => done(false));
+  }
+  const STARTUP_FINISH = '<script>(' + completeStartup.toString() + ')(document,(' + finishStartup.toString() + '));</script>';
 
   function composeDocument(html, manifest) {
     validateManifest(manifest);
@@ -102,5 +119,5 @@
     }
   }
 
-  return {MANIFEST_URL, STARTUP_STYLE, STARTUP_NOTICE, STARTUP_FINISH, finishStartup, validateManifest, composeDocument, boot};
+  return {MANIFEST_URL, STARTUP_STYLE, STARTUP_NOTICE, STARTUP_FINISH, finishStartup, completeStartup, validateManifest, composeDocument, boot};
 });

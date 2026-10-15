@@ -1,12 +1,12 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const {parseHTML}=require('linkedom');
 const H=require('../../manual-operation-hub.js');
-function boot(fetcher){
+function boot(fetcher,{mode=null,active=true}={}){
  const {window,document}=parseHTML('<html><head></head><body><section id="ccRpgHome"><footer class="rpg-footer"></footer></section></body></html>');
  window.location={origin:'https://example.com'};
- window.CCHome={active:true};window.CCManualOperationHub=H;
+ window.CCHome={active};window.CCManualOperationHub=H;
  window.CCRpgHome={showRpg(){},showLegacy(){}};window.CCRpgWorkspaces={};
- window.localStorage={getItem(){return null},setItem(){}};
+ window.localStorage={getItem(){return mode},setItem(){}};
  window.__fpContentPipeline={buildDraftCopy:item=>'台本：'+item.payload.draft_slides.map(x=>x.body).join('\n')};
  const sent=[];window.fetch=fetcher;const context=vm.createContext({window,document,URL,AbortController,setTimeout,clearTimeout,MutationObserver:window.MutationObserver,API:'https://api.example.com/',authHeaders:()=>({'Authorization':'synthetic-only'})});
  vm.runInContext(fs.readFileSync('../castle-parent.js','utf8'),context);
@@ -32,4 +32,17 @@ test('host paginates all events, performs GET only, and marks interrupted reads 
  assert.ok(requests.every(x=>!x.options.method||x.options.method==='GET'));
  assert.ok(!JSON.stringify(b.sent).includes('synthetic-only'));
  fail=true;await b.window.CCCastle.refresh();assert.equal(b.sent.at(-1).complete,false);assert.match(b.sent.at(-1).message,/一部の読取/);
+});
+
+test('default startup stays pending until the trusted castle frame is visible',async()=>{
+ const b=boot(async()=>({ok:true,json:async()=>({ok:true,events:[],items:[],nextOffset:null})}));
+ let opened=false;b.window.CCCastle.whenReady().then(()=>opened=true);
+ const frame=b.document.getElementById('ccCastleFrame');assert.equal(frame.hidden,true);
+ const foreign=new b.window.Event('message');Object.assign(foreign,{origin:'https://other.example',source:frame.contentWindow,data:{channel:'cc-castle-v1',type:'ready'}});b.window.dispatchEvent(foreign);
+ await Promise.resolve();assert.equal(opened,false);
+ b.ready();await Promise.resolve();assert.equal(opened,true);assert.equal(frame.hidden,false);assert.equal(b.window.CCCastle.whenReady(),null);
+ await b.window.CCCastle.refresh();
+});
+test('intentional classic mode and direct workspace startup do not wait for a hidden castle',()=>{
+ for(const options of [{mode:'classic'},{active:false}]){const b=boot(null,options);assert.equal(b.window.CCCastle.whenReady(),null);assert.equal(b.document.getElementById('ccCastleFrame').hidden,true);}
 });
