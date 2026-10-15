@@ -93,7 +93,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:30
  const requests=[];let diagnose=async()=>{},slowRpg=false,startupCache=false,failRpg=false,failStyles=false;
  assert.ok(chrome,'Chrome is required; browser QA must not silently skip');fs.mkdirSync(output,{recursive:true});
  const server=http.createServer((req,res)=>{
-  const url=new URL(req.url,'http://localhost'),relative=decodeURIComponent(url.pathname).replace(/^\/+/,''),file=path.resolve(root,relative);
+  const url=new URL(req.url,'http://localhost'),relative=decodeURIComponent(url.pathname).replace(/^\/+/,''),file=path.resolve(root,relative,relative.endsWith('/')?'index.html':'');
   requests.push({url:url.href,method:req.method,file});
   if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);res.end();return}
   if(url.pathname==='/qa-return'){res.writeHead(200,{'Content-Type':'text/html'});res.end('<!doctype html><title>Return test</title><p>Browser history fixture</p>');return}
@@ -374,7 +374,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:30
   await evaluate(`${C}.CCCastleApp.open('fp');${C}.document.querySelector('#productionTools button').click()`);await waitFor(`!app.busy&&app.view==='fp'`);
   await capture('castle-native-fp',`document.getElementById('ccCastleFrame').hidden&&!!document.querySelector('[data-fp-open]')`);
   await evaluate(`document.getElementById('ccCastleReturn').click()`);
-  await evaluate(`${C}.navigator.serviceWorker.ready`);
+  await evaluate(`Promise.race([${C}.navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Castle offline shell did not install')),10000))])`);
   await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
   await evaluate(`document.getElementById('ccCastleFrame').src='./castle/index.html?offline=1'`);await waitFor(`!!${C}.CCCastleApp`);
   await capture('castle-offline',`${C}.CCCastleApp.notebook.all().some(x=>x.title==='本番統合・確認用の端末原稿')&&${C}.navigator.onLine===false`);
