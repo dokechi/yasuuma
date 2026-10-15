@@ -149,3 +149,17 @@ test('host pause clears scene timers; a failed copy never selects a reward',asyn
  const b=boot();await sceneLoaded(b,'kyun','welcome');b.navigator.clipboard.writeText=async()=>{throw Error('denied')};await b.click('#copy');assert.equal(b.images.some(i=>i.src.includes('scene-kyun-special')),false);
  await b.emit(b.window,'castle:pause');b.advance(100000);assert.equal(b.$('#characterScenes').dataset.scene,'welcome');
 });
+
+test('an empty room fills automatically after an earlier empty partial result',()=>{
+ const b=boot({seeds:{kyun:[],choi:[],fp:[],shiire:[]}});
+ b.context.packet={drafts:[],complete:false,loading:true,message:'仕入れ・原稿を読み込み中'};b.read('production.receive(packet)');
+ assert.match(b.$('#draftTitle').textContent,/読み込み中/);assert.doesNotMatch(b.$('#draftBody').textContent,/引き出し/);
+ b.context.packet={drafts:[live()],complete:false,loading:true,message:'履歴は読込中'};b.read('production.receive(packet)');
+ assert.equal(b.$('#draftBody').textContent,'本番の原文');assert.equal(b.$('#productionNotice').hidden,true);
+});
+test('switching to an empty room applies a staged arrival without requiring a notice click',async()=>{
+ const b=boot({seeds:{kyun:[],choi:[],fp:[],shiire:[]}});b.context.packet={drafts:[live()],complete:false,loading:true};b.read('production.receive(packet)');
+ const sourcing={...live('すぐに読める候補'),id:'live-shiire-now',place:'shiire',title:'取得済み候補'};
+ b.context.packet={drafts:[live(),sourcing],complete:false,loading:true};b.read('production.receive(packet)');assert.equal(b.$('#productionNotice').hidden,false);
+ await b.click('[data-go=shiire]');assert.equal(b.$('#draftBody').textContent,'すぐに読める候補');assert.equal(b.$('#productionNotice').hidden,true);
+});

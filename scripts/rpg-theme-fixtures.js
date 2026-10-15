@@ -55,6 +55,7 @@
     if(Array.isArray(data.items)&&!resource&&!url.pathname.includes('x-api')&&!url.pathname.includes('reddit'))data.items.push({id:'task:6aaca7d36874819181caec8ba014556e:fixture-career',taskId:'6aaca7d36874819181caec8ba014556e',domain:'money',title:'合成データの上場企業原稿',summary:'働き方の確認用原稿です。',reviewState:'new',lastSeen:stamp,payload:{content_type:'career_post_candidate',execution_source:'chat',draft_caption:'検証用のキャリア原稿です。',draft_slides:[{headline:'条件を確かめる',body:'合成データです。募集条件と働き方を確認します。'}]}});
     if(resource==='castle-signals')Object.assign(data,{items:[{id:'fixture-saved-only',title:'保存先だけにある台本',updatedAt:stamp,payload:{content_type:'fp_post_candidate',draft_slides:[{body:'保存先の最新台本本文'}]}}],total:1,nextOffset:null});
     if(resource==='task-events'){
+      if(window.__rpgQA.holdCastleEvents)await new Promise(resolve=>window.__rpgQA.releaseCastleEvents=resolve);
       const qa=window.__rpgQA.threads,offset=Number(url.searchParams.get('offset')||0);
       if(qa.readPages&&offset>0&&qa.holdRead)await new Promise(resolve=>qa.releaseRead=resolve);
       if(qa.readPages&&offset>0&&qa.failNextRead)return threadResponse({ok:false,error:'synthetic_next_page_failed'},503);

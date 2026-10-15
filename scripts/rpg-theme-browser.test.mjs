@@ -407,6 +407,12 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:48
   await evaluate(`${C}.CCCastleApp.open('fp');${C}.document.querySelector('#productionTools button').click()`);await waitFor(`!app.busy&&app.view==='fp'`);
   await capture('castle-native-fp',`document.getElementById('ccCastleFrame').hidden&&!!document.querySelector('[data-fp-open]')`);
   await evaluate(`document.getElementById('ccCastleReturn').click()`);
+  // Reproduce the reported blank sourcing room while event history is stalled.
+  await evaluate(`CCCastle.refresh()`);
+  await evaluate(`${C}.CCCastleApp.notebook.replaceSources([],{complete:true});${C}.CCCastleApp.open('shiire');window.__rpgQA.holdCastleEvents=true;window.__progressRead=CCCastle.refresh();void 0`);
+  await waitFor(`!!window.__rpgQA.releaseCastleEvents&&${C}.CCCastleApp.getState().draft?.place==='shiire'`);
+  await capture('castle-sourcing-before-history',`(()=>{const c=${C};return !c.document.getElementById('copy').disabled&&c.document.getElementById('draftBody').textContent.includes('仕入価格')&&c.document.getElementById('productionStatus').textContent.includes('読込中')})()`);
+  await evaluate(`window.__rpgQA.holdCastleEvents=false;window.__rpgQA.releaseCastleEvents();window.__progressRead`);
   await evaluate(`Promise.race([${C}.navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Castle offline shell did not install')),10000))])`);
   await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
   await evaluate(`document.getElementById('ccCastleFrame').src='./castle/index.html?offline=1'`);await waitFor(`${C}.location.search==='?offline=1'&&!!${C}.CCCastleApp`);

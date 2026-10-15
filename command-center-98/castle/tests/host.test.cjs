@@ -63,3 +63,16 @@ test('missing pagination or malformed sourcing never removes cached originals',a
   b.ready();await b.window.CCCastle.refresh();assert.equal(b.sent.at(-1).complete,false);assert.match(b.sent.at(-1).message,/保持/);
  }
 });
+
+test('sourcing is visible while the first events request is still pending',async()=>{
+ let release;const gate=new Promise(resolve=>release=resolve),requests=[];
+ const b=boot(async url=>{const key=url.searchParams.get('resource');requests.push(key);if(key==='task-events')await gate;return {ok:true,json:async()=>key==='sourcing'?{ok:true,items:[{id:'shop-now',title:'今すぐ表示する候補',payload:{buy:800}}]}:{ok:true,items:[],events:[],nextOffset:null}};});
+ b.ready();const done=b.window.CCCastle.refresh();await new Promise(resolve=>setImmediate(resolve));
+ assert.ok(requests.includes('task-events'));const early=b.sent.filter(x=>x.type==='records').at(-1);
+ assert.equal(early.loading,true);assert.equal(early.complete,false);assert.equal(early.drafts.find(x=>x.place==='shiire').title,'今すぐ表示する候補');
+ release();await done;assert.equal(b.sent.at(-1).complete,true);assert.equal(b.sent.at(-1).loading,false);
+});
+test('a malformed FP record cannot hide valid sourcing records or claim complete',async()=>{
+ const b=boot(async url=>({ok:true,json:async()=>url.searchParams.get('resource')==='sourcing'?{ok:true,items:[{id:'valid',title:'保存された仕入れ候補'}]}:{ok:true,items:[{id:'bad',payload:{content_type:'fp_post_candidate',draft_slides:[null]}}],events:[],nextOffset:null}}));
+ b.ready();await b.window.CCCastle.refresh();const last=b.sent.at(-1);assert.equal(last.complete,false);assert.equal(last.loading,false);assert.equal(last.drafts.length,1);assert.equal(last.drafts[0].place,'shiire');assert.match(last.message,/形式未確認/);
+});
