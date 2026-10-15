@@ -3,7 +3,7 @@ import {sceneCamera} from './scene-manifest.js?v=19';
 // fixed. Static <img> is always underneath for low-power / WebGL fallbacks.
 export function createSceneMotion({canvas,image,box,reduced,contain=false}){
  let gl,program,texture,buffer,uniforms,vertices,scene=null,frame=0,epoch=0,last=-Infinity,start=0,hit='head',hitAt=-Infinity,visible=true,failed=false;
- const vertex=`attribute vec2 p;uniform vec4 head,hair,hand,cloth;uniform vec2 imageSize,viewport,offset;uniform float scale,t,react,region;varying vec2 uv;
+ const vertex=`attribute vec2 p;uniform vec4 head,hair,hand,cloth;uniform vec2 imageSize,viewport,offset;uniform float scale,t,react,region;varying mediump vec2 uv;
  float weight(vec2 v,vec4 area){float r=length((v-area.xy)/area.zw);return 1.-smoothstep(.25,1.,r);}
  void main(){uv=p;vec2 q=p*imageSize;float h=weight(p,head),a=(sin(t*.9)*.003+react*.012*(1.-step(.5,region)))*h;vec2 d=q-head.xy*imageSize;
  q+=vec2(cos(a)*d.x-sin(a)*d.y-d.x,sin(a)*d.x+cos(a)*d.y-d.y);
@@ -12,7 +12,7 @@ export function createSceneMotion({canvas,image,box,reduced,contain=false}){
  q+=vec2(1.1,-2.8)*(sin(t*.8)*.22+react*(region==2.?2.:.25))*weight(p,hand);
  q+=vec2(sin(t*.7)*1.3+react*(region==3.?9.:1.5),react*.3)*weight(p,cloth);
  vec2 s=q*scale+offset;gl_Position=vec4(s.x/viewport.x*2.-1.,1.-s.y/viewport.y*2.,0.,1.);}`;
- const fragment='precision mediump float;uniform sampler2D art;varying vec2 uv;void main(){gl_FragColor=texture2D(art,uv);}';
+ const fragment='precision mediump float;uniform sampler2D art;varying mediump vec2 uv;void main(){gl_FragColor=texture2D(art,uv);}';
  function stop(){epoch++;cancelAnimationFrame(frame);frame=0;canvas.classList.remove('is-live');}
  function init(){
   if(gl)return true;if(failed)return false;
