@@ -408,7 +408,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:48
   await evaluate(`document.getElementById('ccCastleReturn').click()`);
   await evaluate(`Promise.race([${C}.navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Castle offline shell did not install')),10000))])`);
   await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
-  await evaluate(`document.getElementById('ccCastleFrame').src='./castle/index.html?offline=1'`);await waitFor(`!!${C}.CCCastleApp`);
+  await evaluate(`document.getElementById('ccCastleFrame').src='./castle/index.html?offline=1'`);await waitFor(`${C}.location.search==='?offline=1'&&!!${C}.CCCastleApp`);
   await capture('castle-offline',`${C}.CCCastleApp.notebook.all().some(x=>x.title==='本番統合・確認用の端末原稿')&&${C}.navigator.onLine===false`);
   await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
   results.push({name:'network-isolation',checks:[{name:'no attempted external network request',pass:blocked.length===0,detail:blocked},{name:'no uncaught browser exceptions',pass:errors.length===0,detail:errors}]});
