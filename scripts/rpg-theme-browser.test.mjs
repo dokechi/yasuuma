@@ -163,7 +163,8 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:48
    await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
    await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html?startup=castle#keep-fragment'});
    await waitFor(`!!window.CCCastle`);
-   await capture(width+'x'+height+'-startup-castle-loading',`(()=>{const n=document.getElementById('ccStartupNotice');return !!n&&document.elementFromPoint(innerWidth/2,innerHeight/2)===n&&getComputedStyle(document.getElementById('ccRpgHome')).visibility==='hidden'&&document.getElementById('ccCastleFrame').hidden})()`);
+   // A warm child service worker may already have finished; either state must conceal legacy HOME.
+   await capture(width+'x'+height+'-startup-castle-loading',`(()=>{const n=document.getElementById('ccStartupNotice'),f=document.getElementById('ccCastleFrame'),hit=document.elementFromPoint(innerWidth/2,innerHeight/2);return n?hit===n&&getComputedStyle(document.getElementById('ccRpgHome')).visibility==='hidden'&&f.hidden:!f.hidden&&hit===f})()`);
    await waitFor(`!document.getElementById('ccStartupStyle')&&!document.getElementById('ccCastleFrame').hidden`);
    await capture(width+'x'+height+'-startup-castle-ready',`document.elementFromPoint(innerWidth/2,innerHeight/2)===document.getElementById('ccCastleFrame')&&location.hash==='#keep-fragment'`);
    await send('Page.reload');await waitFor(`!!window.CCCastle&&!document.getElementById('ccStartupStyle')&&!document.getElementById('ccCastleFrame').hidden`);
