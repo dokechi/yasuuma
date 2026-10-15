@@ -1,6 +1,6 @@
 // Cache only this app's static shell and fetched art. Drafts remain in localStorage.
-const CACHE='castle-production-shell-v18',PREFIX='castle-production-shell-';
-const SHELL=['./','./index.html','./app.css?v=18','./workbench.css?v=18','./app.js?v=18','./notebook.js?v=18','./workbench.js?v=18','./world.js?v=18','./feedback.js?v=18','./production.js?v=18','./character-rig.js?v=18','./skirt-action.js?v=18'];
+const CACHE='castle-production-shell-v19',PREFIX='castle-production-shell-';
+const SHELL=['./','./index.html','./app.css?v=19','./workbench.css?v=19','./app.js?v=19','./notebook.js?v=19','./workbench.js?v=19','./world.js?v=19','./feedback.js?v=19','./production.js?v=19','./character-rig.js?v=19','./skirt-action.js?v=19','./scene-manifest.js?v=19','./scene-motion.js?v=19','./character-scenes.js?v=19','./character-scenes.css?v=19',...['kyun','choi'].flatMap(key=>['welcome','work','rest','tea','special'].map(id=>`./assets/scene-${key}-${id}-v1.jpg`))];
 const base=new URL('./',self.location.href);
 async function valid(response,html=false){if(!response||!response.ok||response.type==='opaque'||response.redirected)return false;if(html)return response.headers.get('content-type')?.includes('text/html')&&(await response.clone().text()).includes('id="app"');return !response.headers.get('content-type')?.includes('text/html');}
 self.addEventListener('install',event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE);await Promise.all(SHELL.map(async path=>{const url=new URL(path,base).href;const response=await fetch(url,{cache:'reload'});if(!await valid(response,path==='./'||path==='./index.html'))throw Error('Incomplete app shell');await cache.put(url,response);}));})()));

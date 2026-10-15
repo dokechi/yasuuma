@@ -113,7 +113,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:30
  });
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cc-rpg-browser-'));
- const proc=spawn(chrome,['--headless','--no-sandbox','--disable-gpu','--no-first-run','--disable-background-networking','--disable-component-update','--remote-debugging-port=0','--user-data-dir='+path.join(dir,'profile'),'about:blank'],{stdio:'ignore'});
+ const proc=spawn(chrome,['--headless','--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--no-first-run','--disable-background-networking','--disable-component-update','--remote-debugging-port=0','--user-data-dir='+path.join(dir,'profile'),'about:blank'],{stdio:'ignore'});
  let ws,serial=0;const pending=new Map(),results=[],blocked=[],errors=[];
  try{
   const portFile=path.join(dir,'profile/DevToolsActivePort'),deadline=Date.now()+15000;
@@ -349,6 +349,24 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:30
     await capture(width+'x'+height+'-castle-room-'+place,`(()=>{const c=${C},s=c.CCCastleApp.getState(),r=c.document.getElementById('copy').getBoundingClientRect();return s.place==='${place}'&&s.view==='work'&&r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight&&c.document.documentElement.scrollWidth<=innerWidth+1})()`);
     await evaluate(`${C}.document.getElementById('characterTouch').click()`);
     await capture(width+'x'+height+'-castle-touch-'+place,`${C}.CCCastleApp.getState().place==='${place}'`);
+    if(['kyun','choi'].includes(place)){
+     await waitFor(`${C}.document.getElementById('characterScenes').dataset.ready==='true'`);
+     const before=await evaluate(`({id:${C}.CCCastleApp.getState().draft?.id,scroll:${C}.document.getElementById('paperScroll').scrollTop})`);
+     for(const scene of ['welcome','work','rest','tea','special']){
+      await evaluate(`(()=>{const c=${C},s=c.document.getElementById('sceneSelect');s.value='${scene}';s.dispatchEvent(new c.Event('change',{bubbles:true}));})()`);
+      await waitFor(`${C}.document.getElementById('characterScenes').dataset.scene==='${scene}'&&${C}.document.getElementById('sceneImage').complete`);
+      await waitFor(`${C}.document.getElementById('sceneCanvas').classList.contains('is-live')`);
+      await capture(width+'x'+height+'-scene-'+place+'-'+scene,`(()=>{const c=${C},d=c.document;return c.CCCastleApp.getState().draft?.id===${JSON.stringify(before.id)}&&d.getElementById('paperScroll').scrollTop===${before.scroll}&&d.getElementById('sceneImage').naturalWidth>0&&d.getElementById('sceneSelect').value==='${scene}'})()`);
+      await evaluate(`${C}.document.getElementById('sceneExpand').click()`);
+      await waitFor(`${C}.document.getElementById('sceneFullCanvas').classList.contains('is-live')`);
+      await capture(width+'x'+height+'-scene-full-'+place+'-'+scene,`(()=>{const c=${C},d=c.document,r=d.getElementById('sceneDialog').getBoundingClientRect();return d.getElementById('sceneDialog').open&&c.getComputedStyle(d.getElementById('sceneFullImage')).objectFit==='contain'&&r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1})()`);
+      await evaluate(`${C}.document.getElementById('sceneFullTouch').click();${C}.document.getElementById('sceneClose').click()`);
+      await waitFor(`${C}.document.activeElement.id==='sceneExpand'`);
+     }
+     await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+     await sleep(80);await capture(width+'x'+height+'-scene-quiet-'+place,`!${C}.document.getElementById('sceneCanvas').classList.contains('is-live')&&${C}.document.getElementById('sceneImage').naturalWidth>0`);
+     await send('Emulation.setEmulatedMedia',{features:[]});
+    }
     await evaluate(`${C}.document.getElementById('back').click()`);await sleep(80);
    }
    await evaluate(`${C}.document.getElementById('homeMode').click()`);

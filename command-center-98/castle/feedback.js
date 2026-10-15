@@ -1,5 +1,6 @@
-import {createCharacterRig} from './character-rig.js?v=18';
-import {createSkirtAction} from './skirt-action.js?v=18';
+import {createCharacterScenes} from './character-scenes.js?v=19';
+import {createCharacterRig} from './character-rig.js?v=19';
+import {createSkirtAction} from './skirt-action.js?v=19';
 // Shared presentation layer. Character-specific assets/copy live in CHARACTERS.
 export function createFeedback({app,stations,companion,reduced,onStatus}) {
  const soundButton=document.querySelector('#soundToggle');
@@ -18,6 +19,7 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
  const touchCounts=new Map();
  const animations=new Map(),activeVoices=new Set(),ready=new Set();
  const nodes=new Map();
+ const scenes=createCharacterScenes({app,stations,reduced,onLine:line=>{if(active)say(active,line);},onStatus,onReact:()=>sound('select')});
  const storageKey='castle-town.sound.v1';
  try{soundEnabled=localStorage.getItem(storageKey)==='on';}catch{}
  function updateSound(){soundButton.setAttribute('aria-pressed',String(soundEnabled));soundButton.setAttribute('aria-label',soundEnabled?'効果音をオフにする':'効果音をオンにする');soundButton.title=soundEnabled?'効果音オン':'効果音オフ';soundButton.querySelector('span').textContent=soundEnabled?'音 ON':'音 OFF';}
@@ -181,7 +183,8 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
   clearTimeout(reactionTimer);reactionTimer=null;clearExpression();rig.stop();skirtAction.stop();
   animations.get(stage)?.cancel();animations.delete(stage);
  }
- function react(){
+ function react(event){
+  if(scenes?.supports(active)){scenes.react(event);return;}
   if(!active||document.hidden||reactionTimer!==null||stage.classList.contains('action-running'))return;
   const key=active,cfg=characters[key],lines=cfg.touchLines;
   if(!lines?.length)return;
@@ -197,18 +200,19 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
  }
  document.querySelector('#characterTouch').addEventListener('click',react);
  function refresh(){
+  scenes?.refresh();
   const w=landscape.clientWidth,h=landscape.clientHeight;
   if(w&&h){const scale=Math.max(w/941,h/1672),sw=941*scale,sh=1672*scale;Object.assign(townLights.style,{width:sw+'px',height:sh+'px',left:(w-sw)*.5+'px',top:(h-sh)*.41+'px'});}
   rig.resize();skirtAction.resize();layoutExpression();placeActionFace();
   for(const [key,pair] of nodes){if(key==='companion'){if(active)layoutEyes(pair.node,active,0);}else layoutEyes(pair.node,key,.08);}
  }
  function init(config){
-  characters=config;
+  characters=Object.fromEntries(Object.entries(config).map(([key,cfg])=>[key,scenes?.supports(key)?{...cfg,blink:null,eyes:null,expression:null,rig:null,action:null}:cfg]));
   // Native click still owns every action. No pointer capture, preventDefault,
   // navigation delay, or sound on a touch that may become a scroll gesture.
   document.querySelectorAll('button').forEach(button=>button.addEventListener('pointerdown',respondToPress,{passive:true}));
   for(const station of stations){
-   const key=station.dataset.place,cfg=config[key],node=station.querySelector('.sprite'),overlay=node.querySelector('.blink-overlay');
+   const key=station.dataset.place,cfg=characters[key],node=station.querySelector('.sprite'),overlay=node.querySelector('.blink-overlay');
    node.querySelector('img').src=cfg.src;station.style.setProperty('--accent',cfg.color);node.style.setProperty('--idle-delay',cfg.delay+'s');
    nodes.set(key,{node,overlay});loadOverlay(overlay,key);
    if(typeof ResizeObserver!=='undefined')new ResizeObserver(refresh).observe(node);
@@ -216,7 +220,7 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
   nodes.set('companion',{node:stage,overlay:stage.querySelector('.blink-overlay')});
   if(typeof ResizeObserver!=='undefined')new ResizeObserver(refresh).observe(stage);
   if(typeof ResizeObserver!=='undefined')new ResizeObserver(refresh).observe(landscape);
-  refresh();scheduleBlink();updateSound();
+  scenes?.init();refresh();scheduleBlink();updateSound();
  }
  function enter(key,{audible=true}={}){
   stopReaction();const previous=active;
@@ -230,15 +234,17 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
    pulse(document.querySelector('.desk-header'),[{boxShadow:`inset 3px 0 ${cfg.color}, 0 0 16px ${cfg.color}44`},{boxShadow:`inset 3px 0 ${cfg.color}, 0 0 0 transparent`}],280);
    if(previous&&previous!==key)pulse(stage,[{transform:`translateX(${Object.keys(characters).indexOf(key)>Object.keys(characters).indexOf(previous)?12:-12}px)`},{transform:'translateX(0)'}],240);
   }
+  scenes?.enter(key);
   if(audible)sound('enter');
  }
- function leave({audible=true}={}){stopReaction();resetSpeech();active=null;rig.prepare(null);skirtAction.prepare(null);scheduleBlink();if(audible)sound('back');}
+ function leave({audible=true}={}){scenes?.leave();stopReaction();resetSpeech();active=null;rig.prepare(null);skirtAction.prepare(null);scheduleBlink();if(audible)sound('back');}
  function copied(key){
   if(active!==key)return;
-  say(key,characters[key].copied);outline(stage,characters[key].color);sound('copy');
+  scenes?.copied();say(key,characters[key].copied);outline(stage,characters[key].color);sound('copy');
   pulse(document.querySelector('#copy'),[{boxShadow:'0 0 0 transparent'},{boxShadow:`0 0 20px ${characters[key].color}`,offset:.25},{boxShadow:'0 0 0 transparent'}],500);
  }
  function complete(key){
+  scenes?.complete(key);
   const station=stations.find(node=>node.dataset.place===key),cfg=characters[key];
   pulse(station,[{boxShadow:'0 0 0 transparent'},{boxShadow:`0 0 24px ${cfg.color}99, inset 0 0 18px ${cfg.color}33`,borderColor:cfg.color,offset:.32},{boxShadow:'0 7px 25px #0003'}],850);
   pulse(station.querySelector('.station-light'),[{opacity:.13},{opacity:.75,offset:.28},{opacity:.13}],850);
@@ -258,5 +264,5 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
  reduced.addEventListener?.('change',()=>{scheduleBlink();if(reduced.matches){stopReaction();animations.forEach(a=>a.cancel());animations.clear();}});
  window.addEventListener('pagehide',()=>{stopReaction();stopBlink();stopSound();resetSpeech();});
  window.addEventListener('pageshow',scheduleBlink);
- return {init,enter,leave,copied,complete,refresh,select:()=>sound('select')};
+ return {init,enter,leave,copied,complete,refresh,select:()=>{scenes?.selected();sound('select');}};
 }

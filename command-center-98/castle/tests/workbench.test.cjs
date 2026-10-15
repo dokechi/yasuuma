@@ -20,7 +20,7 @@ function boot({hash='#kyun',store=storage(),width=400,height=860,motion=false,se
  const navigator={onLine:true,clipboard:{writeText:async t=>copied.push(t)},vibrate:()=>true};
  if(serviceWorker)navigator.serviceWorker=serviceWorker;
  const context=vm.createContext({document,window,location,history,Image,navigator,localStorage:store,URL,Blob,console,setTimeout:(fn,delay=0)=>{const id=++seq;timers.set(id,{fn,at:clock+delay});return id},clearTimeout:id=>timers.delete(id),requestAnimationFrame:fn=>{const id=++seq;timers.set(id,{fn,at:clock+16});return id},cancelAnimationFrame:id=>timers.delete(id)});
- const source=['notebook','world','workbench','skirt-action','character-rig','feedback','production','app'].map(n=>fs.readFileSync(`./${n}.js`,'utf8').replace(/^import .*$/gm,'').replaceAll('export ','')).join('\n');
+ const source=['notebook','world','workbench','skirt-action','character-rig','scene-manifest','scene-motion','character-scenes','feedback','production','app'].map(n=>fs.readFileSync(`./${n}.js`,'utf8').replace(/^import .*$/gm,'').replaceAll('export ','')).join('\n');
  vm.runInContext('globalThis.CCCastleInitialDrafts='+JSON.stringify(seeds||JSON.parse(fs.readFileSync('tests/seeds.json','utf8')))+';'+source,context);
  const $=s=>document.querySelector(s),read=s=>vm.runInContext(s,context);
  async function emit(node,type,props={}){const e=new window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,props);node.dispatchEvent(e);for(let i=0;i<8;i++)await Promise.resolve();}
@@ -111,4 +111,41 @@ test('partial reads retain cached sources; a complete snapshot removes stale one
 });
 test('imported snapshots cannot claim to be live server records or overwrite a source',()=>{
  const b=boot({seeds:{kyun:[],choi:[],fp:[],shiire:[]}});b.context.row=live();b.read('notebook.replaceSources([row],{complete:true})');b.context.incoming=JSON.stringify({drafts:[live('外部ファイル本文')]});b.read('notebook.applyImport(notebook.parseImport(incoming))');assert.equal(b.read('notebook.get("live-kyun-test-0").body'),'本番の原文');assert.equal(b.read('notebook.all().filter(x=>x.source).length'),1);
+});
+
+async function sceneLoaded(b,key,id){
+ const src=`assets/scene-${key}-${id}-v1.jpg`,pending=b.images.find(i=>i.src===src);
+ assert.ok(pending,`requested ${src}`);pending.onload();for(let i=0;i<12;i++)await Promise.resolve();
+}
+test('all ten scene choices preserve manuscript, scroll and saved records; full view closes to work',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');
+ for(const key of ['kyun','choi']){
+  if(key==='choi'){await b.click('[data-go=choi]');await sceneLoaded(b,key,'welcome');}
+  b.$('#paperScroll').scrollTop=94;const id=b.read('activeDraft.id'),before=JSON.stringify([...b.store.map]);
+  for(const scene of ['welcome','work','rest','tea','special']){
+   b.$('#sceneSelect').value=scene;await b.emit(b.$('#sceneSelect'),'change');await sceneLoaded(b,key,scene);
+   assert.equal(b.$('#characterScenes').dataset.scene,scene);assert.ok(b.$('#sceneImage').src.endsWith(`${key}-${scene}-v1.jpg`));
+   assert.equal(b.read('activeDraft.id'),id);assert.equal(b.$('#paperScroll').scrollTop,94);
+  }
+  assert.equal(JSON.stringify([...b.store.map]),before);
+ }
+ await b.click('#sceneExpand');assert.equal(b.$('#sceneDialog').open,true);assert.equal(b.$('#sceneFullImage').src,b.$('#sceneImage').src);
+ await b.click('#sceneClose');assert.equal(b.$('#sceneDialog').open,false);assert.equal(b.read('view'),'work');
+});
+test('slow old-scene loads and failed images cannot replace another room or block copy',async()=>{
+ const b=boot();const old=b.images.find(i=>i.src.includes('scene-kyun-welcome'));
+ await b.click('[data-go=choi]');await sceneLoaded(b,'choi','welcome');const src=b.$('#sceneImage').src;
+ old.onload();for(let i=0;i<10;i++)await Promise.resolve();assert.equal(b.$('#sceneImage').src,src);
+ b.$('#sceneSelect').value='tea';await b.emit(b.$('#sceneSelect'),'change');b.images.find(i=>i.src.includes('scene-choi-tea')).onerror();for(let i=0;i<10;i++)await Promise.resolve();
+ assert.equal(b.$('#sceneImage').src,src);await b.click('#copy');assert.equal(b.copied.at(-1),b.read('activeDraft.body'));
+});
+test('automatic scenes follow welcome, work, copy and idle; an explicit scene remains selected',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');b.advance(3100);await sceneLoaded(b,'kyun','work');assert.equal(b.$('#characterScenes').dataset.scene,'work');
+ await b.click('#copy');await sceneLoaded(b,'kyun','special');assert.equal(b.$('#characterScenes').dataset.scene,'special');b.advance(3700);await sceneLoaded(b,'kyun','work');assert.equal(b.$('#characterScenes').dataset.scene,'work');
+ b.advance(91000);await sceneLoaded(b,'kyun','rest');assert.equal(b.$('#characterScenes').dataset.scene,'rest');
+ b.$('#sceneSelect').value='tea';await b.emit(b.$('#sceneSelect'),'change');await sceneLoaded(b,'kyun','tea');b.advance(100000);await b.click('#tab-1');assert.equal(b.$('#characterScenes').dataset.scene,'tea');
+});
+test('host pause clears scene timers; a failed copy never selects a reward',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');b.navigator.clipboard.writeText=async()=>{throw Error('denied')};await b.click('#copy');assert.equal(b.images.some(i=>i.src.includes('scene-kyun-special')),false);
+ await b.emit(b.window,'castle:pause');b.advance(100000);assert.equal(b.$('#characterScenes').dataset.scene,'welcome');
 });
