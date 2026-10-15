@@ -1,0 +1,10 @@
+/* Offline public application files only. No API responses, tokens or POST requests. */
+const CACHE='cc-production-shell-18',base=new URL('./',self.location.href),manifestURL=new URL('app-assets.json',base).href;
+let paths=new Set();
+self.addEventListener('install',event=>event.waitUntil((async()=>{const response=await fetch(manifestURL,{cache:'reload'});if(!response.ok)throw Error('manifest unavailable');const manifest=await response.clone().json();const urls=['app-v130.html','app-loader.js',manifest.shell,...manifest.styles,...manifest.scripts].map(x=>new URL(x,base).href);const cache=await caches.open(CACHE);await cache.put(manifestURL,response);await Promise.all(urls.map(async url=>{const r=await fetch(url,{cache:'reload'});if(!r.ok||r.redirected)throw Error('shell incomplete');await cache.put(url,r);}));})()));
+self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const name of await caches.keys())if(name.startsWith('cc-production-shell-')&&name!==CACHE)await caches.delete(name);await self.clients.claim();})()));
+self.addEventListener('message',event=>{if(event.data?.type==='SKIP_WAITING')self.skipWaiting();});
+self.addEventListener('fetch',event=>{const r=event.request,u=new URL(r.url);if(r.method!=='GET'||u.origin!==base.origin||!u.pathname.startsWith(base.pathname)||u.pathname.startsWith(base.pathname+'castle/')||u.pathname.endsWith('castle-offline.js'))return;
+ const relative=u.pathname.slice(base.pathname.length),allowed=['app-v130.html','app-loader.js','app-assets.json','app.html'].includes(relative)||/\.(?:js|css|png|webp|jpg|woff2)$/.test(relative);if(!allowed)return;
+ event.respondWith((async()=>{const cache=await caches.open(CACHE);try{const response=await fetch(r);if(response.ok&&!response.redirected){await cache.put(r,response.clone());return response;}const old=await cache.match(r)||await cache.match(u.origin+u.pathname,{ignoreSearch:true});return old||response;}catch{const old=await cache.match(r)||await cache.match(u.origin+u.pathname,{ignoreSearch:true});if(old)return old;throw Error('not cached');}})());
+});

@@ -46,6 +46,8 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/daily-dom" --ignore-scripts --no-audit --no-fund linkedom@0.18.13
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node --test scripts/rpg-daily-desk.test.cjs
+          cd command-center-98/castle
+          NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node --test tests/*.test.cjs
       - name: Syntax and manual operation contracts
         env:
           REQUIRE_THREADS_SQL: "1"

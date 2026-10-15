@@ -83,6 +83,7 @@
     "./rpg-home.js?v=20261012.3-workspaces",
     "./rpg-workspaces.js?v=20261013.3-consistency",
     "./rpg-daily-store.js?v=20261015.1",
-    "./rpg-daily-desk.js?v=20261015.1"
+    "./rpg-daily-desk.js?v=20261015.1",
+    "./castle-parent.js?v=20261015.18"
   ]
 }
