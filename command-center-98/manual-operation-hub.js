@@ -204,7 +204,7 @@
     finally{saving=false;save.disabled=false;form.setBusy(false);}
    };
   }
-  async function fetchMore(){
+  async function fetchMore(requested=false){
    if(loading||!hasMore)return;loading=true;render();
    try{
     if(typeof API!=='string'||typeof authHeaders!=='function')throw new Error('読取APIが未設定');
@@ -216,9 +216,9 @@
     loaded+=data.events.length;total=Number.isInteger(data.total)&&data.total>=0?data.total:null;checked=true;
     offset=next??offset;hasMore=next!==null;readError='';
    }catch(error){readError=error.message;}
-   finally{loading=false;if(!desk?.queue(render))render();}
+   finally{loading=false;if(!desk?.queue(render,{force:requested||Boolean(readError)}))render();}
   }
-  more.onclick=fetchMore;render();fetchMore();if(isThreads)loadAccount();
+  more.onclick=()=>fetchMore(true);render();fetchMore();if(isThreads)loadAccount();
  }
  // Presentation-only bridge: reuse the existing explicitly matched account review.
  api.openAccount=function(key){
