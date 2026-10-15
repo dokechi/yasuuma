@@ -7,6 +7,7 @@ import { threadsManualGet, threadsManualPatch } from "./threads-manual-api.mjs";
 import { saveThreadsPayload } from "./threads-payload-store.mjs";
 import postgres from "npm:postgres@3.4.7";
 import { saveGuardedPayload, mutationFailure } from "./guarded-payload.mjs";
+import { castleSignals } from "./castle-signals.mjs";
 import { sourcingSuppliers } from "./sourcing-read-model.mjs";
 import { SaveError, saveVersionedRow } from "../_shared/save-consistency.mjs";
 
@@ -308,6 +309,10 @@ Deno.serve(async(req:Request)=>{
     if(affiliateResult)return affiliateResult;
     const nekoResult=await nekoGet(req,{admin,json});
     if(nekoResult)return nekoResult;
+    if(resource==="castle-signals"){
+      const page=await castleSignals(admin,u.searchParams);
+      return json(req,{ok:true,items:page.rows.filter((x:any)=>!isSystemSignal(x)).map((x:any)=>mapRow(x)),total:page.total,nextOffset:page.nextOffset});
+    }
     if(resource==="tasks"){
       const {data,error}=await admin.from("command_center_tasks").select("task_id,title,domain,schedule,timing_mode,is_enabled,notifications_enabled,email_enabled,last_run_time,task_prompt,result_ingest_enabled,result_ingest_note,updated_at,synced_at").order("is_enabled",{ascending:false}).order("title",{ascending:true});
       if(error) throw error;
