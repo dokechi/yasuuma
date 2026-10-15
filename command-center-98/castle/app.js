@@ -1,7 +1,7 @@
-import {createProductionClient} from './production.js?v=21';
-import {createNotebook} from './notebook.js?v=21';
-import {createWorkbench} from './workbench.js?v=21';
-import {createFeedback} from './feedback.js?v=21';
+import {createProductionClient} from './production.js?v=22';
+import {createNotebook} from './notebook.js?v=22';
+import {createWorkbench} from './workbench.js?v=22';
+import {createFeedback} from './feedback.js?v=22';
 // Assets, copy and workflow content are independent of the shared motion.
 // Character-specific layered poses also require matching assets and alignment.
 const PLACES = {"kyun": {"title": "キュン拾い", "eyebrow": "THREADS / 書斎", "type": "城下町の書斎", "greeting": "おかえり。いま、原稿を書いていたところ。", "paper": "原稿を選ぶ", "label": "投稿本文", "copy": "本文をコピー", "tabs": ["ひとこと", "紹介文", "長めの文"], "drafts": []}, "choi": {"title": "ちょい上等", "eyebrow": "SELECTION", "type": "紹介文の持ち場", "greeting": "いつもより、少しだけ上等に。", "paper": "紹介文を選ぶ", "label": "紹介文", "copy": "紹介文をコピー", "tabs": ["暮らし", "持ち物", "贈りもの"], "drafts": []}, "fp": {"title": "FP・TikTok", "eyebrow": "STUDIO", "type": "台本の持ち場", "greeting": "伝えたいことを、ひとつずつ。", "paper": "台本の流れを確認", "label": "保存台本", "copy": "台本をコピー", "tabs": ["つかみ", "本編", "締め"], "drafts": []}, "shiire": {"title": "仕入れ", "eyebrow": "MARKET", "type": "候補確認の持ち場", "greeting": "いい仕入れは、確かめるところから。", "paper": "確認メモを選ぶ", "label": "仕入れ確認メモ", "copy": "メモをコピー", "tabs": ["候補", "比較", "購入前"], "drafts": []}};
