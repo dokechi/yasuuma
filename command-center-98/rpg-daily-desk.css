@@ -1,0 +1,30 @@
+/* Daily reading controls. Scope every rule to the added UI or manuscript review. */
+.daily-tools,.daily-card-tools,.daily-undo,.daily-home-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.daily-tools{margin:8px 0 12px;padding:10px;border:1px solid #b99b6655;background:#151c28;border-radius:5px}
+.daily-tools input,.daily-tools select,.daily-dialog select{min-height:44px;min-width:0;background:#101722;color:#f6e8d1;border:1px solid #ae946780;border-radius:4px;font:15px/1.5 system-ui;padding:8px 10px}
+.daily-tools input{flex:1 1 180px;width:100%}.daily-tools select{max-width:135px}
+body .daily-button{min-height:44px!important;background:linear-gradient(#36302a,#1b202a)!important;color:#f5dfb4!important;border:1px solid #bea472!important;border-radius:4px!important;font:13px/1.5 system-ui!important;padding:8px 12px!important;box-shadow:none!important;white-space:normal!important}
+body .daily-button:active{background:#50422e!important;box-shadow:inset 0 0 0 1px #e7cd98!important}
+body .daily-button:focus-visible,.daily-tools :focus-visible,.daily-dialog :focus-visible{outline:2px solid #ffe3a3!important;outline-offset:3px}
+.daily-card-tools{margin:0 0 14px}.daily-card-tools .daily-button{font-size:12px!important;padding:6px 10px!important;min-height:40px!important}
+.daily-button[aria-pressed=true]{border-color:#ffe2a1!important;color:#ffe2a1!important;background:#55432d!important}
+.daily-seal{display:inline-flex;align-items:center;gap:5px;border:1px solid #ce8f83;border-radius:15px;background:#442730;color:#ffe0cc;font:11px/1.5 system-ui;padding:4px 9px;margin:5px 8px;vertical-align:middle}.daily-seal:before{content:'✧';background:#933d48;border-radius:50%;padding:1px 4px}
+.daily-filter-status,.daily-note{font:12px/1.8 system-ui;color:#d3c9b7;overflow-wrap:anywhere}.daily-filter-status:empty{display:none}
+.daily-undo{border:1px solid #d8b77c;padding:8px;margin:8px 0;background:#302a25;color:#f4e1ba;font-size:12px}
+.daily-incoming{width:100%;text-align:left;border-color:#e1bb70!important}
+.daily-dialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;width:min(640px,calc(100vw - 24px));max-height:calc(100dvh - 28px);overflow:auto;padding:18px;background:#151d2b!important;color:#f6ecd9!important;border:1px solid #d4b77d!important;border-radius:8px;font:15px/1.7 system-ui;box-shadow:0 18px 80px #0009}
+.daily-dialog::backdrop{background:#030810b3}.daily-dialog>header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}.daily-dialog h2{font:22px/1.5 system-ui;margin:0;color:#f5dfb4}.daily-dialog h3{font:18px/1.6 system-ui;margin:8px 0}.daily-dialog h4{font:13px/1.5 system-ui;color:#e5c994;margin:12px 0 6px}.daily-dialog>button{margin:5px}.daily-dialog label{display:block;margin:16px 0;color:#e6d3b2}.daily-dialog label select{display:block;width:100%;margin-top:7px}.daily-dialog pre{white-space:pre-wrap;overflow-wrap:anywhere;font:15px/1.9 system-ui;color:#f5ead8;background:#0b1321;padding:14px;border:1px solid #82735655;border-radius:4px}.daily-dialog textarea{width:100%;min-height:180px;background:#0b1321;color:#f5ead8;font:15px/1.8 system-ui}.daily-history{padding:12px 0;border-bottom:1px solid #8e79544d}.daily-history small{color:#c8b68e}.daily-history summary{min-height:40px;cursor:pointer}.daily-history .daily-button{margin:5px 7px 0 0}
+.daily-comparison{width:min(1120px,calc(100vw - 24px))}.daily-comparison>select{width:100%;margin-bottom:12px}.daily-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}.daily-columns>section{min-width:0;max-height:65dvh;overflow:auto;border:1px solid #ad94684d;border-radius:4px;padding:14px;overscroll-behavior:contain}
+.daily-storage-warning{position:fixed;z-index:2147483646;bottom:0;left:0;right:0;padding:8px 14px;background:#713c32;color:#fff2e3;font:12px/1.6 system-ui;margin:0}
+.daily-tools [hidden],.daily-seal[hidden],.daily-undo[hidden],.daily-storage-warning[hidden],.daily-resume[hidden],.rpg-account-card[hidden]{display:none!important}
+body[data-daily-font=large] dialog.rpg-account-page .rpg-account-copy pre,body[data-daily-font=large] .daily-dialog pre{font-size:19px!important;line-height:1.95!important}
+body[data-daily-focus=true] dialog.rpg-account-page .rpg-account-header{min-height:0!important;padding:12px 0!important}body[data-daily-focus=true] dialog.rpg-account-page .rpg-account-character,body[data-daily-focus=true] dialog.rpg-account-page .rpg-account-subtitle{display:none!important}
+body[data-daily-focus=true] dialog.rpg-account-page{max-width:1200px!important}
+#ccRpgHome .daily-home-tools{position:absolute;left:12px;top:8px;margin:0;gap:5px}#ccRpgHome .daily-home-tools .daily-button{min-height:36px!important;padding:4px 8px!important;font-size:11px!important}
+#ccRpgHome .daily-visit{display:block;color:#ffe3a1;font:10px/1.3 system-ui;margin-top:5px;text-shadow:0 0 8px #fc9f48}
+#ccRpgHome .daily-visit:empty{display:none}#ccRpgHome .rpg-portal.daily-visited .rpg-edge{border-color:#f3cb7f;filter:drop-shadow(0 0 3px #e9a850)}
+body:not([data-daily-quiet=true]) dialog.rpg-account-page[open]{animation:daily-arrive 180ms ease-out}#ccRpgHome .rpg-portal:active{background:#f6d99512}
+@keyframes daily-arrive{from{opacity:.65;translate:0 5px}to{opacity:1;translate:0 0}}
+body[data-daily-quiet=true] #ccRpgHome *,body[data-daily-quiet=true] .rpg-account-page *,body[data-daily-quiet=true] .rpg-account-page,body[data-daily-quiet=true] .daily-dialog *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+@media(max-width:679px){.daily-columns{grid-template-columns:minmax(0,1fr)}.daily-columns>section{max-height:45dvh}.daily-tools{gap:6px;padding:8px}.daily-tools input{flex-basis:100%}.daily-card-tools{gap:5px}}
+@media(prefers-reduced-motion:reduce){body dialog.rpg-account-page[open]{animation:none!important}}
