@@ -7,6 +7,8 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
  const motions=[createSceneMotion({canvas:$('#sceneCanvas'),image,box:frame,reduced}),createSceneMotion({canvas:$('#sceneFullCanvas'),image:full,box:fullFrame,reduced,contain:true})];
  let key=null,current=null,epoch=0,timer=null,idle=null,paused=false,selection='auto';
  const choices=new Map(),images=new Map();
+ const update=$('#freshNotice'),updateParent=update.parentNode;
+ function placeUpdate(inDesk){update.classList.toggle('scene-update',inDesk);if(inDesk)document.querySelector('.desk').insertBefore(update,document.querySelector('.paper'));else updateParent.append(update);}
  function load(src){
   if(images.has(src))return images.get(src);
   const promise=new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>{images.delete(src);reject(Error('art unavailable'));};img.src=src;});images.set(src,promise);return promise;
@@ -57,13 +59,13 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
  dialog.addEventListener('close',()=>{refresh();activity();open.focus();});
  function enter(next){
   clearTimers();epoch++;motions.forEach(m=>m.stop());key=CHARACTER_SCENES[next]?next:null;current=null;
-  panel.hidden=!key;app.dataset.sceneCharacter=key||'';panel.dataset.ready='false';
+  panel.hidden=!key;app.dataset.sceneCharacter=key||'';panel.dataset.ready='false';placeUpdate(Boolean(key));
   if(dialog.open)dialog.close();if(!key)return;
   selection=choices.get(key)||'auto';syncSelect();
   const target=selection==='auto'?'welcome':selection;
   show(target,{speak:true}).then(ok=>{if(ok&&key===next&&selection==='auto'){later('work',3000);activity();}});
  }
- function leave(){clearTimers();epoch++;key=null;current=null;motions.forEach(m=>m.stop());panel.hidden=true;app.dataset.sceneCharacter='';if(dialog.open)dialog.close();}
+ function leave(){clearTimers();epoch++;key=null;current=null;motions.forEach(m=>m.stop());panel.hidden=true;app.dataset.sceneCharacter='';placeUpdate(false);if(dialog.open)dialog.close();}
  function copied(){if(!key)return;clearTimers();if(selection==='auto'){show('special');later('work',3600);}else motions[0].react('hand');activity();}
  function selected(){if(!key)return;if(selection==='auto'){clearTimeout(timer);show('work');}activity();}
  function complete(place){

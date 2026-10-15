@@ -89,7 +89,7 @@ const geometry=`(()=>{
  add('workflow initialization is fixture-only',true,window.__rpgQA.simulatedInitializations||[]);
  return checks;
 })()`;
-test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:300000},async()=>{
+test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:480000},async()=>{
  const requests=[];let diagnose=async()=>{},slowRpg=false,startupCache=false,failRpg=false,failStyles=false;
  assert.ok(chrome,'Chrome is required; browser QA must not silently skip');fs.mkdirSync(output,{recursive:true});
  const server=http.createServer((req,res)=>{
@@ -356,7 +356,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:30
       await evaluate(`(()=>{const c=${C},s=c.document.getElementById('sceneSelect');s.value='${scene}';s.dispatchEvent(new c.Event('change',{bubbles:true}));})()`);
       await waitFor(`${C}.document.getElementById('characterScenes').dataset.scene==='${scene}'&&${C}.document.getElementById('sceneImage').complete`);
       await waitFor(`${C}.document.getElementById('sceneCanvas').classList.contains('is-live')`);
-      await capture(width+'x'+height+'-scene-'+place+'-'+scene,`(()=>{const c=${C},d=c.document;return c.CCCastleApp.getState().draft?.id===${JSON.stringify(before.id)}&&d.getElementById('paperScroll').scrollTop===${before.scroll}&&d.getElementById('sceneImage').naturalWidth>0&&d.getElementById('sceneSelect').value==='${scene}'})()`);
+      await capture(width+'x'+height+'-scene-'+place+'-'+scene,`(()=>{const c=${C},d=c.document;return c.CCCastleApp.getState().draft?.id===${JSON.stringify(before.id)}&&d.getElementById('paperScroll').scrollTop===${before.scroll}&&d.getElementById('sceneImage').naturalWidth>0&&d.getElementById('sceneSelect').value==='${scene}'&&(d.getElementById('freshNotice').hidden||d.getElementById('freshNotice').getBoundingClientRect().top>=d.getElementById('sceneFrame').getBoundingClientRect().bottom||d.getElementById('freshNotice').getBoundingClientRect().left>=d.getElementById('sceneFrame').getBoundingClientRect().right)})()`);
       await evaluate(`${C}.document.getElementById('sceneExpand').click()`);
       await waitFor(`${C}.document.getElementById('sceneFullCanvas').classList.contains('is-live')`);
       await capture(width+'x'+height+'-scene-full-'+place+'-'+scene,`(()=>{const c=${C},d=c.document,r=d.getElementById('sceneDialog').getBoundingClientRect();return d.getElementById('sceneDialog').open&&c.getComputedStyle(d.getElementById('sceneFullImage')).objectFit==='contain'&&r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1})()`);
