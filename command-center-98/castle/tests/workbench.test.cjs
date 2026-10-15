@@ -117,14 +117,14 @@ async function sceneLoaded(b,key,id){
  const src=`assets/scene-${key}-${id}-v1.jpg`,pending=b.images.find(i=>i.src===src);
  assert.ok(pending,`requested ${src}`);pending.onload();for(let i=0;i<12;i++)await Promise.resolve();
 }
-test('all ten scene choices preserve manuscript, scroll and saved records; full view closes to work',async()=>{
+test('all fifteen scene choices preserve manuscript, scroll and saved records; full view closes to work',async()=>{
  const b=boot();await sceneLoaded(b,'kyun','welcome');
- for(const key of ['kyun','choi']){
-  if(key==='choi'){await b.click('[data-go=choi]');await sceneLoaded(b,key,'welcome');}
+ for(const key of ['kyun','choi','fp']){
+  if(key!=='kyun'){await b.click(`[data-go=${key}]`);await sceneLoaded(b,key,'welcome');}
   b.$('#paperScroll').scrollTop=94;const id=b.read('activeDraft.id'),before=JSON.stringify([...b.store.map]);
   for(const scene of ['welcome','work','rest','tea','special']){
    b.$('#sceneSelect').value=scene;await b.emit(b.$('#sceneSelect'),'change');await sceneLoaded(b,key,scene);
-   assert.equal(b.$('#characterScenes').dataset.scene,scene);assert.ok(b.$('#sceneImage').src.endsWith(`${key}-${scene}-v1.jpg`));
+   assert.equal(b.$('#characterScenes').dataset.scene,scene);assert.equal(b.$('#app').dataset.sceneCharacter,key);if(key==='fp')assert.match(b.$('#sceneImage').alt,/FP・TikTok/);assert.ok(b.$('#sceneImage').src.endsWith(`${key}-${scene}-v1.jpg`));
    assert.equal(b.read('activeDraft.id'),id);assert.equal(b.$('#paperScroll').scrollTop,94);
   }
   assert.equal(JSON.stringify([...b.store.map]),before);
