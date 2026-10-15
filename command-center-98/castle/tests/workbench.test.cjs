@@ -80,11 +80,11 @@ test('storage failure is visible while the current draft remains usable and expo
 
 test('waiting app updates cannot replace a staged import or interrupt reading automatically',async()=>{
  const messages=[],worker={postMessage:m=>messages.push(m)},registration={waiting:worker,addEventListener(){}};
- const sw={controller:{},ready:Promise.resolve(registration),register:async()=>registration,addEventListener(){}};
+ const listeners={};const sw={controller:{},ready:Promise.resolve(registration),register:async()=>registration,addEventListener(type,fn){listeners[type]=fn;}};
  const b=boot({serviceWorker:sw});for(let i=0;i<8;i++)await Promise.resolve();const before=b.$('#draftBody').textContent;
- assert.equal(messages.length,0);assert.equal(b.$('#freshNotice').hidden,false);assert.equal(b.$('#deskDrawer').open,undefined);
+ listeners.controllerchange();assert.equal(b.read('location.reloaded'),undefined);assert.equal(messages.length,0);assert.equal(b.$('#freshNotice').hidden,false);assert.equal(b.$('#deskDrawer').open,undefined);
  const data=JSON.stringify([{id:'incoming',place:'kyun',title:'新着',body:'確認してから'}]);b.$('#importFile').files=[{size:data.length,text:async()=>data}];await b.emit(b.$('#importFile'),'change');await b.click('#freshNotice');assert.equal(b.$('#drawerTitle').textContent,'届いた原稿を確認');await b.click(b.button('今回は受け取らない'));
- assert.equal(b.read('notebook.get("incoming")'),null);assert.equal(b.$('#freshNotice').hidden,false);assert.equal(b.$('#draftBody').textContent,before);await b.click('#freshNotice');assert.equal(b.$('#drawerTitle').textContent,'更新の準備ができました');assert.equal(messages.length,0);await b.click(b.button('保存して更新'));assert.equal(messages[0].type,'SKIP_WAITING');
+ assert.equal(b.read('notebook.get("incoming")'),null);assert.equal(b.$('#freshNotice').hidden,false);assert.equal(b.$('#draftBody').textContent,before);await b.click('#freshNotice');assert.equal(b.$('#drawerTitle').textContent,'更新の準備ができました');assert.equal(messages.length,0);await b.click(b.button('保存して更新'));assert.equal(messages[0].type,'SKIP_WAITING');listeners.controllerchange();assert.equal(b.read('location.reloaded'),true);
 });
 test('late clipboard completion stores its original snapshot without sealing an edited draft',async()=>{
  const b=boot(),before=b.$('#draftBody').textContent;let resolve;b.navigator.clipboard.writeText=()=>new Promise(r=>resolve=r);await b.click('#copy');await b.menu('編集する');await b.save({body:'コピー中に編集した本文'});resolve();for(let i=0;i<8;i++)await Promise.resolve();assert.equal(b.read('notebook.copies()[0].text'),before);assert.equal(b.$('#copySeal').hidden,true);assert.equal(b.$('#draftBody').textContent,'コピー中に編集した本文');

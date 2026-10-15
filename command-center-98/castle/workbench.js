@@ -1,7 +1,7 @@
 import {safeLink,dayInJapan} from './notebook.js?v=18';
 import {createWorld} from './world.js?v=18';
 export function createWorkbench({app,places,notebook,reduced,getState,selectId,refresh,onStatus,onReposition,onMotionChange,onCopy,openPlace}){
- const $=s=>document.querySelector(s),drawer=$('#deskDrawer'),body=$('#drawerBody');let pending=null,compareId=null,manual=null,flight=null,scrollTimer=null,drawerReturn=null,waitingWorker=null,externalPending=false,offlineReady=false;
+ const $=s=>document.querySelector(s),drawer=$('#deskDrawer'),body=$('#drawerBody');let pending=null,compareId=null,manual=null,flight=null,scrollTimer=null,drawerReturn=null,waitingWorker=null,applyingUpdate=false,externalPending=false,offlineReady=false;
  const world=createWorld({app,notebook,reduced});
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const btn=(label,fn,cls)=>{const n=el('button',label,cls);n.type='button';n.addEventListener('click',fn);return n;};
@@ -63,7 +63,7 @@ export function createWorkbench({app,places,notebook,reduced,getState,selectId,r
  function queuedNotice(){if(pending)newNotice(`${pending.length}件の原稿が届きました · 確認`);else if(externalPending)newNotice('別の画面で更新されました · 確認');else if(waitingWorker)newNotice('司令塔の更新が届きました');else $('#freshNotice').hidden=true;}
  $('#importFile').addEventListener('change',async e=>{const input=e.target,file=input.files?.[0];if(!file)return;try{if(file.size>5000000)throw Error('読み込めるファイルは5MBまでです');pending=notebook.parseImport(await file.text());newNotice(`${pending.length}件の原稿が届きました · 確認`);if(drawer.open)close();onStatus('今の原稿はそのままです。新着を確認できます。');}catch(error){onStatus(error.message);}input.value='';});
  $('#freshNotice').addEventListener('click',()=>{
-  if(waitingWorker&&!pending&&!externalPending){if(drawer.open||getState().view==='work'){open('更新の準備ができました');body.append(el('p','保存した原稿と読んでいた位置を残して更新します。'),btn('保存して更新',()=>{savePosition();waitingWorker.postMessage({type:'SKIP_WAITING'});}));}else waitingWorker.postMessage({type:'SKIP_WAITING'});return;}
+  if(waitingWorker&&!pending&&!externalPending){if(drawer.open||getState().view==='work'){open('更新の準備ができました');body.append(el('p','保存した原稿と読んでいた位置を残して更新します。'),btn('保存して更新',()=>{savePosition();applyingUpdate=true;waitingWorker.postMessage({type:'SKIP_WAITING'});}));}else{applyingUpdate=true;waitingWorker.postMessage({type:'SKIP_WAITING'});}return;}
   if(!pending){notebook.sync();externalPending=false;refreshPreserving();world.refresh();onMotionChange();queuedNotice();onStatus('届いた更新を反映しました');return;}
   open('届いた原稿を確認');body.append(el('p',`${pending.length}件。同じIDの原稿は更新されます。取り込み後も「元に戻す」が使えます。`));for(const d of pending){const card=el('div',undefined,'import-card');card.append(el('small',places[d.place].title),el('strong',d.title),el('p',d.body.slice(0,100)));body.append(card);}body.append(btn('この原稿を取り込む',()=>{const ok=notebook.applyImport(pending);pending=null;queuedNotice();close();refreshPreserving();savedMessage(ok,'原稿を受け取りました');undo('原稿を取り込みました');},'primary'),btn('今回は受け取らない',()=>{pending=null;queuedNotice();close();}));
  });
@@ -81,6 +81,6 @@ export function createWorkbench({app,places,notebook,reduced,getState,selectId,r
  function enter(key){const first=notebook.visit(key);world.enter(key,first);update();}
  function leave(){savePosition();world.leave();flight?.cancel();updateHome();}
  function finish(d){if(!d)return;notebook.finish(d);undo('完了した原稿を束に重ねました');updateHome();}
- try{if('serviceWorker' in navigator){navigator.serviceWorker.ready.then(()=>{offlineReady=true;}).catch(()=>{});navigator.serviceWorker.register('./sw.js').then(reg=>{function watch(worker){worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller){waitingWorker=reg.waiting;queuedNotice();}});}if(reg.waiting){waitingWorker=reg.waiting;queuedNotice();}reg.addEventListener('updatefound',()=>watch(reg.installing));}).catch(()=>{});let refreshing=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing&&waitingWorker){refreshing=true;location.reload();}});}}catch{}
+ try{if('serviceWorker' in navigator){navigator.serviceWorker.ready.then(()=>{offlineReady=true;}).catch(()=>{});navigator.serviceWorker.register('./sw.js').then(reg=>{function watch(worker){worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller){waitingWorker=reg.waiting;queuedNotice();}});}if(reg.waiting){waitingWorker=reg.waiting;queuedNotice();}reg.addEventListener('updatefound',()=>watch(reg.installing));}).catch(()=>{});let refreshing=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing&&applyingUpdate){refreshing=true;location.reload();}});}}catch{}
  update();return {enter,leave,update,finish,copied,savePosition,settings,menu,manualCopy:(draft,kind,text)=>{manual={draft,kind,text};},selected:()=>{update();},resize:()=>{if($('#trayRail').hidden===false&&(window.innerWidth<680||window.innerWidth/window.innerHeight<.8||window.innerHeight<=520)){$('#trayRail').hidden=true;app.dataset.tray='off';}update();}};
 }
