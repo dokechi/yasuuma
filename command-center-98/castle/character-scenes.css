@@ -1,0 +1,53 @@
+/* Scene controls occupy the existing companion lane; the reading desk keeps its geometry. */
+.character-scenes[hidden]{display:none!important}
+.character-scenes{position:absolute;inset:0;z-index:3;isolation:isolate;background:#151622}
+.scene-frame{position:absolute;inset:0 0 0 38%;overflow:hidden;background:#151622}
+.scene-frame>img,.scene-full-frame>img{display:block;width:100%;height:100%;object-fit:cover;filter:none}
+.scene-frame:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,#151622,transparent 25%),linear-gradient(0deg,#151622bb,transparent 30%)}
+.scene-canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none}
+.scene-canvas.is-live{opacity:1}
+.scene-touch{position:absolute;inset:0;width:100%;height:100%;background:transparent;border:0;padding:0;margin:0;z-index:1;cursor:pointer}
+.scene-touch:focus-visible{outline-offset:-4px}
+.character-scenes[data-ready=false] .scene-frame{opacity:0}
+.scene-controls{position:absolute;bottom:0;left:14px;display:flex;align-items:center;gap:5px;z-index:4;max-width:calc(100% - 28px)}
+.scene-controls select,.scene-controls button,.scene-dialog select{font:inherit;font-size:10px;min-height:44px;border:1px solid #e5c58a55;background:#151e2eeb;color:#fff0d6;border-radius:4px;padding:0 9px;cursor:pointer}
+.scene-controls select{max-width:105px}.scene-controls button{min-width:60px}
+#sceneCurrent{font-size:9px;color:#eee2cd;text-shadow:0 1px 4px #000}
+.app[data-scene-character=kyun] .companion,.app[data-scene-character=choi] .companion{visibility:hidden!important}
+.app[data-scene-character=kyun] .dock,.app[data-scene-character=choi] .dock{visibility:hidden;pointer-events:none}
+.app[data-view=work][data-scene-character=kyun] .greeting,.app[data-view=work][data-scene-character=choi] .greeting{left:16px;top:10px;max-width:42%;pointer-events:none;z-index:4}
+.app[data-view=work][data-scene-character=kyun] .greeting p,.app[data-view=work][data-scene-character=choi] .greeting p{font-size:12px;line-height:1.65;color:#fff1db;text-shadow:0 1px 5px #000}
+.app[data-view=work][data-scene-character=kyun] .greeting .eyebrow,.app[data-view=work][data-scene-character=choi] .greeting .eyebrow{font-size:8px;margin-bottom:3px}
+.app[data-view=work][data-scene-character=kyun] .greeting-rule,.app[data-view=work][data-scene-character=choi] .greeting-rule{display:none}
+.station.has-scenes .sprite{animation:none}.station.has-scenes .blink-window{display:none}
+.station.has-scenes .portrait img{filter:none}
+.scene-dialog{width:min(1180px,calc(100vw - 20px));max-width:none;height:min(960px,calc(100dvh - 20px));max-height:calc(100dvh - 20px);padding:0;overflow:hidden;background:#0c101a;border-color:#c8a87888;box-shadow:0 24px 90px #000c}
+.scene-dialog[open]{display:flex;flex-direction:column}
+.scene-dialog header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;flex-shrink:0;border-bottom:1px solid #e5c58a33}
+.scene-dialog h2{font-family:"Yu Mincho",serif;font-size:14px;font-weight:500}
+.scene-dialog header button{margin:0;min-width:110px;min-height:44px;font-size:11px;padding:8px 12px;background:#1e293b;color:#f7e4c2;border:1px solid #e5c58a55}
+.scene-full-frame{position:relative;flex:1;min-height:0;width:100%;overflow:hidden}
+.scene-full-frame>img{object-fit:contain}
+.scene-dialog footer{display:flex;gap:14px;align-items:center;padding:8px 14px;flex-shrink:0;border-top:1px solid #e5c58a33}
+.scene-dialog footer p{margin:0;font-size:12px;line-height:1.7}
+.scene-dialog .scene-touch{padding:0;margin:0;background:transparent;color:inherit;border:0;border-radius:0;min-height:0}
+.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+@media(min-width:680px) and (min-aspect-ratio:4/5) and (min-height:521px){
+ .character-scenes{inset:12px 6px 12px 10px;border:1px solid #e5c58a33;border-radius:6px;overflow:hidden}
+ .scene-frame{inset:112px 0 76px}
+ .scene-frame:after{background:linear-gradient(#10152244,transparent 14%,transparent 85%,#10152299)}
+ .app[data-view=work][data-scene-character=kyun] .greeting,.app[data-view=work][data-scene-character=choi] .greeting{top:30px;left:24px;max-width:calc(100% - 48px)}
+ .app[data-view=work][data-scene-character=kyun] .greeting p,.app[data-view=work][data-scene-character=choi] .greeting p{font-size:16px}
+ .scene-controls{left:10px;bottom:12px;flex-wrap:wrap;max-width:calc(100% - 20px)}
+ #sceneCurrent{width:100%;padding-left:4px}
+}
+@media(max-height:740px) and (max-width:679px){
+ .app[data-view=work][data-scene-character=kyun] .greeting p,.app[data-view=work][data-scene-character=choi] .greeting p{font-size:11px;line-height:1.5}
+ .app[data-view=work][data-scene-character=kyun] .greeting .eyebrow,.app[data-view=work][data-scene-character=choi] .greeting .eyebrow{display:none}
+}
+@media(max-width:400px){.scene-dialog header{padding:6px 9px;gap:8px}.scene-dialog h2{font-size:12px}.scene-dialog footer{gap:10px;padding:8px 10px}.scene-dialog footer p{font-size:11px}}
+.app[data-focus=on] .character-scenes{display:none}
+@media(prefers-reduced-motion:reduce){.scene-canvas{display:none}}
+
+/* Pending updates stay readable without covering the character's face. */
+.fresh-notice.scene-update{position:static;flex-shrink:0;max-width:none;width:100%;min-height:32px;padding:6px 10px;border-radius:0;font-size:10px;text-align:left}
