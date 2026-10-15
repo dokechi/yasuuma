@@ -51,7 +51,7 @@
   function close(){savePosition(true);clearTimeout(timer);child?.close();mounted.delete(instance);lamps();}page.addEventListener('close',close,{once:true});
   const instance={tab:store.read('read:'+key,null)?.tab,decorate,copied,queue(fn,{force=false}={}){if(force){pending=null;notice.hidden=true;return false;}if(engaged){pending=fn;notice.hidden=false;return true;}return false;},savePosition};mounted.add(instance);store.visit(key);lamps();preferences();return instance;
  }
- function homeControls(){const home=d.getElementById('ccRpgHome');if(!home||home.querySelector('.daily-home-tools'))return;const bar=node('div',undefined,'daily-home-tools');bar.append(button('読書設定',()=>settings()));home.querySelector('.rpg-masthead')?.append(bar);lamps();}
+ function homeControls(){const home=d.getElementById('ccRpgHome');if(!home||home.querySelector('.daily-home-tools'))return;const bar=node('div',undefined,'daily-home-tools');const control=button('読書設定',()=>settings());control.classList.remove('push-button');bar.append(control);home.querySelector('.rpg-masthead')?.append(bar);lamps();}
  d.addEventListener('click',e=>{const portal=e.target.closest?.('.rpg-portal');if(portal?.hasAttribute('data-rpg-sourcing')){store.visit('sourcing');lamps();}else if(portal?.hasAttribute('data-rpg-fp')){store.visit('tiktok');lamps();}});
  w.addEventListener('pagehide',()=>{for(const x of mounted)x.savePosition();});d.addEventListener('visibilitychange',()=>{if(d.hidden)for(const x of mounted)x.savePosition();else lamps();});
  w.CCRpgDailyDesk={mount,settings,store};preferences();homeControls();
