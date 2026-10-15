@@ -1,5 +1,5 @@
-import {CHARACTER_SCENES,SCENE_IDS,sceneCamera,sceneHit} from './scene-manifest.js?v=19';
-import {createSceneMotion} from './scene-motion.js?v=19';
+import {CHARACTER_SCENES,CHARACTER_LABELS,SCENE_IDS,sceneCamera,sceneHit} from './scene-manifest.js?v=20';
+import {createSceneMotion} from './scene-motion.js?v=20';
 export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onReact}){
  const $=s=>document.querySelector(s),panel=$('#characterScenes');
  if(!panel)return null;
@@ -22,10 +22,10 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   try{
    await load(cfg.src);if(token!==epoch||!key)return false;
    motions.forEach(m=>m.stop());current=cfg;
-   image.src=full.src=cfg.src;image.alt=full.alt=`${key==='kyun'?'キュン拾い':'ちょい上等'}・${cfg.label}`;
+   image.src=full.src=cfg.src;image.alt=full.alt=`${CHARACTER_LABELS[key]}・${cfg.label}`;
    image.style.objectPosition=`${cfg.focus[0]*100}% ${cfg.focus[1]*100}%`;
    panel.dataset.scene=dialog.dataset.scene=id;panel.dataset.loading='false';panel.dataset.ready='true';
-   $('#sceneTitle').textContent=`${key==='kyun'?'キュン拾い':'ちょい上等'} — ${cfg.label}`;$('#sceneCaption').textContent=cfg.line;
+   $('#sceneTitle').textContent=`${CHARACTER_LABELS[key]} — ${cfg.label}`;$('#sceneCaption').textContent=cfg.line;
    $('#sceneCurrent').textContent=cfg.label;
    motions.forEach(m=>m.set(cfg));refresh();
    if(speak)onLine(cfg.line);
@@ -50,7 +50,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   const box=expanded?fullFrame:frame,bounds=box.getBoundingClientRect(),camera=sceneCamera(current,bounds.width,bounds.height,expanded);
   const region=event?.detail?sceneHit(current,camera,event.clientX-bounds.left,event.clientY-bounds.top):'head';
   motions[expanded?1:0].react(region);onReact();
-  const lines={head:current.line,hair:key==='kyun'?'ふふ、風で髪が揺れちゃった。':'あ、気づいた？ 今日の髪飾り。',hand:current.id==='work'?'ここ、もう少し一緒に見てくれる？':'うん。そばにいるよ。',cloth:'少し姿勢を変えようかな。'};
+  const lines={head:current.line,hair:{kyun:'ふふ、風で髪が揺れちゃった。',choi:'あ、気づいた？ 今日の髪飾り。',fp:'あら、髪がほどけてしまいましたね。'}[key],hand:current.id==='work'?'ここ、もう少し一緒に見てくれる？':'うん。そばにいるよ。',cloth:'少し姿勢を変えようかな。'};
   onLine(lines[region]);$('#sceneCaption').textContent=lines[region];activity();return true;
  }
  $('#sceneTouch').addEventListener('click',e=>react(e));$('#sceneFullTouch').addEventListener('click',e=>react(e,true));

@@ -363,7 +363,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:48
     await capture(width+'x'+height+'-castle-room-'+place,`(()=>{const c=${C},s=c.CCCastleApp.getState(),r=c.document.getElementById('copy').getBoundingClientRect();return s.place==='${place}'&&s.view==='work'&&r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight&&c.document.documentElement.scrollWidth<=innerWidth+1})()`);
     await evaluate(`${C}.document.getElementById('characterTouch').click()`);
     await capture(width+'x'+height+'-castle-touch-'+place,`${C}.CCCastleApp.getState().place==='${place}'`);
-    if(['kyun','choi'].includes(place)){
+    if(['kyun','choi','fp'].includes(place)){
      await waitFor(`${C}.document.getElementById('characterScenes').dataset.ready==='true'`);
      const before=await evaluate(`({id:${C}.CCCastleApp.getState().draft?.id,scroll:${C}.document.getElementById('paperScroll').scrollTop})`);
      for(const scene of ['welcome','work','rest','tea','special']){
