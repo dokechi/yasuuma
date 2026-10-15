@@ -19,7 +19,8 @@
     "./rpg-home.css?v=20261013.1-wide",
     "./rpg-theme.css?v=20261013.9-detail",
     "./rpg-account-pages.css?v=20261013.9-detail",
-    "./rpg-workspaces.css?v=20261013.9-detail"
+    "./rpg-workspaces.css?v=20261013.9-detail",
+    "./rpg-daily-desk.css?v=20261015.1"
   ],
   "scripts": [
     "./sourcing-atomic-save.js?v=20261011.atomic2",
@@ -78,8 +79,10 @@
     "./v230-request-progress.js?v=20261004.1",
     "./v231-trade-details.js?v=20261004.1",
     "./fp-finished-images.js?v=20261008.4-state",
-    "./manual-operation-hub.js?v=20261013.8-jst-check",
+    "./manual-operation-hub.js?v=20261015.1-daily",
     "./rpg-home.js?v=20261012.3-workspaces",
-    "./rpg-workspaces.js?v=20261013.3-consistency"
+    "./rpg-workspaces.js?v=20261013.3-consistency",
+    "./rpg-daily-store.js?v=20261015.1",
+    "./rpg-daily-desk.js?v=20261015.1"
   ]
 }
