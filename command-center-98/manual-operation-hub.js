@@ -24,9 +24,9 @@
   return api.unique(items);
  }
  async function open(account){
-  const dialog=e('dialog',undefined,'manual-operation-review'),close=e('button','閉じる','push-button');close.type='button';close.onclick=()=>dialog.close();
+  const dialog=e('dialog',undefined,'manual-operation-review'),close=e('button','閉じる','push-button');close.type='button';close.onclick=()=>{desk?.savePosition();dialog.close();};
   dialog.className+=' rpg-account-page';dialog.dataset.account=account.key;dialog.setAttribute('aria-label',account.label+'の保存原稿');
-  const back=e('button','← 司令塔','push-button rpg-account-back');back.type='button';back.onclick=()=>dialog.close();
+  const back=e('button','← 司令塔','push-button rpg-account-back');back.type='button';back.onclick=()=>{desk?.savePosition();dialog.close();};
   const header=e('header',undefined,'rpg-account-header'),character=e('div',undefined,'rpg-account-character');character.setAttribute('aria-hidden','true');
   const title=e('h2',account.label.replace(/^Threads /,'')),policy=details('媒体の方針',e('p',account.policy)),status=e('p','保存原稿を確認中…'),coverage=e('p'),list=e('div');
   header.append(e('p','THREADS / 保存原稿','rpg-account-kicker'),title,e('p','原稿を確認して、投稿の準備を。','rpg-account-subtitle'),character);
@@ -37,13 +37,17 @@
   const toolbar=e('div',undefined,'rpg-account-toolbar');toolbar.append(back,close);const coverageDetails=details('読取状況',coverage);coverageDetails.className='rpg-account-coverage-details';
   const isThreads=['kyun','choi'].includes(account.key),accountActions=e('div',undefined,'rpg-threads-account-actions'),readSummary=e('div',undefined,'rpg-account-read-summary');readSummary.setAttribute('aria-live','polite');
   status.setAttribute('aria-live','polite');dialog.append(toolbar,header,...(isThreads?[accountActions]:[]),tabs,...(isThreads?[readSummary]:[]),status,coverageDetails,list,policy);doc.body.append(dialog);dialog.onclose=()=>dialog.remove();dialog.showModal();
-  if(account.key==='tiktok'){const f=e('button','FP原稿を見る（既存FP）','push-button');f.type='button';f.dataset.homeAction='fp-draft';f.onclick=()=>dialog.close();dialog.append(f);}
+  if(account.key==='tiktok'){const f=e('button','FP原稿を見る（既存FP）','push-button');f.type='button';f.dataset.homeAction='fp-draft';f.onclick=()=>{desk?.savePosition();dialog.close();};dialog.append(f);}
   let accountConfig=null,accountError='',accountLoading=isThreads,childDialog=null;
   const closeParent=dialog.onclose;dialog.onclose=()=>{if(childDialog)childDialog.close();closeParent();};
   let items=localItems(),offset=0,hasMore=true,loading=false,loaded=0,total=null,checked=false,readError='',selectedTab='current';
+  const desk=root.CCRpgDailyDesk?.mount({dialog,account,toolbar,list,onStatus:showOperation});
+  if(desk?.tab==='history')selectedTab='history';
+  dialog.addEventListener?.('cancel',()=>desk?.savePosition());
   currentTab.onclick=()=>{selectedTab='current';render();};historyTab.onclick=()=>{selectedTab='history';render();};
   const more=e('button','保存原稿の続き100件を確認','push-button');more.type='button';dialog.append(more);
   function render(){
+   const previousScroll=dialog.scrollTop;
    const matches=api.unique(items).filter(i=>!api.isSuppressed(i)&&api.matchesAccount(i,account.key));list.replaceChildren();
    const current=e('div',undefined,'rpg-account-current'),history=details('投稿済み・見送りの履歴'),active=matches.filter(i=>!api.historyState(i,account.key)),archived=matches.filter(i=>api.historyState(i,account.key));
    current.hidden=selectedTab!=='current';history.hidden=selectedTab!=='history';history.className='rpg-account-history';history.open=selectedTab==='history';
@@ -57,10 +61,10 @@
     showOperation(!matches.length&&checked?'この保存先では原稿を確認できません。別保存先の原稿はまだ連携されていません。':'');
    }else status.textContent=readError?'読取未確認：'+readError:matches.length?'確認用 '+active.length+'件｜履歴 '+archived.length+'件':!checked?'保存原稿を確認中…':'この保存先では原稿を確認できません。別保存先の原稿はまだ連携されていません。';
    coverage.textContent='保存イベント：読込 '+loaded+'件 / 全 '+(total===null?'件数未確認':total+'件')+'｜'+(loading?'読込中':readError?'続きの読取未確認':!checked?'未確認':hasMore?'続きあり':'読込完了')+'｜画面内の読込済み原稿も照合';
-   for(const item of [...active,...archived]){const p=api.payload(item),card=e('article',undefined,'rpg-account-card'),state=api.historyState(item,account.key);card.append(e('h3',item.title||p.post_title||'保存原稿'),e('p',state||'投稿状態未確認'));
+   for(const item of [...active,...archived]){const p=api.payload(item),card=e('article',undefined,'rpg-account-card'),state=api.historyState(item,account.key);card.dataset.recordId=String(item.id);card.append(e('h3',item.title||p.post_title||'保存原稿'),e('p',state||'投稿状態未確認'));
     if(isThreads){const checked=api.savedPriceStockCheck(p);const stamp=e('section',undefined,'rpg-account-price-stock-check');stamp.append(e('h4','価格・在庫の確認（保存時点）'),e('p',checked.label,'rpg-account-price-stock-time'),e('p','現在の価格・在庫は、商品ページで確認してください。','rpg-account-price-stock-note'));card.append(stamp);appendResult(card,item);}
     const product=['kyun','choi'].includes(account.key)?api.savedProductLink(p):null;
-    const copies=api.savedCopies(p).filter(copy=>!product||copy.label!=='保存購入リンク');for(const copy of copies){const block=e('section',undefined,'rpg-account-copy');block.append(e('h4',copy.label),e('pre',copy.text));const b=e('button',copy.label+'をコピー','push-button');b.type='button';b.onclick=async()=>{try{await root.navigator.clipboard.writeText(copy.text);showOperation('原文をコピーしました。');}catch(_){showOperation('クリップボード未確認。表示全文を選択してコピーしてください。');}};block.append(b);card.append(block);}
+    const copies=api.savedCopies(p).filter(copy=>!product||copy.label!=='保存購入リンク');for(const copy of copies){const block=e('section',undefined,'rpg-account-copy');block.dataset.copyLabel=copy.label;block.append(e('h4',copy.label),e('pre',copy.text));const b=e('button',copy.label+'をコピー','push-button');b.type='button';b.onclick=async()=>{try{await root.navigator.clipboard.writeText(copy.text);desk?.copied({id:String(item.id),title:item.title||p.post_title||'保存原稿',label:copy.label,text:copy.text});showOperation('原文をコピーしました。');}catch(_){showOperation('クリップボード未確認。表示全文を選択してコピーしてください。');}};block.append(b);card.append(block);}
     if(!copies.length)card.append(e('p','本文の保存形式は未確認です。元の原稿画面で確認してください。'));
     if(product){const block=e('section',undefined,'rpg-account-product');block.append(e('h4','商品ページ'));const link=e(product.url?'a':'button','商品ページを開く','push-button rpg-product-open');if(product.url){link.href=product.url;link.target='_blank';link.rel='noopener noreferrer';link.setAttribute('aria-label','商品ページを開く（別タブ）');}else{link.type='button';link.disabled=true;}block.append(link,e('p',product.note,'rpg-product-note'));card.append(block);}
     if(['kyun','choi'].includes(account.key)){
@@ -89,6 +93,7 @@
    if(!archived.length)history.append(e('p','読込済みの原稿に、投稿済み・見送りの記録はありません。'));
    list.append(history);
    more.disabled=loading||!hasMore;
+   if(Number.isFinite(previousScroll))dialog.scrollTop=previousScroll;desk?.decorate(matches);
   }
   function showOperation(message){status.textContent=message;status.hidden=!message;}
   function externalLink(url,label,cls){const a=e('a',label,'push-button '+cls);a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;}
@@ -211,7 +216,7 @@
     loaded+=data.events.length;total=Number.isInteger(data.total)&&data.total>=0?data.total:null;checked=true;
     offset=next??offset;hasMore=next!==null;readError='';
    }catch(error){readError=error.message;}
-   finally{loading=false;render();}
+   finally{loading=false;if(!desk?.queue(render))render();}
   }
   more.onclick=fetchMore;render();fetchMore();if(isThreads)loadAccount();
  }
