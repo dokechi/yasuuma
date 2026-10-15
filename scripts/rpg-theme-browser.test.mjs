@@ -385,6 +385,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:48
    }
    await evaluate(`${C}.document.getElementById('homeMode').click()`);
   }
+  await capture('castle-saved-signal',`${C}.CCCastleApp.notebook.sources().some(x=>x.source.id==='fixture-saved-only'&&x.body.includes('保存先の最新台本本文'))`);
   await evaluate(`${C}.CCCastleApp.open('kyun');Object.defineProperty(${C}.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__castleCopied=text}}});${C}.document.getElementById('copy').click()`);
   await waitFor(`!!window.__castleCopied`);
   await capture('castle-live-copy',`window.__castleCopied===${C}.CCCastleApp.getState().draft.body&&!${C}.document.getElementById('copySeal').hidden`);

@@ -26,7 +26,7 @@ test('host uses saved sourcing payload and FP page text without treating copying
 });
 test('host paginates all events, performs GET only, and marks interrupted reads incomplete',async()=>{
  const requests=[];let fail=false;
- const b=boot(async(url,options)=>{requests.push({url:new URL(url),options});if(fail&&url.searchParams.get('offset')==='1')throw Error('connection lost');return {ok:true,status:200,json:async()=>url.searchParams.get('resource')==='sourcing'?{ok:true,items:[]}:{ok:true,events:[{id:'record'+(url.searchParams.get('offset')||'0'),taskId:'task',eventKey:'event'+(url.searchParams.get('offset')||'0'),title:'原稿',payload:{account:'キュン拾い',main_post:'保存原文'}}],nextOffset:url.searchParams.get('offset')==='0'?1:null}};});
+ const b=boot(async(url,options)=>{requests.push({url:new URL(url),options});if(fail&&url.searchParams.get('offset')==='1')throw Error('connection lost');return {ok:true,status:200,json:async()=>['sourcing','castle-signals'].includes(url.searchParams.get('resource'))?{ok:true,items:[],nextOffset:null}:{ok:true,events:[{id:'record'+(url.searchParams.get('offset')||'0'),taskId:'task',eventKey:'event'+(url.searchParams.get('offset')||'0'),title:'原稿',payload:{account:'キュン拾い',main_post:'保存原文'}}],nextOffset:url.searchParams.get('offset')==='0'?1:null}};});
  b.ready();await b.window.CCCastle.refresh();
  assert.equal(b.sent.at(-1).complete,true);assert.equal(b.sent.at(-1).drafts.length,2);
  assert.ok(requests.every(x=>!x.options.method||x.options.method==='GET'));
@@ -45,4 +45,21 @@ test('default startup stays pending until the trusted castle frame is visible',a
 });
 test('intentional classic mode and direct workspace startup do not wait for a hidden castle',()=>{
  for(const options of [{mode:'classic'},{active:false}]){const b=boot(null,options);assert.equal(b.window.CCCastle.whenReady(),null);assert.equal(b.document.getElementById('ccCastleFrame').hidden,true);}
+});
+
+// The legacy home may still be loading (or contain old versions) when the castle opens.
+test('castle reads every saved-signal page and prefers the latest edited original',async()=>{
+ const requests=[];const b=boot(async url=>{const resource=url.searchParams.get('resource'),offset=url.searchParams.get('offset');requests.push(resource+':'+offset);
+ const payload={content_type:'fp_post_candidate',draft_slides:[{body:'最新版の本文'}]};
+ const data=resource==='castle-signals'?{ok:true,items:[offset==='0'?{id:'task:t:e',updatedAt:'2026-10-16T00:00:00Z',payload}:{id:'saved-only',payload}],nextOffset:offset==='0'?1:null}:resource==='task-events'?{ok:true,events:[{id:1,taskId:'t',eventKey:'e',occurredAt:'2026-10-01T00:00:00Z',payload:{...payload,draft_slides:[{body:'旧版'}]}}],nextOffset:null}:{ok:true,items:[]};
+ return {ok:true,json:async()=>data};});
+ b.window.CCHome.activeItems=[{id:'stale-home',payload:{account:'キュン拾い',main_post:'古い表示'}}];
+ b.ready();await b.window.CCCastle.refresh();const message=b.sent.at(-1);
+ assert.equal(message.complete,true);assert.equal(message.drafts.length,2);assert.ok(message.drafts.every(x=>x.body==='台本：最新版の本文'));assert.ok(requests.includes('castle-signals:1'));assert.match(message.message,/FP・TikTok 2件/);
+});
+test('missing pagination or malformed sourcing never removes cached originals',async()=>{
+ for(const broken of ['castle-signals','sourcing']){
+  const b=boot(async url=>({ok:true,json:async()=>url.searchParams.get('resource')===broken?{ok:true,items:broken==='sourcing'?null:[]}:{ok:true,items:[],events:[],nextOffset:null}}));
+  b.ready();await b.window.CCCastle.refresh();assert.equal(b.sent.at(-1).complete,false);assert.match(b.sent.at(-1).message,/保持/);
+ }
 });
