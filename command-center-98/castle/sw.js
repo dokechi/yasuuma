@@ -1,0 +1,19 @@
+// Cache only this app's static shell and fetched art. Drafts remain in localStorage.
+const CACHE='castle-production-shell-v18',PREFIX='castle-production-shell-';
+const SHELL=['./','./index.html','./app.css?v=18','./workbench.css?v=18','./app.js?v=18','./notebook.js?v=18','./workbench.js?v=18','./world.js?v=18','./feedback.js?v=18','./production.js?v=18','./character-rig.js?v=18','./skirt-action.js?v=18'];
+const base=new URL('./',self.location.href);
+async function valid(response,html=false){if(!response||!response.ok||response.type==='opaque'||response.redirected)return false;if(html)return response.headers.get('content-type')?.includes('text/html')&&(await response.clone().text()).includes('id="app"');return !response.headers.get('content-type')?.includes('text/html');}
+self.addEventListener('install',event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE);await Promise.all(SHELL.map(async path=>{const url=new URL(path,base).href;const response=await fetch(url,{cache:'reload'});if(!await valid(response,path==='./'||path==='./index.html'))throw Error('Incomplete app shell');await cache.put(url,response);}));})()));
+self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const name of await caches.keys())if(name.startsWith(PREFIX)&&name!==CACHE)await caches.delete(name);await self.clients.claim();})()));
+self.addEventListener('message',event=>{if(event.data?.type==='SKIP_WAITING')self.skipWaiting();});
+self.addEventListener('fetch',event=>{const request=event.request,url=new URL(request.url);if(request.method!=='GET'||url.origin!==base.origin||!url.pathname.startsWith(base.pathname))return;
+ const navigation=request.mode==='navigate'&&(url.pathname===base.pathname||url.pathname===base.pathname+'index.html');
+ const asset=/\.(?:js|css|png|webp|jpg|svg|woff2)$/.test(url.pathname)&&!url.pathname.endsWith('/sw.js');
+ if(!navigation&&!asset)return;
+ event.respondWith((async()=>{const cache=await caches.open(CACHE);
+  if(navigation){const shell=await cache.match(new URL('./index.html',base).href);if(shell)return shell;
+   try{const response=await fetch(request);if(await valid(response,true))await cache.put(new URL('./index.html',base).href,response.clone());return response;}
+   catch{return new Response('保存済みの司令塔がありません。オンラインで一度開いてください。',{status:503,headers:{'content-type':'text/plain;charset=utf-8'}});}}
+  const cached=await cache.match(request);if(cached)return cached;const response=await fetch(request);if(await valid(response)){try{await cache.put(request,response.clone());}catch{}}return response;
+ })());
+});

@@ -1,0 +1,86 @@
+import {safeLink,dayInJapan} from './notebook.js?v=18';
+import {createWorld} from './world.js?v=18';
+export function createWorkbench({app,places,notebook,reduced,getState,selectId,refresh,onStatus,onReposition,onMotionChange,onCopy,openPlace}){
+ const $=s=>document.querySelector(s),drawer=$('#deskDrawer'),body=$('#drawerBody');let pending=null,compareId=null,manual=null,flight=null,scrollTimer=null,drawerReturn=null,waitingWorker=null,externalPending=false,offlineReady=false;
+ const world=createWorld({app,notebook,reduced});
+ const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
+ const btn=(label,fn,cls)=>{const n=el('button',label,cls);n.type='button';n.addEventListener('click',fn);return n;};
+ const stamp=time=>new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(time));
+ function open(title){if(!drawer.open)drawerReturn=document.activeElement;$('#drawerTitle').textContent=title;body.replaceChildren();if(!drawer.open)drawer.showModal();}
+ function close(){drawer.close();drawerReturn?.focus?.({preventScroll:true});}
+ $('#drawerClose').addEventListener('click',close);
+ function row(d,action=()=>{close();openPlace(d.place);selectId(d.id);}){const card=el('div',undefined,'drawer-card');const pick=btn('',action,'draft-pick');pick.append(el('small',places[d.place].title),el('strong',d.title),el('span',d.body.replace(/\s+/g,' ').slice(0,80)));card.append(pick);return card;}
+ function empty(text){body.append(el('p',text,'drawer-empty'));}
+ function savedMessage(saved,message){onStatus(saved?message:'画面内には反映しましたが、端末へ保存できませんでした');if(!saved)$('#storageWarning').hidden=false;}
+ function undo(message){$('#undoMessage').textContent=message;$('#undoBar').hidden=false;}
+ $('#undoAction').addEventListener('click',()=>{try{savedMessage(notebook.undo(),'元に戻しました');$('#undoBar').hidden=true;refresh();update();if(drawer.open)menu();}catch(e){onStatus(e.message);}});
+ $('#undoDismiss').addEventListener('click',()=>$('#undoBar').hidden=true);
+ function haptic(){if(notebook.pref('haptic',false)&&typeof navigator.vibrate==='function'){try{navigator.vibrate(10);}catch{}}}
+ function updateHome(){for(const station of document.querySelectorAll('.station')){const key=station.dataset.place,used=notebook.usedToday(key);station.classList.toggle('visited-today',used);station.querySelector('.station-status').textContent=used?'灯りがともっています · 今日利用':'';}
+  const last=notebook.lastPlace(),resume=$('#resumeWork');resume.hidden=!last||!places[last];if(last)resume.textContent=`${places[last].title}の続きへ`;
+ }
+ function update(){const {draft,place}=getState();updateHome();$('#copyLink').hidden=!draft?.link;$('#pinDraft').disabled=!draft;$('#pinDraft').setAttribute('aria-pressed',String(draft&&notebook.flag('pin',draft.id)));$('#pinDraft').textContent=draft&&notebook.flag('pin',draft.id)?'★ 留めた原稿':'☆ 留める';
+  const mark=draft&&notebook.copyMark(draft);$('#copySeal').hidden=!mark;$('#copySeal').textContent=mark?`コピー済み · ${stamp(mark.time)}`:'';
+  const count=notebook.completed(place).length;$('#doneCount').textContent=String(count);$('#doneStack').style.setProperty('--papers',String(Math.min(count,5)));
+  $('#draftCount').textContent=`${notebook.list(place).length}件`;
+  $('#sampleNote').textContent=!draft?'「引き出し」から原稿を追加できます。':draft.sample?'操作体験用のサンプルです。「引き出し」から自分の原稿も追加できます。':`この端末に保存した原稿 · 更新 ${stamp(draft.updatedAt)}${draft.checkedAt?' · 情報確認 '+draft.checkedAt:''}`;
+  app.dataset.font=notebook.pref('font','standard');app.dataset.focus=notebook.pref('focus',false)?'on':'off';$('#focusMode').setAttribute('aria-pressed',String(app.dataset.focus==='on'));$('#focusMode').textContent=app.dataset.focus==='on'?'部屋へ':'集中';
+  if(!$('#trayRail').hidden)renderTray();if(!$('#comparePane').hidden)renderComparison();
+ }
+ function refreshPreserving(){const selected=getState().draft?.id;refresh(selected);update();}
+ function menu(){open('机の引き出し');const d=getState().draft;
+  const grid=el('div',undefined,'drawer-menu');
+  grid.append(btn('＋ 原稿を書く',()=>edit()),btn('原稿を探す',search),btn('お気に入り',favorites),btn('仮置き皿',tray),btn('コピー履歴',history),btn('完了した原稿',completed),btn('2つの原稿を比較',compare),btn('表示と操作',settings),btn('原稿を読み込む',()=>$('#importFile').click()),btn('原稿を書き出す',download));body.append(grid);
+  if(d){body.append(el('p','この原稿', 'drawer-section'));const actions=el('div',undefined,'drawer-menu');actions.append(btn(d.source?'端末の別原稿として編集':'編集する',()=>edit(d)),btn(notebook.flag('tray',d.id)?'仮置き皿から戻す':'仮置き皿に置く',()=>{notebook.toggle('tray',d.id);undo('仮置き皿を変更しました');update();menu();}),btn('原稿を取り除く',()=>{notebook.erase(d.id);undo('原稿を取り除きました');close();refresh();update();}));body.append(actions);}
+  body.append(el('p','原稿と設定はこのブラウザに保存されます。別の端末へは書き出したJSONを読み込めます。','drawer-note'));
+ }
+ function edit(d=null){open(d?'原稿を整える':'机に原稿を置く');const form=el('form');form.innerHTML='<label>持ち場<select name="place" required></select></label><label>見出し<input name="title" maxlength="200" required></label><label>本文<textarea name="body" rows="9" maxlength="100000" required></textarea></label><label>紹介・参照リンク<input name="link" type="url" placeholder="https://…"></label><label>価格・在庫などの確認日時（任意）<input name="checkedAt" maxlength="80" placeholder="例：10月15日 13:00"></label><p class="form-error" role="alert"></p><footer><button type="submit" class="primary">原稿を保存</button><button type="button" class="cancel-edit">戻る</button></footer>';
+  for(const key of Object.keys(places)){const option=el('option',places[key].title);option.value=key;form.querySelector('[name=place]').append(option);}
+  for(const key of ['title','body','link','checkedAt'])form.querySelector(`[name=${key}]`).value=d?.[key]||'';form.querySelector('[name=place]').value=d?.place||getState().place;
+  form.querySelector('.cancel-edit').addEventListener('click',menu);
+  form.addEventListener('submit',e=>{e.preventDefault();try{const fields=Object.fromEntries(['place','title','body','link','checkedAt'].map(k=>[k,form.querySelector(`[name=${k}]`).value]));const result=notebook.save({...d,...fields,sample:false});close();openPlace(result.draft.place);refresh(result.draft.id);update();savedMessage(result.saved,'原稿を机に置きました');undo(d?'原稿を更新しました':'原稿を追加しました');}catch(error){form.querySelector('.form-error').textContent=error.message;}});body.append(form);form.querySelector('[name=title]').focus();
+ }
+ function favorites(){open('留めた原稿');const rows=notebook.all().filter(d=>notebook.flag('pin',d.id));if(!rows.length)empty('原稿の「☆ 留める」で、ここからすぐ開けます。');for(const d of rows)body.append(row(d));}
+ function search(){open('原稿を探す');const input=el('input');input.type='search';input.placeholder='見出し・本文・リンクで検索';input.setAttribute('aria-label','原稿を検索');const results=el('div');function render(){results.replaceChildren();const q=input.value.trim().toLocaleLowerCase(),rows=notebook.all().filter(d=>(d.title+' '+d.body+' '+d.link).toLocaleLowerCase().includes(q));for(const d of rows)results.append(row(d));if(!rows.length)results.append(el('p','一致する原稿はありません。'));}input.addEventListener('input',render);body.append(input,results);render();input.focus();}
+ function history(){open('コピーした原稿');const rows=notebook.copies();if(!rows.length)empty('本文やリンクをコピーすると、使った内容がここに残ります。');for(const event of rows){const card=el('section',undefined,'history-card');card.append(el('small',`${stamp(event.time)} · ${places[event.place].title} · ${event.kind==='body'?'本文':'リンク'}`),el('h3',event.title));const details=el('details'),summary=el('summary','コピーした内容を見る');details.append(summary,el('pre',event.text));card.append(details,btn('この内容をもう一度コピー',()=>onCopy({id:event.draftId,place:event.place,title:event.title,body:event.kind==='body'?event.text:'',link:event.kind==='link'?event.text:''},event.kind)));body.append(card);}}
+ function completed(){open('積み重ねた原稿');const rows=Object.keys(places).flatMap(k=>notebook.completed(k)).sort((a,b)=>b.time-a.time);if(!rows.length)empty('「完了」で机を離れると、原稿の記録がここに積もります。');for(const d of rows){const card=el('section',undefined,'history-card');card.append(el('small',`${stamp(d.time)} · ${places[d.place].title}`),el('h3',d.title),el('p',d.body.slice(0,120)));const current=notebook.get(d.id);if(current)card.append(btn('原稿を開く',()=>{close();openPlace(current.place);selectId(current.id);}));body.append(card);}}
+ function tray(){if(!$('#comparePane').hidden)closeComparison();if(window.innerWidth>=680&&window.innerWidth/window.innerHeight>=.8&&window.innerHeight>520){close();$('#trayRail').hidden=false;app.dataset.tray='on';renderTray();onReposition();}else{open('仮置き皿');fillTray(body);}}
+ function fillTray(target){target.replaceChildren();const rows=notebook.all().filter(d=>notebook.flag('tray',d.id));if(!rows.length)target.append(el('p','気になる原稿を、引き出しから仮置きできます。','drawer-empty'));for(const d of rows){const card=row(d,()=>{if(drawer.open)close();openPlace(d.place);selectId(d.id);});card.append(btn('皿から戻す',()=>{notebook.toggle('tray',d.id);undo('仮置き皿から戻しました');fillTray(target);}));target.append(card);}}
+ function renderTray(){fillTray($('#trayItems'));}
+ function compare(){$('#trayRail').hidden=true;app.dataset.tray='off';const {draft,place}=getState();const candidates=notebook.list(place).filter(d=>d.id!==draft?.id);if(!candidates.length){onStatus('比較する原稿をもう1件追加してください');return;}close();compareId=candidates[0].id;$('#comparePane').hidden=false;app.dataset.compare='on';renderComparison();onReposition();}
+ function renderComparison(){const {draft,place}=getState();const candidates=notebook.list(place).filter(d=>d.id!==draft?.id);if(!candidates.length){closeComparison();return;}if(!candidates.some(d=>d.id===compareId))compareId=candidates[0].id;const select=$('#compareSelect');select.replaceChildren();for(const d of candidates){const option=el('option',d.title);option.value=d.id;select.append(option);}select.value=compareId;const d=candidates.find(d=>d.id===compareId);$('#compareTitle').textContent=d.title;$('#compareBody').textContent=d.body;}
+ function closeComparison(){$('#comparePane').hidden=true;app.dataset.compare='off';onReposition();}
+ $('#compareSelect').addEventListener('change',e=>{compareId=e.target.value;renderComparison();});$('#closeCompare').addEventListener('click',closeComparison);$('#compareCopy').addEventListener('click',()=>{const d=notebook.get(compareId);if(d)onCopy(d,'body');});
+ $('#closeTray').addEventListener('click',()=>{$('#trayRail').hidden=true;app.dataset.tray='off';onReposition();});
+ function settings(){open('表示と操作');function setting(label,key,choices,fallback){const wrap=el('label',label),select=el('select');for(const [value,text] of choices){const o=el('option',text);o.value=value;select.append(o);}select.value=String(notebook.pref(key,fallback));select.addEventListener('change',()=>{let value=select.value;if(value==='true'||value==='false')value=value==='true';notebook.setPref(key,value);world.refresh();update();onMotionChange();onReposition();});wrap.append(select);body.append(wrap);}
+  setting('本文の大きさ','font',[['standard','標準'],['large','大きめ']],'standard');setting('動き','quiet',[['false','標準'],['true','ひかえめ']],false);setting('窓の外の光','light',[['auto','時間帯に合わせる'],['day','昼'],['evening','夕方'],['night','夜']],'auto');setting('ホームの入口','homeMode',[['cards','キャラクターのカード'],['map','城下町のマップ']],'cards');
+  if(typeof navigator.vibrate==='function')setting('コピー時の短い振動','haptic',[['false','オフ'],['true','オン']],false);else body.append(el('p','このブラウザでは振動を利用できません。','drawer-note'));
+  body.append(el('p',offlineReady?'オフラインの準備ができています。保存した原稿を通信なしでも開けます。':'オフラインの準備には、このブラウザでの初回読み込みが必要です。','drawer-note'));
+  body.append(el('p','音は上部の「音 OFF／ON」で切り替えられます。','drawer-note'),btn('原稿のバックアップを書き出す',download));
+ }
+ function download(){const blob=new Blob([notebook.export()],{type:'application/json'}),url=URL.createObjectURL(blob),a=el('a');a.href=url;a.download=`shireito-${dayInJapan()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);onStatus('原稿の書き出しを開始しました');}
+ function newNotice(message){$('#freshNotice').textContent=message;$('#freshNotice').hidden=false;}
+ function queuedNotice(){if(pending)newNotice(`${pending.length}件の原稿が届きました · 確認`);else if(externalPending)newNotice('別の画面で更新されました · 確認');else if(waitingWorker)newNotice('司令塔の更新が届きました');else $('#freshNotice').hidden=true;}
+ $('#importFile').addEventListener('change',async e=>{const input=e.target,file=input.files?.[0];if(!file)return;try{if(file.size>5000000)throw Error('読み込めるファイルは5MBまでです');pending=notebook.parseImport(await file.text());newNotice(`${pending.length}件の原稿が届きました · 確認`);if(drawer.open)close();onStatus('今の原稿はそのままです。新着を確認できます。');}catch(error){onStatus(error.message);}input.value='';});
+ $('#freshNotice').addEventListener('click',()=>{
+  if(waitingWorker&&!pending&&!externalPending){if(drawer.open||getState().view==='work'){open('更新の準備ができました');body.append(el('p','保存した原稿と読んでいた位置を残して更新します。'),btn('保存して更新',()=>{savePosition();waitingWorker.postMessage({type:'SKIP_WAITING'});}));}else waitingWorker.postMessage({type:'SKIP_WAITING'});return;}
+  if(!pending){notebook.sync();externalPending=false;refreshPreserving();world.refresh();onMotionChange();queuedNotice();onStatus('届いた更新を反映しました');return;}
+  open('届いた原稿を確認');body.append(el('p',`${pending.length}件。同じIDの原稿は更新されます。取り込み後も「元に戻す」が使えます。`));for(const d of pending){const card=el('div',undefined,'import-card');card.append(el('small',places[d.place].title),el('strong',d.title),el('p',d.body.slice(0,100)));body.append(card);}body.append(btn('この原稿を取り込む',()=>{const ok=notebook.applyImport(pending);pending=null;queuedNotice();close();refreshPreserving();savedMessage(ok,'原稿を受け取りました');undo('原稿を取り込みました');},'primary'),btn('今回は受け取らない',()=>{pending=null;queuedNotice();close();}));
+ });
+ window.addEventListener('storage',e=>{if(e.key?.startsWith('castle-production.v1.draft:')){externalPending=true;queuedNotice();}});
+ function connection(){const offline=navigator.onLine===false;$('#connectionState').hidden=!offline;$('#connectionState').textContent=offline?'オフライン · 保存した原稿を表示':'';}
+ window.addEventListener('online',connection);window.addEventListener('offline',connection);connection();
+ function savePosition(){clearTimeout(scrollTimer);const s=getState();if(s.view==='work'&&s.draft)notebook.remember(s.place,s.draft.id,$('#paperScroll').scrollTop);}
+ $('#paperScroll').addEventListener('scroll',()=>{clearTimeout(scrollTimer);scrollTimer=setTimeout(savePosition,180);},{passive:true});
+ window.addEventListener('pagehide',()=>{savePosition();flight?.cancel();});document.addEventListener('visibilitychange',()=>{if(document.hidden){savePosition();flight?.cancel();}});
+ $('#deskMenu').addEventListener('click',menu);$('#settingsOpen').addEventListener('click',settings);$('#doneStack').addEventListener('click',completed);$('#resumeWork').addEventListener('click',()=>openPlace(notebook.lastPlace()));
+ $('#pinDraft').addEventListener('click',()=>{const d=getState().draft;if(!d)return;notebook.toggle('pin',d.id);undo('原稿の留め方を変更しました');refreshPreserving();haptic();});
+ $('#focusMode').addEventListener('click',()=>{notebook.setPref('focus',!notebook.pref('focus',false));update();onReposition();});$('#copyLink').addEventListener('click',()=>{const d=getState().draft;if(d?.link)onCopy(d,'link');});
+ $('#manualCopied').addEventListener('click',()=>{if(manual){notebook.copied(manual.draft,manual.kind,manual.text);copied(manual.draft);manual=null;}});
+ function copied(d){update();haptic();flight?.cancel();if(reduced.matches||document.hidden||getState().draft?.id!==d.id)return;const a=$('#copy').getBoundingClientRect(),b=$('#copySeal').getBoundingClientRect(),node=$('#copyFlight');if(!node.animate)return;node.style.left=a.left+a.width/2+'px';node.style.top=a.top+'px';flight=node.animate([{opacity:0,transform:'translate(0,0) scale(.7)'},{opacity:.75,offset:.2},{opacity:0,transform:`translate(${b.left-a.left-a.width/2}px,${b.top-a.top}px) scale(.35)`}],{duration:350,easing:'ease-out'});flight.finished.catch(()=>{});}
+ function enter(key){const first=notebook.visit(key);world.enter(key,first);update();}
+ function leave(){savePosition();world.leave();flight?.cancel();updateHome();}
+ function finish(d){if(!d)return;notebook.finish(d);undo('完了した原稿を束に重ねました');updateHome();}
+ try{if('serviceWorker' in navigator){navigator.serviceWorker.ready.then(()=>{offlineReady=true;}).catch(()=>{});navigator.serviceWorker.register('./sw.js').then(reg=>{function watch(worker){worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller){waitingWorker=reg.waiting;queuedNotice();}});}if(reg.waiting){waitingWorker=reg.waiting;queuedNotice();}reg.addEventListener('updatefound',()=>watch(reg.installing));}).catch(()=>{});let refreshing=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing&&waitingWorker){refreshing=true;location.reload();}});}}catch{}
+ update();return {enter,leave,update,finish,copied,savePosition,settings,menu,manualCopy:(draft,kind,text)=>{manual={draft,kind,text};},selected:()=>{update();},resize:()=>{if($('#trayRail').hidden===false&&(window.innerWidth<680||window.innerWidth/window.innerHeight<.8||window.innerHeight<=520)){$('#trayRail').hidden=true;app.dataset.tray='off';}update();}};
+}

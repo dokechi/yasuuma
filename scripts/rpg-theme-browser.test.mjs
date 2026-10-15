@@ -101,7 +101,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:30
   if(failStyles&&relative.endsWith('.css')){res.writeHead(503);res.end();return}
   if(failRpg&&relative==='command-center-98/rpg-home.js'){res.writeHead(503);res.end();return}
   let content=fs.readFileSync(file);
-  if(relative==='command-center-98/app.html')content=content.toString().replace('<head>','<head><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script>');
+  if(relative==='command-center-98/app.html')content=content.toString().replace('<head>','<head><script>localStorage.setItem("cc-castle-mode","classic")</script><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script>');
   if(relative==='command-center-98/index.html')content=content.toString().replace('<head>','<head><script>localStorage.removeItem("cc_retro_token");window.__rpgQA={writes:[]};'+(url.searchParams.has('qa-login')?'window.fetch=async()=>({ok:true,status:200,json:async()=>({ok:true,token:"synthetic-qa-only"})});':'')+'</script>');
   if(relative==='command-center-98/app-v130.html'&&url.searchParams.has('qa-boot'))content=content.toString().replace('<head>','<head><script>window.__rpgQA={writes:[]};window.fetch=()=>new Promise(()=>{});</script>');
   // Read-only access to the actual fallback renderer; its normal packet action writes.
@@ -331,6 +331,53 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:30
    await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
    await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});await waitFor('!!window.CCRpgHome && !!window.__rpgQA && !app.busy');await evaluate('document.fonts.ready');await capture(width+'x'+height+'-wide-home',`!document.getElementById('ccRpgHome').hidden`);
   }
+  // Full production castle: real iframe modules, fixtures from the authenticated host,
+  // gestures and desk tools, then native write surfaces. No prototype samples.
+  await evaluate(`window.__rpgQA.threads.readPages=false;window.__rpgQA.threads.failNextRead=false;CCCastle.show()`);
+  const C=`document.getElementById('ccCastleFrame').contentWindow`;
+  await waitFor(`!!${C}.CCCastleApp`);
+  await waitFor(`${C}.CCCastleApp.notebook.sources().length>0`);
+  for(const [width,height] of [[360,800],[834,900]]){
+   await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
+   await evaluate(`${C}.CCCastleApp.home()`);await sleep(350);
+   await capture(width+'x'+height+'-castle-home',`(()=>{const c=${C},f=document.getElementById('ccCastleFrame');return !f.hidden&&f.clientWidth===innerWidth&&c.document.querySelectorAll('.station').length===4&&!c.CCCastleApp.notebook.all().some(x=>x.sample)})()`);
+   await evaluate(`${C}.document.getElementById('homeMode').click()`);
+   await capture(width+'x'+height+'-castle-map',`${C}.document.getElementById('app').dataset.homeMode==='map'`);
+   for(const place of ['kyun','choi','fp','shiire']){
+    await evaluate(`${C}.document.querySelector('.station[data-place="${place}"]').click()`);await sleep(450);
+    await capture(width+'x'+height+'-castle-room-'+place,`(()=>{const c=${C},s=c.CCCastleApp.getState(),r=c.document.getElementById('copy').getBoundingClientRect();return s.place==='${place}'&&s.view==='work'&&r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight&&c.document.documentElement.scrollWidth<=innerWidth+1})()`);
+    await evaluate(`${C}.document.getElementById('characterTouch').click()`);
+    await capture(width+'x'+height+'-castle-touch-'+place,`${C}.CCCastleApp.getState().place==='${place}'`);
+    await evaluate(`${C}.document.getElementById('back').click()`);await sleep(80);
+   }
+   await evaluate(`${C}.document.getElementById('homeMode').click()`);
+  }
+  await evaluate(`${C}.CCCastleApp.open('kyun');Object.defineProperty(${C}.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__castleCopied=text}}});${C}.document.getElementById('copy').click()`);
+  await waitFor(`!!window.__castleCopied`);
+  await capture('castle-live-copy',`window.__castleCopied===${C}.CCCastleApp.getState().draft.body&&!${C}.document.getElementById('copySeal').hidden`);
+  await evaluate(`${C}.document.getElementById('pinDraft').click();${C}.document.getElementById('deskMenu').click();[...${C}.document.querySelectorAll('#drawerBody button')].find(b=>b.textContent==='2つの原稿を比較').click()`);
+  await capture('castle-comparison',`!${C}.document.getElementById('comparePane').hidden`);
+  await evaluate(`${C}.document.getElementById('closeCompare').click();${C}.document.getElementById('deskMenu').click();[...${C}.document.querySelectorAll('#drawerBody button')].find(b=>b.textContent==='仮置き皿に置く').click();${C}.document.getElementById('drawerClose').click();${C}.document.getElementById('deskMenu').click();[...${C}.document.querySelectorAll('#drawerBody button')].find(b=>b.textContent==='仮置き皿').click()`);
+  await capture('castle-fold-tray',`!${C}.document.getElementById('trayRail').hidden`);
+  await evaluate(`${C}.document.getElementById('closeTray').click();${C}.document.getElementById('deskMenu').click();[...${C}.document.querySelectorAll('#drawerBody button')].find(b=>b.textContent==='＋ 原稿を書く').click();(()=>{const f=${C}.document.querySelector('#drawerBody form');f.elements.title.value='本番統合・確認用の端末原稿';f.elements.body.value='保存する長い原稿。\\n'.repeat(80);f.requestSubmit()})()`);
+  await capture('castle-local-edit',`${C}.CCCastleApp.getState().draft.title==='本番統合・確認用の端末原稿'`);
+  await evaluate(`${C}.document.getElementById('paperScroll').scrollTop=150;window.__castlePosition=${C}.document.getElementById('paperScroll').scrollTop;window.__castleDraftId=${C}.CCCastleApp.getState().draft.id`);
+  await send('Emulation.setDeviceMetricsOverride',{width:360,height:800,deviceScaleFactor:1,mobile:true});await sleep(300);
+  await capture('castle-fold-preserves-reading',`${C}.CCCastleApp.getState().draft.id===window.__castleDraftId&&${C}.document.getElementById('paperScroll').scrollTop===window.__castlePosition`);
+  await evaluate(`${C}.document.querySelector('#productionTools button').click()`);await waitFor(`!!document.querySelector('.rpg-account-page[open]')`);
+  await capture('castle-native-posting',`document.getElementById('ccCastleFrame').hidden&&!!document.querySelector('.rpg-thread-record')`);
+  await evaluate(`document.querySelector('.rpg-account-back').click()`);await waitFor(`!document.getElementById('ccCastleFrame').hidden`);
+  await evaluate(`${C}.CCCastleApp.open('shiire');${C}.document.querySelector('#productionTools button').click()`);await waitFor(`!app.busy&&app.view==='sourcing'`);
+  await capture('castle-native-sourcing',`document.getElementById('ccCastleFrame').hidden&&!document.getElementById('ccCastleReturn').hidden`);
+  await evaluate(`document.getElementById('ccCastleReturn').click()`);await waitFor(`!document.getElementById('ccCastleFrame').hidden`);
+  await evaluate(`${C}.CCCastleApp.open('fp');${C}.document.querySelector('#productionTools button').click()`);await waitFor(`!app.busy&&app.view==='fp'`);
+  await capture('castle-native-fp',`document.getElementById('ccCastleFrame').hidden&&!!document.querySelector('[data-fp-open]')`);
+  await evaluate(`document.getElementById('ccCastleReturn').click()`);
+  await evaluate(`${C}.navigator.serviceWorker.ready`);
+  await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
+  await evaluate(`document.getElementById('ccCastleFrame').src='./castle/index.html?offline=1'`);await waitFor(`!!${C}.CCCastleApp`);
+  await capture('castle-offline',`${C}.CCCastleApp.notebook.all().some(x=>x.title==='本番統合・確認用の端末原稿')&&${C}.navigator.onLine===false`);
+  await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
   results.push({name:'network-isolation',checks:[{name:'no attempted external network request',pass:blocked.length===0,detail:blocked},{name:'no uncaught browser exceptions',pass:errors.length===0,detail:errors}]});
  }catch(error){await diagnose(error.message);throw error;}finally{fs.writeFileSync(path.join(output,'results.json'),JSON.stringify({results,blocked,errors,requests},null,2));ws?.close();proc.kill();server.close();}
  const failures=results.flatMap(r=>r.checks.filter(c=>!c.pass).map(c=>({route:r.name,...c})));
