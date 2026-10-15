@@ -157,9 +157,17 @@ test('an empty room fills automatically after an earlier empty partial result',(
  b.context.packet={drafts:[live()],complete:false,loading:true,message:'履歴は読込中'};b.read('production.receive(packet)');
  assert.equal(b.$('#draftBody').textContent,'本番の原文');assert.equal(b.$('#productionNotice').hidden,true);
 });
-test('switching to an empty room applies a staged arrival without requiring a notice click',async()=>{
+test('new records in other rooms apply automatically while the current text is unchanged',async()=>{
  const b=boot({seeds:{kyun:[],choi:[],fp:[],shiire:[]}});b.context.packet={drafts:[live()],complete:false,loading:true};b.read('production.receive(packet)');
  const sourcing={...live('すぐに読める候補'),id:'live-shiire-now',place:'shiire',title:'取得済み候補'};
- b.context.packet={drafts:[live(),sourcing],complete:false,loading:true};b.read('production.receive(packet)');assert.equal(b.$('#productionNotice').hidden,false);
+ b.context.packet={drafts:[live(),sourcing],complete:false,loading:true};b.read('production.receive(packet)');assert.equal(b.$('#productionNotice').hidden,true);
  await b.click('[data-go=shiire]');assert.equal(b.$('#draftBody').textContent,'すぐに読める候補');assert.equal(b.$('#productionNotice').hidden,true);
+});
+test('only changed active text is held; other rooms become readable and switching accepts updates',async()=>{
+ const b=boot({seeds:{kyun:[],choi:[],fp:[],shiire:[]}});b.context.packet={drafts:[live()],complete:true};b.read('production.receive(packet)');
+ const others=['choi','fp','shiire'].map(place=>({...live(place+'の本文'),id:'live-'+place,place}));
+ b.context.packet={drafts:[live('更新された本文'),...others],complete:true};b.read('production.receive(packet)');
+ assert.equal(b.$('#draftBody').textContent,'本番の原文');assert.equal(b.$('#productionNotice').hidden,false);assert.equal(b.read('notebook.sources().length'),4);
+ for(const place of ['choi','fp','shiire']){await b.click('[data-go='+place+']');assert.equal(b.$('#draftBody').textContent,place+'の本文');assert.equal(b.$('#copy').disabled,false);assert.equal(b.$('#productionNotice').hidden,true);}
+ await b.click('[data-go=kyun]');assert.equal(b.$('#draftBody').textContent,'更新された本文');
 });

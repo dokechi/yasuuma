@@ -24,6 +24,17 @@ test('host uses saved sourcing payload and FP page text without treating copying
  const s=rows.find(x=>x.place==='shiire');assert.match(s.body,/仕入価格：1200/);assert.match(s.body,/想定売価：3500/);assert.match(s.body,/保存概要/);assert.equal(s.link,'https://example.com/shop');
  assert.equal(rows.find(x=>x.place==='kyun').source.status,'投稿状態未確認');
 });
+test('unfinished FP editorial choices do not hide saved pages or mutate approval state',()=>{
+ const b=boot();b.window.__fpContentPipeline={buildDraftCopy(){throw Error('入口を選んでください')}};
+ const item={id:'unselected',payload:{content_type:'fp_post_candidate',post_title:'未選択の台本',draft_slides:[{page_contract:{display_copy:'保存された表示全文'},body:'旧本文'},{headline:'見出し',body:'二枚目の本文'},{page_contract:{reader_question:'保存された問い',answer:'保存された答え',composition:'保存構成'}}],entrance_options:[{label:'入口A',display_copy:'保存された入口案'}],selected_entrance:null,pre_image_review:{status:'pending'},caption:'保存キャプション'}};
+ const before=JSON.stringify(item),rows=b.window.CCCastle.drafts([item]);
+ assert.equal(rows.length,1);assert.match(rows[0].body,/保存された表示全文/);assert.match(rows[0].body,/二枚目の本文/);assert.match(rows[0].body,/保存された問い/);assert.match(rows[0].body,/表示本文は未確定/);assert.match(rows[0].body,/保存された入口案/);assert.doesNotMatch(rows[0].body,/旧本文/);assert.match(rows[0].source.status,/未確定/);assert.equal(JSON.stringify(item),before);
+ delete b.window.__fpContentPipeline;assert.equal(b.window.CCCastle.drafts([item]).length,1);
+});
+test('host opens a versioned HTML filename so a cached canonical shell cannot capture it',()=>{
+ const b=boot();assert.equal(b.document.getElementById('ccCastleFrame').getAttribute('src'),'./castle/entry-v22.html');
+ assert.equal(fs.readFileSync('entry-v22.html','utf8'),fs.readFileSync('index.html','utf8'));
+});
 test('host paginates all events, performs GET only, and marks interrupted reads incomplete',async()=>{
  const requests=[];let fail=false;
  const b=boot(async(url,options)=>{requests.push({url:new URL(url),options});if(fail&&url.searchParams.get('offset')==='1')throw Error('connection lost');return {ok:true,status:200,json:async()=>['sourcing','castle-signals'].includes(url.searchParams.get('resource'))?{ok:true,items:[],nextOffset:null}:{ok:true,events:[{id:'record'+(url.searchParams.get('offset')||'0'),taskId:'task',eventKey:'event'+(url.searchParams.get('offset')||'0'),title:'原稿',payload:{account:'キュン拾い',main_post:'保存原文'}}],nextOffset:url.searchParams.get('offset')==='0'?1:null}};});

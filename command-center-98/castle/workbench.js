@@ -1,5 +1,5 @@
-import {safeLink,dayInJapan} from './notebook.js?v=21';
-import {createWorld} from './world.js?v=21';
+import {safeLink,dayInJapan} from './notebook.js?v=22';
+import {createWorld} from './world.js?v=22';
 export function createWorkbench({app,places,notebook,reduced,getState,selectId,refresh,onStatus,onReposition,onMotionChange,onCopy,openPlace}){
  const $=s=>document.querySelector(s),drawer=$('#deskDrawer'),body=$('#drawerBody');let pending=null,compareId=null,manual=null,flight=null,scrollTimer=null,drawerReturn=null,waitingWorker=null,applyingUpdate=false,externalPending=false,offlineReady=false;
  const world=createWorld({app,notebook,reduced});

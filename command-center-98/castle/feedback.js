@@ -1,6 +1,6 @@
-import {createCharacterScenes} from './character-scenes.js?v=21';
-import {createCharacterRig} from './character-rig.js?v=21';
-import {createSkirtAction} from './skirt-action.js?v=21';
+import {createCharacterScenes} from './character-scenes.js?v=22';
+import {createCharacterRig} from './character-rig.js?v=22';
+import {createSkirtAction} from './skirt-action.js?v=22';
 // Shared presentation layer. Character-specific assets/copy live in CHARACTERS.
 export function createFeedback({app,stations,companion,reduced,onStatus}) {
  const soundButton=document.querySelector('#soundToggle');

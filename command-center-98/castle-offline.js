@@ -1,5 +1,5 @@
 /* Offline public application files only. No API responses, tokens or POST requests. */
-const CACHE='cc-production-shell-22',base=new URL('./',self.location.href),manifestURL=new URL('app-assets.json',base).href;
+const CACHE='cc-production-shell-23',base=new URL('./',self.location.href),manifestURL=new URL('app-assets.json',base).href;
 let paths=new Set();
 self.addEventListener('install',event=>event.waitUntil((async()=>{const response=await fetch(manifestURL,{cache:'reload'});if(!response.ok)throw Error('manifest unavailable');const manifest=await response.clone().json();const urls=['app-v130.html','app-loader.js',manifest.shell,...manifest.styles,...manifest.scripts].map(x=>new URL(x,base).href);const cache=await caches.open(CACHE);await cache.put(manifestURL,response);await Promise.all(urls.map(async url=>{const r=await fetch(url,{cache:'reload'});if(!r.ok||r.redirected)throw Error('shell incomplete');await cache.put(url,r);}));})()));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const name of await caches.keys())if(name.startsWith('cc-production-shell-')&&name!==CACHE)await caches.delete(name);await self.clients.claim();})()));
