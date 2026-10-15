@@ -184,7 +184,7 @@ test('malformed shell responses keep the loading document available for the erro
 test('the unchanged public entry URL boots through the external loader in a browser context', async () => {
   const wrapper = fs.readFileSync(path.join(__dirname, 'app-v130.html'), 'utf8');
   const scripts = [...wrapper.matchAll(/<script src="([^"]+)"><\/script>/g)].map(match => match[1]);
-  assert.deepEqual(scripts, ['./app-loader.js?v=20261013.9-detail']);
+  assert.deepEqual(scripts, ['./app-loader.js?v=20261015.20-startup']);
   assert.ok(!wrapper.includes('h.replace'));
   const document = documentStub();
   const window = {document, fetch: successfulFetch()};
@@ -218,4 +218,20 @@ test('startup failure retry is self-contained, touch-sized, and keyboard visible
  const wrapper=fs.readFileSync(path.join(__dirname,'app-v130.html'),'utf8');
  assert.match(wrapper,/html,body\{[^}]*background:#0b111b/);
  assert.doesNotMatch(wrapper,/#008080|#c0c0c0/);
+});
+
+
+test('startup waits for the castle surface without waiting for saved records', async()=>{
+ let resolve;const waiting=new Promise(r=>resolve=r),calls=[],timers=new Map();
+ const w={CCRpgHome:{},CCRpgWorkspaces:{},CCCastle:{whenReady:()=>waiting},setTimeout:fn=>{timers.set(1,fn);return 1},clearTimeout:id=>timers.delete(id)};
+ const document={defaultView:w};loader.completeStartup(document,(_d,ready)=>calls.push(ready));
+ assert.deepEqual(calls,[]);assert.equal(timers.size,1);
+ resolve();await Promise.resolve();assert.deepEqual(calls,[true]);assert.equal(timers.size,0);
+});
+test('classic and direct workspaces open immediately; a stalled castle offers retry', async()=>{
+ const calls=[];let timeout,resolve;
+ const w={CCRpgHome:{},CCRpgWorkspaces:{},CCCastle:{whenReady:()=>null},setTimeout:fn=>{timeout=fn;return 1},clearTimeout(){}};
+ const document={defaultView:w};loader.completeStartup(document,(_d,ready)=>calls.push(ready));assert.deepEqual(calls,[true]);
+ w.CCCastle.whenReady=()=>new Promise(r=>resolve=r);loader.completeStartup(document,(_d,ready)=>calls.push(ready));assert.deepEqual(calls,[true]);timeout();assert.deepEqual(calls,[true,false]);
+ resolve();await Promise.resolve();assert.deepEqual(calls,[true,false]);
 });
