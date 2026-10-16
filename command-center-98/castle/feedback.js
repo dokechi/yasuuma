@@ -1,4 +1,4 @@
-import {createCharacterScenes} from './character-scenes.js?v=27';
+import {createCharacterScenes} from './character-scenes.js?v=28';
 import {createCharacterRig} from './character-rig.js?v=24';
 import {createSkirtAction} from './skirt-action.js?v=24';
 // Shared presentation layer. Character-specific assets/copy live in CHARACTERS.
