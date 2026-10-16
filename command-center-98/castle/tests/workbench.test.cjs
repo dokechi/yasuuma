@@ -140,11 +140,21 @@ test('slow old-scene loads and failed images cannot replace another room or bloc
  b.$('#sceneSelect').value='tea';await b.emit(b.$('#sceneSelect'),'change');b.images.find(i=>i.src.includes('scene-choi-tea')).onerror();for(let i=0;i<10;i++)await Promise.resolve();
  assert.equal(b.$('#sceneImage').src,src);await b.click('#copy');assert.equal(b.copied.at(-1),b.read('activeDraft.body'));
 });
-test('automatic scenes follow welcome, work, copy and idle; an explicit scene remains selected',async()=>{
- const b=boot();await sceneLoaded(b,'kyun','welcome');b.advance(3100);await sceneLoaded(b,'kyun','work');assert.equal(b.$('#characterScenes').dataset.scene,'work');
- await b.click('#copy');await sceneLoaded(b,'kyun','special');assert.equal(b.$('#characterScenes').dataset.scene,'special');b.advance(3700);await sceneLoaded(b,'kyun','work');assert.equal(b.$('#characterScenes').dataset.scene,'work');
- b.advance(91000);await sceneLoaded(b,'kyun','rest');assert.equal(b.$('#characterScenes').dataset.scene,'rest');
- b.$('#sceneSelect').value='tea';await b.emit(b.$('#sceneSelect'),'change');await sceneLoaded(b,'kyun','tea');b.advance(100000);await b.click('#tab-1');assert.equal(b.$('#characterScenes').dataset.scene,'tea');
+test('automatic art cycles every ten seconds in full view without changing text; manual art stays fixed',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');const quote=b.$('#greetingText').textContent,body=b.$('#draftBody').textContent;
+ b.advance(9999);assert.equal(b.images.some(i=>i.src.includes('scene-kyun-work')),false);
+ await b.click('#sceneExpand');await b.emit(b.$('#paperScroll'),'scroll');
+ for(const id of ['work','rest','tea','special','welcome']){b.advance(id==='work'?1:10000);await sceneLoaded(b,'kyun',id);assert.equal(b.$('#characterScenes').dataset.scene,id);assert.equal(b.$('#greetingText').textContent,quote);}
+ b.$('#sceneFullSelect').value='tea';await b.emit(b.$('#sceneFullSelect'),'change');await sceneLoaded(b,'kyun','tea');assert.equal(b.$('#sceneSelect').value,'tea');b.advance(100000);await b.click('#tab-1');assert.equal(b.$('#characterScenes').dataset.scene,'tea');assert.notEqual(b.$('#draftBody').textContent,body);
+});
+test('hidden rotation pauses and resumes with a fresh ten second interval',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');b.advance(8000);b.document.hidden=true;await b.emit(b.document,'visibilitychange');b.advance(50000);assert.equal(b.$('#characterScenes').dataset.scene,'welcome');
+ b.document.hidden=false;await b.emit(b.document,'visibilitychange');b.advance(9999);assert.equal(b.$('#characterScenes').dataset.scene,'welcome');b.advance(1);await sceneLoaded(b,'kyun','work');assert.equal(b.$('#characterScenes').dataset.scene,'work');
+});
+test('a manual image interrupted by hiding finishes on resume without resuming rotation',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');b.$('#sceneSelect').value='tea';await b.emit(b.$('#sceneSelect'),'change');
+ b.document.hidden=true;await b.emit(b.document,'visibilitychange');await sceneLoaded(b,'kyun','tea');assert.equal(b.$('#characterScenes').dataset.scene,'welcome');
+ b.document.hidden=false;await b.emit(b.document,'visibilitychange');await sceneLoaded(b,'kyun','tea');b.advance(30000);assert.equal(b.$('#characterScenes').dataset.scene,'tea');
 });
 test('host pause clears scene timers; a failed copy never selects a reward',async()=>{
  const b=boot();await sceneLoaded(b,'kyun','welcome');b.navigator.clipboard.writeText=async()=>{throw Error('denied')};await b.click('#copy');assert.equal(b.images.some(i=>i.src.includes('scene-kyun-special')),false);
@@ -153,7 +163,7 @@ test('host pause clears scene timers; a failed copy never selects a reward',asyn
 
 test('touch replies survive delayed art, automatic scene changes and the old greeting timeout',async()=>{
  const b=boot();await b.click('#sceneTouch');const first=b.$('#greetingText').textContent;assert.ok(first.length>5);
- await sceneLoaded(b,'kyun','welcome');b.advance(3100);await sceneLoaded(b,'kyun','work');assert.equal(b.$('#greetingText').textContent,first);
+ await sceneLoaded(b,'kyun','welcome');b.advance(10000);await sceneLoaded(b,'kyun','work');assert.equal(b.$('#greetingText').textContent,first);
  b.$('#sceneSelect').value='tea';await b.emit(b.$('#sceneSelect'),'change');b.advance(2000);await b.click('#sceneTouch');const newer=b.$('#greetingText').textContent;await sceneLoaded(b,'kyun','tea');assert.equal(b.$('#greetingText').textContent,newer);
  b.advance(5000);assert.equal(b.$('#greetingText').textContent,newer);assert.equal(b.$('#sceneCaption').textContent,newer);
 });
@@ -165,19 +175,16 @@ test('full view replies change conversation and rest/work scenes without changin
  await b.emit(b.window,'castle:pause');const paused=b.$('#sceneCaption').textContent;await b.click('#sceneTalk');assert.equal(b.$('#sceneCaption').textContent,paused);
  await b.emit(b.window,'castle:resume');assert.equal(b.$('#greetingText').textContent,paused);
 });
-test('only a successful copy triggers its dialogue; an empty room remains usable',async()=>{
- const b=boot();await sceneLoaded(b,'kyun','welcome');const initial=b.$('#greetingText').textContent;b.navigator.clipboard.writeText=async()=>{throw Error('denied')};await b.click('#copy');assert.equal(b.$('#greetingText').textContent,initial);
- b.navigator.clipboard.writeText=async()=>{};await b.click('#copy');assert.match(b.$('#greetingText').dataset.reply,/^copied:/);
- const empty=boot({seeds:{kyun:[],choi:[],fp:[],shiire:[]}});await empty.click('#sceneContinue');assert.match(empty.$('#greetingText').dataset.reply,/^empty:/);assert.equal(empty.read('notebook.all().length'),0);
+test('copy and empty-room actions preserve the quotation and attribution',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');const initial=b.$('#greetingText').textContent,source=b.$('#quoteSource').href;
+ b.navigator.clipboard.writeText=async()=>{throw Error('denied')};await b.click('#copy');assert.equal(b.$('#greetingText').textContent,initial);
+ b.navigator.clipboard.writeText=async()=>{};await b.click('#copy');assert.equal(b.$('#greetingText').textContent,initial);assert.equal(b.$('#quoteSource').href,source);
+ const empty=boot({seeds:{kyun:[],choi:[],fp:[],shiire:[]}}),quote=empty.$('#greetingText').textContent;await empty.click('#sceneContinue');assert.equal(empty.$('#greetingText').textContent,quote);assert.equal(empty.read('notebook.all().length'),0);
 });
-test('the full-view talk button answers the current story rather than starting an unrelated line',async()=>{
- const b=boot();await sceneLoaded(b,'kyun','welcome');b.advance(3100);await sceneLoaded(b,'kyun','work');
- const body=b.$('#draftBody').textContent;await b.click('#sceneExpand');
- for(let i=0;i<4;i++){b.advance(2000);await b.click('#sceneFullTouch');}
- const first=b.$('#greetingText').dataset.reply;assert.match(first,/^story:/);
- await b.click('#sceneTalk');assert.equal(b.$('#greetingText').dataset.reply,'followup:'+first.split(':')[1]);
- assert.equal(b.$('#sceneCaption').textContent,b.read('PERSONA_LINES.kyun.stories['+first.split(':')[1]+'][1]'));
- assert.equal(b.$('#draftBody').textContent,body);
+test('quote, named character, context and source stay synchronized through cycling and room changes',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');const body=b.$('#draftBody').textContent;await b.click('#sceneExpand');
+ for(let i=0;i<7;i++){await b.click('#sceneTalk');const index=Number(b.$('#greetingText').dataset.reply.split(':')[1]);assert.equal(b.$('#sceneCaption').textContent,b.read('PERSONA_QUOTES.kyun.quotes['+index+'].text'));assert.equal(b.$('#sceneSource').href,b.$('#quoteSource').href);assert.match(b.$('#quoteSource').textContent,/一色いろは/);}
+ assert.equal(b.$('#draftBody').textContent,body);await b.click('[data-go=choi]');assert.match(b.$('#quoteSource').textContent,/新垣あやせ/);assert.match(b.$('#sceneMood').textContent,/あやせif/);assert.match(b.$('#sceneSource').href,/kadokawa/);assert.doesNotMatch(b.$('#greetingText').textContent,/詩羽/);
 });
 
 test('an empty room fills automatically after an earlier empty partial result',()=>{

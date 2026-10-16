@@ -1,15 +1,14 @@
 import {CHARACTER_SCENES,CHARACTER_LABELS,SCENE_IDS,sceneCamera,sceneHit} from './scene-manifest.js?v=24';
 import {createSceneMotion} from './scene-motion.js?v=24';
-import {createPersona} from './persona.js?v=25';
+import {createPersona} from './persona.js?v=26';
 export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onReact}){
  const $=s=>document.querySelector(s),panel=$('#characterScenes');
  if(!panel)return null;
  const image=$('#sceneImage'),frame=$('#sceneFrame'),select=$('#sceneSelect'),dialog=$('#sceneDialog'),full=$('#sceneFullImage'),fullFrame=$('#sceneFullFrame'),fullSelect=$('#sceneFullSelect'),open=$('#sceneExpand');
  const motions=[createSceneMotion({canvas:$('#sceneCanvas'),image,box:frame,reduced}),createSceneMotion({canvas:$('#sceneFullCanvas'),image:full,box:fullFrame,reduced,contain:true})];
- let key=null,current=null,epoch=0,timer=null,idle=null,paused=false,selection='auto',lastReply=null;
+ let key=null,current=null,epoch=0,timer=null,paused=false,selection='auto',lastReply=null;
  let storage;try{storage=globalThis.localStorage;}catch{}
  const persona=createPersona({storage});
- const hasDraft=()=>!$('#copy').disabled;
  function present(reply){
   if(!reply||!key)return false;lastReply=reply;
   $('#sceneCaption').textContent=reply.text;
@@ -17,6 +16,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   panel.dataset.feeling=dialog.dataset.feeling=reply.event;
   const greeting=$('#greetingText');greeting.dataset.reply=reply.id;
   if($('.greeting'))$('.greeting').dataset.feeling=reply.event;
+  for(const id of ['#quoteSource','#sceneSource']){const link=$(id);if(!link)continue;link.hidden=false;link.href=reply.url;link.title=reply.source;link.textContent=id==='#quoteSource'?`${reply.character} · ${reply.index}/${reply.total} · 出典 ↗`:`${reply.kind} · ${reply.source} ↗`;}
   onLine(reply.text);return true;
  }
  const choices=new Map(),images=new Map();
@@ -26,9 +26,9 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   if(images.has(src))return images.get(src);
   const promise=new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>{images.delete(src);reject(Error('art unavailable'));};img.src=src;});images.set(src,promise);return promise;
  }
- function clearTimers(){clearTimeout(timer);clearTimeout(idle);timer=idle=null;}
+ function clearTimers(){clearTimeout(timer);timer=null;}
  function syncSelect(){select.value=fullSelect.value=selection;}
- function refresh(){motions[0].visible(Boolean(key)&&!current?.static&&!paused&&!dialog.open&&app.dataset.focus!=='on');motions[1].visible(Boolean(key)&&!current?.static&&!paused&&dialog.open);}
+ function refresh(){motions[0].visible(Boolean(key)&&!current?.static&&!paused&&!dialog.open&&app.dataset.focus!=='on');motions[1].visible(Boolean(key)&&!current?.static&&!paused&&dialog.open);if(rotationAllowed())activity();else clearTimers();}
  async function show(id){
   if(!key||!CHARACTER_SCENES[key]?.[id])return false;
   const cfg=CHARACTER_SCENES[key][id],token=++epoch;panel.dataset.loading='true';
@@ -46,17 +46,21 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
    if(!reduced.matches&&!paused&&image.animate)image.animate([{opacity:.35},{opacity:1}],{duration:260});
    return true;
   }catch{
-   if(token!==epoch)return false;panel.dataset.loading='false';onStatus('場面を読み込めませんでした。オンラインで、もう一度場面を選んでください。');return false;
+   if(token!==epoch)return false;panel.dataset.loading='false';activity();onStatus('場面を読み込めませんでした。オンラインで、もう一度場面を選んでください。');return false;
   }
  }
- function later(id,delay){clearTimeout(timer);timer=setTimeout(()=>{timer=null;if(key&&!paused&&selection==='auto')show(id);},delay);}
+ function rotationAllowed(){return Boolean(key)&&!paused&&!document.hidden&&selection==='auto'&&app.dataset.focus!=='on';}
  function activity(){
-  clearTimeout(idle);if(!key||paused||selection!=='auto'||dialog.open)return;
-  idle=setTimeout(()=>{idle=null;if(key&&!paused&&selection==='auto'&&!dialog.open)show('rest');},90000);
+  if(!rotationAllowed()||!current||panel.dataset.loading==='true'||timer!==null)return;
+  timer=setTimeout(async()=>{
+   timer=null;if(!rotationAllowed())return;
+   const active=key,next=SCENE_IDS[(SCENE_IDS.indexOf(current.id)+1)%SCENE_IDS.length];
+   await show(next);if(key===active)activity();
+  },10000);
  }
  function choose(event){
   const value=event.currentTarget.value;if(value!=='auto'&&!SCENE_IDS.includes(value))return;
-  selection=value;choices.set(key,value);syncSelect();clearTimers();const scene=value==='auto'?'work':value;present(persona.event(key,scene,{hasDraft:hasDraft()}));show(scene);activity();
+  if(!key)return;selection=value;choices.set(key,value);syncSelect();clearTimers();show(value==='auto'?(current?.id||'welcome'):value);
  }
  select.addEventListener('change',choose);fullSelect.addEventListener('change',choose);
  function react(event,expanded=false){
@@ -64,21 +68,21 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   const box=expanded?fullFrame:frame,bounds=box.getBoundingClientRect();
   const camera=current?sceneCamera(current,bounds.width,bounds.height,expanded):null;
   const region=event?.detail&&camera?sceneHit(current,camera,event.clientX-bounds.left,event.clientY-bounds.top):'head';
-  const reply=persona.touch(key,{scene:current?.id||(selection==='auto'?'welcome':selection),region,hasDraft:hasDraft()});
+  const reply=persona.touch(key);
   if(!present(reply))return false;
   if(current&&!current.static)motions[expanded?1:0].react(region);onReact();activity();return true;
  }
  $('#sceneTouch').addEventListener('click',e=>react(e));$('#sceneFullTouch').addEventListener('click',e=>react(e,true));
- open.addEventListener('click',()=>{if(!key)return;clearTimers();dialog.showModal();refresh();});
+ open.addEventListener('click',()=>{if(!key)return;dialog.showModal();refresh();});
  $('#sceneClose').addEventListener('click',()=>dialog.close());
  function replyTo(type){
   if(!key||paused||document.hidden)return;
-  clearTimers();
   if(type==='rest'||type==='resume'){
+   clearTimers();
    selection=type==='rest'?'rest':'auto';choices.set(key,selection);syncSelect();
    show(type==='rest'?'rest':'work');
   }
-  present(persona.event(key,type,{hasDraft:hasDraft(),scene:current?.id}));onReact();activity();
+  present(persona.event(key,type));onReact();activity();
  }
  $('#sceneTalk')?.addEventListener('click',()=>replyTo('talk'));
  $('#sceneRest')?.addEventListener('click',()=>replyTo('rest'));
@@ -91,23 +95,23 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   selection=choices.get(key)||'auto';syncSelect();
   const target=selection==='auto'?'welcome':selection;
   present(persona.enter(key));
-  show(target).then(ok=>{if(ok&&key===next&&selection==='auto'){later('work',3000);activity();}});
+  show(target);
  }
  function leave(){clearTimers();epoch++;persona.leave(key);key=null;current=null;lastReply=null;motions.forEach(m=>m.stop());panel.hidden=true;app.dataset.sceneCharacter='';placeUpdate(false);if(dialog.open)dialog.close();}
- function copied(){if(!key)return false;clearTimers();present(persona.event(key,'copied'));if(selection==='auto'){show('special');later('work',3600);}else if(!current?.static)motions[0].react('hand');activity();return true;}
- function selected(){if(!key)return;persona.leave(key);if(selection==='auto'){clearTimeout(timer);show('work');}activity();}
+ function copied(){if(!key)return false;if(selection==='auto'){clearTimers();show('special');}else if(!current?.static)motions[0].react('hand');onStatus('コピーしました');return true;}
+ function selected(){if(!key)return;activity();}
  function complete(place){
   const cfg=CHARACTER_SCENES[place]?.tea,station=stations.find(s=>s.dataset.place===place);if(!cfg||!station)return;
   const img=station.querySelector('.sprite > img');load(cfg.src).then(()=>{img.src=cfg.src;img.style.objectPosition=`${cfg.focus[0]*100}% ${cfg.focus[1]*100}%`;}).catch(()=>{});
-  return persona.event(place,'completed')?.text;
+  return '作業を完了しました';
  }
  function init(){
   for(const station of stations){const cfg=CHARACTER_SCENES[station.dataset.place]?.welcome;if(!cfg)continue;
    station.classList.add('has-scenes');const img=station.querySelector('.sprite > img');img.src=cfg.src;img.style.objectPosition=`${cfg.focus[0]*100}% ${cfg.focus[1]*100}%`;
   }
  }
- function pause(){paused=true;clearTimers();motions.forEach(m=>m.stop());}
- function resume(){paused=false;refresh();if(key&&lastReply)onLine(lastReply.text);activity();}
+ function pause(){paused=true;epoch++;panel.dataset.loading='false';clearTimers();motions.forEach(m=>m.stop());}
+ function resume(){paused=false;if(key&&(!current||(selection!=='auto'&&current.id!==selection)))show(selection==='auto'?'welcome':selection);refresh();if(key&&lastReply)onLine(lastReply.text);}
  document.addEventListener('visibilitychange',()=>document.hidden?pause():resume());
  window.addEventListener('castle:pause',pause);window.addEventListener('castle:resume',resume);window.addEventListener('pagehide',pause);window.addEventListener('pageshow',resume);
  reduced.addEventListener?.('change',refresh);
