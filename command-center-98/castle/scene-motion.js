@@ -1,4 +1,4 @@
-import {sceneCamera} from './scene-manifest.js?v=22';
+import {sceneCamera} from './scene-manifest.js?v=23';
 // One bounded mesh per view. The background outside calibrated ellipses stays
 // fixed. Static <img> is always underneath for low-power / WebGL fallbacks.
 export function createSceneMotion({canvas,image,box,reduced,contain=false}){

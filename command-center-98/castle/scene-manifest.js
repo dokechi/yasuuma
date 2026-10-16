@@ -25,7 +25,18 @@ export const CHARACTER_SCENES={
   special:scene('fp','special','特別',[1536,1024],[.44,.22],{head:[.44,.19,.12,.16],hair:[.23,.52,.08,.25],hand:[.74,.76,.045,.07],cloth:[.36,.85,.12,.09]},'ここ、見ていただけますか。あなたの言葉で伝えてみましょう。')
  }
 };
+// Latest user PNGs remain byte-for-byte intact; no inherited deformation zones.
+const artwork=(id,label,file,size,line)=>({id,label,src:'assets/user-'+file+'.png',size,focus:[.5,size[1]>size[0]?0:.15],zones:{},static:true,line});
+CHARACTER_SCENES.fp.tea=artwork('tea','お茶','19079',[1024,1536],'温かいお茶をどうぞ。ひと息ついてから、続きを読みましょう。');
+CHARACTER_SCENES.shiire={
+ welcome:artwork('welcome','お迎え','19080',[1536,1024],'いらっしゃい。今日の確認も一緒に進めよう。'),
+ work:artwork('work','仕事','19017',[1536,1024],'ひとつずつ、確かめていこう。'),
+ rest:artwork('rest','休憩','19016',[1536,1024],'ひと息つこう。続きはここに置いておくね。'),
+ tea:artwork('tea','お茶','19020',[1024,1536],'おつかれさま。ゆっくり休んでいってね。'),
+ special:artwork('special','特別','19018',[1024,1536],'今日も一歩進んだね。おつかれさま。')
+};
 export const CHARACTER_LABELS={kyun:'キュン拾い',choi:'ちょい上等',fp:'FP・TikTok'};
+CHARACTER_LABELS.shiire='仕入れ';
 export const SCENE_IDS=['welcome','work','rest','tea','special'];
 export function sceneCamera(scene,width,height,contain=false){
  const [iw,ih]=scene.size,scale=(contain?Math.min:Math.max)(width/iw,height/ih);

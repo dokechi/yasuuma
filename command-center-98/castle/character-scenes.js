@@ -1,5 +1,5 @@
-import {CHARACTER_SCENES,CHARACTER_LABELS,SCENE_IDS,sceneCamera,sceneHit} from './scene-manifest.js?v=22';
-import {createSceneMotion} from './scene-motion.js?v=22';
+import {CHARACTER_SCENES,CHARACTER_LABELS,SCENE_IDS,sceneCamera,sceneHit} from './scene-manifest.js?v=23';
+import {createSceneMotion} from './scene-motion.js?v=23';
 export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onReact}){
  const $=s=>document.querySelector(s),panel=$('#characterScenes');
  if(!panel)return null;
@@ -15,7 +15,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
  }
  function clearTimers(){clearTimeout(timer);clearTimeout(idle);timer=idle=null;}
  function syncSelect(){select.value=fullSelect.value=selection;}
- function refresh(){motions[0].visible(Boolean(key)&&!paused&&!dialog.open&&app.dataset.focus!=='on');motions[1].visible(Boolean(key)&&!paused&&dialog.open);}
+ function refresh(){motions[0].visible(Boolean(key)&&!current?.static&&!paused&&!dialog.open&&app.dataset.focus!=='on');motions[1].visible(Boolean(key)&&!current?.static&&!paused&&dialog.open);}
  async function show(id,{speak=false}={}){
   if(!key||!CHARACTER_SCENES[key]?.[id])return false;
   const cfg=CHARACTER_SCENES[key][id],token=++epoch;panel.dataset.loading='true';
@@ -24,10 +24,11 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
    motions.forEach(m=>m.stop());current=cfg;
    image.src=full.src=cfg.src;image.alt=full.alt=`${CHARACTER_LABELS[key]}・${cfg.label}`;
    image.style.objectPosition=`${cfg.focus[0]*100}% ${cfg.focus[1]*100}%`;
+   panel.dataset.static=dialog.dataset.static=String(Boolean(cfg.static));
    panel.dataset.scene=dialog.dataset.scene=id;panel.dataset.loading='false';panel.dataset.ready='true';
    $('#sceneTitle').textContent=`${CHARACTER_LABELS[key]} — ${cfg.label}`;$('#sceneCaption').textContent=cfg.line;
    $('#sceneCurrent').textContent=cfg.label;
-   motions.forEach(m=>m.set(cfg));refresh();
+   if(!cfg.static)motions.forEach(m=>m.set(cfg));refresh();
    if(speak)onLine(cfg.line);
    if(!reduced.matches&&!paused&&image.animate)image.animate([{opacity:.35},{opacity:1}],{duration:260});
    return true;
@@ -49,7 +50,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   if(!key||!current||paused)return false;
   const box=expanded?fullFrame:frame,bounds=box.getBoundingClientRect(),camera=sceneCamera(current,bounds.width,bounds.height,expanded);
   const region=event?.detail?sceneHit(current,camera,event.clientX-bounds.left,event.clientY-bounds.top):'head';
-  motions[expanded?1:0].react(region);onReact();
+  if(!current.static)motions[expanded?1:0].react(region);onReact();
   const lines={head:current.line,hair:{kyun:'ふふ、風で髪が揺れちゃった。',choi:'あ、気づいた？ 今日の髪飾り。',fp:'あら、髪がほどけてしまいましたね。'}[key],hand:current.id==='work'?'ここ、もう少し一緒に見てくれる？':'うん。そばにいるよ。',cloth:'少し姿勢を変えようかな。'};
   onLine(lines[region]);$('#sceneCaption').textContent=lines[region];activity();return true;
  }
@@ -66,7 +67,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   show(target,{speak:true}).then(ok=>{if(ok&&key===next&&selection==='auto'){later('work',3000);activity();}});
  }
  function leave(){clearTimers();epoch++;key=null;current=null;motions.forEach(m=>m.stop());panel.hidden=true;app.dataset.sceneCharacter='';placeUpdate(false);if(dialog.open)dialog.close();}
- function copied(){if(!key)return;clearTimers();if(selection==='auto'){show('special');later('work',3600);}else motions[0].react('hand');activity();}
+ function copied(){if(!key)return;clearTimers();if(selection==='auto'){show('special');later('work',3600);}else if(!current?.static)motions[0].react('hand');activity();}
  function selected(){if(!key)return;if(selection==='auto'){clearTimeout(timer);show('work');}activity();}
  function complete(place){
   const cfg=CHARACTER_SCENES[place]?.tea,station=stations.find(s=>s.dataset.place===place);if(!cfg||!station)return;
