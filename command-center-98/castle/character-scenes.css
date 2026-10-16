@@ -13,12 +13,12 @@
 .scene-controls select,.scene-controls button,.scene-dialog select{font:inherit;font-size:10px;min-height:44px;border:1px solid #e5c58a55;background:#151e2eeb;color:#fff0d6;border-radius:4px;padding:0 9px;cursor:pointer}
 .scene-controls select{max-width:105px}.scene-controls button{min-width:60px}
 #sceneCurrent{font-size:9px;color:#eee2cd;text-shadow:0 1px 4px #000}
-.app:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp]) .companion{visibility:hidden!important}
-.app:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp]) .dock{visibility:hidden;pointer-events:none}
-.app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp]) .greeting{left:16px;top:10px;max-width:42%;pointer-events:none;z-index:4}
-.app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp]) .greeting p{font-size:12px;line-height:1.65;color:#fff1db;text-shadow:0 1px 5px #000}
-.app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp]) .greeting .eyebrow{font-size:8px;margin-bottom:3px}
-.app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp]) .greeting-rule{display:none}
+.app:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp],[data-scene-character=shiire]) .companion{visibility:hidden!important}
+.app:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp],[data-scene-character=shiire]) .dock{visibility:hidden;pointer-events:none}
+.app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp],[data-scene-character=shiire]) .greeting{left:16px;top:10px;max-width:42%;pointer-events:none;z-index:4}
+.app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp],[data-scene-character=shiire]) .greeting p{font-size:12px;line-height:1.65;color:#fff1db;text-shadow:0 1px 5px #000}
+.app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp],[data-scene-character=shiire]) .greeting .eyebrow{font-size:8px;margin-bottom:3px}
+.app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp],[data-scene-character=shiire]) .greeting-rule{display:none}
 .station.has-scenes .sprite{animation:none}.station.has-scenes .blink-window{display:none}
 .station.has-scenes .portrait img{filter:none}
 .scene-dialog{width:min(1180px,calc(100vw - 20px));max-width:none;height:min(960px,calc(100dvh - 20px));max-height:calc(100dvh - 20px);padding:0;overflow:hidden;background:#0c101a;border-color:#c8a87888;box-shadow:0 24px 90px #000c}
@@ -36,14 +36,14 @@
  .character-scenes{inset:12px 6px 12px 10px;border:1px solid #e5c58a33;border-radius:6px;overflow:hidden}
  .scene-frame{inset:112px 0 76px}
  .scene-frame:after{background:linear-gradient(#10152244,transparent 14%,transparent 85%,#10152299)}
- .app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp]) .greeting{top:30px;left:24px;max-width:calc(100% - 48px)}
- .app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp]) .greeting p{font-size:16px}
+ .app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp],[data-scene-character=shiire]) .greeting{top:30px;left:24px;max-width:calc(100% - 48px)}
+ .app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp],[data-scene-character=shiire]) .greeting p{font-size:16px}
  .scene-controls{left:10px;bottom:12px;flex-wrap:wrap;max-width:calc(100% - 20px)}
  #sceneCurrent{width:100%;padding-left:4px}
 }
 @media(max-height:740px) and (max-width:679px){
- .app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp]) .greeting p{font-size:11px;line-height:1.5}
- .app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp]) .greeting .eyebrow{display:none}
+ .app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp],[data-scene-character=shiire]) .greeting p{font-size:11px;line-height:1.5}
+ .app[data-view=work]:is([data-scene-character=kyun],[data-scene-character=choi],[data-scene-character=fp],[data-scene-character=shiire]) .greeting .eyebrow{display:none}
 }
 @media(max-width:400px){.scene-dialog header{padding:6px 9px;gap:8px}.scene-dialog h2{font-size:12px}.scene-dialog footer{gap:10px;padding:8px 10px}.scene-dialog footer p{font-size:11px}}
 .app[data-focus=on] .character-scenes{display:none}
@@ -51,3 +51,5 @@
 
 /* Pending updates stay readable without covering the character's face. */
 .fresh-notice.scene-update{position:static;flex-shrink:0;max-width:none;width:100%;min-height:32px;padding:6px 10px;border-radius:0;font-size:10px;text-align:left}
+
+[data-static=true] .scene-canvas{display:none!important}

@@ -113,18 +113,19 @@ test('imported snapshots cannot claim to be live server records or overwrite a s
  const b=boot({seeds:{kyun:[],choi:[],fp:[],shiire:[]}});b.context.row=live();b.read('notebook.replaceSources([row],{complete:true})');b.context.incoming=JSON.stringify({drafts:[live('外部ファイル本文')]});b.read('notebook.applyImport(notebook.parseImport(incoming))');assert.equal(b.read('notebook.get("live-kyun-test-0").body'),'本番の原文');assert.equal(b.read('notebook.all().filter(x=>x.source).length'),1);
 });
 
+function sceneSource(key,id){return key==='shiire'?'assets/user-'+({welcome:19080,work:19017,rest:19016,tea:19020,special:19018})[id]+'.png':key==='fp'&&id==='tea'?'assets/user-19079.png':`assets/scene-${key}-${id}-v1.jpg`;}
 async function sceneLoaded(b,key,id){
- const src=`assets/scene-${key}-${id}-v1.jpg`,pending=b.images.find(i=>i.src===src);
+ const src=sceneSource(key,id),pending=b.images.find(i=>i.src===src);
  assert.ok(pending,`requested ${src}`);pending.onload();for(let i=0;i<12;i++)await Promise.resolve();
 }
-test('all fifteen scene choices preserve manuscript, scroll and saved records; full view closes to work',async()=>{
+test('all twenty scene choices preserve manuscript, scroll and saved records; full view closes to work',async()=>{
  const b=boot();await sceneLoaded(b,'kyun','welcome');
- for(const key of ['kyun','choi','fp']){
+ for(const key of ['kyun','choi','fp','shiire']){
   if(key!=='kyun'){await b.click(`[data-go=${key}]`);await sceneLoaded(b,key,'welcome');}
   b.$('#paperScroll').scrollTop=94;const id=b.read('activeDraft.id'),before=JSON.stringify([...b.store.map]);
   for(const scene of ['welcome','work','rest','tea','special']){
    b.$('#sceneSelect').value=scene;await b.emit(b.$('#sceneSelect'),'change');await sceneLoaded(b,key,scene);
-   assert.equal(b.$('#characterScenes').dataset.scene,scene);assert.equal(b.$('#app').dataset.sceneCharacter,key);if(key==='fp')assert.match(b.$('#sceneImage').alt,/FP・TikTok/);assert.ok(b.$('#sceneImage').src.endsWith(`${key}-${scene}-v1.jpg`));
+   assert.equal(b.$('#characterScenes').dataset.scene,scene);assert.equal(b.$('#app').dataset.sceneCharacter,key);if(key==='fp')assert.match(b.$('#sceneImage').alt,/FP・TikTok/);assert.equal(b.$('#sceneImage').src,sceneSource(key,scene));
    assert.equal(b.read('activeDraft.id'),id);assert.equal(b.$('#paperScroll').scrollTop,94);
   }
   assert.equal(JSON.stringify([...b.store.map]),before);
