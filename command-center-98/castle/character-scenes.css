@@ -53,3 +53,33 @@
 .fresh-notice.scene-update{position:static;flex-shrink:0;max-width:none;width:100%;min-height:32px;padding:6px 10px;border-radius:0;font-size:10px;text-align:left}
 
 [data-static=true] .scene-canvas{display:none!important}
+
+/* A reply remains readable until the next interaction, including in full view. */
+.scene-conversation{flex:1;min-width:0}
+.scene-mood{display:block;font-size:10px;letter-spacing:.08em;color:#d7bd8c;margin-bottom:4px}
+.scene-dialog footer{align-items:flex-start;max-height:42%;overflow-y:auto;overscroll-behavior:contain}
+.scene-dialog footer p{font-size:15px;line-height:1.8;overflow-wrap:anywhere;min-height:3.6em}
+.scene-replies{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+.scene-replies button{min-height:44px;padding:8px 12px;margin:0;border:1px solid #c8a87866;border-radius:5px;background:#222b3b;color:#f6e8cf;font:inherit;font-size:12px;cursor:pointer}
+.scene-replies button:hover{background:#354052;border-color:#e2c38c}
+.scene-replies button:focus-visible{outline:2px solid #f6d499;outline-offset:2px}
+.greeting[data-feeling]{border-left:2px solid #c8a87855;padding-left:10px}
+.greeting[data-feeling=special],.greeting[data-feeling=followup]{border-left-color:#e5b7b0}
+.app[data-view=work][data-scene-character] .greeting p{overflow-wrap:anywhere}
+@media(min-width:680px) and (min-aspect-ratio:4/5) and (min-height:521px){
+ .app[data-view=work][data-scene-character] .greeting{top:28px;left:22px;max-width:calc(100% - 44px)}
+ .app[data-view=work][data-scene-character] .greeting p{font-size:15px;line-height:1.7;max-height:130px;overflow-y:auto;pointer-events:auto}
+ .scene-frame{top:172px}
+}
+@media(max-width:679px),(max-aspect-ratio:4/5),(max-height:520px){
+ .app[data-view=work][data-scene-character] .companion-stage{height:187px}
+ .app[data-view=work][data-scene-character]:not([data-focus=on]):not([data-compare=on]):not([data-tray=on]) .desk{top:181px}
+ .app[data-view=work][data-scene-character] .greeting{top:9px;left:12px;max-width:54%;padding-left:8px}
+ .app[data-view=work][data-scene-character] .greeting p{font-size:12px;line-height:1.65;max-height:122px;overflow-y:auto;pointer-events:auto}
+ .scene-frame{left:47%}
+ .scene-dialog footer{gap:8px;padding:10px;flex-wrap:wrap;max-height:48%}
+ .scene-dialog footer p{font-size:14px;min-height:0}
+ .scene-dialog footer>select{flex:0 0 75px;max-width:75px}
+ .scene-conversation{flex:1 1 220px}
+}
+@media(prefers-reduced-motion:reduce){.greeting[data-feeling]{transition:none}}

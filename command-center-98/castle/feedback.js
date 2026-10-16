@@ -1,6 +1,6 @@
-import {createCharacterScenes} from './character-scenes.js?v=23';
-import {createCharacterRig} from './character-rig.js?v=23';
-import {createSkirtAction} from './skirt-action.js?v=23';
+import {createCharacterScenes} from './character-scenes.js?v=24';
+import {createCharacterRig} from './character-rig.js?v=24';
+import {createSkirtAction} from './skirt-action.js?v=24';
 // Shared presentation layer. Character-specific assets/copy live in CHARACTERS.
 export function createFeedback({app,stations,companion,reduced,onStatus}) {
  const soundButton=document.querySelector('#soundToggle');
@@ -19,7 +19,7 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
  const touchCounts=new Map();
  const animations=new Map(),activeVoices=new Set(),ready=new Set();
  const nodes=new Map();
- const scenes=createCharacterScenes({app,stations,reduced,onLine:line=>{if(active)say(active,line);},onStatus,onReact:()=>sound('select')});
+ const scenes=createCharacterScenes({app,stations,reduced,onLine:line=>{if(active)say(active,line,{persistent:true});},onStatus,onReact:()=>sound('select')});
  const storageKey='castle-town.sound.v1';
  try{soundEnabled=localStorage.getItem(storageKey)==='on';}catch{}
  function updateSound(){soundButton.setAttribute('aria-pressed',String(soundEnabled));soundButton.setAttribute('aria-label',soundEnabled?'効果音をオフにする':'効果音をオンにする');soundButton.title=soundEnabled?'効果音オン':'効果音オフ';soundButton.querySelector('span').textContent=soundEnabled?'音 ON':'音 OFF';}
@@ -173,11 +173,11 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
   if(overlay.complete&&overlay.naturalWidth){overlay.dataset.ready='true';ready.add(key);}
  }
  function resetSpeech(){clearTimeout(speechTimer);if(active)greeting.textContent=characters[active].greeting;}
- function say(key,message){
+ function say(key,message,{persistent=false}={}){
   resetSpeech();if(active!==key)return;
   greeting.textContent=message;
   pulse(document.querySelector('.greeting'),[{opacity:.5,transform:'translateY(3px)'},{opacity:1,transform:'translateY(0)'}],240);
-  speechTimer=setTimeout(()=>{if(active===key)resetSpeech();},2400);
+  if(!persistent)speechTimer=setTimeout(()=>{if(active===key)resetSpeech();},2400);
  }
  function stopReaction(){
   clearTimeout(reactionTimer);reactionTimer=null;clearExpression();rig.stop();skirtAction.stop();
@@ -240,16 +240,16 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
  function leave({audible=true}={}){scenes?.leave();stopReaction();resetSpeech();active=null;rig.prepare(null);skirtAction.prepare(null);scheduleBlink();if(audible)sound('back');}
  function copied(key){
   if(active!==key)return;
-  scenes?.copied();say(key,characters[key].copied);outline(stage,characters[key].color);sound('copy');
+  if(!scenes?.copied())say(key,characters[key].copied);outline(stage,characters[key].color);sound('copy');
   pulse(document.querySelector('#copy'),[{boxShadow:'0 0 0 transparent'},{boxShadow:`0 0 20px ${characters[key].color}`,offset:.25},{boxShadow:'0 0 0 transparent'}],500);
  }
  function complete(key){
-  scenes?.complete(key);
+  const line=scenes?.complete(key);
   const station=stations.find(node=>node.dataset.place===key),cfg=characters[key];
   pulse(station,[{boxShadow:'0 0 0 transparent'},{boxShadow:`0 0 24px ${cfg.color}99, inset 0 0 18px ${cfg.color}33`,borderColor:cfg.color,offset:.32},{boxShadow:'0 7px 25px #0003'}],850);
   pulse(station.querySelector('.station-light'),[{opacity:.13},{opacity:.75,offset:.28},{opacity:.13}],850);
   pulse(station.querySelector('.reward-stars'),[{opacity:0,transform:'translateY(8px) scale(.7)'},{opacity:1,offset:.3},{opacity:0,transform:'translateY(-28px) scale(1.15)'}],850);
-  sound('complete');onStatus(cfg.completed);
+  sound('complete');onStatus(line||cfg.completed);
  }
  soundButton.addEventListener('click',()=>{
   soundEnabled=!soundEnabled;stopSound();updateSound();
