@@ -115,7 +115,7 @@ test('imported snapshots cannot claim to be live server records or overwrite a s
 
 function sceneSource(key,id){return key==='shiire'?'assets/user-'+({welcome:19080,work:19017,rest:19016,tea:19020,special:19018})[id]+'.png':key==='fp'&&id==='tea'?'assets/user-19079.png':`assets/scene-${key}-${id}-v1.jpg`;}
 async function sceneLoaded(b,key,id){
- const src=sceneSource(key,id),pending=b.images.find(i=>i.src===src);
+ const src=sceneSource(key,id),pending=b.images.findLast(i=>i.src===src);
  assert.ok(pending,`requested ${src}`);pending.onload();for(let i=0;i<12;i++)await Promise.resolve();
 }
 test('all twenty scene choices preserve manuscript, scroll and saved records; full view closes to work',async()=>{
@@ -146,6 +146,23 @@ test('automatic art cycles every ten seconds in full view without changing text;
  await b.click('#sceneExpand');await b.emit(b.$('#paperScroll'),'scroll');
  for(const id of ['work','rest','tea','special','welcome']){b.advance(id==='work'?1:10000);await sceneLoaded(b,'kyun',id);assert.equal(b.$('#characterScenes').dataset.scene,id);assert.equal(b.$('#greetingText').textContent,quote);}
  b.$('#sceneFullSelect').value='tea';await b.emit(b.$('#sceneFullSelect'),'change');await sceneLoaded(b,'kyun','tea');assert.equal(b.$('#sceneSelect').value,'tea');b.advance(100000);await b.click('#tab-1');assert.equal(b.$('#characterScenes').dataset.scene,'tea');assert.notEqual(b.$('#draftBody').textContent,body);
+});
+test('failed automatic art advances to other scenes and retries the failed image on the next round',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');const quote=b.$('#greetingText').textContent,body=b.$('#draftBody').textContent;
+ b.advance(10000);b.images.find(i=>i.src===sceneSource('kyun','work')).onerror();for(let i=0;i<12;i++)await Promise.resolve();
+ b.advance(9999);assert.equal(b.images.some(i=>i.src===sceneSource('kyun','rest')),false);b.advance(1);await sceneLoaded(b,'kyun','rest');
+ for(const id of ['tea','special','welcome','work']){b.advance(10000);await sceneLoaded(b,'kyun',id);assert.equal(b.$('#characterScenes').dataset.scene,id);}
+ assert.equal(b.images.filter(i=>i.src===sceneSource('kyun','work')).length,2);assert.equal(b.$('#greetingText').textContent,quote);assert.equal(b.$('#draftBody').textContent,body);
+});
+test('a failed first image recovers automatically without a room change',async()=>{
+ const b=boot(),quote=b.$('#greetingText').textContent;b.images.find(i=>i.src===sceneSource('kyun','welcome')).onerror();for(let i=0;i<12;i++)await Promise.resolve();
+ b.advance(10000);await sceneLoaded(b,'kyun','work');assert.equal(b.$('#characterScenes').dataset.ready,'true');assert.equal(b.$('#greetingText').textContent,quote);
+});
+test('a stalled image times out and a late success cannot replace the following image',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');const body=b.$('#draftBody').textContent;
+ b.advance(10000);const stalled=b.images.find(i=>i.src===sceneSource('kyun','work'));
+ b.advance(11999);assert.equal(b.$('#characterScenes').dataset.loading,'true');b.advance(1);for(let i=0;i<12;i++)await Promise.resolve();assert.equal(b.$('#characterScenes').dataset.loading,'false');
+ b.advance(10000);await sceneLoaded(b,'kyun','rest');stalled.onload();for(let i=0;i<12;i++)await Promise.resolve();assert.equal(b.$('#characterScenes').dataset.scene,'rest');assert.equal(b.$('#draftBody').textContent,body);await b.click('#copy');assert.equal(b.copied.at(-1),body);
 });
 test('hidden rotation pauses and resumes with a fresh ten second interval',async()=>{
  const b=boot();await sceneLoaded(b,'kyun','welcome');b.advance(8000);b.document.hidden=true;await b.emit(b.document,'visibilitychange');b.advance(50000);assert.equal(b.$('#characterScenes').dataset.scene,'welcome');

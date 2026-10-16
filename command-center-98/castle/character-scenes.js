@@ -6,7 +6,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
  if(!panel)return null;
  const image=$('#sceneImage'),frame=$('#sceneFrame'),select=$('#sceneSelect'),dialog=$('#sceneDialog'),full=$('#sceneFullImage'),fullFrame=$('#sceneFullFrame'),fullSelect=$('#sceneFullSelect'),open=$('#sceneExpand');
  const motions=[createSceneMotion({canvas:$('#sceneCanvas'),image,box:frame,reduced}),createSceneMotion({canvas:$('#sceneFullCanvas'),image:full,box:fullFrame,reduced,contain:true})];
- let key=null,current=null,epoch=0,timer=null,paused=false,selection='auto',lastReply=null;
+ let key=null,current=null,epoch=0,timer=null,paused=false,selection='auto',lastReply=null,cursor='welcome',failureNotice=false;
  let storage;try{storage=globalThis.localStorage;}catch{}
  const persona=createPersona({storage});
  function present(reply){
@@ -24,17 +24,22 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
  function placeUpdate(inDesk){update.classList.toggle('scene-update',inDesk);if(inDesk)document.querySelector('.desk').insertBefore(update,document.querySelector('.paper'));else updateParent.append(update);}
  function load(src){
   if(images.has(src))return images.get(src);
-  const promise=new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>{images.delete(src);reject(Error('art unavailable'));};img.src=src;});images.set(src,promise);return promise;
+  const promise=new Promise((resolve,reject)=>{
+   const img=new Image();let settled=false;
+   const finish=error=>{if(settled)return;settled=true;clearTimeout(deadline);if(error){images.delete(src);reject(error);}else resolve(img);};
+   const deadline=setTimeout(()=>finish(Error('art timed out')),12000);
+   img.onload=()=>finish();img.onerror=()=>finish(Error('art unavailable'));img.src=src;
+  });images.set(src,promise);return promise;
  }
  function clearTimers(){clearTimeout(timer);timer=null;}
  function syncSelect(){select.value=fullSelect.value=selection;}
  function refresh(){motions[0].visible(Boolean(key)&&!current?.static&&!paused&&!dialog.open&&app.dataset.focus!=='on');motions[1].visible(Boolean(key)&&!current?.static&&!paused&&dialog.open);if(rotationAllowed())activity();else clearTimers();}
  async function show(id){
   if(!key||!CHARACTER_SCENES[key]?.[id])return false;
-  const cfg=CHARACTER_SCENES[key][id],token=++epoch;panel.dataset.loading='true';
+  const cfg=CHARACTER_SCENES[key][id],token=++epoch;cursor=id;panel.dataset.loading='true';
   try{
    await load(cfg.src);if(token!==epoch||!key)return false;
-   motions.forEach(m=>m.stop());current=cfg;
+   motions.forEach(m=>m.stop());current=cfg;failureNotice=false;
    image.src=full.src=cfg.src;image.alt=full.alt=`${CHARACTER_LABELS[key]}・${cfg.label}`;
    image.style.objectPosition=`${cfg.focus[0]*100}% ${cfg.focus[1]*100}%`;
    panel.dataset.static=dialog.dataset.static=String(Boolean(cfg.static));
@@ -46,21 +51,22 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
    if(!reduced.matches&&!paused&&image.animate)image.animate([{opacity:.35},{opacity:1}],{duration:260});
    return true;
   }catch{
-   if(token!==epoch)return false;panel.dataset.loading='false';activity();onStatus('場面を読み込めませんでした。オンラインで、もう一度場面を選んでください。');return false;
+   if(token!==epoch)return false;panel.dataset.loading='false';activity();
+   if(!failureNotice){onStatus(selection==='auto'?'画像を読み込めませんでした。次の場面へ進みます。':'場面を読み込めませんでした。オンラインで、もう一度場面を選んでください。');failureNotice=true;}return false;
   }
  }
  function rotationAllowed(){return Boolean(key)&&!paused&&!document.hidden&&selection==='auto'&&app.dataset.focus!=='on';}
  function activity(){
-  if(!rotationAllowed()||!current||panel.dataset.loading==='true'||timer!==null)return;
+  if(!rotationAllowed()||panel.dataset.loading==='true'||timer!==null)return;
   timer=setTimeout(async()=>{
    timer=null;if(!rotationAllowed())return;
-   const active=key,next=SCENE_IDS[(SCENE_IDS.indexOf(current.id)+1)%SCENE_IDS.length];
+   const active=key,next=SCENE_IDS[(SCENE_IDS.indexOf(cursor)+1)%SCENE_IDS.length];
    await show(next);if(key===active)activity();
   },10000);
  }
  function choose(event){
   const value=event.currentTarget.value;if(value!=='auto'&&!SCENE_IDS.includes(value))return;
-  if(!key)return;selection=value;choices.set(key,value);syncSelect();clearTimers();show(value==='auto'?(current?.id||'welcome'):value);
+  if(!key)return;failureNotice=false;selection=value;choices.set(key,value);syncSelect();clearTimers();show(value==='auto'?(current?.id||'welcome'):value);
  }
  select.addEventListener('change',choose);fullSelect.addEventListener('change',choose);
  function react(event,expanded=false){
@@ -78,7 +84,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
  function replyTo(type){
   if(!key||paused||document.hidden)return;
   if(type==='rest'||type==='resume'){
-   clearTimers();
+   clearTimers();failureNotice=false;
    selection=type==='rest'?'rest':'auto';choices.set(key,selection);syncSelect();
    show(type==='rest'?'rest':'work');
   }
@@ -89,7 +95,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
  $('#sceneContinue')?.addEventListener('click',()=>replyTo('resume'));
  dialog.addEventListener('close',()=>{refresh();activity();open.focus();});
  function enter(next){
-  clearTimers();epoch++;persona.leave(key);motions.forEach(m=>m.stop());key=CHARACTER_SCENES[next]?next:null;current=null;lastReply=null;
+  clearTimers();epoch++;persona.leave(key);motions.forEach(m=>m.stop());key=CHARACTER_SCENES[next]?next:null;current=null;lastReply=null;cursor='welcome';failureNotice=false;
   panel.hidden=!key;app.dataset.sceneCharacter=key||'';panel.dataset.ready='false';placeUpdate(Boolean(key));
   if(dialog.open)dialog.close();if(!key)return;
   selection=choices.get(key)||'auto';syncSelect();
