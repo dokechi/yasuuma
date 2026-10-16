@@ -19,8 +19,8 @@ function boot({hash='#kyun',store=storage(),width=400,height=860,motion=false,se
  class Image{constructor(){this.complete=false;this.naturalWidth=0;images.push(this)}}
  const navigator={onLine:true,clipboard:{writeText:async t=>copied.push(t)},vibrate:()=>true};
  if(serviceWorker)navigator.serviceWorker=serviceWorker;
- const context=vm.createContext({document,window,location,history,Image,navigator,localStorage:store,URL,Blob,console,setTimeout:(fn,delay=0)=>{const id=++seq;timers.set(id,{fn,at:clock+delay});return id},clearTimeout:id=>timers.delete(id),requestAnimationFrame:fn=>{const id=++seq;timers.set(id,{fn,at:clock+16});return id},cancelAnimationFrame:id=>timers.delete(id)});
- const source=['notebook','world','workbench','skirt-action','character-rig','scene-manifest','scene-motion','character-scenes','feedback','production','app'].map(n=>fs.readFileSync(`./${n}.js`,'utf8').replace(/^import .*$/gm,'').replaceAll('export ','')).join('\n');
+ const context=vm.createContext({document,window,location,history,Image,navigator,performance:{now:()=>clock},Date:class extends Date{constructor(...args){super(...(args.length?args:[1728993600000+clock]));}static now(){return 1728993600000+clock;}},localStorage:store,URL,Blob,console,setTimeout:(fn,delay=0)=>{const id=++seq;timers.set(id,{fn,at:clock+delay});return id},clearTimeout:id=>timers.delete(id),requestAnimationFrame:fn=>{const id=++seq;timers.set(id,{fn,at:clock+16});return id},cancelAnimationFrame:id=>timers.delete(id)});
+ const source=['notebook','world','workbench','skirt-action','character-rig','scene-manifest','scene-motion','persona-lines','persona','character-scenes','feedback','production','app'].map(n=>fs.readFileSync(`./${n}.js`,'utf8').replace(/^import .*$/gm,'').replaceAll('export ','')).join('\n');
  vm.runInContext('globalThis.CCCastleInitialDrafts='+JSON.stringify(seeds||JSON.parse(fs.readFileSync('tests/seeds.json','utf8')))+';'+source,context);
  const $=s=>document.querySelector(s),read=s=>vm.runInContext(s,context);
  async function emit(node,type,props={}){const e=new window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,props);node.dispatchEvent(e);for(let i=0;i<8;i++)await Promise.resolve();}
@@ -122,13 +122,13 @@ test('all twenty scene choices preserve manuscript, scroll and saved records; fu
  const b=boot();await sceneLoaded(b,'kyun','welcome');
  for(const key of ['kyun','choi','fp','shiire']){
   if(key!=='kyun'){await b.click(`[data-go=${key}]`);await sceneLoaded(b,key,'welcome');}
-  b.$('#paperScroll').scrollTop=94;const id=b.read('activeDraft.id'),before=JSON.stringify([...b.store.map]);
+  b.$('#paperScroll').scrollTop=94;const id=b.read('activeDraft.id'),before=JSON.stringify([...b.store.map].filter(([k])=>k!=='castle-town.persona.v1'));
   for(const scene of ['welcome','work','rest','tea','special']){
    b.$('#sceneSelect').value=scene;await b.emit(b.$('#sceneSelect'),'change');await sceneLoaded(b,key,scene);
    assert.equal(b.$('#characterScenes').dataset.scene,scene);assert.equal(b.$('#app').dataset.sceneCharacter,key);if(key==='fp')assert.match(b.$('#sceneImage').alt,/FP・TikTok/);assert.equal(b.$('#sceneImage').src,sceneSource(key,scene));
    assert.equal(b.read('activeDraft.id'),id);assert.equal(b.$('#paperScroll').scrollTop,94);
   }
-  assert.equal(JSON.stringify([...b.store.map]),before);
+  assert.equal(JSON.stringify([...b.store.map].filter(([k])=>k!=='castle-town.persona.v1')),before);
  }
  await b.click('#sceneExpand');assert.equal(b.$('#sceneDialog').open,true);assert.equal(b.$('#sceneFullImage').src,b.$('#sceneImage').src);
  await b.click('#sceneClose');assert.equal(b.$('#sceneDialog').open,false);assert.equal(b.read('view'),'work');
@@ -149,6 +149,26 @@ test('automatic scenes follow welcome, work, copy and idle; an explicit scene re
 test('host pause clears scene timers; a failed copy never selects a reward',async()=>{
  const b=boot();await sceneLoaded(b,'kyun','welcome');b.navigator.clipboard.writeText=async()=>{throw Error('denied')};await b.click('#copy');assert.equal(b.images.some(i=>i.src.includes('scene-kyun-special')),false);
  await b.emit(b.window,'castle:pause');b.advance(100000);assert.equal(b.$('#characterScenes').dataset.scene,'welcome');
+});
+
+test('touch replies survive delayed art, automatic scene changes and the old greeting timeout',async()=>{
+ const b=boot();await b.click('#sceneTouch');const first=b.$('#greetingText').textContent;assert.ok(first.length>5);
+ await sceneLoaded(b,'kyun','welcome');b.advance(3100);await sceneLoaded(b,'kyun','work');assert.equal(b.$('#greetingText').textContent,first);
+ b.$('#sceneSelect').value='tea';await b.emit(b.$('#sceneSelect'),'change');b.advance(2000);await b.click('#sceneTouch');const newer=b.$('#greetingText').textContent;await sceneLoaded(b,'kyun','tea');assert.equal(b.$('#greetingText').textContent,newer);
+ b.advance(5000);assert.equal(b.$('#greetingText').textContent,newer);assert.equal(b.$('#sceneCaption').textContent,newer);
+});
+test('full view replies change conversation and rest/work scenes without changing the draft',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');const body=b.$('#draftBody').textContent;
+ await b.click('#sceneExpand');await b.click('#sceneTalk');const first=b.$('#sceneCaption').textContent;await b.click('#sceneTalk');assert.notEqual(b.$('#sceneCaption').textContent,first);
+ await b.click('#sceneRest');await sceneLoaded(b,'kyun','rest');assert.equal(b.$('#characterScenes').dataset.scene,'rest');
+ await b.click('#sceneContinue');await sceneLoaded(b,'kyun','work');assert.equal(b.$('#characterScenes').dataset.scene,'work');assert.equal(b.$('#draftBody').textContent,body);
+ await b.emit(b.window,'castle:pause');const paused=b.$('#sceneCaption').textContent;await b.click('#sceneTalk');assert.equal(b.$('#sceneCaption').textContent,paused);
+ await b.emit(b.window,'castle:resume');assert.equal(b.$('#greetingText').textContent,paused);
+});
+test('only a successful copy triggers its dialogue; an empty room remains usable',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');const initial=b.$('#greetingText').textContent;b.navigator.clipboard.writeText=async()=>{throw Error('denied')};await b.click('#copy');assert.equal(b.$('#greetingText').textContent,initial);
+ b.navigator.clipboard.writeText=async()=>{};await b.click('#copy');assert.match(b.$('#greetingText').dataset.reply,/^copied:/);
+ const empty=boot({seeds:{kyun:[],choi:[],fp:[],shiire:[]}});await empty.click('#sceneContinue');assert.match(empty.$('#greetingText').dataset.reply,/^empty:/);assert.equal(empty.read('notebook.all().length'),0);
 });
 
 test('an empty room fills automatically after an earlier empty partial result',()=>{
