@@ -170,6 +170,15 @@ test('only a successful copy triggers its dialogue; an empty room remains usable
  b.navigator.clipboard.writeText=async()=>{};await b.click('#copy');assert.match(b.$('#greetingText').dataset.reply,/^copied:/);
  const empty=boot({seeds:{kyun:[],choi:[],fp:[],shiire:[]}});await empty.click('#sceneContinue');assert.match(empty.$('#greetingText').dataset.reply,/^empty:/);assert.equal(empty.read('notebook.all().length'),0);
 });
+test('the full-view talk button answers the current story rather than starting an unrelated line',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');b.advance(3100);await sceneLoaded(b,'kyun','work');
+ const body=b.$('#draftBody').textContent;await b.click('#sceneExpand');
+ for(let i=0;i<4;i++){b.advance(2000);await b.click('#sceneFullTouch');}
+ const first=b.$('#greetingText').dataset.reply;assert.match(first,/^story:/);
+ await b.click('#sceneTalk');assert.equal(b.$('#greetingText').dataset.reply,'followup:'+first.split(':')[1]);
+ assert.equal(b.$('#sceneCaption').textContent,b.read('PERSONA_LINES.kyun.stories['+first.split(':')[1]+'][1]'));
+ assert.equal(b.$('#draftBody').textContent,body);
+});
 
 test('an empty room fills automatically after an earlier empty partial result',()=>{
  const b=boot({seeds:{kyun:[],choi:[],fp:[],shiire:[]}});
