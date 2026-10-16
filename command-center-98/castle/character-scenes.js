@@ -73,7 +73,11 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   const camera=current?sceneCamera(current,bounds.width,bounds.height,expanded):null;
   const region=event?.detail&&camera?sceneHit(current,camera,event.clientX-bounds.left,event.clientY-bounds.top):'head';
   const reply=persona.touch(key);
-  if(!reply)return false;if(!present(reply)&&lastReply)onLine(lastReply.text);
+  if(!reply)return false;
+  if(!present(reply)&&!reduced.matches){
+   const bubble=expanded?$('#sceneCaption'):$('#greetingText');
+   bubble.animate?.([{opacity:.6},{opacity:1}],{duration:160});
+  }
   if(current&&!current.static)motions[expanded?1:0].react(region);onReact();activity();return true;
  }
  $('#sceneTouch').addEventListener('click',e=>react(e));$('#sceneFullTouch').addEventListener('click',e=>react(e,true));
