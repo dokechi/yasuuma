@@ -83,3 +83,9 @@
  .scene-conversation{flex:1 1 220px}
 }
 @media(prefers-reduced-motion:reduce){.greeting[data-feeling]{transition:none}}
+
+/* Each quotation keeps an inspectable attribution beside the unchanged words. */
+.quote-source{display:inline-block;color:#c8bdce;font-size:11px;line-height:1.5;text-decoration:underline;text-underline-offset:3px;pointer-events:auto;max-width:100%;overflow-wrap:anywhere}
+.quote-source[hidden]{display:none}.quote-source:hover{color:#fff}.quote-source:focus-visible{outline:2px solid #f0d1a3;outline-offset:3px}
+.greeting .quote-source{margin-top:4px}.scene-conversation>.quote-source{margin:0 0 10px}
+@media(max-width:600px){.greeting .quote-source{font-size:10px;margin-top:2px}}
