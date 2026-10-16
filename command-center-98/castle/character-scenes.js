@@ -15,7 +15,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
  }
  function clearTimers(){clearTimeout(timer);clearTimeout(idle);timer=idle=null;}
  function syncSelect(){select.value=fullSelect.value=selection;}
- function refresh(){motions[0].visible(Boolean(key)&&!current?.static&&!paused&&!dialog.open&&app.dataset.focus!=='on');motions[1].visible(Boolean(key)&&!paused&&dialog.open);}
+ function refresh(){motions[0].visible(Boolean(key)&&!current?.static&&!paused&&!dialog.open&&app.dataset.focus!=='on');motions[1].visible(Boolean(key)&&!current?.static&&!paused&&dialog.open);}
  async function show(id,{speak=false}={}){
   if(!key||!CHARACTER_SCENES[key]?.[id])return false;
   const cfg=CHARACTER_SCENES[key][id],token=++epoch;panel.dataset.loading='true';
