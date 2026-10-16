@@ -363,16 +363,17 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:48
     await capture(width+'x'+height+'-castle-room-'+place,`(()=>{const c=${C},s=c.CCCastleApp.getState(),r=c.document.getElementById('copy').getBoundingClientRect();return s.place==='${place}'&&s.view==='work'&&s.draft?.place==='${place}'&&!!s.draft.body&&!c.document.getElementById('copy').disabled&&c.document.getElementById('draftBody').textContent===s.draft.body&&r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight&&c.document.documentElement.scrollWidth<=innerWidth+1})()`);
     await evaluate(`${C}.document.getElementById('characterTouch').click()`);
     await capture(width+'x'+height+'-castle-touch-'+place,`${C}.CCCastleApp.getState().place==='${place}'`);
-    if(['kyun','choi','fp'].includes(place)){
+    if(['kyun','choi','fp','shiire'].includes(place)){
      await waitFor(`${C}.document.getElementById('characterScenes').dataset.ready==='true'`);
      const before=await evaluate(`({id:${C}.CCCastleApp.getState().draft?.id,scroll:${C}.document.getElementById('paperScroll').scrollTop})`);
      for(const scene of ['welcome','work','rest','tea','special']){
       await evaluate(`(()=>{const c=${C},s=c.document.getElementById('sceneSelect');s.value='${scene}';s.dispatchEvent(new c.Event('change',{bubbles:true}));})()`);
       await waitFor(`${C}.document.getElementById('characterScenes').dataset.scene==='${scene}'&&${C}.document.getElementById('sceneImage').complete`);
-      await waitFor(`${C}.document.getElementById('sceneCanvas').classList.contains('is-live')`);
+      const original=place==='shiire'?({welcome:'19080',work:'19017',rest:'19016',tea:'19020',special:'19018'})[scene]:place==='fp'&&scene==='tea'?'19079':null;
+      await waitFor(original?`${C}.document.getElementById('characterScenes').dataset.static==='true'&&${C}.document.getElementById('sceneImage').getAttribute('src')==='assets/user-${original}.png'&&!${C}.document.getElementById('sceneCanvas').classList.contains('is-live')`:`${C}.document.getElementById('sceneCanvas').classList.contains('is-live')`);
       await capture(width+'x'+height+'-scene-'+place+'-'+scene,`(()=>{const c=${C},d=c.document;return c.CCCastleApp.getState().draft?.id===${JSON.stringify(before.id)}&&d.getElementById('paperScroll').scrollTop===${before.scroll}&&d.getElementById('sceneImage').naturalWidth>0&&d.getElementById('sceneSelect').value==='${scene}'&&(d.getElementById('freshNotice').hidden||d.getElementById('freshNotice').getBoundingClientRect().top>=d.getElementById('sceneFrame').getBoundingClientRect().bottom||d.getElementById('freshNotice').getBoundingClientRect().left>=d.getElementById('sceneFrame').getBoundingClientRect().right)})()`);
       await evaluate(`${C}.document.getElementById('sceneExpand').click()`);
-      await waitFor(`${C}.document.getElementById('sceneFullCanvas').classList.contains('is-live')`);
+      await waitFor(original?`${C}.document.getElementById('sceneDialog').dataset.static==='true'&&!${C}.document.getElementById('sceneFullCanvas').classList.contains('is-live')`:`${C}.document.getElementById('sceneFullCanvas').classList.contains('is-live')`);
       await capture(width+'x'+height+'-scene-full-'+place+'-'+scene,`(()=>{const c=${C},d=c.document,r=d.getElementById('sceneDialog').getBoundingClientRect();return d.getElementById('sceneDialog').open&&c.getComputedStyle(d.getElementById('sceneFullImage')).objectFit==='contain'&&r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1})()`);
       await evaluate(`${C}.document.getElementById('sceneFullTouch').click();${C}.document.getElementById('sceneClose').click()`);
       await waitFor(`${C}.document.activeElement.id==='sceneExpand'`);
@@ -386,7 +387,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:48
    await evaluate(`${C}.document.getElementById('homeMode').click()`);
   }
   await capture('castle-unselected-fp',`${C}.CCCastleApp.notebook.sources().some(x=>x.source.id==='fixture-unselected-fp'&&x.body.includes('入口選択前の保存本文')&&x.source.status.includes('未確定'))`);
-  await capture('castle-versioned-entry',`${C}.location.pathname.endsWith('/castle/entry-v22.html')`);
+  await capture('castle-versioned-entry',`${C}.location.pathname.endsWith('/castle/entry-v23.html')`);
   await capture('castle-saved-signal',`${C}.CCCastleApp.notebook.sources().some(x=>x.source.id==='fixture-saved-only'&&x.body.includes('保存先の最新台本本文'))`);
   await evaluate(`${C}.CCCastleApp.open('kyun');Object.defineProperty(${C}.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__castleCopied=text}}});${C}.document.getElementById('copy').click()`);
   await waitFor(`!!window.__castleCopied`);
