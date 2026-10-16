@@ -178,30 +178,38 @@ test('host pause clears scene timers; a failed copy never selects a reward',asyn
  await b.emit(b.window,'castle:pause');b.advance(100000);assert.equal(b.$('#characterScenes').dataset.scene,'welcome');
 });
 
-test('touch replies survive delayed art, automatic scene changes and the old greeting timeout',async()=>{
- const b=boot();await b.click('#sceneTouch');const first=b.$('#greetingText').textContent;assert.ok(first.length>5);
- await sceneLoaded(b,'kyun','welcome');b.advance(10000);await sceneLoaded(b,'kyun','work');assert.equal(b.$('#greetingText').textContent,first);
- b.$('#sceneSelect').value='tea';await b.emit(b.$('#sceneSelect'),'change');b.advance(2000);await b.click('#sceneTouch');const newer=b.$('#greetingText').textContent;await sceneLoaded(b,'kyun','tea');assert.equal(b.$('#greetingText').textContent,newer);
- b.advance(5000);assert.equal(b.$('#greetingText').textContent,newer);assert.equal(b.$('#sceneCaption').textContent,newer);
+test('a repeated-touch reply survives delayed art, automatic scenes and the old greeting timeout',async()=>{
+ const b=boot(),greeting=b.$('#greetingText').textContent;await b.click('#sceneTouch');assert.equal(b.$('#greetingText').textContent,greeting);
+ b.advance(400);await b.click('#sceneTouch');const reply=b.$('#greetingText').textContent;assert.notEqual(reply,greeting);
+ await sceneLoaded(b,'kyun','welcome');b.advance(10000);await sceneLoaded(b,'kyun','work');assert.equal(b.$('#greetingText').textContent,reply);
+ b.$('#sceneSelect').value='tea';await b.emit(b.$('#sceneSelect'),'change');await sceneLoaded(b,'kyun','tea');b.advance(5000);assert.equal(b.$('#greetingText').textContent,reply);assert.equal(b.$('#sceneCaption').textContent,reply);
 });
-test('full view replies change conversation and rest/work scenes without changing the draft',async()=>{
- const b=boot();await sceneLoaded(b,'kyun','welcome');const body=b.$('#draftBody').textContent;
- await b.click('#sceneExpand');await b.click('#sceneTalk');const first=b.$('#sceneCaption').textContent;await b.click('#sceneTalk');assert.notEqual(b.$('#sceneCaption').textContent,first);
+test('full view shares touch history; rest, work and pause preserve dialogue and drafts',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');const body=b.$('#draftBody').textContent,first=b.$('#greetingText').textContent;
+ await b.click('#sceneTouch');b.advance(400);await b.click('#sceneExpand');await b.click('#sceneTalk');const reply=b.$('#sceneCaption').textContent;assert.notEqual(reply,first);
+ b.advance(400);await b.click('#sceneFullTouch');assert.equal(b.$('#sceneCaption').textContent,reply);
  await b.click('#sceneRest');await sceneLoaded(b,'kyun','rest');assert.equal(b.$('#characterScenes').dataset.scene,'rest');
  await b.click('#sceneContinue');await sceneLoaded(b,'kyun','work');assert.equal(b.$('#characterScenes').dataset.scene,'work');assert.equal(b.$('#draftBody').textContent,body);
- await b.emit(b.window,'castle:pause');const paused=b.$('#sceneCaption').textContent;await b.click('#sceneTalk');assert.equal(b.$('#sceneCaption').textContent,paused);
- await b.emit(b.window,'castle:resume');assert.equal(b.$('#greetingText').textContent,paused);
+ await b.emit(b.window,'castle:pause');await b.click('#sceneTalk');assert.equal(b.$('#sceneCaption').textContent,reply);
+ await b.emit(b.window,'castle:resume');assert.equal(b.$('#greetingText').textContent,reply);await b.click('#sceneTalk');assert.equal(b.$('#greetingText').textContent,reply);
 });
-test('copy and empty-room actions preserve the quotation and attribution',async()=>{
- const b=boot();await sceneLoaded(b,'kyun','welcome');const initial=b.$('#greetingText').textContent,source=b.$('#quoteSource').href;
+test('copy and empty-room actions preserve the dialogue without source labels',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');const initial=b.$('#greetingText').textContent;
  b.navigator.clipboard.writeText=async()=>{throw Error('denied')};await b.click('#copy');assert.equal(b.$('#greetingText').textContent,initial);
- b.navigator.clipboard.writeText=async()=>{};await b.click('#copy');assert.equal(b.$('#greetingText').textContent,initial);assert.equal(b.$('#quoteSource').href,source);
- const empty=boot({seeds:{kyun:[],choi:[],fp:[],shiire:[]}}),quote=empty.$('#greetingText').textContent;await empty.click('#sceneContinue');assert.equal(empty.$('#greetingText').textContent,quote);assert.equal(empty.read('notebook.all().length'),0);
+ b.navigator.clipboard.writeText=async()=>{};await b.click('#copy');assert.equal(b.$('#greetingText').textContent,initial);
+ for(const id of ['#quoteSource','#sceneSource','#sceneMood'])assert.equal(b.$(id),null);
+ const empty=boot({seeds:{kyun:[],choi:[],fp:[],shiire:[]}}),line=empty.$('#greetingText').textContent;await empty.click('#sceneContinue');assert.equal(empty.$('#greetingText').textContent,line);assert.equal(empty.read('notebook.all().length'),0);
 });
-test('quote, named character, context and source stay synchronized through cycling and room changes',async()=>{
- const b=boot();await sceneLoaded(b,'kyun','welcome');const body=b.$('#draftBody').textContent;await b.click('#sceneExpand');
- for(let i=0;i<7;i++){await b.click('#sceneTalk');const index=Number(b.$('#greetingText').dataset.reply.split(':')[1]);assert.equal(b.$('#sceneCaption').textContent,b.read('PERSONA_QUOTES.kyun.quotes['+index+'].text'));assert.equal(b.$('#sceneSource').href,b.$('#quoteSource').href);assert.match(b.$('#quoteSource').textContent,/一色いろは/);}
- assert.equal(b.$('#draftBody').textContent,body);await b.click('[data-go=choi]');assert.match(b.$('#quoteSource').textContent,/新垣あやせ/);assert.match(b.$('#sceneMood').textContent,/あやせif/);assert.match(b.$('#sceneSource').href,/kadokawa/);assert.doesNotMatch(b.$('#greetingText').textContent,/詩羽/);
+test('all four rooms use their approved situation-specific lines; metadata never enters either view',async()=>{
+ const b=boot();
+ for(const key of ['kyun','choi','fp','shiire']){
+  if(key!=='kyun')await b.click('[data-go='+key+']');
+  const body=b.$('#draftBody').textContent,welcome=b.read('PERSONA_DIALOGUE.'+key+'.welcome'),repeat=b.read('PERSONA_DIALOGUE.'+key+'.repeatTouch');
+  assert.equal(b.$('#greetingText').textContent,welcome);assert.equal(b.$('#sceneCaption').textContent,welcome);
+  await b.click('#sceneTouch');assert.equal(b.$('#greetingText').textContent,welcome);b.advance(400);await b.click('#sceneTouch');assert.equal(b.$('#greetingText').textContent,repeat);assert.equal(b.$('#sceneCaption').textContent,repeat);
+  assert.equal(b.$('#draftBody').textContent,body);assert.doesNotMatch(b.$('.greeting').textContent+b.$('.scene-conversation').textContent,/出典|あやせif|桐乃|新垣あやせ|加藤恵|一色いろは|アスナ|次のセリフ/);
+ }
+ await b.click('[data-go=choi]');assert.equal(b.$('#greetingText').dataset.reply,'choi:welcome');
 });
 
 test('an empty room fills automatically after an earlier empty partial result',()=>{

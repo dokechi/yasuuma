@@ -1,6 +1,6 @@
 import {CHARACTER_SCENES,CHARACTER_LABELS,SCENE_IDS,sceneCamera,sceneHit} from './scene-manifest.js?v=24';
 import {createSceneMotion} from './scene-motion.js?v=24';
-import {createPersona} from './persona.js?v=26';
+import {createPersona} from './persona.js?v=28';
 export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onReact}){
  const $=s=>document.querySelector(s),panel=$('#characterScenes');
  if(!panel)return null;
@@ -10,13 +10,11 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
  let storage;try{storage=globalThis.localStorage;}catch{}
  const persona=createPersona({storage});
  function present(reply){
-  if(!reply||!key)return false;lastReply=reply;
+  if(!reply?.text||!key)return false;lastReply=reply;
   $('#sceneCaption').textContent=reply.text;
-  if($('#sceneMood'))$('#sceneMood').textContent=reply.mood;
   panel.dataset.feeling=dialog.dataset.feeling=reply.event;
   const greeting=$('#greetingText');greeting.dataset.reply=reply.id;
   if($('.greeting'))$('.greeting').dataset.feeling=reply.event;
-  for(const id of ['#quoteSource','#sceneSource']){const link=$(id);if(!link)continue;link.hidden=false;link.href=reply.url;link.title=reply.source;link.textContent=id==='#quoteSource'?`${reply.character} · ${reply.index}/${reply.total} · 出典 ↗`:`${reply.kind} · ${reply.source} ↗`;}
   onLine(reply.text);return true;
  }
  const choices=new Map(),images=new Map();
@@ -75,7 +73,11 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   const camera=current?sceneCamera(current,bounds.width,bounds.height,expanded):null;
   const region=event?.detail&&camera?sceneHit(current,camera,event.clientX-bounds.left,event.clientY-bounds.top):'head';
   const reply=persona.touch(key);
-  if(!present(reply))return false;
+  if(!reply)return false;
+  if(!present(reply)&&!reduced.matches){
+   const bubble=expanded?$('#sceneCaption'):$('#greetingText');
+   bubble.animate?.([{opacity:.6},{opacity:1}],{duration:160});
+  }
   if(current&&!current.static)motions[expanded?1:0].react(region);onReact();activity();return true;
  }
  $('#sceneTouch').addEventListener('click',e=>react(e));$('#sceneFullTouch').addEventListener('click',e=>react(e,true));
@@ -90,7 +92,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   }
   present(persona.event(key,type));onReact();activity();
  }
- $('#sceneTalk')?.addEventListener('click',()=>replyTo('talk'));
+ $('#sceneTalk')?.addEventListener('click',()=>react(null,true));
  $('#sceneRest')?.addEventListener('click',()=>replyTo('rest'));
  $('#sceneContinue')?.addEventListener('click',()=>replyTo('resume'));
  dialog.addEventListener('close',()=>{refresh();activity();open.focus();});
@@ -116,7 +118,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
    station.classList.add('has-scenes');const img=station.querySelector('.sprite > img');img.src=cfg.src;img.style.objectPosition=`${cfg.focus[0]*100}% ${cfg.focus[1]*100}%`;
   }
  }
- function pause(){paused=true;epoch++;panel.dataset.loading='false';clearTimers();motions.forEach(m=>m.stop());}
+ function pause(){paused=true;epoch++;persona.leave(key);panel.dataset.loading='false';clearTimers();motions.forEach(m=>m.stop());}
  function resume(){paused=false;if(key&&(!current||(selection!=='auto'&&current.id!==selection)))show(selection==='auto'?'welcome':selection);refresh();if(key&&lastReply)onLine(lastReply.text);}
  document.addEventListener('visibilitychange',()=>document.hidden?pause():resume());
  window.addEventListener('castle:pause',pause);window.addEventListener('castle:resume',resume);window.addEventListener('pagehide',pause);window.addEventListener('pageshow',resume);

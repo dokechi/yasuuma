@@ -95,7 +95,7 @@ test('character touch responds without changing the draft, reading position or r
  assert.equal(b.read('currentDraft'),2);assert.equal(b.element('#paperScroll').scrollTop,160);assert.equal(b.location.hash,'#kyun');
  await b.element('#copy').emit('click');assert.equal(b.copied(),b.read('PLACES.kyun.drafts[2].body'));
  b.advance(2500);assert.equal(b.element('#greetingText').textContent,b.read('PLACES.kyun.greeting'));
- await b.element('#characterTouch').emit('click');assert.equal(b.element('#greetingText').textContent,b.read('CHARACTERS.kyun.touchLines[1]'));
+ await b.element('#characterTouch').emit('click');assert.equal(b.element('#greetingText').textContent,b.read('CHARACTERS.kyun.touchLines[0]'));
 });
 test('leaving mid-reaction cancels movement and speech; another character responds immediately',async()=>{
  const b=boot('#kyun',{motion:true});await b.element('#characterTouch').emit('click');
