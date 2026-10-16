@@ -1,4 +1,4 @@
-# Castle quotations v26 — 2026-10-16
+# Castle quotations v27 — 2026-10-16
 
 The user prefers unchanged lines from the works to the previous 272 invented
 utterances. Purple now references **新垣あやせ**, replacing 霞ヶ丘詩羽.
@@ -46,6 +46,15 @@ playwright-core available. Coverage includes source synchronization, cycling,
 manual selection, background pause, late image loads, offline updates and
 preservation of manuscript data. It does not measure personality fidelity.
 
-The host opens `entry-v26.html` to bypass the prior cache-first HTML route;
-modified scripts/styles have v26 URLs. The previous v25 worker is kept as a
-cache-transition test fixture. The parent shell is revision 28.
+The host opens `entry-v27.html` to bypass the prior cache-first HTML route;
+modified scripts use v27 URLs; the quotation bank and styles retain v26 URLs. The previous v26 worker is kept as a
+cache-transition test fixture. The parent shell is revision 29.
+
+## Interrupted image downloads
+
+Each image download has a 12-second deadline. In automatic mode a failed image
+is skipped on the next 10-second interval and retried on the next round, including
+when the first image fails. The last successfully displayed image stays visible.
+A late response from a timed-out request cannot replace a newer scene. Consecutive
+failures show one notice until an image succeeds, without blocking quotations or
+manuscript controls. Manual selection remains fixed.
