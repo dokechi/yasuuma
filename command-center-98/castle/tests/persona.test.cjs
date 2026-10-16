@@ -31,3 +31,13 @@ test('bad or unavailable storage still permits conversation and recent history s
  for(const config of [{raw:'{'},{raw:'null'},{raw:'42'},{raw:JSON.stringify({kyun:{visits:'invalid',recent:[null,8,{}]}})},{denied:true}]){const b=setup(config);assert.ok(b.p.enter('kyun').text);assert.ok(b.p.touch('kyun').text);}
  const b=setup();for(let i=0;i<200;i++)b.p.event('kyun','talk');assert.ok(JSON.parse(b.store.get(api.PERSONA_MEMORY_KEY)).kyun.recent.length<=36);assert.equal(b.p.enter('unknown'),null);
 });
+test('asking to hear more continues the unfinished thought once; expiry, leaving and scene changes cancel it',()=>{
+ for(const role of roles){
+  const start=()=>{const b=setup();for(let i=0;i<3;i++){b.p.touch(role,{scene:'tea'});b.advance(2000);}const first=b.p.touch(role,{scene:'tea'});assert.equal(first.event,'story');return {b,index:Number(first.id.split(':')[1])};};
+  let {b,index}=start();assert.equal(b.p.event(role,'talk',{scene:'tea'}).text,api.PERSONA_LINES[role].stories[index][1]);assert.equal(b.p.event(role,'talk',{scene:'tea'}).event,'talk');
+  ({b}=start());b.advance(90001);assert.equal(b.p.event(role,'talk',{scene:'tea'}).event,'talk');
+  ({b}=start());assert.equal(b.p.event(role,'talk',{scene:'work'}).event,'talk');
+  ({b}=start());b.p.leave(role);assert.equal(b.p.event(role,'talk',{scene:'tea'}).event,'talk');
+  ({b}=start());b.p.event(role,'resume');assert.equal(b.p.event(role,'talk',{scene:'tea'}).event,'talk');
+ }
+});

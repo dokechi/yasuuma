@@ -1,6 +1,6 @@
 import {CHARACTER_SCENES,CHARACTER_LABELS,SCENE_IDS,sceneCamera,sceneHit} from './scene-manifest.js?v=24';
 import {createSceneMotion} from './scene-motion.js?v=24';
-import {createPersona} from './persona.js?v=24';
+import {createPersona} from './persona.js?v=25';
 export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onReact}){
  const $=s=>document.querySelector(s),panel=$('#characterScenes');
  if(!panel)return null;
@@ -78,7 +78,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
    selection=type==='rest'?'rest':'auto';choices.set(key,selection);syncSelect();
    show(type==='rest'?'rest':'work');
   }
-  present(persona.event(key,type,{hasDraft:hasDraft()}));onReact();activity();
+  present(persona.event(key,type,{hasDraft:hasDraft(),scene:current?.id}));onReact();activity();
  }
  $('#sceneTalk')?.addEventListener('click',()=>replyTo('talk'));
  $('#sceneRest')?.addEventListener('click',()=>replyTo('rest'));

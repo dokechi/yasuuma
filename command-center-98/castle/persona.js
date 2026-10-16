@@ -1,6 +1,7 @@
-import {PERSONA_LINES} from './persona-lines.js?v=24';
+import {PERSONA_LINES} from './persona-lines.js?v=25';
 export const PERSONA_MEMORY_KEY='castle-town.persona.v1';
-export const PERSONA_MOODS={welcome:'おかえり',returning:'また会えたね',morning:'朝のひととき',night:'夜のひととき',touch:'こちらを見ている',hair:'小さな気づき',hand:'そばにいるよ',cloth:'今日の装い',repeat:'少し照れながら',work:'一緒に考えよう',empty:'ここから一緒に',rest:'ひと休み',tea:'お茶の時間',special:'内緒のひとこと',copied:'手元に届いたね',completed:'また会おうね',talk:'もう少し話そう',resume:'一緒に進めよう',story:'聞いてほしいこと',followup:'さっきの続き'};
+// Labels describe the interaction, not an emotion shared by all four people.
+export const PERSONA_MOODS={welcome:'お迎え',returning:'再訪',morning:'朝',night:'夜',touch:'呼びかけ',hair:'髪',hand:'手',cloth:'装い',repeat:'続けて呼びかける',work:'仕事',empty:'原稿を選ぶ',rest:'ひと休み',tea:'お茶の時間',special:'ふたりの話',copied:'コピー完了',completed:'ひと区切り',talk:'会話',resume:'仕事へ戻る',story:'ひとこと',followup:'話の続き'};
 // Only bounded dialogue IDs/visit counts are stored. No manuscripts, prices,
 // credentials, relationship scores or invented user memories are persisted.
 export function createPersona({storage,random=Math.random,now=Date.now}={}){
@@ -28,8 +29,15 @@ export function createPersona({storage,random=Math.random,now=Date.now}={}){
   const hour=new Date(now()+9*3600000).getUTCHours();
   return pick(key,returning?'returning':hour>=5&&hour<10?'morning':hour>=22||hour<5?'night':'welcome');
  }
- function event(key,type,{hasDraft=true}={}){
-  if(!records[key])return null;sessions[key].pending=null;
+ function continuation(key,scene){
+  const pending=sessions[key].pending;sessions[key].pending=null;
+  if(!pending||pending.expires<now()||(scene!==undefined&&pending.scene!==scene))return null;
+  return {id:'followup:'+pending.index,text:PERSONA_LINES[key].stories[pending.index][1],event:'followup',mood:PERSONA_MOODS.followup};
+ }
+ function event(key,type,{hasDraft=true,scene}={}){
+  if(!records[key])return null;
+  if(type==='talk'){const reply=continuation(key,scene);if(reply)return reply;}
+  sessions[key].pending=null;
   return pick(key,(type==='work'||type==='resume')&&!hasDraft?'empty':type);
  }
  function touch(key,{scene='work',region='head',hasDraft=true}={}){
@@ -39,8 +47,7 @@ export function createPersona({storage,random=Math.random,now=Date.now}={}){
   s.streak=gap>=0&&gap<1800?s.streak+1:1;s.lastAt=time;s.touches++;
   if(s.streak>=3&&s.streak%3===0){s.pending=null;return pick(key,'repeat');}
   if(s.pending&&s.pending.expires>=time&&s.pending.scene===scene&&region==='head'){
-   const pending=s.pending;s.pending=null;
-   return {id:'followup:'+pending.index,text:PERSONA_LINES[key].stories[pending.index][1],event:'followup',mood:PERSONA_MOODS.followup};
+   return continuation(key,scene);
   }
   s.pending=null;
   if(['hair','hand','cloth'].includes(region))return pick(key,region);
