@@ -68,7 +68,7 @@ function turnPage(direction){
  anim.finished.then(()=>{if(pageTurnAnimation===anim)pageTurnAnimation=null;}).catch(()=>{});
 }
 function wireTab(node){if(node.dataset.bound)return;node.dataset.bound='true';
- node.addEventListener('click',()=>{selectDraft(Number(node.dataset.draft));feedback.select();});
+ node.addEventListener('click',()=>{const index=Number(node.dataset.draft),group=groupDrafts(PLACES[place].drafts).find(g=>g.some(d=>d.id===activeDraft?.id));if(!group?.some(d=>d.id===PLACES[place].drafts[index]?.id))selectDraft(index);feedback.select();});
  node.addEventListener('keydown',event=>{const arrows=wideDesk()?['ArrowUp','ArrowDown']:['ArrowLeft','ArrowRight'];if(![...arrows,'Home','End'].includes(event.key))return;event.preventDefault();feedback.select();const rows=PLACES[place].drafts,groups=groupDrafts(rows),at=groups.findIndex(g=>g.some(d=>d.id===activeDraft?.id)),next=event.key==='Home'?0:event.key==='End'?groups.length-1:(at+(event.key===arrows[1]?1:-1)+groups.length)%groups.length;selectDraft(rows.indexOf(groups[next][0]),{focus:true});});
 }
 function fillTabs(){const rows=PLACES[place].drafts,container=$('.draft-tabs');
@@ -76,7 +76,7 @@ function fillTabs(){const rows=PLACES[place].drafts,container=$('.draft-tabs');
  while(tabs.length<rows.length){const node=document.createElement('button');node.type='button';node.setAttribute('role','tab');node.setAttribute('aria-controls','draft');node.innerHTML='<span class="draft-number" aria-hidden="true"></span> <span class="draft-kind"></span><strong class="draft-preview-title" aria-hidden="true"></strong><span class="draft-preview-text" aria-hidden="true"></span>';container.append(node);tabs.push(node);}
  const groups=groupDrafts(rows);container.style.setProperty('--draft-count',String(Math.max(1,groups.length)));container.classList.toggle('many-drafts',groups.length>3);
  tabs.forEach((node,i)=>{const draft=rows[i];node.id=`tab-${i}`;node.dataset.draft=String(i);node.querySelector('.draft-number').textContent=String(i+1).padStart(2,'0');node.querySelector('.draft-kind').textContent=draft.kind||'原稿';node.querySelector('.draft-preview-title').textContent=draft.title;node.querySelector('.draft-preview-text').textContent=draft.body.replace(/\s+/g,' ').slice(0,70);node.setAttribute('aria-label',`${draft.kind||'原稿'}：${draft.title}`);wireTab(node);});
- tabs.forEach((node,i)=>{const group=groups.find(g=>g.some(d=>d.id===rows[i].id));node.hidden=group[0].id!==rows[i].id;if(group.length>1){node.querySelector('.draft-kind').textContent=group.length+'案';node.setAttribute('aria-label',rows[i].title+'：'+group.length+'案');}});
+ tabs.forEach((node,i)=>{const group=groups.find(g=>g.some(d=>d.id===rows[i].id));node.hidden=group[0].id!==rows[i].id;node.querySelector('.draft-number').textContent=String(groups.indexOf(group)+1).padStart(2,'0');if(group.length>1){node.querySelector('.draft-kind').textContent=group.length+'案';node.setAttribute('aria-label',rows[i].title+'：'+group.length+'案');}});
 }
 function syncVariants(){
  const group=groupDrafts(PLACES[place].drafts).find(g=>g.some(d=>d.id===activeDraft?.id))||[],picker=$('#variantPicker'),select=$('#variantSelect');
