@@ -142,7 +142,10 @@ test('HOME keeps approved dresses while detail pages use a distinct cached swimw
  const home=fs.readFileSync(path.join(__dirname,'rpg-home.css'),'utf8');
  assert.ok(home.includes('world.png?v=20261012.4-wardrobe'));
  assert.ok(!home.includes('detail-swimwear.png'));
- assert.ok(manifest.styles.includes('./rpg-home.css?v=20261013.1-wide'));
+ assert.ok(manifest.styles.includes('./rpg-home.css?v=20261017.35-polish'));
+ const fontCss=fs.readFileSync(path.join(__dirname,'rpg-home.css'),'utf8');
+ assert.match(fontCss,/DotGothic16-Regular\.woff2/);
+ assert.match(fontCss,/DotGothic16-Regular\.ttf/);
  for(const file of ['rpg-account-pages.css','rpg-workspaces.css']){
   const css=fs.readFileSync(path.join(__dirname,file),'utf8');
   const references=[...css.matchAll(/detail-swimwear\.png\?([^'"\s)]+)/g)].map(m=>m[1]);
