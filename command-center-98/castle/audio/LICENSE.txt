@@ -1,0 +1,21 @@
+Harvest_Festival — official loop edition, normal version
+Music: PeriTune / むつき醒 (Sei Mutsuki)
+Published: 2021-06-21
+Source: https://peritune.com/blog/2021/06/21/harvest_festival/
+Official download: https://peritune.com/loop/PerituneMaterial_Harvest_Festival_loop.zip
+
+Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
+https://creativecommons.org/licenses/by/4.0/
+https://creativecommons.org/licenses/by/4.0/legalcode
+PeriTune confirms that works published before March 2026 retain CC BY 4.0:
+https://peritune.com/about/
+https://peritune.com/blog/2026/03/01/terms-update/
+
+The M4A and OGG files are unchanged official archive members; only the
+PerituneMaterial_ prefix was removed from their filenames. No transcoding,
+cropping, or other audio edits were made. The player adjusts volume and
+repeats the official loop at runtime. See PROVENANCE.json for SHA-256 hashes.
+
+This notice applies to these audio assets only, independently of application
+code licensing. Redistribution and adaptation must retain attribution and
+license information and identify changes under CC BY 4.0.

@@ -391,7 +391,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
    await evaluate(`${C}.document.getElementById('homeMode').click()`);
   }
   await capture('castle-unselected-fp',`${C}.CCCastleApp.notebook.sources().some(x=>x.source.id==='fixture-unselected-fp'&&x.body.includes('入口選択前の保存本文')&&x.source.status.includes('未確定'))`);
-  await capture('castle-versioned-entry',`${C}.location.pathname.endsWith('/castle/entry-v31.html')`);
+  await capture('castle-versioned-entry',`${C}.location.pathname.endsWith('/castle/entry-v32.html')`);
   await capture('castle-saved-signal',`${C}.CCCastleApp.notebook.sources().some(x=>x.source.id==='fixture-saved-only'&&x.body.includes('保存先の最新台本本文'))`);
   await evaluate(`${C}.CCCastleApp.open('kyun');Object.defineProperty(${C}.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__castleCopied=text}}});${C}.document.getElementById('copy').click()`);
   await waitFor(`!!window.__castleCopied`);
@@ -425,7 +425,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   await evaluate(`window.__rpgQA.holdCastleEvents=false;window.__rpgQA.releaseCastleEvents();window.__progressRead`);
   await evaluate(`Promise.race([${C}.navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Castle offline shell did not install')),10000))])`);
   await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
-  await evaluate(`document.getElementById('ccCastleFrame').src='./castle/entry-v31.html?offline=1'`);await waitFor(`${C}.location.search==='?offline=1'&&!!${C}.CCCastleApp`);
+  await evaluate(`document.getElementById('ccCastleFrame').src='./castle/entry-v32.html?offline=1'`);await waitFor(`${C}.location.search==='?offline=1'&&!!${C}.CCCastleApp`);
   await capture('castle-offline',`${C}.CCCastleApp.notebook.all().some(x=>x.title==='本番統合・確認用の端末原稿')&&${C}.navigator.onLine===false`);
   await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
   results.push({name:'network-isolation',checks:[{name:'no attempted external network request',pass:blocked.length===0,detail:blocked},{name:'no uncaught browser exceptions',pass:errors.length===0,detail:errors}]});
