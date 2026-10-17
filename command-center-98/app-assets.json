@@ -79,11 +79,11 @@
     "./v230-request-progress.js?v=20261004.1",
     "./v231-trade-details.js?v=20261004.1",
     "./fp-finished-images.js?v=20261008.4-state",
-    "./manual-operation-hub.js?v=20261015.1-daily",
+    "./manual-operation-hub.js?v=20261017.30-context",
     "./rpg-home.js?v=20261012.3-workspaces",
     "./rpg-workspaces.js?v=20261013.3-consistency",
     "./rpg-daily-store.js?v=20261015.1",
-    "./rpg-daily-desk.js?v=20261015.1",
-    "./castle-parent.js?v=20261017.31-navigation"
+    "./rpg-daily-desk.js?v=20261017.30-context",
+    "./castle-parent.js?v=20261017.32-readingmap"
   ]
 }

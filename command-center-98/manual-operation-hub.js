@@ -23,6 +23,7 @@
   items.push(...(root.CCReddit?.state?.items||[]));
   return api.unique(items);
  }
+ const recordKey=id=>String(id||'').replace(/^(sns:)+/,'');
  async function open(account,{recordId=null}={}){
   const dialog=e('dialog',undefined,'manual-operation-review'),close=e('button','閉じる','push-button');close.type='button';close.onclick=()=>{desk?.savePosition();dialog.close();};
   dialog.className+=' rpg-account-page';dialog.dataset.account=account.key;dialog.setAttribute('aria-label',account.label+'の保存原稿');
@@ -47,9 +48,9 @@
   currentTab.onclick=()=>{selectedTab='current';render();};historyTab.onclick=()=>{selectedTab='history';render();};
   const more=e('button','保存原稿の続き100件を確認','push-button');more.type='button';dialog.append(more);
   function render(){
-   const previousScroll=dialog.scrollTop;
+   const previousScroll=dialog.scrollTop,previousActiveId=doc.activeElement?.closest?.('.rpg-account-card')?.dataset.recordId;
    const matches=api.unique(items).filter(i=>!api.isSuppressed(i)&&api.matchesAccount(i,account.key));list.replaceChildren();
-   const target=recordId?matches.find(i=>String(i.id)===recordId):null;if(target&&!focusedRecord)selectedTab=api.historyState(target,account.key)?'history':'current';
+   const target=recordId?matches.find(i=>recordKey(i.id)===recordKey(recordId)):null;if(target&&!focusedRecord)selectedTab=api.historyState(target,account.key)?'history':'current';
    const current=e('div',undefined,'rpg-account-current'),history=details('投稿済み・見送りの履歴'),active=matches.filter(i=>!api.historyState(i,account.key)),archived=matches.filter(i=>api.historyState(i,account.key));
    current.hidden=selectedTab!=='current';history.hidden=selectedTab!=='history';history.className='rpg-account-history';history.open=selectedTab==='history';
    currentTab.textContent='今回（'+active.length+'）';historyTab.textContent='履歴（'+archived.length+'）';currentTab.setAttribute('aria-pressed',String(selectedTab==='current'));historyTab.setAttribute('aria-pressed',String(selectedTab==='history'));
@@ -94,7 +95,7 @@
    if(!archived.length)history.append(e('p','読込済みの原稿に、投稿済み・見送りの記録はありません。'));
    list.append(history);
    more.disabled=loading||!hasMore;
-   if(Number.isFinite(previousScroll))dialog.scrollTop=previousScroll;desk?.decorate(matches);if(target&&!focusedRecord){const card=[...list.querySelectorAll('.rpg-account-card')].find(n=>n.dataset.recordId===recordId);if(card){focusedRecord=true;dialog.dataset.selectedRecordId=recordId;desk?.jumpToRecord?.(recordId);card.tabIndex=-1;card.focus?.({preventScroll:true});card.scrollIntoView?.({block:'start',behavior:'instant'});}}else if(recordId&&!target&&!hasMore&&!loading&&!readError){showOperation('対応する原稿は現在の保存先にありません。読込済みの一覧を表示しています。');}
+   if(Number.isFinite(previousScroll))dialog.scrollTop=previousScroll;desk?.decorate(matches);if(target&&(!focusedRecord||previousActiveId===String(target.id))){const card=[...list.querySelectorAll('.rpg-account-card')].find(n=>n.dataset.recordId===String(target.id));if(card){focusedRecord=true;dialog.dataset.selectedRecordId=String(target.id);dialog.dataset.requestedRecordId=recordId;desk?.jumpToRecord?.(String(target.id));card.tabIndex=-1;card.focus?.({preventScroll:true});card.scrollIntoView?.({block:'start',behavior:'instant'});}}else if(recordId&&!target&&!hasMore&&!loading&&!readError){showOperation('対応する原稿は現在の保存先にありません。読込済みの一覧を表示しています。');}
   }
   function showOperation(message){status.textContent=message;status.hidden=!message;}
   function externalLink(url,label,cls){const a=e('a',label,'push-button '+cls);a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;}

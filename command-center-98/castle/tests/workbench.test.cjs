@@ -31,7 +31,7 @@ test('explicit source variants group only for display and retain selection, snap
  await b.click('#searchDrafts');assert.equal(b.document.querySelectorAll('#drawerBody details').length,1);assert.match(b.$('#drawerBody summary').textContent,/2案/);await b.click('#drawerClose');
  b.read("selectId('c')");assert.equal(b.$('#variantPicker').hidden,true);b.read("selectId('b')");assert.equal(b.$('#paperScroll').scrollTop,72);
 });
-function boot({hash='#kyun',store=storage(),width=400,height=860,motion=false,serviceWorker,seeds}={}){
+function boot({hash='#kyun',store=storage(),width=400,height=860,motion=false,serviceWorker,seeds,embedded=false}={}){
  const {document,window}=parseHTML(fs.readFileSync('./index.html','utf8'));let active=null,seq=0,clock=0,copied=[];const timers=new Map(),images=[],animations=[];
  Object.defineProperty(document,'activeElement',{get:()=>active});document.hidden=false;
  const proto=window.HTMLElement.prototype;
@@ -43,7 +43,7 @@ function boot({hash='#kyun',store=storage(),width=400,height=860,motion=false,se
  Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return [...this.querySelectorAll('option')].find(o=>o.hasAttribute('selected'))?.value||this.querySelector('option')?.value||''},set(v){for(const o of this.querySelectorAll('option')){if(o.value===String(v))o.setAttribute('selected','');else o.removeAttribute('selected');}}});
  if(motion)proto.animate=function(frames,options){const a={node:this,frames,options,finished:new Promise(()=>{}),cancelled:false,cancel(){this.cancelled=true}};animations.push(a);return a};
  for(const el of document.querySelectorAll('*'))el.scrollTop=0;
- window.innerWidth=width;window.innerHeight=height;window.matchMedia=()=>({matches:false,addEventListener(){}});
+ const messages=[];window.parent=embedded?{postMessage:m=>messages.push(m)}:undefined;window.location={origin:'https://example.com'};window.innerWidth=width;window.innerHeight=height;window.matchMedia=()=>({matches:false,addEventListener(){}});
  const location={hash,pathname:'/index.html',search:'',reload(){location.reloaded=true}},history={state:null,pushState(s,_,u){this.state=s;location.hash=u.startsWith('#')?u:''},replaceState(s,_,u){this.state=s;location.hash=u.startsWith('#')?u:''},back(){location.hash='';this.state=null}};
  class Image{constructor(){this.complete=false;this.naturalWidth=0;images.push(this)}}
  const navigator={onLine:true,clipboard:{writeText:async t=>copied.push(t)},vibrate:()=>true};
@@ -58,8 +58,9 @@ function boot({hash='#kyun',store=storage(),width=400,height=860,motion=false,se
  async function menu(label){await click('#deskMenu');if(label){const node=button(label);assert.ok(node,`Missing menu ${label}`);await click(node)}}
  async function save(fields){const form=$('#drawerBody form');for(const [k,v]of Object.entries(fields))form.querySelector(`[name=${k}]`).value=v;await emit(form,'submit');}
  function advance(ms){const target=clock+ms;for(let n=0;n<1000;n++){const entry=[...timers].filter(([,t])=>t.at<=target).sort((a,b)=>a[1].at-b[1].at)[0];if(!entry)break;clock=entry[1].at;timers.delete(entry[0]);entry[1].fn(clock);}clock=target;}
- return {$,read,click,emit,menu,button,save,advance,store,document,window,location,images,animations,navigator,copied,context};
+ return {$,read,click,emit,menu,button,save,advance,store,document,window,location,images,animations,navigator,copied,context,messages};
 }
+test('direct management action forwards only the explicit original ID and keeps data and app updates distinct',async()=>{const b=boot({embedded:true});b.context.packet={drafts:[{id:'live-test',place:'kyun',title:'原稿',body:'本文',source:{id:'task:media:target',account:'kyun',label:'A案'}}],complete:true,message:''};b.read('production.receive(packet)');b.read("selectId('live-test')");await b.click('#productionNative');const direct=b.messages.find(m=>m.type==='native');assert.equal(direct.recordId,'task:media:target');await b.click('#productionRefresh');assert.equal(b.messages.filter(m=>m.type==='refresh').length,1);await b.emit(b.window,'message',{origin:'https://example.com',source:b.window.parent,data:{channel:'cc-castle-v1',type:'host-update'}});assert.equal(b.$('#hostUpdate').textContent,'管理画面アプリ更新');assert.equal(b.document.querySelectorAll('#productionRefresh').length,1);});
 test('real DOM adds a draft, copies body/link separately, edits seal, deletes and undoes',async()=>{
  const b=boot();await b.menu('＋ 原稿を書く');await b.save({title:'自分の原稿',body:'実際の本文\n二行目',link:'https://example.com/item'});
  assert.equal(b.$('#draftTitle').textContent,'自分の原稿');assert.equal(b.read('tabs.length'),4);assert.equal(b.$('#deskDrawer').open,false);

@@ -8,7 +8,7 @@ const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json
  try{for(const width of [1440,390]){const ctx=await browser.newContext({viewport:{width,height:900},permissions:['clipboard-read','clipboard-write']});const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
  await page.addInitScript(seeds=>{globalThis.CCCastleInitialDrafts=seeds;},JSON.parse(fs.readFileSync(path.join(root,'command-center-98/castle/tests/seeds.json'),'utf8')));
- await page.goto(`http://127.0.0.1:${server.address().port}/command-center-98/castle/entry-v29.html`);await page.waitForFunction(()=>window.CCCastleApp);
+ await page.goto(`http://127.0.0.1:${server.address().port}/command-center-98/castle/entry-v30.html`);await page.waitForFunction(()=>window.CCCastleApp);
  for(const key of ['kyun','choi','fp','shiire']){await page.locator(`.station[data-place=${key}]`).click();await page.waitForFunction(key=>document.querySelector('#app').dataset.sceneCharacter===key&&document.querySelector('#characterScenes').dataset.ready==='true',key);
  const snapshot=await page.evaluate(()=>({body:CCCastleApp.getState().draft.body,storage:JSON.stringify(Object.fromEntries(Object.entries(localStorage).filter(([k])=>k!=='castle-town.persona.v1')))}));
  for(const id of ['welcome','work','rest','tea','special']){await page.locator('#sceneSelect').selectOption(id);await page.waitForFunction(id=>document.querySelector('#characterScenes').dataset.scene===id&&document.querySelector('#characterScenes').dataset.loading==='false',id);

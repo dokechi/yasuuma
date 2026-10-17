@@ -1,16 +1,17 @@
-import {safeLink,dayInJapan,groupDrafts} from './notebook.js?v=29';
-import {createWorld} from './world.js?v=24';
+import {safeLink,dayInJapan,groupDrafts} from './notebook.js?v=30';
+import {createWorld} from './world.js?v=30';
 export function createWorkbench({app,places,notebook,reduced,getState,selectId,refresh,onStatus,onReposition,onMotionChange,onCopy,openPlace}){
  const $=s=>document.querySelector(s),drawer=$('#deskDrawer'),body=$('#drawerBody');let pending=null,compareId=null,manual=null,flight=null,scrollTimer=null,drawerReturn=null,waitingWorker=null,applyingUpdate=false,externalPending=false,offlineReady=false;let navStack=[],currentRoute=null,lastList=null,activeSearch=null;const searchStates=new Map();
  const world=createWorld({app,notebook,reduced});
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const btn=(label,fn,cls)=>{const n=el('button',label,cls);n.type='button';n.addEventListener('click',fn);return n;};
  const stamp=time=>new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(time));
- function snapshot(){return {title:$('#drawerTitle').textContent,nodes:[...body.childNodes],scroll:drawer.scrollTop||0,route:currentRoute,searchKey:activeSearch};}
+ function snapshot(){if(activeSearch&&searchStates.has(activeSearch))searchStates.get(activeSearch).scroll=drawer.scrollTop||0;return {title:$('#drawerTitle').textContent,nodes:[...body.childNodes],scroll:drawer.scrollTop||0,route:currentRoute,searchKey:activeSearch};}
  function open(title,route=null){if(drawer.open&&title!==$('#drawerTitle').textContent)navStack.push(snapshot());if(!drawer.open){drawerReturn=document.activeElement;navStack=[];}$('#drawerTitle').textContent=title;body.replaceChildren();currentRoute=route;activeSearch=null;$('#drawerBack').hidden=title==='机の引き出し'&&!navStack.length;if(!drawer.open)drawer.showModal();drawer.scrollTop=0;}
- function restore(view){$('#drawerTitle').textContent=view.title;body.replaceChildren(...view.nodes);currentRoute=view.route;activeSearch=view.searchKey;$('#drawerBack').hidden=view.title==='机の引き出し'&&!navStack.length;if(!drawer.open)drawer.showModal();drawer.scrollTop=view.scroll;}
+ function restore(view){if(drawer.open)snapshot();$('#drawerTitle').textContent=view.title;body.replaceChildren(...view.nodes);currentRoute=view.route;activeSearch=view.searchKey;$('#drawerBack').hidden=view.title==='机の引き出し'&&!navStack.length;if(!drawer.open)drawer.showModal();drawer.scrollTop=view.scroll;}
  function close(){if(activeSearch&&searchStates.has(activeSearch))searchStates.get(activeSearch).scroll=drawer.scrollTop||0;drawer.close();drawerReturn?.focus?.({preventScroll:true});}
  $('#drawerClose').addEventListener('click',close);
+ drawer.addEventListener('close',()=>{snapshot();drawerReturn?.focus?.({preventScroll:true});});
  $('#drawerBack').addEventListener('click',()=>{if(navStack.length)restore(navStack.pop());else{menu();navStack=[];$('#drawerBack').hidden=true;}});
  $('#returnList').addEventListener('click',()=>{if(!lastList)return;drawerReturn=document.activeElement;navStack=lastList.stack.slice();restore(lastList.view);});
  function visitDraft(d){if(!notebook.get(d.id)){onStatus('この原稿は現在の一覧では確認できません。検索し直してください。');return;}if(drawer.open&&currentRoute){lastList={view:snapshot(),stack:navStack.slice()};$('#returnList').hidden=false;$('#returnList').textContent=activeSearch?'検索結果へ戻る':'前の一覧へ戻る';}close();openPlace(d.place);selectId(d.id);}
