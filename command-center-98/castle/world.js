@@ -1,12 +1,12 @@
 export function createWorld({app,notebook,reduced}){
- const rooms={choi:'assets/room-choi-v1.webp',fp:'assets/room-fp-v1.webp',shiire:'assets/room-shiire-v1.webp'};
+ const rooms={choi:'assets/room-choi-v1-display.webp',fp:'assets/room-fp-v1-display.webp',shiire:'assets/room-shiire-v1-display.webp'};
  const scene=document.querySelector('#otherRoom'),stations=document.querySelector('.stations'),loaded=new Set();let current=null,clock=null,arrival=null,mapFlight=null;
  function loadRoom(key){if(!rooms[key]||loaded.has(key))return;const image=new Image();image.onload=()=>{loaded.add(key);if(current===key){scene.style.backgroundImage=`url("${rooms[key]}")`;app.dataset.roomReady=key;}};image.src=rooms[key];}
  function environment(){app.dataset.mapMotion=document.hidden?'paused':'on';const date=new Date(),hour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Tokyo',hour:'2-digit',hourCycle:'h23'}).format(date)),month=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Tokyo',month:'numeric'}).format(date));
   const mode=notebook.pref('light','auto');app.dataset.light=mode==='auto'?(hour>=6&&hour<16?'day':hour>=16&&hour<19?'evening':'night'):mode;
   const season=month>=3&&month<=5?'spring':month>=6&&month<=8?'summer':month>=9&&month<=11?'autumn':'winter';app.dataset.season=season;
   document.querySelector('#seasonDetail').textContent={spring:'❧',summer:'❦',autumn:'❧',winter:'✧'}[season];
-  const homeMode=notebook.pref('homeMode','cards');app.dataset.homeMode=homeMode;stations.style.setProperty('--map-art',homeMode==='map'?'url("assets/town-map-v1.webp")':'none');
+  const homeMode=notebook.pref('homeMode','cards');app.dataset.homeMode=homeMode;stations.style.setProperty('--map-art',homeMode==='map'?'url("assets/town-map-v1-display.webp")':'none');
   document.querySelector('#homeMode').textContent=homeMode==='map'?'カード表示':'街マップ';document.querySelector('#homeMode').setAttribute('aria-pressed',String(homeMode==='map'));
   app.dataset.motion=notebook.pref('quiet',false)?'quiet':'standard';
  }

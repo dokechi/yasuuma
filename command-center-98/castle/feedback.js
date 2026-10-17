@@ -1,5 +1,5 @@
-import {createMusicControls} from './music.js?v=32';
-import {createCharacterScenes} from './character-scenes.js?v=30';
+import {createMusicControls} from './music.js?v=33';
+import {createCharacterScenes} from './character-scenes.js?v=33';
 import {createCharacterRig} from './character-rig.js?v=24';
 import {createSkirtAction} from './skirt-action.js?v=24';
 // Shared presentation layer. Character-specific assets/copy live in CHARACTERS.
@@ -216,7 +216,7 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
   document.querySelectorAll('button').forEach(button=>button.addEventListener('pointerdown',respondToPress,{passive:true}));
   for(const station of stations){
    const key=station.dataset.place,cfg=characters[key],node=station.querySelector('.sprite'),overlay=node.querySelector('.blink-overlay');
-   node.querySelector('img').src=cfg.src;station.style.setProperty('--accent',cfg.color);node.style.setProperty('--idle-delay',cfg.delay+'s');
+   if(!scenes?.supports(key))node.querySelector('img').src=cfg.src;station.style.setProperty('--accent',cfg.color);node.style.setProperty('--idle-delay',cfg.delay+'s');
    nodes.set(key,{node,overlay});loadOverlay(overlay,key);
    if(typeof ResizeObserver!=='undefined')new ResizeObserver(refresh).observe(node);
   }
