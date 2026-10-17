@@ -26,7 +26,7 @@ export const CHARACTER_SCENES={
  }
 };
 // Latest user PNGs remain byte-for-byte intact; no inherited deformation zones.
-const artwork=(id,label,file,size,line)=>({id,label,src:'assets/user-'+file+'.png',size,focus:[.5,size[1]>size[0]?0:.15],zones:{},static:true,line});
+const artwork=(id,label,file,size,line)=>({id,label,src:'assets/user-'+file+'-display.webp',size,focus:[.5,size[1]>size[0]?0:.15],zones:{},static:true,line});
 CHARACTER_SCENES.fp.tea=artwork('tea','お茶','19079',[1024,1536],'温かいお茶をどうぞ。ひと息ついてから、続きを読みましょう。');
 CHARACTER_SCENES.shiire={
  welcome:artwork('welcome','お迎え','19080',[1536,1024],'いらっしゃい。今日の確認も一緒に進めよう。'),

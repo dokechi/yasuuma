@@ -1,5 +1,5 @@
 /* Whole-application RPG presentation. No routing, data, auth, visibility or image-content changes. */
-@font-face{font-family:CCRpgDot;src:url('./assets/rpg-home/DotGothic16-Regular.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:CCRpgDot;src:url('./assets/rpg-home/DotGothic16-Regular.woff2') format('woff2'),url('./assets/rpg-home/DotGothic16-Regular.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
 body.cc-rpg-theme{
  --rpg-bg:#121723;--rpg-panel:#202633;--rpg-raised:#293141;--rpg-sunken:#171d28;--rpg-line:#695d48;--rpg-line-soft:#3e4654;--rpg-text:#eee8da;--rpg-muted:#b6b8bc;--rpg-gold:#e2c68c;--rpg-link:#f0ce88;--rpg-good:#a9ddba;--rpg-bad:#ffb8ac;--rpg-warning:#f1d293;
  --win-gray:var(--rpg-panel);--win-light:var(--rpg-line);--win-mid:var(--rpg-raised);--win-dark:var(--rpg-line);--win-black:var(--rpg-line);--win-blue:var(--rpg-raised);--desktop:var(--rpg-bg);

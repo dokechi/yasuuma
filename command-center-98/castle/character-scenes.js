@@ -1,5 +1,5 @@
-import {CHARACTER_SCENES,CHARACTER_LABELS,SCENE_IDS,sceneCamera,sceneHit} from './scene-manifest.js?v=24';
-import {createSceneMotion} from './scene-motion.js?v=24';
+import {CHARACTER_SCENES,CHARACTER_LABELS,SCENE_IDS,sceneCamera,sceneHit} from './scene-manifest.js?v=33';
+import {createSceneMotion} from './scene-motion.js?v=33';
 import {createPersona} from './persona.js?v=28';
 export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onReact}){
  const $=s=>document.querySelector(s),panel=$('#characterScenes');

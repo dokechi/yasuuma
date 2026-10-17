@@ -96,7 +96,7 @@ test('search and favorites open the exact cross-room manuscript; completion reco
 });
 test('map opens all four places and late room imagery never changes the current room',async()=>{
  const b=boot({hash:''});await b.click('#homeMode');assert.equal(b.$('#app').dataset.homeMode,'map');for(const key of ['choi','fp','shiire','kyun']){await b.click('[data-place='+key+']');assert.equal(b.read('place'),key);assert.equal(b.read('view'),'work');await b.click('#back');}
- await b.click('[data-place=fp]');const fp=b.images.find(i=>i.src==='assets/room-fp-v1.webp');assert.ok(fp);await b.click('[data-go=shiire]');fp.onload();assert.notEqual(b.$('#app').dataset.roomReady,'fp');const shiire=b.images.find(i=>i.src==='assets/room-shiire-v1.webp');shiire.onload();assert.equal(b.$('#app').dataset.roomReady,'shiire');
+ await b.click('[data-place=fp]');const fp=b.images.find(i=>i.src==='assets/room-fp-v1-display.webp');assert.ok(fp);await b.click('[data-go=shiire]');fp.onload();assert.notEqual(b.$('#app').dataset.roomReady,'fp');const shiire=b.images.find(i=>i.src==='assets/room-shiire-v1-display.webp');shiire.onload();assert.equal(b.$('#app').dataset.roomReady,'shiire');
 });
 test('clipboard denial records no copy until the user confirms manual copying',async()=>{
  const b=boot();b.navigator.clipboard.writeText=async()=>{throw Error('denied')};await b.click('#copy');assert.equal(b.read('notebook.copies().length'),0);assert.equal(b.$('#copySeal').hidden,true);assert.equal(b.$('#copyFallback').open,true);await b.click('#manualCopied');assert.equal(b.read('notebook.copies().length'),1);assert.equal(b.$('#copySeal').hidden,false);
@@ -143,7 +143,7 @@ test('imported snapshots cannot claim to be live server records or overwrite a s
  const b=boot({seeds:{kyun:[],choi:[],fp:[],shiire:[]}});b.context.row=live();b.read('notebook.replaceSources([row],{complete:true})');b.context.incoming=JSON.stringify({drafts:[live('外部ファイル本文')]});b.read('notebook.applyImport(notebook.parseImport(incoming))');assert.equal(b.read('notebook.get("live-kyun-test-0").body'),'本番の原文');assert.equal(b.read('notebook.all().filter(x=>x.source).length'),1);
 });
 
-function sceneSource(key,id){return key==='shiire'?'assets/user-'+({welcome:19080,work:19017,rest:19016,tea:19020,special:19018})[id]+'.png':key==='fp'&&id==='tea'?'assets/user-19079.png':`assets/scene-${key}-${id}-v1.jpg`;}
+function sceneSource(key,id){return key==='shiire'?'assets/user-'+({welcome:19080,work:19017,rest:19016,tea:19020,special:19018})[id]+'-display.webp':key==='fp'&&id==='tea'?'assets/user-19079-display.webp':`assets/scene-${key}-${id}-v1.jpg`;}
 async function sceneLoaded(b,key,id){
  const src=sceneSource(key,id),pending=b.images.findLast(i=>i.src===src);
  assert.ok(pending,`requested ${src}`);pending.onload();for(let i=0;i<12;i++)await Promise.resolve();

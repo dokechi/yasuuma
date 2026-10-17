@@ -2,7 +2,7 @@
    The 941x1672 artwork keeps a uniform scale. Narrow phones crop only unused left
    scenery; wide screens use the artwork's natural width. Limit extreme portrait
    frames to 2.2:1 so the right-side figures never crowd the real text. */
-@font-face{font-family:CCRpgDot;src:url('./assets/rpg-home/DotGothic16-Regular.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:CCRpgDot;src:url('./assets/rpg-home/DotGothic16-Regular.woff2') format('woff2'),url('./assets/rpg-home/DotGothic16-Regular.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
 body.rpg-home-active{overflow:hidden!important}
 body.rpg-home-active #mainWindow,body.rpg-home-active .home-mobile-nav{display:none!important}
 #ccRpgHome[hidden],#ccRpgLegacyReturn[hidden]{display:none!important}

@@ -56,6 +56,7 @@ jobs:
           CC_UX_MODE=map NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-ux-browser.cjs
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/unified-castle-browser.cjs
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-music-browser.cjs
+          NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-polish-browser.cjs
       - name: Syntax and manual operation contracts
         env:
           REQUIRE_THREADS_SQL: "1"

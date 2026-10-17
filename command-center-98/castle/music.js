@@ -13,6 +13,7 @@ export function createMusicControls({onStatus=()=>{},getEffects,setEffects,stora
  function wanted(){return enabled&&armed&&volume>0&&!doc.hidden&&hostActive&&!departed;}
  function refresh(){const fx=getEffects();toggle.checked=enabled;slider.value=String(Math.round(volume*100));$('#bgmVolumeValue').textContent=slider.value+'%';effects.checked=fx.enabled;effectsSlider.value=String(Math.round(effectsVolume*100));$('#effectsVolumeValue').textContent=effectsSlider.value+'%';
   const state=!enabled?'off':volume===0?'muted':failed?'retry':pending?'loading':!audio.paused?'playing':!armed?'waiting':'paused';audio.dataset.state=state;start.hidden=!enabled||volume===0||!!pending||!audio.paused;
+  const stateName={off:'切',muted:'消音',retry:'再試行',loading:'読込中',playing:'再生中',waiting:'待機',paused:'停止'}[state],summary=menu.querySelector('summary'),badge=summary.querySelector('.music-state');if(badge)badge.textContent='BGM '+stateName;summary.dataset.musicState=state;summary.setAttribute('aria-label',`音設定。BGM${state==='off'?'オフ':stateName}、音量${Math.round(volume*100)}%。効果音${!fx.enabled?'オフ':effectsVolume===0?'消音':'オン'}。`);summary.title=summary.getAttribute('aria-label');
   start.textContent=failed?'BGMを再試行':'BGMを再生';status.textContent={off:'BGMはオフです',muted:'音量0・一時停止',retry:'音源を読み込めませんでした。オンラインで再試行できます',loading:'BGMを読み込み中…',playing:'Harvest_Festival を再生中',waiting:'保存設定はオンです。再生ボタンで開始します',paused:'BGMは一時停止中です'}[state];
  }
  function pause(){epoch++;try{audio.pause();}catch{}refresh();}

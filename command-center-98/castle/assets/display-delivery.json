@@ -1,0 +1,173 @@
+{
+  "conversion": {
+    "format": "WebP",
+    "quality": 94,
+    "alphaQuality": 100,
+    "effort": 6,
+    "smartSubsample": true,
+    "resized": false,
+    "originalsRetained": true
+  },
+  "images": [
+    {
+      "source": "town.webp",
+      "display": "town-display.webp",
+      "width": 941,
+      "height": 1672,
+      "before": 1922164,
+      "after": 471928,
+      "originalSha256": "26c66a2d1c7d9c1fb5e82b5b1399a95426f2b75794f03eaaaf93b7d335c5de14",
+      "displaySha256": "e8a97343ef6a336f872cecaabaea96f0ed165c06c05d69e3cc66ba653bd5ec10"
+    },
+    {
+      "source": "town-map-v1.webp",
+      "display": "town-map-v1-display.webp",
+      "width": 1536,
+      "height": 1024,
+      "before": 2694768,
+      "after": 853290,
+      "originalSha256": "190d40f700d1febf19de5cf29c83ecf93f5caca215d194c528b77114ae480327",
+      "displaySha256": "155717068a035be2591af60e1298e0ee7555edbfdf4266492239707f4e0ddb97"
+    },
+    {
+      "source": "kyun-study-v1.webp",
+      "display": "kyun-study-v1-display.webp",
+      "width": 1536,
+      "height": 1024,
+      "before": 2083960,
+      "after": 574088,
+      "originalSha256": "9a80793664b18b9b0cec30a76416a646278e2c06ba340d57a4ec88d86eb69729",
+      "displaySha256": "44f2da9d14ff605c24ad103ca657e13b8b6f26d3e663c959b15e2ecb81de8949"
+    },
+    {
+      "source": "kyun-writer-v1.webp",
+      "display": "kyun-writer-v1-display.webp",
+      "width": 1024,
+      "height": 1536,
+      "before": 1342330,
+      "after": 454966,
+      "originalSha256": "5b86f56a2638f3047478bc0b25981171e83dc1471dad31fd66fe47ff9e778665",
+      "displaySha256": "95ad851c5805f36acfc44417728d6e234d65179de87c7c0efc996ac10af3aca9"
+    },
+    {
+      "source": "choi.webp",
+      "display": "choi-display.webp",
+      "width": 941,
+      "height": 1672,
+      "before": 1245198,
+      "after": 416160,
+      "originalSha256": "b9c9539113b7a46cb71c1804d8d9d62c8bf156c8693dcd1eb90e6b88f00413fd",
+      "displaySha256": "aed32ccfdc32eefdb1df8d939fc9f4332f4585a946e10e688329258e767fe6b1"
+    },
+    {
+      "source": "fp.webp",
+      "display": "fp-display.webp",
+      "width": 941,
+      "height": 1671,
+      "before": 1399992,
+      "after": 490432,
+      "originalSha256": "7d2e3c5b3c7ea4eea4464bd15c9609430679ad1d6069a59bd15e403be7887f6d",
+      "displaySha256": "74f5b45f86c04bebb90b8b2252d6c7aa702d1a585f4afea99545ec7fa471b8f3"
+    },
+    {
+      "source": "shiire.webp",
+      "display": "shiire-display.webp",
+      "width": 941,
+      "height": 1672,
+      "before": 1158702,
+      "after": 390344,
+      "originalSha256": "53145d796d306bcf695dbebdb6a6dee0c12f20cc5c6ee5cab76a516dacc7d84e",
+      "displaySha256": "f5f7c077a8f0e634d214cdbb201989d08d872e7f4939b3634a02d73c7800775d"
+    },
+    {
+      "source": "room-choi-v1.webp",
+      "display": "room-choi-v1-display.webp",
+      "width": 1536,
+      "height": 1024,
+      "before": 2191452,
+      "after": 631034,
+      "originalSha256": "ebd7422b6e13b35a95cfd1b6f6dcf442ad4445e038e4a6c4ccc801c07799e96f",
+      "displaySha256": "a060da307f25011990b4869c10b0409308b5f2771eadd9db55b291aee8daa2c0"
+    },
+    {
+      "source": "room-fp-v1.webp",
+      "display": "room-fp-v1-display.webp",
+      "width": 1536,
+      "height": 1024,
+      "before": 2111618,
+      "after": 581636,
+      "originalSha256": "d53f9c98932e4af3efd43b199fb06f860ca1d31c3df3085ea0517772860c22ec",
+      "displaySha256": "a2dac54f934d4dfa1a643ea532dd7dfd6615e7929ccc5010a811266a15fb19b2"
+    },
+    {
+      "source": "room-shiire-v1.webp",
+      "display": "room-shiire-v1-display.webp",
+      "width": 1536,
+      "height": 1024,
+      "before": 2079364,
+      "after": 578764,
+      "originalSha256": "d76b379b92a423601241bfe0a96b6a36fabfca99b9c67d9a8e706432a9f688cc",
+      "displaySha256": "fc5dc475196264cec290d3d794311169602136ff9e767f766a989a7ff19083b9"
+    },
+    {
+      "source": "user-19016.png",
+      "display": "user-19016-display.webp",
+      "width": 1536,
+      "height": 1024,
+      "before": 2296825,
+      "after": 405928,
+      "originalSha256": "a5c77a7952dab55172b9ec062fe1e8b6c2b1f65479ae12104a02be9468e8a781",
+      "displaySha256": "7e5541a0fe8bf58b7453db533363b8cbc5ab905dfcc597b16654a360f96ab6a3"
+    },
+    {
+      "source": "user-19017.png",
+      "display": "user-19017-display.webp",
+      "width": 1536,
+      "height": 1024,
+      "before": 2227431,
+      "after": 385612,
+      "originalSha256": "3329cbed7828266915c20faa84246a298b4072f30c3205265db71786eff8eebc",
+      "displaySha256": "33ea43c15cd6ed549e98cfa6346e36949ad1fc8480222c4d3ac269cb56c9850f"
+    },
+    {
+      "source": "user-19018.png",
+      "display": "user-19018-display.webp",
+      "width": 1024,
+      "height": 1536,
+      "before": 2617014,
+      "after": 499966,
+      "originalSha256": "bbe6b94ec07eeb4a7b970c2854732f4077c3f31dc95ca5aec408f551a2c6e896",
+      "displaySha256": "6286e1e2a1ae49aa0f26a49bdaa328da019108e4b437869f866e6c62c1368163"
+    },
+    {
+      "source": "user-19020.png",
+      "display": "user-19020-display.webp",
+      "width": 1024,
+      "height": 1536,
+      "before": 2247660,
+      "after": 410158,
+      "originalSha256": "5a562cbda73f6a1aa62feb4d1b71fd31dea771b59a794830c0a87650669f5492",
+      "displaySha256": "4bcacdc3614a516acd4f073f9142d4bea7a15e1a836a46bf05a34aef5168559a"
+    },
+    {
+      "source": "user-19079.png",
+      "display": "user-19079-display.webp",
+      "width": 1024,
+      "height": 1536,
+      "before": 2489938,
+      "after": 464028,
+      "originalSha256": "cef59baa5155cac9ea103bfc772bbfe10cf1a49852e4751391b3f05625e4e0a5",
+      "displaySha256": "3679f49521c6ac30982f7f386dd80203ebf5c4087e6602e947fc1388fcde06b9"
+    },
+    {
+      "source": "user-19080.png",
+      "display": "user-19080-display.webp",
+      "width": 1536,
+      "height": 1024,
+      "before": 2380354,
+      "after": 431324,
+      "originalSha256": "1837f5a8260cf351ea7d6958472a2ef1c8cc0263c0de7cd9be0251ab6b9ac0c3",
+      "displaySha256": "a7238ab2d92842d987e5a4dfdd25440c4bbf6ce157685bef954f76c4964d8e21"
+    }
+  ]
+}
