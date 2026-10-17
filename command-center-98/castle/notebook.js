@@ -41,7 +41,7 @@ export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>
  function remember(place,draftId,scroll){put('read:'+draftId,Math.max(0,Math.min(Number(scroll)||0,1e7)));put('selected:'+place,draftId);}
  function visit(place){put('lastPlace',place);put('visit:'+place,now());const first=!records.get('visited:'+place);put('visited:'+place,true);return first;}
  function copied(draft,kind,text){const event={id:id(),draftId:draft.id,place:draft.place,title:draft.title,kind,text,time:now()};put('copy:'+event.id,event);return event;}
- function copies(){const available=all({includeHidden:true});return [...records].filter(([k,v])=>k.startsWith('copy:')&&v&&typeof v.text==='string'&&Object.hasOwn(seeds,v.place)&&Number.isFinite(new Date(v.time).getTime())).map(([,v])=>{const event=clone(v);if(event.legacy&&event.source){const matches=available.filter(d=>d.source?.account===event.source.account&&sourceId(d.source.id)===sourceId(event.source.id)&&(d.body===event.text||d.link===event.text)),labelled=matches.filter(d=>d.kind===event.label||d.source.label===event.label),exact=labelled.length?labelled:matches,draft=exact.length===1?exact[0]:null;event.draftId=draft?.id||'';if(draft)event.kind=draft.link===event.text?'link':'body';}return event;}).sort((a,b)=>b.time-a.time);}
+ function copies(){const available=all({includeHidden:true});return [...records].filter(([k,v])=>k.startsWith('copy:')&&v&&typeof v.text==='string'&&Object.hasOwn(seeds,v.place)&&Number.isFinite(new Date(v.time).getTime())).map(([,v])=>{const event=clone(v);if(event.legacy&&event.source){const matches=available.filter(d=>sourceId(event.source.id)&&d.source?.account===event.source.account&&sourceId(d.source.id)===sourceId(event.source.id)&&(d.body===event.text||d.link===event.text)),labelled=matches.filter(d=>d.kind===event.label||d.source.label===event.label),exact=labelled.length?labelled:matches,draft=exact.length===1?exact[0]:null;event.draftId=draft?.id||'';if(draft)event.kind=draft.link===event.text?'link':'body';}return event;}).sort((a,b)=>b.time-a.time);}
  function copyMark(d){return copies().find(c=>c.draftId===d.id&&c.kind==='body'&&c.text===d.body)||null;}
  function finish(d){return change('done:'+d.id,{id:d.id,place:d.place,title:d.title,body:d.body,time:now()});}
  function completed(place){return [...records].filter(([k,v])=>k.startsWith('done:')&&v?.place===place&&typeof v.title==='string'&&typeof v.body==='string'&&(v.legacy===true&&v.time===null||Number.isFinite(v.time)&&Number.isFinite(new Date(v.time).getTime()))).map(([,v])=>clone(v)).sort((a,b)=>b.time-a.time);}
@@ -60,10 +60,10 @@ export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>
  // Import only the old reading namespace. Each target is independently durable;
  // absent manuscripts remain pending, and retries never overwrite a new false.
  const legacyPrefix='cc-rpg-daily.v1.',accountPlace={kyun:'kyun',choi:'choi',tiktok:'fp',fp:'fp',sourcing:'shiire'};
- const sourceId=value=>String(value).replace(/^sns:/,'');
+ const sourceId=value=>{const id=String(value??'').replace(/^sns:/,'');return ['','null','undefined'].includes(id)?'':id;};
  function legacyRows(){const rows=[];if(!storage)return rows;try{for(let i=0;i<storage.length;i++){const key=storage.key(i);if(!key?.startsWith(legacyPrefix))continue;try{rows.push([key.slice(legacyPrefix.length),JSON.parse(storage.getItem(key))]);}catch{onError();}}}catch{onError();}return rows;}
  function inherit(key,value){try{if(storage?.getItem(NOTEBOOK_PREFIX+key)!==null&&storage?.getItem(NOTEBOOK_PREFIX+key)!==undefined)return true;}catch{onError();return false;}return put(key,value);}
- function sourceDraft(account,recordId,available=all({includeHidden:true})){return available.find(d=>d.source?.account===account&&sourceId(d.source.id)===sourceId(recordId));}
+ function sourceDraft(account,recordId,available=all({includeHidden:true})){if(!sourceId(recordId))return null;return available.find(d=>d.source?.account===account&&sourceId(d.source.id)===sourceId(recordId));}
  function inheritCopy(event,fallbackId,available){if(!event||typeof event.text!=='string'||!Number.isFinite(event.time)||typeof event.account!=='string'||!Object.hasOwn(accountPlace,event.account)||!Object.hasOwn(seeds,accountPlace[event.account]))return false;
   const eventId=typeof event.eventId==='string'&&event.eventId?event.eventId:fallbackId;if(!eventId)return false;const draft=sourceDraft(event.account,event.id,available),kind=draft?.link===event.text?'link':'body',key='copy:legacy:'+eventId;
   return inherit(key,{...clone(event),id:'legacy:'+eventId,eventId,draftId:draft?.id||'',place:accountPlace[event.account],title:String(event.title||''),kind,text:event.text,time:event.time,legacy:true,source:{account:event.account,id:String(event.id)}});
@@ -87,3 +87,4 @@ export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>
   pref:(key,fallback)=>records.has('pref:'+key)?clone(records.get('pref:'+key)):fallback,setPref:(key,v)=>put('pref:'+key,v),
   export:()=>JSON.stringify({format:'command-center-v1',exportedAt:new Date(now()).toISOString(),drafts:all({includeHidden:true})},null,2),persistent:()=>persistent,canUndo:()=>undoStack.length>0};
 }
+
