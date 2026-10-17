@@ -391,27 +391,27 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:48
    await evaluate(`${C}.document.getElementById('homeMode').click()`);
   }
   await capture('castle-unselected-fp',`${C}.CCCastleApp.notebook.sources().some(x=>x.source.id==='fixture-unselected-fp'&&x.body.includes('入口選択前の保存本文')&&x.source.status.includes('未確定'))`);
-  await capture('castle-versioned-entry',`${C}.location.pathname.endsWith('/castle/entry-v28.html')`);
+  await capture('castle-versioned-entry',`${C}.location.pathname.endsWith('/castle/entry-v29.html')`);
   await capture('castle-saved-signal',`${C}.CCCastleApp.notebook.sources().some(x=>x.source.id==='fixture-saved-only'&&x.body.includes('保存先の最新台本本文'))`);
   await evaluate(`${C}.CCCastleApp.open('kyun');Object.defineProperty(${C}.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__castleCopied=text}}});${C}.document.getElementById('copy').click()`);
   await waitFor(`!!window.__castleCopied`);
   await capture('castle-live-copy',`window.__castleCopied===${C}.CCCastleApp.getState().draft.body&&!${C}.document.getElementById('copySeal').hidden`);
   await evaluate(`${C}.document.getElementById('pinDraft').click();${C}.document.getElementById('deskMenu').click();[...${C}.document.querySelectorAll('#drawerBody button')].find(b=>b.textContent==='2つの原稿を比較').click()`);
   await capture('castle-comparison',`!${C}.document.getElementById('comparePane').hidden`);
-  await evaluate(`${C}.document.getElementById('closeCompare').click();${C}.document.getElementById('deskMenu').click();[...${C}.document.querySelectorAll('#drawerBody button')].find(b=>b.textContent==='仮置き皿に置く').click();${C}.document.getElementById('drawerClose').click();${C}.document.getElementById('deskMenu').click();[...${C}.document.querySelectorAll('#drawerBody button')].find(b=>b.textContent==='仮置き皿').click()`);
+  await evaluate(`${C}.document.getElementById('closeCompare').click();${C}.document.getElementById('deskMenu').click();[...${C}.document.querySelectorAll('#drawerBody button')].find(b=>b.textContent==='作業中の仮置きに置く').click();${C}.document.getElementById('drawerClose').click();${C}.document.getElementById('deskMenu').click();[...${C}.document.querySelectorAll('#drawerBody button')].find(b=>b.textContent==='作業中の仮置き').click()`);
   await capture('castle-fold-tray',`!${C}.document.getElementById('trayRail').hidden`);
   await evaluate(`${C}.document.getElementById('closeTray').click();${C}.document.getElementById('deskMenu').click();[...${C}.document.querySelectorAll('#drawerBody button')].find(b=>b.textContent==='＋ 原稿を書く').click();(()=>{const f=${C}.document.querySelector('#drawerBody form');f.elements.title.value='本番統合・確認用の端末原稿';f.elements.body.value='保存する長い原稿。\\n'.repeat(80);f.requestSubmit()})()`);
   await capture('castle-local-edit',`${C}.CCCastleApp.getState().draft.title==='本番統合・確認用の端末原稿'`);
   await evaluate(`${C}.document.getElementById('paperScroll').scrollTop=150;window.__castlePosition=${C}.document.getElementById('paperScroll').scrollTop;window.__castleDraftId=${C}.CCCastleApp.getState().draft.id`);
   await send('Emulation.setDeviceMetricsOverride',{width:360,height:800,deviceScaleFactor:1,mobile:true});await sleep(300);
   await capture('castle-fold-preserves-reading',`${C}.CCCastleApp.getState().draft.id===window.__castleDraftId&&${C}.document.getElementById('paperScroll').scrollTop===window.__castlePosition`);
-  await evaluate(`${C}.document.querySelector('#productionTools button').click()`);await waitFor(`!!document.querySelector('.rpg-account-page[open]')`);
+  await evaluate(`${C}.document.querySelector('#productionNative').click()`);await waitFor(`!!document.querySelector('.rpg-account-page[open]')`);
   await capture('castle-native-posting',`document.getElementById('ccCastleFrame').hidden&&!!document.querySelector('.rpg-thread-record')`);
   await evaluate(`document.querySelector('.rpg-account-back').click()`);await waitFor(`!document.getElementById('ccCastleFrame').hidden`);
-  await evaluate(`${C}.CCCastleApp.open('shiire');${C}.document.querySelector('#productionTools button').click()`);await waitFor(`!app.busy&&app.view==='sourcing'`);
-  await capture('castle-native-sourcing',`document.getElementById('ccCastleFrame').hidden&&!document.getElementById('ccCastleReturn').hidden`);
+  await evaluate(`${C}.CCCastleApp.open('shiire');${C}.document.querySelector('#productionNative').click()`);await waitFor(`!app.busy&&app.view==='sourcing'`);
+  await capture('castle-native-sourcing',`document.getElementById('ccCastleFrame').hidden&&!document.getElementById('ccCastleReturn').hidden&&sourcingApp.sub==='purchases'`);
   await evaluate(`document.getElementById('ccCastleReturn').click()`);await waitFor(`!document.getElementById('ccCastleFrame').hidden`);
-  await evaluate(`${C}.CCCastleApp.open('fp');${C}.document.querySelector('#productionTools button').click()`);await waitFor(`!app.busy&&app.view==='fp'`);
+  await evaluate(`${C}.CCCastleApp.open('fp');${C}.document.querySelector('#productionNative').click()`);await waitFor(`!app.busy&&app.view==='fp'`);
   await capture('castle-native-fp',`document.getElementById('ccCastleFrame').hidden&&!!document.querySelector('[data-fp-open]')`);
   await evaluate(`document.getElementById('ccCastleReturn').click()`);
   // Reproduce the reported blank sourcing room while event history is stalled.
@@ -422,7 +422,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:48
   await evaluate(`window.__rpgQA.holdCastleEvents=false;window.__rpgQA.releaseCastleEvents();window.__progressRead`);
   await evaluate(`Promise.race([${C}.navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Castle offline shell did not install')),10000))])`);
   await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
-  await evaluate(`document.getElementById('ccCastleFrame').src='./castle/entry-v28.html?offline=1'`);await waitFor(`${C}.location.search==='?offline=1'&&!!${C}.CCCastleApp`);
+  await evaluate(`document.getElementById('ccCastleFrame').src='./castle/entry-v29.html?offline=1'`);await waitFor(`${C}.location.search==='?offline=1'&&!!${C}.CCCastleApp`);
   await capture('castle-offline',`${C}.CCCastleApp.notebook.all().some(x=>x.title==='本番統合・確認用の端末原稿')&&${C}.navigator.onLine===false`);
   await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
   results.push({name:'network-isolation',checks:[{name:'no attempted external network request',pass:blocked.length===0,detail:blocked},{name:'no uncaught browser exceptions',pass:errors.length===0,detail:errors}]});

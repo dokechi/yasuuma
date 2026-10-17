@@ -1,5 +1,14 @@
 // Portable, browser-local records. No credentials and no production writes.
 export const NOTEBOOK_PREFIX='castle-production.v1.';
+// Presentation only: explicit source identity, never titles or guessed URLs.
+export function groupDrafts(rows){
+ const groups=new Map();
+ for(const draft of rows){const source=draft.source,known=source&&source.id&&source.account&&!['undefined','null'].includes(source.id)&&!['undefined','null'].includes(source.account);
+  const key=JSON.stringify(known?[draft.place,source.account,source.id]:['draft',draft.id]);
+  if(!groups.has(key))groups.set(key,[]);groups.get(key).push(draft);
+ }
+ return [...groups.values()];
+}
 export function safeLink(value){const s=String(value||'').trim();if(!s)return '';try{const u=new URL(s);return ['https:','http:'].includes(u.protocol)?u.href:'';}catch{return '';}}
 export function dayInJapan(time=Date.now()){if(!Number.isFinite(Number(time))||!Number.isFinite(new Date(Number(time)).getTime()))return '';return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(time));}
 export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>{}}={}){

@@ -2,6 +2,23 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 const {parseHTML}=require('linkedom');
 function storage(){const map=new Map();return {get length(){return map.size},key:i=>[...map.keys()][i]??null,getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,String(v)),removeItem:k=>map.delete(k),map};}
+test('workflow navigation keeps one home return, direct rooms, search and one backup entry',async()=>{
+ const b=boot();assert.equal(b.$('#switch'),null);assert.equal(b.document.querySelectorAll('[data-go]').length,4);assert.match(b.$('#return').textContent,/読了にして戻る/);assert.match(b.$('#doneStack').textContent,/読了履歴/);
+ await b.click('#searchDrafts');assert.ok(b.$('#drawerBody input[type=search]'));await b.click('#drawerClose');await b.click('#deskMenu');
+ assert.deepEqual([...b.document.querySelectorAll('.drawer-section')].map(n=>n.textContent),['探す','この原稿を操作','管理']);assert.equal([...b.document.querySelectorAll('#drawerBody button')].filter(n=>n.textContent.includes('書き出す')).length,1);
+ await b.click(b.button('表示設定'));assert.equal([...b.document.querySelectorAll('#drawerBody button')].filter(n=>n.textContent.includes('書き出す')).length,0);
+ assert.deepEqual([...b.document.querySelectorAll('#productionShortcuts button')].map(n=>n.textContent),['海外時計','カード','作業日報','クーニー','仕入れ命']);
+ await b.click('#drawerClose');await b.click('[data-go=shiire]');assert.deepEqual([...b.document.querySelectorAll('#productionTools button')].filter(n=>!n.hidden).map(n=>n.textContent),['候補','購入・在庫','保存原稿を更新']);
+});
+test('explicit source variants group only for display and retain selection, snapshots and independent records',async()=>{
+ const b=boot();const make=(id,sourceId,account='kyun')=>({id,place:'kyun',title:'同じ見出し',body:'本文 '+id,kind:id,source:{id:sourceId,account,label:id},createdAt:1,updatedAt:1});
+ b.context.packet={drafts:[make('a','record-1'),make('b','record-1'),make('c','record-2'),make('d','record-1','choi'),make('e','undefined'),make('f','undefined')],complete:true,message:'保存原稿'};b.read('production.receive(packet)');
+ b.read("selectId('a')");assert.equal(b.$('#variantPicker').hidden,false);assert.equal(b.document.querySelectorAll('#variantSelect option').length,2);assert.equal(b.document.querySelectorAll('.draft-tabs button:not([hidden])').length,8);
+ b.$('#variantSelect').value='b';await b.emit(b.$('#variantSelect'),'change');assert.equal(b.$('#draftBody').textContent,'本文 b');assert.equal(b.document.querySelectorAll('.draft-tabs button[aria-selected=true]').length,1);assert.equal(b.document.querySelector('.draft-tabs button[aria-selected=true]').hidden,false);await b.click(b.document.querySelector('.draft-tabs button[aria-selected=true]'));assert.equal(b.$('#draftBody').textContent,'本文 b');
+ b.$('#paperScroll').scrollTop=72;await b.emit(b.$('#paperScroll'),'scroll');b.advance(200);await b.click('#copy');assert.equal(b.copied.at(-1),'本文 b');assert.equal(b.read('notebook.sources().length'),6);assert.equal(b.read('JSON.parse(notebook.export()).drafts.length'),18);
+ await b.click('#searchDrafts');assert.equal(b.document.querySelectorAll('#drawerBody details').length,1);assert.match(b.$('#drawerBody summary').textContent,/2案/);await b.click('#drawerClose');
+ b.read("selectId('c')");assert.equal(b.$('#variantPicker').hidden,true);b.read("selectId('b')");assert.equal(b.$('#paperScroll').scrollTop,72);
+});
 function boot({hash='#kyun',store=storage(),width=400,height=860,motion=false,serviceWorker,seeds}={}){
  const {document,window}=parseHTML(fs.readFileSync('./index.html','utf8'));let active=null,seq=0,clock=0,copied=[];const timers=new Map(),images=[],animations=[];
  Object.defineProperty(document,'activeElement',{get:()=>active});document.hidden=false;
@@ -41,14 +58,14 @@ test('real DOM adds a draft, copies body/link separately, edits seal, deletes an
 });
 test('selected draft, per-draft scroll, favorite, font, focus and quiet survive a reload',async()=>{
  const b=boot();await b.click('#tab-2');b.$('#paperScroll').scrollTop=240;await b.emit(b.$('#paperScroll'),'scroll');b.advance(200);await b.click('#pinDraft');assert.equal(b.$('#paperScroll').scrollTop,240);assert.equal(b.read('currentDraft'),0);
- await b.click('#focusMode');await b.menu('表示と操作');const selects=[...b.document.querySelectorAll('#drawerBody select')];selects[0].value='large';await b.emit(selects[0],'change');selects[1].value='true';await b.emit(selects[1],'change');
+ await b.click('#focusMode');await b.menu('表示設定');const selects=[...b.document.querySelectorAll('#drawerBody select')];selects[0].value='large';await b.emit(selects[0],'change');selects[1].value='true';await b.emit(selects[1],'change');
  const c=boot({store:b.store});assert.equal(c.$('#draftTitle').textContent,'長い原稿も、そのまま読める。');assert.equal(c.$('#paperScroll').scrollTop,240);assert.equal(c.$('#app').dataset.font,'large');assert.equal(c.$('#app').dataset.focus,'on');assert.equal(c.read('reduced.matches'),true);assert.equal(c.$('#pinDraft').getAttribute('aria-pressed'),'true');
 });
 test('comparison copy uses its own manuscript; unfolded tray and fold preserve current work',async()=>{
- const b=boot({width:850,height:900});await b.menu('仮置き皿に置く');await b.click('#drawerClose');await b.menu('仮置き皿');assert.equal(b.$('#trayRail').hidden,false);assert.equal(b.$('#trayItems .draft-pick strong').textContent,b.$('#draftTitle').textContent);
+ const b=boot({width:850,height:900});await b.menu('作業中の仮置きに置く');await b.click('#drawerClose');await b.menu('作業中の仮置き');assert.equal(b.$('#trayRail').hidden,false);assert.equal(b.$('#trayItems .draft-pick strong').textContent,b.$('#draftTitle').textContent);
  await b.menu('2つの原稿を比較');assert.equal(b.$('#trayRail').hidden,true);assert.equal(b.$('#comparePane').hidden,false);const current=b.$('#draftBody').textContent,other=b.$('#compareBody').textContent;assert.notEqual(current,other);await b.click('#compareCopy');assert.equal(b.copied.at(-1),other);assert.equal(b.$('#copySeal').hidden,true);
  b.$('#paperScroll').scrollTop=80;b.window.innerWidth=360;await b.emit(b.window,'resize');assert.equal(b.$('#draftBody').textContent,current);assert.equal(b.$('#paperScroll').scrollTop,80);assert.equal(b.$('#comparePane').hidden,false);
- await b.click('#closeCompare');await b.menu('仮置き皿');assert.equal(b.$('#deskDrawer').open,true);assert.ok(b.$('#drawerBody .draft-pick'));
+ await b.click('#closeCompare');await b.menu('作業中の仮置き');assert.equal(b.$('#deskDrawer').open,true);assert.ok(b.$('#drawerBody .draft-pick'));
 });
 test('import is staged, safe as text, applied only on request and undoable as one batch',async()=>{
  const b=boot(),original=b.$('#draftBody').textContent;const data=JSON.stringify({drafts:[{id:'import-1',place:'kyun',title:'<img src=x onerror=bad()>',body:'届いた本文',link:'https://example.com/'}]});
@@ -91,10 +108,10 @@ test('late clipboard completion stores its original snapshot without sealing an 
 });
 test('first entry embellishment is bounded, later visits are short, quiet keeps controls live',async()=>{
  const b=boot({hash:'',motion:true});await b.click('.station[data-place=choi]');assert.equal(b.$('#app').classList.contains('first-visit'),true);b.advance(430);assert.equal(b.$('#app').classList.contains('first-visit'),false);await b.click('#back');await b.click('.station[data-place=choi]');assert.equal(b.$('#app').classList.contains('first-visit'),false);
- await b.menu('表示と操作');const quiet=b.document.querySelectorAll('#drawerBody select')[1];quiet.value='true';await b.emit(quiet,'change');await b.click('#drawerClose');const count=b.animations.length;await b.click('#tab-1');await b.click('#copy');assert.equal(b.animations.length,count);assert.equal(b.copied.at(-1),b.$('#draftBody').textContent);
+ await b.menu('表示設定');const quiet=b.document.querySelectorAll('#drawerBody select')[1];quiet.value='true';await b.emit(quiet,'change');await b.click('#drawerClose');const count=b.animations.length;await b.click('#tab-1');await b.click('#copy');assert.equal(b.animations.length,count);assert.equal(b.copied.at(-1),b.$('#draftBody').textContent);
 });
 test('favorite list opens the saved draft and unsupported vibration has no fake control',async()=>{
- const b=boot();await b.click('#tab-2');const title=b.$('#draftTitle').textContent;await b.click('#pinDraft');await b.click('[data-go=shiire]');await b.menu('お気に入り');assert.equal(b.$('#drawerBody .draft-pick strong').textContent,title);await b.click(b.$('#drawerBody .draft-pick'));assert.equal(b.read('place'),'kyun');assert.equal(b.$('#draftTitle').textContent,title);delete b.navigator.vibrate;await b.menu('表示と操作');assert.ok(b.$('#drawerBody').textContent.includes('振動を利用できません'));assert.equal(b.document.querySelectorAll('#drawerBody select').length,4);
+ const b=boot();await b.click('#tab-2');const title=b.$('#draftTitle').textContent;await b.click('#pinDraft');await b.click('[data-go=shiire]');await b.menu('お気に入り');assert.equal(b.$('#drawerBody .draft-pick strong').textContent,title);await b.click(b.$('#drawerBody .draft-pick'));assert.equal(b.read('place'),'kyun');assert.equal(b.$('#draftTitle').textContent,title);delete b.navigator.vibrate;await b.menu('表示設定');assert.ok(b.$('#drawerBody').textContent.includes('振動を利用できません'));assert.equal(b.document.querySelectorAll('#drawerBody select').length,4);
 });
 
 const live=(body='本番の原文')=>({id:'live-kyun-test-0',place:'kyun',title:'本番原稿',body,link:'https://example.com/product',kind:'保存本文案1',createdAt:1,updatedAt:1,source:{id:'task:test',account:'kyun',label:'保存本文案1'}});
@@ -189,7 +206,7 @@ test('full view shares touch history; rest, work and pause preserve dialogue and
  await b.click('#sceneTouch');b.advance(400);await b.click('#sceneExpand');await b.click('#sceneTalk');const reply=b.$('#sceneCaption').textContent;assert.notEqual(reply,first);
  b.advance(400);await b.click('#sceneFullTouch');assert.equal(b.$('#sceneCaption').textContent,reply);
  await b.click('#sceneRest');await sceneLoaded(b,'kyun','rest');assert.equal(b.$('#characterScenes').dataset.scene,'rest');
- await b.click('#sceneContinue');await sceneLoaded(b,'kyun','work');assert.equal(b.$('#characterScenes').dataset.scene,'work');assert.equal(b.$('#draftBody').textContent,body);
+ await b.click('#sceneContinue');assert.equal(b.$('#sceneDialog').open,false);assert.equal(b.document.activeElement,b.$('#draft'));await sceneLoaded(b,'kyun','work');assert.equal(b.$('#characterScenes').dataset.scene,'work');assert.equal(b.$('#draftBody').textContent,body);
  await b.emit(b.window,'castle:pause');await b.click('#sceneTalk');assert.equal(b.$('#sceneCaption').textContent,reply);
  await b.emit(b.window,'castle:resume');assert.equal(b.$('#greetingText').textContent,reply);await b.click('#sceneTalk');assert.equal(b.$('#greetingText').textContent,reply);
 });
