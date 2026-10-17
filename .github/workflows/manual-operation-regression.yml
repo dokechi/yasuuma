@@ -70,6 +70,7 @@ jobs:
           node scripts/threads-manual-ui.test.cjs
           node --test scripts/threads-manual-api.test.mjs scripts/castle-signals.test.mjs
           node command-center-98/rpg-home.test.cjs
+          node command-center-98/rpg-workspaces.test.cjs
           node scripts/fp-finished-images.test.mjs
           node --test scripts/affiliate-production-api.test.mjs scripts/affiliate-production.test.mjs
           node --test scripts/command-center-save-safety.test.mjs scripts/card-jst-display.test.mjs scripts/save-consistency.test.mjs
