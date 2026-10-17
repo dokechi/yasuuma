@@ -1,0 +1,28 @@
+{
+  "title": "Harvest_Festival",
+  "edition": "Official loop edition (normal version, not Brass Ensemble)",
+  "author": "PeriTune / むつき醒 (Sei Mutsuki)",
+  "published": "2021-06-21",
+  "source": "https://peritune.com/blog/2021/06/21/harvest_festival/",
+  "download": "https://peritune.com/loop/PerituneMaterial_Harvest_Festival_loop.zip",
+  "archiveSha256": "b8bdb27f2f7e0e510d91b448fe6533c7fe3e740624bd077b61243df031614137",
+  "license": "CC BY 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "licenseEvidence": [
+    "https://peritune.com/about/",
+    "https://peritune.com/blog/2026/03/01/terms-update/"
+  ],
+  "changes": "Original archive members renamed only; no transcoding or audio edits. Runtime volume adjustment and looping.",
+  "assets": [
+    {
+      "file": "Harvest_Festival_loop.m4a",
+      "bytes": 2224015,
+      "sha256": "a08432a07a7c95269828782bd19898d30116436ba97caa48d0900ca9db5add6e"
+    },
+    {
+      "file": "Harvest_Festival_loop.ogg",
+      "bytes": 2597681,
+      "sha256": "d8f2b8fde8810873493740c2b1eff2777788a12ff79ada28de4e9b817d1ee855"
+    }
+  ]
+}

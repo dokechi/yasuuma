@@ -1,3 +1,4 @@
+import {createMusicControls} from './music.js?v=32';
 import {createCharacterScenes} from './character-scenes.js?v=30';
 import {createCharacterRig} from './character-rig.js?v=24';
 import {createSkirtAction} from './skirt-action.js?v=24';
@@ -20,11 +21,13 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
  const animations=new Map(),activeVoices=new Set(),ready=new Set();
  const nodes=new Map();
  const scenes=createCharacterScenes({app,stations,reduced,onLine:line=>{if(active)say(active,line,{persistent:true});},onStatus,onReact:()=>sound('select')});
+ let music=null,effectsVolume=.5;
  const storageKey='castle-town.sound.v1';
  try{soundEnabled=localStorage.getItem(storageKey)==='on';}catch{}
- function updateSound(){soundButton.setAttribute('aria-pressed',String(soundEnabled));soundButton.setAttribute('aria-label',soundEnabled?'効果音をオフにする':'効果音をオンにする');soundButton.title=soundEnabled?'効果音オン':'効果音オフ';soundButton.querySelector('span').textContent=soundEnabled?'音 ON':'音 OFF';}
+ function updateSound(){soundButton.setAttribute('aria-pressed',String(soundEnabled));soundButton.setAttribute('aria-label',soundEnabled?'効果音をオフにする':'効果音をオンにする');soundButton.title=soundEnabled?'効果音オン':'効果音オフ';soundButton.querySelector('span').textContent=soundEnabled?'効果音 ON':'効果音 OFF';music?.refresh();}
  function stopSound(){audioEpoch++;for(const voice of activeVoices){try{voice.stop();}catch{}}activeVoices.clear();}
  function tone(ctx,t,freq,end,duration,volume,type='sine'){
+  volume=Math.max(.000001,volume*effectsVolume);
   const osc=ctx.createOscillator(),gain=ctx.createGain();osc.type=type;
   osc.frequency.setValueAtTime(freq,t);osc.frequency.exponentialRampToValueAtTime(end,t+duration);
   gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(volume,t+.008);gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
@@ -32,7 +35,7 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
   osc.onended=()=>{activeVoices.delete(osc);osc.disconnect();gain.disconnect();};osc.start(t);osc.stop(t+duration+.02);
  }
  async function sound(kind){
-  if(!soundEnabled||document.hidden)return;
+  if(!soundEnabled||document.hidden||effectsVolume===0)return;
   const epoch=audioEpoch;
   try{
    const Audio=window.AudioContext||window.webkitAudioContext;
@@ -256,6 +259,8 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
   try{localStorage.setItem(storageKey,soundEnabled?'on':'off');}catch{}
   if(soundEnabled)sound('select');
  });
+ music=createMusicControls({onStatus,getEffects:()=>({enabled:soundEnabled,volume:effectsVolume}),setEffects:({enabled,volume,preview=false})=>{if(typeof enabled==='boolean'){soundEnabled=enabled;try{localStorage.setItem(storageKey,soundEnabled?'on':'off');}catch{onStatus('効果音の設定を端末に保存できませんでした。');}}if(typeof volume==='number')effectsVolume=volume;stopSound();updateSound();if(preview&&soundEnabled)sound('select');}});
+ window.addEventListener('storage',event=>{if(event.key===storageKey){soundEnabled=event.newValue==='on';stopSound();updateSound();}});
  function visibility(){
   app.classList.toggle('is-away',Boolean(document.hidden));stopSound();
   if(document.hidden){stopReaction();stopBlink();resetSpeech();context?.suspend().catch(()=>{});}else scheduleBlink();
