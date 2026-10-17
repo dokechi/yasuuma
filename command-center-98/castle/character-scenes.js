@@ -18,8 +18,8 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   onLine(reply.text);return true;
  }
  const choices=new Map(),images=new Map();
- const update=$('#freshNotice'),updateParent=update.parentNode;
- function placeUpdate(inDesk){update.classList.toggle('scene-update',inDesk);if(inDesk)document.querySelector('.desk').insertBefore(update,document.querySelector('.paper'));else updateParent.append(update);}
+ const update=$('#noticeRail'),updateParent=update.parentNode;
+ function placeUpdate(inDesk){if(inDesk)document.querySelector('.desk').insertBefore(update,document.querySelector('.paper'));else updateParent.insertBefore(update,document.querySelector('#home'));}
  function load(src){
   if(images.has(src))return images.get(src);
   const promise=new Promise((resolve,reject)=>{

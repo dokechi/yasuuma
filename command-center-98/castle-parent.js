@@ -10,9 +10,9 @@
  function whenReady(){if(ready||!modern||native||!w.CCHome?.active)return null;return new Promise(resolve=>startupWaiters.add(resolve));}
  function sync(){const isHome=!!w.CCHome?.active;if(isHome&&!wasHome&&modern){native=false;back.hidden=true;}wasHome=isHome;const shown=ready&&modern&&!native&&!!w.CCHome?.active;const changed=frame.hidden===shown;frame.hidden=!shown;d.body.classList.toggle('castle-visible',shown);if(changed)send(shown?'resume':'pause');if(shown||!modern||native||!isHome){for(const resolve of startupWaiters)resolve();startupWaiters.clear();}}
  function show(){if(!frame.getAttribute('src'))frame.src='./castle/entry-v29.html';modern=true;native=false;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}R.showRpg();back.hidden=true;sync();frame.focus();send('resume');if(ready)read();}
- function nativeRoute(action){native=true;send('pause');frame.hidden=true;d.body.classList.remove('castle-visible');back.hidden=false;
+ function nativeRoute(action,recordId){native=true;send('pause');frame.hidden=true;d.body.classList.remove('castle-visible');back.hidden=false;
   if(action==='classic'){modern=false;try{w.localStorage.setItem('cc-castle-mode','classic');}catch{}R.showLegacy();}
-  else if(action==='kyun'||action==='choi'||action==='tiktok'){H.openAccount(action);const dialog=d.querySelector('.rpg-account-page:last-of-type');dialog?.addEventListener('close',show,{once:true});}
+  else if(action==='kyun'||action==='choi'||action==='tiktok'){H.openAccount(action,{recordId});const dialog=d.querySelector('.rpg-account-page:last-of-type');dialog?.addEventListener('close',show,{once:true});}
   else ({fp:()=>W.openFp(),sourcing:()=>{if(typeof openSourcingSection==='function'){w.CCHome?.leave?.();return openSourcingSection('purchases');}return W.openSourcing();},watches:()=>W.openWatches(),cards:()=>W.openCards(),settings:()=>W.openSettings(),daily:()=>W.openService('daily'),cooney:()=>W.openService('cooney'),shiire:()=>W.openService('shiire')})[action]?.();
   if(!['kyun','choi','tiktok','classic'].includes(action))d.querySelector('dialog[open]')?.addEventListener('close',show,{once:true});
  }
@@ -65,7 +65,7 @@
   if(m.type==='ready'){ready=true;sync();if(lastPayload)send('records',lastPayload);else read();if(waitingWorker)send('host-update');}
   if(m.type==='refresh')read();
   if(m.type==='apply-host-update'&&waitingWorker){applyingUpdate=true;waitingWorker.postMessage({type:'SKIP_WAITING'});}
-  if(m.type==='native'&&['classic','kyun','choi','tiktok','fp','sourcing','watches','cards','settings','daily','cooney','shiire'].includes(m.action))nativeRoute(m.action);
+  if(m.type==='native'&&['classic','kyun','choi','tiktok','fp','sourcing','watches','cards','settings','daily','cooney','shiire'].includes(m.action))nativeRoute(m.action,typeof m.recordId==='string'&&m.recordId.length<=500?m.recordId:undefined);
  });
  back.addEventListener('click',()=>{for(const dialog of d.querySelectorAll('dialog[open]'))dialog.close();show();});d.addEventListener('cc:home-render',sync);const observer=new MutationObserver(sync);const home=d.getElementById('ccRpgHome');if(home)observer.observe(home,{attributes:true,attributeFilter:['hidden']});
  const classicButton=d.createElement('button');classicButton.type='button';classicButton.className='rpg-refresh';classicButton.textContent='城下町へ';classicButton.addEventListener('click',show);const footer=home?.querySelector('.rpg-footer');if(footer){const actions=d.createElement('div');actions.style.cssText='display:flex;align-items:center;justify-content:center;gap:8px;min-height:20px;flex-shrink:0';const refreshButton=footer.querySelector('.rpg-refresh');if(refreshButton)actions.append(refreshButton);actions.append(classicButton);footer.append(actions);}

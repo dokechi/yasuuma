@@ -34,7 +34,7 @@ const stationFor=key=>stations.find(node=>node.dataset.place===key);
 const portraitFor=key=>app.dataset.homeMode==='map'?stationFor(key):stationFor(key).querySelector('.portrait');
 const feedback=createFeedback({app,stations,companion,reduced,onStatus:showToast});
 feedback.init(Object.fromEntries(Object.entries(CHARACTERS).map(([key,cfg])=>[key,{...cfg,greeting:PLACES[key].greeting}])));
-function showToast(message){clearTimeout(toastTimer);$('#toast').textContent=message;$('#toast').classList.add('show');toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),1900);}
+function showToast(message){clearTimeout(toastTimer);const error=/失敗|未確認|できません|確認してください|エラー/.test(message);$('#toast').textContent=message;$('#toast').dataset.level=error?'warning':'success';$('#toast').setAttribute('role',error?'alert':'status');$('#toast').classList.add('show');if(!error)toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),1900);}
 function clearPress(){stations.forEach(node=>node.classList.remove('is-pressed'));}
 function rectStyle(rect){return {transform:`translate(${rect.left}px, ${rect.top}px)`,width:`${rect.width}px`,height:`${rect.height}px`};}
 function moveCompanion(target,{from,hideAfter=false,instant=false}={}){

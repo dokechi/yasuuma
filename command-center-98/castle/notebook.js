@@ -28,12 +28,15 @@ export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>
   return {id:generated?id():String(d.id||id()).slice(0,500),place:d.place,title:d.title.trim(),body:d.body,link,kind:String(d.kind||'原稿').slice(0,30),sample:Boolean(d.sample),createdAt:time(d.createdAt),updatedAt:time(d.updatedAt),checkedAt:String(d.checkedAt||'').slice(0,80),...(d.source&&typeof d.source==='object'?{source:{id:String(d.source.id),account:String(d.source.account),label:String(d.source.label),status:String(d.source.status||'')}}:{})};
  }
  const samples=Object.entries(seeds).flatMap(([place,rows])=>rows.map((d,i)=>normalize({...d,place,id:`sample-${place}-${i}`,sample:true,createdAt:1,updatedAt:1})));
- function all(){const map=new Map(samples.map(d=>[d.id,d]));for(const [k,v]of records)if(k.startsWith('source:')){try{const d=normalize(v);map.set(d.id,d);}catch{}}for(const [k,v] of records){if(k.startsWith('draft:')&&v?.id){if(v.deleted)map.delete(v.id);else{try{const d=normalize(v);map.set(d.id,d);}catch{}}}}return [...map.values()];}
+ function isHidden(draftId){const value=records.get('hidden:'+draftId);return value===true||Boolean(value&&value.hidden!==false)||Boolean(records.get('draft:'+draftId)?.deleted);}
+ function all({includeHidden=false}={}){const map=new Map(samples.map(d=>[d.id,d]));for(const [k,v]of records)if(k.startsWith('source:')){try{const d=normalize(v);map.set(d.id,d);}catch{}}for(const [k,v] of records){if(k.startsWith('draft:')&&v?.id&&!v.deleted){try{const d=normalize(v);map.set(d.id,d);}catch{}}}for(const [k,v]of records)if(k.startsWith('hidden:')&&v?.draft&&!map.has(v.draft.id)){try{const d=normalize(v.draft);if(d.source)d.source.status='保存時点の端末コピー・現在状態未確認';map.set(d.id,d);}catch{}}return [...map.values()].filter(d=>includeHidden||!isHidden(d.id));}
  function get(draftId){return all().find(d=>d.id===draftId)||null;}
  function flag(type,draftId){return Boolean(records.get(`${type}:${draftId}`));}
  function list(place){return all().filter(d=>d.place===place).sort((a,b)=>Number(flag('pin',b.id))-Number(flag('pin',a.id))||a.createdAt-b.createdAt||a.id.localeCompare(b.id));}
  function save(draft){const old=get(draft.id),d=normalize({...draft,...(old?.source?{id:id(),source:undefined}:{}),createdAt:old?.createdAt||now(),updatedAt:now(),sample:false});const saved=change('draft:'+d.id,d);return {draft:d,saved};}
- function erase(draftId){const d=get(draftId);if(!d)return false;return change('draft:'+draftId,{id:draftId,place:d.place,deleted:true,updatedAt:now()});}
+ function erase(draftId){const d=get(draftId);if(!d)return false;return change('hidden:'+draftId,{draft:d,hidden:true,time:now()});}
+ function hiddenDrafts(){return all({includeHidden:true}).filter(d=>isHidden(d.id));}
+ function restore(draftId){const d=hiddenDrafts().find(d=>d.id===draftId);if(!d)return false;const legacyKey='draft:'+draftId;if(records.get(legacyKey)?.deleted){const before=clone(records.get(legacyKey)),saved=remove(legacyKey);undoStack.push({key:legacyKey,before,after:undefined});return saved;}const marker=records.get('hidden:'+draftId);return change('hidden:'+draftId,{...(typeof marker==='object'?marker:{}),draft:d,hidden:false});}
  function toggle(type,draftId){if(!['pin','tray'].includes(type)||!get(draftId))return false;change(`${type}:${draftId}`,!flag(type,draftId));return flag(type,draftId);}
  function remember(place,draftId,scroll){put('read:'+draftId,Math.max(0,Math.min(Number(scroll)||0,1e7)));put('selected:'+place,draftId);}
  function visit(place){put('lastPlace',place);put('visit:'+place,now());const first=!records.get('visited:'+place);put('visited:'+place,true);return first;}
@@ -49,8 +52,8 @@ export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>
  function undoAny(){const op=undoStack.at(-1);if(!op?.batch)return undo();undoStack.pop();for(const x of op.batch)if(!unchanged(x))throw Error('別の画面の更新があるため、取り込みを元に戻せません');let ok=true;for(const x of op.batch)ok=(x.before===undefined?remove(x.key):put(x.key,x.before))&&ok;return ok;}
  function sources(){return [...records].filter(([k])=>k.startsWith('source:')).map(([,v])=>clone(v));}
  function replaceSources(rows,{complete=false}={}){const normalized=rows.map(d=>normalize(d));const ids=new Set(normalized.map(d=>d.id));if(complete)for(const [k,v]of [...records])if(k.startsWith('source:')&&!ids.has(v.id))remove(k);for(const d of normalized)put('source:'+d.id,d);}
- return {sources,replaceSources,list,all,get,save,erase,toggle,flag,remember,visit,copied,copies,copyMark,finish,completed,sync,parseImport,applyImport,undo:undoAny,
+ return {sources,replaceSources,list,all,get,save,erase,hiddenDrafts,restore,toggle,flag,remember,visit,copied,copies,copyMark,finish,completed,sync,parseImport,applyImport,undo:undoAny,
   position:draftId=>Number(records.get('read:'+draftId))||0,selected:place=>records.get('selected:'+place),lastPlace:()=>records.get('lastPlace'),usedToday:place=>dayInJapan(records.get('visit:'+place)||1)===dayInJapan(now()),
   pref:(key,fallback)=>records.has('pref:'+key)?clone(records.get('pref:'+key)):fallback,setPref:(key,v)=>put('pref:'+key,v),
-  export:()=>JSON.stringify({format:'command-center-v1',exportedAt:new Date(now()).toISOString(),drafts:all()},null,2),persistent:()=>persistent,canUndo:()=>undoStack.length>0};
+  export:()=>JSON.stringify({format:'command-center-v1',exportedAt:new Date(now()).toISOString(),drafts:all({includeHidden:true})},null,2),persistent:()=>persistent,canUndo:()=>undoStack.length>0};
 }

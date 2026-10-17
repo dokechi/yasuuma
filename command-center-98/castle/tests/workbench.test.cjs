@@ -2,13 +2,25 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 const {parseHTML}=require('linkedom');
 function storage(){const map=new Map();return {get length(){return map.size},key:i=>[...map.keys()][i]??null,getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,String(v)),removeItem:k=>map.delete(k),map};}
+test('search defaults to the room, offers one-click whole scope, reveals matching variants and returns to the same results',async()=>{
+ const b=boot();await b.click('#searchDrafts');assert.equal(b.$('#searchScope').value,'kyun');const scopeAll=[...b.document.querySelectorAll('#drawerBody button')].find(n=>n.textContent==='全体で探す');await b.click(scopeAll);assert.equal(b.$('#searchScope').value,'');const input=b.$('#drawerBody input');input.value='長い原稿';await b.emit(input,'input');b.$('#deskDrawer').scrollTop=120;await b.click(b.$('.draft-pick'));assert.equal(b.$('#returnList').hidden,false);await b.click('#returnList');assert.equal(b.$('#drawerBody input').value,'長い原稿');assert.equal(b.$('#deskDrawer').scrollTop,120);await b.click('#drawerClose');await b.click('#searchDrafts');assert.equal(b.$('#drawerBody input').value,'長い原稿');assert.equal(b.$('#searchScope').value,'');
+ await b.click('#drawerBack');assert.equal(b.$('#drawerTitle').textContent,'机の引き出し');await b.click(b.button('お気に入り'));await b.click('#drawerBack');assert.equal(b.$('#drawerTitle').textContent,'机の引き出し');
+ const home=boot({hash:''});await home.click('#homeSearchDrafts');assert.equal(home.$('#searchScope').value,'');assert.match(home.$('.search-count').textContent,/全持ち場/);
+});
+test('matched variant names, manuscript counts, comparison choices and room completion scope are explicit',async()=>{
+ const b=boot();b.context.packet={drafts:['甲案','乙案'].map((kind,i)=>({id:'v'+i,place:'kyun',title:'同名商品',body:kind+'の本文',kind,source:{id:'item',account:'kyun',label:kind}})),complete:true,message:''};b.read('production.receive(packet)');assert.match(b.$('#draftCount').textContent,/4原稿・5案/);await b.click('#searchDrafts');const input=b.$('#drawerBody input');input.value='乙案';await b.emit(input,'input');assert.equal(b.$('#drawerBody details').open,true);assert.match(b.$('#drawerBody .draft-pick small').textContent,/乙案/);await b.click('#drawerClose');b.read("selectId('v0')");await b.menu('2つの原稿を比較');assert.match([...b.document.querySelectorAll('#compareSelect option')].find(n=>n.value==='v1').textContent,/乙案/);await b.click('#closeCompare');
+ b.read("notebook.finish(notebook.get('v0'));notebook.finish(notebook.list('choi')[0]);desk.update()");assert.equal(b.$('#doneCount').textContent,'1');await b.click('#doneStack');assert.equal(b.document.querySelectorAll('.history-card').length,1);assert.match(b.$('#drawerTitle').textContent,/キュン拾い.*1件/);
+});
+test('hiding a local original survives reload and remains exportable and restorable without touching history',async()=>{
+ const b=boot();await b.menu('＋ 原稿を書く');await b.save({title:'保持する原稿',body:'失わない本文',link:'https://example.com/item'});const id=b.read('activeDraft.id');await b.click('#copy');await b.menu('この端末で非表示にする');assert.equal(b.read('notebook.get('+JSON.stringify(id)+')'),null);const c=boot({store:b.store});assert.equal(c.read('notebook.hiddenDrafts().length'),1);assert.match(c.read('notebook.export()'),/失わない本文/);assert.equal(c.read('notebook.copies().length'),1);await c.menu('非表示の原稿を復元');await c.click(c.button('一覧に戻す'));assert.equal(c.read('notebook.get('+JSON.stringify(id)+').body'),'失わない本文');assert.equal(c.read('notebook.copies().length'),1);assert.equal(c.$('#resumeWork'),null);assert.equal(c.$('#copyLink').textContent,'リンクをコピー');
+});
 test('workflow navigation keeps one home return, direct rooms, search and one backup entry',async()=>{
  const b=boot();assert.equal(b.$('#switch'),null);assert.equal(b.document.querySelectorAll('[data-go]').length,4);assert.match(b.$('#return').textContent,/読了にして戻る/);assert.match(b.$('#doneStack').textContent,/読了履歴/);
  await b.click('#searchDrafts');assert.ok(b.$('#drawerBody input[type=search]'));await b.click('#drawerClose');await b.click('#deskMenu');
  assert.deepEqual([...b.document.querySelectorAll('.drawer-section')].map(n=>n.textContent),['探す','この原稿を操作','管理']);assert.equal([...b.document.querySelectorAll('#drawerBody button')].filter(n=>n.textContent.includes('書き出す')).length,1);
  await b.click(b.button('表示設定'));assert.equal([...b.document.querySelectorAll('#drawerBody button')].filter(n=>n.textContent.includes('書き出す')).length,0);
  assert.deepEqual([...b.document.querySelectorAll('#productionShortcuts button')].map(n=>n.textContent),['海外時計','カード','作業日報','クーニー','仕入れ命']);
- await b.click('#drawerClose');await b.click('[data-go=shiire]');assert.deepEqual([...b.document.querySelectorAll('#productionTools button')].filter(n=>!n.hidden).map(n=>n.textContent),['候補','購入・在庫','保存原稿を更新']);
+ await b.click('#drawerClose');await b.click('[data-go=shiire]');assert.deepEqual([...b.document.querySelectorAll('#productionTools button')].filter(n=>!n.hidden).map(n=>n.textContent),['候補','購入・在庫','原稿を更新']);
 });
 test('explicit source variants group only for display and retain selection, snapshots and independent records',async()=>{
  const b=boot();const make=(id,sourceId,account='kyun')=>({id,place:'kyun',title:'同じ見出し',body:'本文 '+id,kind:id,source:{id:sourceId,account,label:id},createdAt:1,updatedAt:1});
@@ -54,7 +66,7 @@ test('real DOM adds a draft, copies body/link separately, edits seal, deletes an
  await b.click('#copy');assert.equal(b.copied.at(-1),'実際の本文\n二行目');assert.equal(b.$('#copySeal').hidden,false);
  await b.click('#copyLink');assert.equal(b.copied.at(-1),'https://example.com/item');assert.equal(b.read('notebook.copies().length'),2);
  await b.menu('編集する');await b.save({body:'編集後の本文'});assert.equal(b.$('#copySeal').hidden,true);assert.equal(b.read('notebook.copies().some(c=>c.text.includes("二行目"))'),true);
- await b.menu('原稿を取り除く');assert.notEqual(b.$('#draftTitle').textContent,'自分の原稿');await b.click('#undoAction');assert.equal(b.read('notebook.all().some(d=>d.title==="自分の原稿")'),true);
+ await b.menu('この端末で非表示にする');assert.notEqual(b.$('#draftTitle').textContent,'自分の原稿');await b.click('#undoAction');assert.equal(b.read('notebook.all().some(d=>d.title==="自分の原稿")'),true);
 });
 test('selected draft, per-draft scroll, favorite, font, focus and quiet survive a reload',async()=>{
  const b=boot();await b.click('#tab-2');b.$('#paperScroll').scrollTop=240;await b.emit(b.$('#paperScroll'),'scroll');b.advance(200);await b.click('#pinDraft');assert.equal(b.$('#paperScroll').scrollTop,240);assert.equal(b.read('currentDraft'),0);
@@ -78,7 +90,7 @@ test('external storage updates leave active reading intact until explicitly acce
  assert.equal(b.$('#draftBody').textContent,before);assert.equal(b.$('#freshNotice').hidden,false);await b.click('#freshNotice');assert.equal(b.$('#draftBody').textContent,'別の画面の更新');
 });
 test('search and favorites open the exact cross-room manuscript; completion records and undo work',async()=>{
- const b=boot();await b.menu('＋ 原稿を書く');await b.save({place:'fp',title:'検索の対象',body:'珍しい検索語α'});assert.equal(b.read('place'),'fp');await b.click('#pinDraft');await b.click('[data-go=kyun]');await b.menu('原稿を探す');const input=b.$('#drawerBody input');input.value='検索語α';await b.emit(input,'input');assert.equal(b.document.querySelectorAll('.draft-pick').length,1);await b.click(b.$('.draft-pick'));assert.equal(b.$('#draftTitle').textContent,'検索の対象');
+ const b=boot();await b.menu('＋ 原稿を書く');await b.save({place:'fp',title:'検索の対象',body:'珍しい検索語α'});assert.equal(b.read('place'),'fp');await b.click('#pinDraft');await b.click('[data-go=kyun]');await b.menu('原稿を探す');b.$('#searchScope').value='';await b.emit(b.$('#searchScope'),'change');const input=b.$('#drawerBody input');input.value='検索語α';await b.emit(input,'input');assert.equal(b.document.querySelectorAll('.draft-pick').length,1);await b.click(b.$('.draft-pick'));assert.equal(b.$('#draftTitle').textContent,'検索の対象');
  await b.click('#return');assert.equal(b.read('view'),'home');assert.equal(b.read('notebook.completed("fp").length'),1);assert.equal(b.$('.station[data-place=fp]').classList.contains('visited-today'),true);await b.click('#undoAction');assert.equal(b.read('notebook.completed("fp").length'),0);
 });
 test('map opens all four places and late room imagery never changes the current room',async()=>{
@@ -89,7 +101,7 @@ test('clipboard denial records no copy until the user confirms manual copying',a
  const b=boot();b.navigator.clipboard.writeText=async()=>{throw Error('denied')};await b.click('#copy');assert.equal(b.read('notebook.copies().length'),0);assert.equal(b.$('#copySeal').hidden,true);assert.equal(b.$('#copyFallback').open,true);await b.click('#manualCopied');assert.equal(b.read('notebook.copies().length'),1);assert.equal(b.$('#copySeal').hidden,false);
 });
 test('empty room remains operable; add and undo bring drafts back',async()=>{
- const b=boot();for(let i=0;i<3;i++)await b.menu('原稿を取り除く');assert.equal(b.read('tabs.length'),0);assert.equal(b.$('#copy').disabled,true);await b.menu('＋ 原稿を書く');await b.save({title:'空から作る',body:'本文'});assert.equal(b.read('tabs.length'),1);assert.equal(b.$('#copy').disabled,false);await b.click('#undoAction');assert.equal(b.read('tabs.length'),0);
+ const b=boot();for(let i=0;i<3;i++)await b.menu('この端末で非表示にする');assert.equal(b.read('tabs.length'),0);assert.equal(b.$('#copy').disabled,true);await b.menu('＋ 原稿を書く');await b.save({title:'空から作る',body:'本文'});assert.equal(b.read('tabs.length'),1);assert.equal(b.$('#copy').disabled,false);await b.click('#undoAction');assert.equal(b.read('tabs.length'),0);
 });
 test('storage failure is visible while the current draft remains usable and exportable',async()=>{
  const s=storage();s.setItem=()=>{throw Error('quota')};const b=boot({store:s});await b.menu('＋ 原稿を書く');await b.save({title:'保存容量不足',body:'消さない本文'});assert.equal(b.$('#storageWarning').hidden,false);assert.equal(b.$('#draftBody').textContent,'消さない本文');assert.ok(b.read('notebook.export()').includes('消さない本文'));await b.click('#copy');assert.equal(b.copied.at(-1),'消さない本文');
