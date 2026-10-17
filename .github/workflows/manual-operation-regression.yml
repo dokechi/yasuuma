@@ -50,6 +50,7 @@ jobs:
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node --test tests/*.test.cjs
           cd ../..
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-art-browser.cjs
+          NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-workflow-browser.cjs
       - name: Syntax and manual operation contracts
         env:
           REQUIRE_THREADS_SQL: "1"

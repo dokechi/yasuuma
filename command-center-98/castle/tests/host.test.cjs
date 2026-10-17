@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const {parseHTML}=require('linkedom');
 const H=require('../../manual-operation-hub.js');
-function boot(fetcher,{mode=null,active=true}={}){
+function boot(fetcher,{mode=null,active=true,purchaseOpen}={}){
  const {window,document}=parseHTML('<html><head></head><body><section id="ccRpgHome"><footer class="rpg-footer"></footer></section></body></html>');
  window.location={origin:'https://example.com'};
  window.CCHome={active};window.CCManualOperationHub=H;
@@ -9,11 +9,18 @@ function boot(fetcher,{mode=null,active=true}={}){
  window.localStorage={getItem(){return mode},setItem(){}};
  window.__fpContentPipeline={buildDraftCopy:item=>'台本：'+item.payload.draft_slides.map(x=>x.body).join('\n')};
  const sent=[];window.fetch=fetcher;const context=vm.createContext({window,document,URL,AbortController,setTimeout,clearTimeout,MutationObserver:window.MutationObserver,API:'https://api.example.com/',authHeaders:()=>({'Authorization':'synthetic-only'})});
+ if(purchaseOpen)context.openSourcingSection=purchaseOpen;
  vm.runInContext(fs.readFileSync('../castle-parent.js','utf8'),context);
  const frame=document.getElementById('ccCastleFrame');frame.contentWindow={postMessage:m=>sent.push(m)};
  const ready=()=>{const e=new window.Event('message');Object.assign(e,{origin:window.location.origin,source:frame.contentWindow,data:{channel:'cc-castle-v1',type:'ready'}});window.dispatchEvent(e)};
  return {window,document,sent,ready};
 }
+test('purchase and inventory navigation opens the existing purchase ledger through the trusted frame only',()=>{
+ const opened=[],b=boot(undefined,{purchaseOpen:sub=>opened.push(sub)}),frame=b.document.getElementById('ccCastleFrame');let left=0;b.window.CCHome.leave=()=>left++;
+ const send=(origin,source)=>{const e=new b.window.Event('message');Object.assign(e,{origin,source,data:{channel:'cc-castle-v1',type:'native',action:'sourcing'}});b.window.dispatchEvent(e);};
+ send('https://other.example',frame.contentWindow);send('https://example.com',{});assert.deepEqual(opened,[]);
+ send('https://example.com',frame.contentWindow);assert.deepEqual(opened,['purchases']);assert.equal(left,1);assert.equal(frame.hidden,true);
+});
 test('host uses saved sourcing payload and FP page text without treating copying as posting',()=>{
  const b=boot();const rows=b.window.CCCastle.drafts([
   {id:'fp1',payload:{content_type:'fp_post_candidate',post_title:'台本タイトル',draft_slides:[{body:'ページ原文'}]}},
@@ -32,8 +39,8 @@ test('unfinished FP editorial choices do not hide saved pages or mutate approval
  delete b.window.__fpContentPipeline;assert.equal(b.window.CCCastle.drafts([item]).length,1);
 });
 test('host opens a versioned HTML filename so a cached canonical shell cannot capture it',()=>{
- const b=boot();assert.equal(b.document.getElementById('ccCastleFrame').getAttribute('src'),'./castle/entry-v28.html');
- assert.equal(fs.readFileSync('entry-v28.html','utf8'),fs.readFileSync('index.html','utf8'));
+ const b=boot();assert.equal(b.document.getElementById('ccCastleFrame').getAttribute('src'),'./castle/entry-v29.html');
+ assert.equal(fs.readFileSync('entry-v29.html','utf8'),fs.readFileSync('index.html','utf8'));
 });
 test('host paginates all events, performs GET only, and marks interrupted reads incomplete',async()=>{
  const requests=[];let fail=false;

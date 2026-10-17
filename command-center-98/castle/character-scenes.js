@@ -6,7 +6,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
  if(!panel)return null;
  const image=$('#sceneImage'),frame=$('#sceneFrame'),select=$('#sceneSelect'),dialog=$('#sceneDialog'),full=$('#sceneFullImage'),fullFrame=$('#sceneFullFrame'),fullSelect=$('#sceneFullSelect'),open=$('#sceneExpand');
  const motions=[createSceneMotion({canvas:$('#sceneCanvas'),image,box:frame,reduced}),createSceneMotion({canvas:$('#sceneFullCanvas'),image:full,box:fullFrame,reduced,contain:true})];
- let key=null,current=null,epoch=0,timer=null,paused=false,selection='auto',lastReply=null,cursor='welcome',failureNotice=false;
+ let key=null,current=null,epoch=0,timer=null,paused=false,selection='auto',lastReply=null,cursor='welcome',failureNotice=false,returnToDraft=false;
  let storage;try{storage=globalThis.localStorage;}catch{}
  const persona=createPersona({storage});
  function present(reply){
@@ -81,7 +81,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   if(current&&!current.static)motions[expanded?1:0].react(region);onReact();activity();return true;
  }
  $('#sceneTouch').addEventListener('click',e=>react(e));$('#sceneFullTouch').addEventListener('click',e=>react(e,true));
- open.addEventListener('click',()=>{if(!key)return;dialog.showModal();refresh();});
+ open.addEventListener('click',()=>{if(!key)return;returnToDraft=false;dialog.showModal();refresh();});
  $('#sceneClose').addEventListener('click',()=>dialog.close());
  function replyTo(type){
   if(!key||paused||document.hidden)return;
@@ -94,8 +94,8 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
  }
  $('#sceneTalk')?.addEventListener('click',()=>react(null,true));
  $('#sceneRest')?.addEventListener('click',()=>replyTo('rest'));
- $('#sceneContinue')?.addEventListener('click',()=>replyTo('resume'));
- dialog.addEventListener('close',()=>{refresh();activity();open.focus();});
+ $('#sceneContinue')?.addEventListener('click',()=>{replyTo('resume');returnToDraft=true;dialog.close();$('#draft').focus();});
+ dialog.addEventListener('close',()=>{refresh();activity();(returnToDraft?$('#draft'):open).focus();returnToDraft=false;});
  function enter(next){
   clearTimers();epoch++;persona.leave(key);motions.forEach(m=>m.stop());key=CHARACTER_SCENES[next]?next:null;current=null;lastReply=null;cursor='welcome';failureNotice=false;
   panel.hidden=!key;app.dataset.sceneCharacter=key||'';panel.dataset.ready='false';placeUpdate(Boolean(key));
