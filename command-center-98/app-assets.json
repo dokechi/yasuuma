@@ -81,9 +81,9 @@
     "./fp-finished-images.js?v=20261008.4-state",
     "./manual-operation-hub.js?v=20261017.30-context",
     "./rpg-home.js?v=20261012.3-workspaces",
-    "./rpg-workspaces.js?v=20261013.3-consistency",
+    "./rpg-workspaces.js?v=20261017.33-unified",
     "./rpg-daily-store.js?v=20261015.1",
-    "./rpg-daily-desk.js?v=20261017.30-context",
-    "./castle-parent.js?v=20261017.32-readingmap"
+    "./rpg-daily-desk.js?v=20261017.33-unified",
+    "./castle-parent.js?v=20261017.33-unified"
   ]
 }
