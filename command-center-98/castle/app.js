@@ -1,8 +1,8 @@
 import {PERSONA_LINES} from './persona-lines.js?v=28';
-import {createProductionClient} from './production.js?v=29';
-import {createNotebook,groupDrafts} from './notebook.js?v=29';
-import {createWorkbench} from './workbench.js?v=29';
-import {createFeedback} from './feedback.js?v=29';
+import {createProductionClient} from './production.js?v=30';
+import {createNotebook,groupDrafts} from './notebook.js?v=30';
+import {createWorkbench} from './workbench.js?v=30';
+import {createFeedback} from './feedback.js?v=30';
 // Assets, copy and workflow content are independent of the shared motion.
 // Character-specific layered poses also require matching assets and alignment.
 const PLACES = {"kyun":{"title":"キュン拾い","eyebrow":"THREADS / 書斎","type":"城下町の書斎","greeting":PERSONA_LINES.kyun.welcome[0],"paper":"原稿を選ぶ","label":"投稿本文","copy":"本文をコピー","tabs":["ひとこと","紹介文","長めの文"],"drafts":[]},"choi":{"title":"ちょい上等","eyebrow":"SELECTION","type":"紹介文の持ち場","greeting":PERSONA_LINES.choi.welcome[0],"paper":"紹介文を選ぶ","label":"紹介文","copy":"紹介文をコピー","tabs":["暮らし","持ち物","贈りもの"],"drafts":[]},"fp":{"title":"FP・TikTok","eyebrow":"STUDIO","type":"台本の持ち場","greeting":PERSONA_LINES.fp.welcome[0],"paper":"台本の流れを確認","label":"保存台本","copy":"台本をコピー","tabs":["つかみ","本編","締め"],"drafts":[]},"shiire":{"title":"仕入れ","eyebrow":"MARKET","type":"候補確認の持ち場","greeting":PERSONA_LINES.shiire.welcome[0],"paper":"確認メモを選ぶ","label":"仕入れ確認メモ","copy":"メモをコピー","tabs":["候補","比較","購入前"],"drafts":[]}};
@@ -34,7 +34,7 @@ const stationFor=key=>stations.find(node=>node.dataset.place===key);
 const portraitFor=key=>app.dataset.homeMode==='map'?stationFor(key):stationFor(key).querySelector('.portrait');
 const feedback=createFeedback({app,stations,companion,reduced,onStatus:showToast});
 feedback.init(Object.fromEntries(Object.entries(CHARACTERS).map(([key,cfg])=>[key,{...cfg,greeting:PLACES[key].greeting}])));
-function showToast(message){clearTimeout(toastTimer);$('#toast').textContent=message;$('#toast').classList.add('show');toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),1900);}
+function showToast(message){clearTimeout(toastTimer);const error=/失敗|未確認|できません|確認してください|エラー/.test(message);$('#toast').textContent=message;$('#toast').dataset.level=error?'warning':'success';$('#toast').setAttribute('role',error?'alert':'status');$('#toast').classList.add('show');if(!error)toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),1900);}
 function clearPress(){stations.forEach(node=>node.classList.remove('is-pressed'));}
 function rectStyle(rect){return {transform:`translate(${rect.left}px, ${rect.top}px)`,width:`${rect.width}px`,height:`${rect.height}px`};}
 function moveCompanion(target,{from,hideAfter=false,instant=false}={}){

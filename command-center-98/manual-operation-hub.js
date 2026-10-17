@@ -23,7 +23,8 @@
   items.push(...(root.CCReddit?.state?.items||[]));
   return api.unique(items);
  }
- async function open(account){
+ const recordKey=id=>String(id||'').replace(/^(sns:)+/,'');
+ async function open(account,{recordId=null}={}){
   const dialog=e('dialog',undefined,'manual-operation-review'),close=e('button','閉じる','push-button');close.type='button';close.onclick=()=>{desk?.savePosition();dialog.close();};
   dialog.className+=' rpg-account-page';dialog.dataset.account=account.key;dialog.setAttribute('aria-label',account.label+'の保存原稿');
   const back=e('button','← 司令塔','push-button rpg-account-back');back.type='button';back.onclick=()=>{desk?.savePosition();dialog.close();};
@@ -40,15 +41,16 @@
   if(account.key==='tiktok'){const f=e('button','FP原稿を見る（既存FP）','push-button');f.type='button';f.dataset.homeAction='fp-draft';f.onclick=()=>{desk?.savePosition();dialog.close();};dialog.append(f);}
   let accountConfig=null,accountError='',accountLoading=isThreads,childDialog=null;
   const closeParent=dialog.onclose;dialog.onclose=()=>{if(childDialog)childDialog.close();closeParent();};
-  let items=localItems(),offset=0,hasMore=true,loading=false,loaded=0,total=null,checked=false,readError='',selectedTab='current';
+  let items=localItems(),offset=0,hasMore=true,loading=false,loaded=0,total=null,checked=false,readError='',selectedTab='current',focusedRecord=false;
   const desk=root.CCRpgDailyDesk?.mount({dialog,account,toolbar,list,onStatus:showOperation});
   if(desk?.tab==='history')selectedTab='history';
   dialog.addEventListener?.('cancel',()=>desk?.savePosition());
   currentTab.onclick=()=>{selectedTab='current';render();};historyTab.onclick=()=>{selectedTab='history';render();};
   const more=e('button','保存原稿の続き100件を確認','push-button');more.type='button';dialog.append(more);
   function render(){
-   const previousScroll=dialog.scrollTop;
+   const previousScroll=dialog.scrollTop,previousActiveId=doc.activeElement?.closest?.('.rpg-account-card')?.dataset.recordId;
    const matches=api.unique(items).filter(i=>!api.isSuppressed(i)&&api.matchesAccount(i,account.key));list.replaceChildren();
+   const target=recordId?matches.find(i=>recordKey(i.id)===recordKey(recordId)):null;if(target&&!focusedRecord)selectedTab=api.historyState(target,account.key)?'history':'current';
    const current=e('div',undefined,'rpg-account-current'),history=details('投稿済み・見送りの履歴'),active=matches.filter(i=>!api.historyState(i,account.key)),archived=matches.filter(i=>api.historyState(i,account.key));
    current.hidden=selectedTab!=='current';history.hidden=selectedTab!=='history';history.className='rpg-account-history';history.open=selectedTab==='history';
    currentTab.textContent='今回（'+active.length+'）';historyTab.textContent='履歴（'+archived.length+'）';currentTab.setAttribute('aria-pressed',String(selectedTab==='current'));historyTab.setAttribute('aria-pressed',String(selectedTab==='history'));
@@ -93,7 +95,7 @@
    if(!archived.length)history.append(e('p','読込済みの原稿に、投稿済み・見送りの記録はありません。'));
    list.append(history);
    more.disabled=loading||!hasMore;
-   if(Number.isFinite(previousScroll))dialog.scrollTop=previousScroll;desk?.decorate(matches);
+   if(Number.isFinite(previousScroll))dialog.scrollTop=previousScroll;desk?.decorate(matches);if(target&&(!focusedRecord||previousActiveId===String(target.id))){const card=[...list.querySelectorAll('.rpg-account-card')].find(n=>n.dataset.recordId===String(target.id));if(card){focusedRecord=true;dialog.dataset.selectedRecordId=String(target.id);dialog.dataset.requestedRecordId=recordId;desk?.jumpToRecord?.(String(target.id));card.tabIndex=-1;card.focus?.({preventScroll:true});card.scrollIntoView?.({block:'start',behavior:'instant'});}}else if(recordId&&!target&&!hasMore&&!loading&&!readError){showOperation('対応する原稿は現在の保存先にありません。読込済みの一覧を表示しています。');}
   }
   function showOperation(message){status.textContent=message;status.hidden=!message;}
   function externalLink(url,label,cls){const a=e('a',label,'push-button '+cls);a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;}
@@ -218,13 +220,13 @@
    }catch(error){readError=error.message;}
    finally{loading=false;if(!desk?.queue(render,{force:requested||Boolean(readError)}))render();}
   }
-  more.onclick=()=>fetchMore(true);render();fetchMore();if(isThreads)loadAccount();
+  more.onclick=()=>fetchMore(true);render();(async()=>{do{await fetchMore(Boolean(recordId));}while(dialog.open&&recordId&&!focusedRecord&&hasMore&&!readError);})();if(isThreads)loadAccount();
  }
  // Presentation-only bridge: reuse the existing explicitly matched account review.
- api.openAccount=function(key){
+ api.openAccount=function(key,options={}){
   const account=api.accounts.find(item=>item.key===key&&item.key!=='sourcing');
   if(!account)return false;
-  open(account);return true;
+  open(account,{recordId:typeof options.recordId==='string'?options.recordId:null});return true;
  };
  const style=e('style');style.textContent='.manual-operation-hub{margin:12px 0;padding:14px;background:#fff;color:#16324f;border:3px double #0f756d}.manual-operation-hub h2{margin-top:0}.manual-operation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.manual-operation-grid article{padding:12px;border:1px solid #16324f;display:grid;gap:8px}.manual-operation-grid h3,.manual-operation-grid p{margin:0}.manual-operation-grid small{display:block}.manual-operation-review{width:min(880px,90vw);max-height:90vh;overflow:auto;background:#fff;color:#16324f;border:3px solid #0f756d}.manual-operation-review::backdrop{background:rgba(0,0,0,.55)}.manual-operation-review article{border-top:2px solid #0f756d;padding:12px 0}.manual-operation-review pre{white-space:pre-wrap;line-height:1.7}@media(max-width:650px){.manual-operation-grid{grid-template-columns:1fr}}';doc.head.append(style);
 })(typeof window==='undefined'?null:window,function(){

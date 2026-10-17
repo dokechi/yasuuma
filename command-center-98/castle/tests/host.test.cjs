@@ -21,6 +21,7 @@ test('purchase and inventory navigation opens the existing purchase ledger throu
  send('https://other.example',frame.contentWindow);send('https://example.com',{});assert.deepEqual(opened,[]);
  send('https://example.com',frame.contentWindow);assert.deepEqual(opened,['purchases']);assert.equal(left,1);assert.equal(frame.hidden,true);
 });
+test('trusted original-record ID is forwarded without title inference or credential changes',()=>{const b=boot(),calls=[],frame=b.document.getElementById('ccCastleFrame');b.window.CCManualOperationHub.openAccount=(key,options)=>calls.push({key,options});const e=new b.window.Event('message');Object.assign(e,{origin:'https://example.com',source:frame.contentWindow,data:{channel:'cc-castle-v1',type:'native',action:'kyun',recordId:'task:media:original'}});b.window.dispatchEvent(e);assert.equal(calls.length,1);assert.equal(calls[0].key,'kyun');assert.equal(calls[0].options.recordId,'task:media:original');});
 test('host uses saved sourcing payload and FP page text without treating copying as posting',()=>{
  const b=boot();const rows=b.window.CCCastle.drafts([
   {id:'fp1',payload:{content_type:'fp_post_candidate',post_title:'台本タイトル',draft_slides:[{body:'ページ原文'}]}},
@@ -39,8 +40,8 @@ test('unfinished FP editorial choices do not hide saved pages or mutate approval
  delete b.window.__fpContentPipeline;assert.equal(b.window.CCCastle.drafts([item]).length,1);
 });
 test('host opens a versioned HTML filename so a cached canonical shell cannot capture it',()=>{
- const b=boot();assert.equal(b.document.getElementById('ccCastleFrame').getAttribute('src'),'./castle/entry-v29.html');
- assert.equal(fs.readFileSync('entry-v29.html','utf8'),fs.readFileSync('index.html','utf8'));
+ const b=boot();assert.equal(b.document.getElementById('ccCastleFrame').getAttribute('src'),'./castle/entry-v30.html');
+ assert.equal(fs.readFileSync('entry-v30.html','utf8'),fs.readFileSync('index.html','utf8'));
 });
 test('host paginates all events, performs GET only, and marks interrupted reads incomplete',async()=>{
  const requests=[];let fail=false;
