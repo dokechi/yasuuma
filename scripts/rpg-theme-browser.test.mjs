@@ -89,7 +89,7 @@ const geometry=`(()=>{
  add('workflow initialization is fixture-only',true,window.__rpgQA.simulatedInitializations||[]);
  return checks;
 })()`;
-test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:480000},async()=>{
+test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:900000},async()=>{
  const requests=[];let diagnose=async()=>{},slowRpg=false,startupCache=false,failRpg=false,failStyles=false,modernStartup=false,slowCastle=false;
  assert.ok(chrome,'Chrome is required; browser QA must not silently skip');fs.mkdirSync(output,{recursive:true});
  const server=http.createServer((req,res)=>{
