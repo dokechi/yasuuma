@@ -25,7 +25,7 @@ const geometry=`(()=>{
   const r=e.getBoundingClientRect();add('dialog fits viewport',r.left>=-1&&r.top>=-1&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1,{selector:e.id||e.className,rect:{left:r.left,top:r.top,right:r.right,bottom:r.bottom}});
   const probes=[{label:'top interior',x:r.left+r.width/2,y:r.top+Math.min(18,r.height/2)}];
   for(const target of Array.from(e.querySelectorAll('header button,.title-bar button,h2,h3,[aria-label="閉じる"],[data-close],[data-cancel],.fp-close-draft')).slice(0,4)){const t=target.getBoundingClientRect();if(visible(target)&&t.width&&t.height){const x=t.left+t.width/2,y=t.top+t.height/2;if(x>r.left&&x<r.right&&y>r.top&&y<r.bottom)probes.push({label:target.id||target.className||target.tagName,x,y});}}
-  for(const p of probes)if((!document.querySelector('dialog[open]')&&!document.querySelector('.rpg-account-page')||e===[...document.querySelectorAll('dialog[open]')].at(-1))&&p.x>=0&&p.y>=0&&p.x<innerWidth&&p.y<innerHeight){const hit=document.elementFromPoint(p.x,p.y);add('dialog header and close controls are above other layers',hit===e||e.contains(hit),{dialog:e.id||e.className,probe:p.label,hit:hit?{tag:hit.tagName,id:hit.id,class:hit.className}:null});}
+  for(const p of probes)if((!document.querySelector('dialog[open]')||e===[...document.querySelectorAll('dialog[open]')].at(-1))&&p.x>=0&&p.y>=0&&p.x<innerWidth&&p.y<innerHeight){const hit=document.elementFromPoint(p.x,p.y);add('dialog header and close controls are above other layers',hit===e||e.contains(hit),{dialog:e.id||e.className,probe:p.label,hit:hit?{tag:hit.tagName,id:hit.id,class:hit.className}:null});}
   add('dialog content can scroll',e.scrollHeight<=e.clientHeight+1||['auto','scroll'].includes(getComputedStyle(e).overflowY)||Array.from(e.children).some(c=>['auto','scroll'].includes(getComputedStyle(c).overflowY)));
  }
  for(const e of document.querySelectorAll('input:not([type=checkbox]):not([type=radio]),textarea,select'))if(visible(e)&&!e.disabled){
@@ -433,3 +433,4 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:48
  const failures=results.flatMap(r=>r.checks.filter(c=>!c.pass).map(c=>({route:r.name,...c})));
  assert.deepEqual(failures,[],'See artifacts/rpg-theme/results.json and per-route PNGs');
 });
+
