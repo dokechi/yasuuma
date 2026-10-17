@@ -40,8 +40,8 @@ test('unfinished FP editorial choices do not hide saved pages or mutate approval
  delete b.window.__fpContentPipeline;assert.equal(b.window.CCCastle.drafts([item]).length,1);
 });
 test('host opens a versioned HTML filename so a cached canonical shell cannot capture it',()=>{
- const b=boot();assert.equal(b.document.getElementById('ccCastleFrame').getAttribute('src'),'./castle/entry-v30.html');
- assert.equal(fs.readFileSync('entry-v30.html','utf8'),fs.readFileSync('index.html','utf8'));
+ const b=boot();assert.equal(b.document.getElementById('ccCastleFrame').getAttribute('src'),'./castle/entry-v31.html');
+ assert.equal(fs.readFileSync('entry-v31.html','utf8'),fs.readFileSync('index.html','utf8'));
 });
 test('host paginates all events, performs GET only, and marks interrupted reads incomplete',async()=>{
  const requests=[];let fail=false;
@@ -62,8 +62,8 @@ test('default startup stays pending until the trusted castle frame is visible',a
  b.ready();await Promise.resolve();assert.equal(opened,true);assert.equal(frame.hidden,false);assert.equal(b.window.CCCastle.whenReady(),null);
  await b.window.CCCastle.refresh();
 });
-test('intentional classic mode and direct workspace startup do not wait for a hidden castle',()=>{
- for(const options of [{mode:'classic'},{active:false}]){const b=boot(null,options);assert.equal(b.window.CCCastle.whenReady(),null);assert.equal(b.document.getElementById('ccCastleFrame').hidden,true);}
+test('direct workspace startup does not wait for a hidden castle',()=>{
+ for(const options of [{active:false}]){const b=boot(null,options);assert.equal(b.window.CCCastle.whenReady(),null);assert.equal(b.document.getElementById('ccCastleFrame').hidden,true);}
 });
 
 // The legacy home may still be loading (or contain old versions) when the castle opens.
@@ -95,3 +95,5 @@ test('a malformed FP record cannot hide valid sourcing records or claim complete
  const b=boot(async url=>({ok:true,json:async()=>url.searchParams.get('resource')==='sourcing'?{ok:true,items:[{id:'valid',title:'保存された仕入れ候補'}]}:{ok:true,items:[{id:'bad',payload:{content_type:'fp_post_candidate',draft_slides:[null]}}],events:[],nextOffset:null}}));
  b.ready();await b.window.CCCastle.refresh();const last=b.sent.at(-1);assert.equal(last.complete,false);assert.equal(last.loading,false);assert.equal(last.drafts.length,1);assert.equal(last.drafts[0].place,'shiire');assert.match(last.message,/形式未確認/);
 });
+
+test('stored classic mode is retired and legacy aliases return only to castle or management',()=>{const b=boot(null,{mode:'classic'});assert.ok(b.window.CCCastle.whenReady());b.ready();assert.equal(b.document.getElementById('ccCastleFrame').hidden,false);assert.equal(b.document.getElementById('ccRpgHome').children.length,0);b.window.CCRpgHome.showRpg();assert.equal(b.document.getElementById('ccCastleFrame').hidden,false);let settings=0;b.window.CCRpgWorkspaces.openSettings=()=>settings++;b.window.CCRpgHome.showLegacy();assert.equal(settings,1);});

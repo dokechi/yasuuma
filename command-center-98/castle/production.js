@@ -22,9 +22,12 @@ export function createProductionClient({notebook,getState,refresh,openPlace,home
 
  }
  notice.addEventListener('click',apply);
+ w.addEventListener('keydown',event=>{const target=event.target;if(target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(target?.tagName||''))return;const key=String(event.key).toLowerCase();if(key!=='f1'&&!(event.altKey&&['f','v','a','j','h','r','c'].includes(key)))return;event.preventDefault();event.stopImmediatePropagation();if(key==='h')home();else native(({r:'daily',c:'cooney'})[key]||'settings');},true);
  w.addEventListener('message',event=>{const m=event.data;if(!embedded||event.origin!==origin||event.source!==w.parent||m?.channel!=='cc-castle-v1')return;
   if(m.type==='host-update'){let b=d.getElementById('hostUpdate');if(!b){b=button('管理画面アプリ更新',()=>{send('apply-host-update');});b.id='hostUpdate';$('#productionTools').append(b);}}
   if(m.type==='records'&&Array.isArray(m.drafts))receive(m);if(m.type==='status'){reading=m.loading!==false;status.textContent=m.message;current();}
+  if(m.type==='reading-settings'){document.getElementById('settingsOpen')?.click();}
+  if(m.type==='reading-copy'&&m.event){notebook.inheritCopy(m.event,m.event.eventId);refresh();}
   if(m.type==='pause'){paused=true;$('#app').classList.add('is-away');onPause();}
   if(m.type==='resume'){paused=false;$('#app').classList.remove('is-away');onResume();}
  });

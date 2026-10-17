@@ -19,7 +19,7 @@
   function openCards(){return activate('#xViewBtn');}
   function openFp(){return activate('#fpDraftViewBtn');}
   function openService(key){const id={daily:'menuDaily',cooney:'menuCooney',shiire:'menuShiireInochi'}[key];return id?activate('#'+id):false;}
-  function original(){close();if(!H.active)H.show?.();setMode('archive');w.CCRpgHome?.showLegacy();}
+  function original(){close();w.CCCastle?.show();}
   const regular=new Set(['active','history','accepted','rejected','saved','events']);
   if(typeof scopedItems==='function'){
    const previous=scopedItems;
@@ -65,7 +65,7 @@
    if(mode==='daily')by('homeOtherList')?.querySelectorAll('[data-home-item]').forEach(el=>{const row=source.find(x=>String(x.id)===el.dataset.homeItem);if(row&&M.isArchived(row))el.remove();});
   }
   d.addEventListener('cc:home-render',sync);
-  d.addEventListener('keydown',event=>{if(event.altKey&&['f','v'].includes(String(event.key).toLowerCase())&&!event.target?.matches?.('input,textarea,select,[contenteditable="true"]'))setMode('archive');},true);
+  d.addEventListener('keydown',event=>{if(w.CCCastle?.unified)return;if(event.altKey&&['f','v'].includes(String(event.key).toLowerCase())&&!event.target?.matches?.('input,textarea,select,[contenteditable="true"]'))setMode('archive');},true);
   if(by('mainWindow'))new w.MutationObserver(sync).observe(by('mainWindow'),{attributes:true,attributeFilter:['data-cc-view']});
   // Restore daily filtering when leaving an explicitly opened old screen for a current workspace.
   d.addEventListener('click',event=>{const el=event.target.closest?.('button');if(!el)return;
@@ -77,7 +77,7 @@
   function openSettings(){const host=beginDialog('設定・補助');host.append(make('p','仕入れに関係する情報・履歴は、日常の画面から引き続き開けます。'));
    group(host,'仕入れと制作',[['仕入れ一覧',openSourcing],['海外時計・海外差の調査',openWatches],['カード',openCards],['紹介用原稿・旧ねこ',()=>openView('binbo-neko')],['投稿制作',()=>openView('affiliate')],['既存FP原稿',()=>activate('#fpDraftViewBtn')]]);
    group(host,'別サービス',[['作業日報',()=>openService('daily')],['クーニー',()=>openService('cooney')],['仕入れ命',()=>openService('shiire')]]);
-   group(host,'情報・保管庫',[['すべての情報（日常）',()=>{if(typeof app!=='undefined')app.domain='all';openView('active');}],['保存結果・調査履歴',()=>{if(typeof app!=='undefined')app.domain='all';openView('events');}],['家・上場の保管庫',openArchive],['元の画面・すべての入口',original],['依頼の進捗・定期監視',()=>activate('#menuTasks')],['ログアウト',()=>activate('#fileLogout')]]);
+   group(host,'情報・保管庫',[['すべての情報（日常）',()=>{if(typeof app!=='undefined')app.domain='all';openView('active');}],['保存結果・調査履歴',()=>{if(typeof app!=='undefined')app.domain='all';openView('events');}],['家・上場の保管庫',openArchive],['依頼の進捗・定期監視',()=>activate('#menuTasks')],['ログアウト',()=>activate('#fileLogout')]]);
   }
   function records(){let current=[];try{current=app.items||[];}catch(_){}return M.unique([...(H.raw?.active?.items||[]),...(H.activeItems||[]),...(H.houseItems||[]),...current]);}
   function openArchive(){const host=beginDialog('家・上場原稿の保管庫');host.append(make('p','明示的な分類・タスクIDで家・上場原稿と分かる記録だけを、日常表示から分離しています。削除や保存状態の変更はしません。仕入れと分類未確認の情報は日常に残します。'));

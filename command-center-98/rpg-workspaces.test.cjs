@@ -91,9 +91,9 @@ test('old navigation relocates only in daily mode and existing logout remains re
  assert.match(source,/ログアウト.*activate\('#fileLogout'\)/);
 });
 
-test('original-screen return from a subpage reopens home before legacy presentation',()=>{
- const {root,calls}=mount();root.CCHome.active=false;root.CCRpgWorkspaces.showOriginal();
- assert.deepEqual(calls,['H.show','original']);assert.equal(root.CCHome.active,true);assert.equal(root.CCRpgWorkspaces.mode,'archive');
+test('the retired original-screen alias opens the castle without enabling legacy archive presentation',()=>{
+ const {root,calls}=mount();root.CCHome.active=false;root.CCCastle={show:()=>{root.CCHome.active=true;calls.push('castle');}};root.CCRpgWorkspaces.showOriginal();
+ assert.deepEqual(calls,['castle']);assert.equal(root.CCHome.active,true);assert.equal(root.CCRpgWorkspaces.mode,'daily');
 });
 
 test('sourcing auxiliary current state tracks each route without altering navigation',()=>{
