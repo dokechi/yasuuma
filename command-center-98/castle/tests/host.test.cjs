@@ -1,6 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const {parseHTML}=require('linkedom');
 const H=require('../../manual-operation-hub.js');
+test('bridge omits only verified archive records and marks fresh source identity',()=>{const b=boot();b.window.CCThreadsArchive=require('../../threads-archive.js');const rows=[...b.window.CCThreadsArchive.eventIds,5000].map(id=>({id:'task:threads-library-import-v1:'+id,eventRecordId:id,taskId:'threads-library-import-v1',payload:{account:'choi',body_variants:['Synthetic saved copy']}})),result=b.window.CCCastle.drafts(rows);assert.equal(result.length,1);assert.equal(result[0].source.recordId,'5000');assert.equal(result[0].source.readContract,'threads-active-v1');assert.equal(rows.length,9);});
 function boot(fetcher,{mode=null,active=true,purchaseOpen}={}){
  const {window,document}=parseHTML('<html><head></head><body><section id="ccRpgHome"><footer class="rpg-footer"></footer></section></body></html>');
  window.location={origin:'https://example.com'};
@@ -40,8 +41,8 @@ test('unfinished FP editorial choices do not hide saved pages or mutate approval
  delete b.window.__fpContentPipeline;assert.equal(b.window.CCCastle.drafts([item]).length,1);
 });
 test('host opens a versioned HTML filename so a cached canonical shell cannot capture it',()=>{
- const b=boot();assert.equal(b.document.getElementById('ccCastleFrame').getAttribute('src'),'./castle/entry-v38.html');
- assert.equal(fs.readFileSync('entry-v38.html','utf8'),fs.readFileSync('index.html','utf8'));
+ const b=boot();assert.equal(b.document.getElementById('ccCastleFrame').getAttribute('src'),'./castle/entry-v39.html');
+ assert.equal(fs.readFileSync('entry-v39.html','utf8'),fs.readFileSync('index.html','utf8'));
 });
 test('host paginates all events, performs GET only, and marks interrupted reads incomplete',async()=>{
  const requests=[];let fail=false;

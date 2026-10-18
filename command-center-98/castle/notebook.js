@@ -11,11 +11,11 @@ export function groupDrafts(rows){
 }
 export function safeLink(value){const s=String(value||'').trim();if(!s)return '';try{const u=new URL(s);return ['https:','http:'].includes(u.protocol)?u.href:'';}catch{return '';}}
 export function dayInJapan(time=Date.now()){if(!Number.isFinite(Number(time))||!Number.isFinite(new Date(Number(time)).getTime()))return '';return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(time));}
-export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>{}}={}){
- const records=new Map(),undoStack=[];let serial=0,persistent=true;
+export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>{},archive=globalThis.CCThreadsArchive}={}){
+ const records=new Map(),undoStack=[],freshSourceKeys=new Set();let serial=0,persistent=true;
  const clone=x=>x===undefined?undefined:JSON.parse(JSON.stringify(x));
  const id=()=>`n-${now().toString(36)}-${Math.random().toString(36).slice(2,9)}-${serial++}`;
- function sync(){if(!storage)return;try{records.clear();for(let i=0;i<storage.length;i++){const k=storage.key(i);if(k?.startsWith(NOTEBOOK_PREFIX)){try{records.set(k.slice(NOTEBOOK_PREFIX.length),JSON.parse(storage.getItem(k)));}catch{}}}}catch{persistent=false;onError();}}
+ function sync(){if(!storage)return;try{records.clear();for(let i=0;i<storage.length;i++){const k=storage.key(i);if(k?.startsWith(NOTEBOOK_PREFIX)){const key=k.slice(NOTEBOOK_PREFIX.length);if(archive?.enabled&&archive.isRemoteThreadsCacheKey(key)&&!freshSourceKeys.has(key))continue;try{records.set(key,JSON.parse(storage.getItem(k)));}catch{}}}}catch{persistent=false;onError();}}
  sync();
  function put(key,value){records.set(key,clone(value));try{if(!storage)throw Error('storage');storage.setItem(NOTEBOOK_PREFIX+key,JSON.stringify(value));return true;}catch{persistent=false;onError();return false;}}
  function remove(key){records.delete(key);try{if(!storage)throw Error('storage');storage.removeItem(NOTEBOOK_PREFIX+key);return true;}catch{persistent=false;onError();return false;}}
@@ -25,7 +25,7 @@ export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>
   if(d.title.length>200||d.body.length>100000)throw Error('見出しは200文字、本文は10万文字以内です');
   const time=value=>Number.isFinite(new Date(Number(value)).getTime())&&Number(value)>0?Number(value):now();
   const link=safeLink(d.link);if(d.link&&!link)throw Error('リンクは http または https のURLにしてください');
-  return {id:generated?id():String(d.id||id()).slice(0,500),place:d.place,title:d.title.trim(),body:d.body,link,kind:String(d.kind||'原稿').slice(0,30),sample:Boolean(d.sample),createdAt:time(d.createdAt),updatedAt:time(d.updatedAt),checkedAt:String(d.checkedAt||'').slice(0,80),...(d.source&&typeof d.source==='object'?{source:{id:String(d.source.id),account:String(d.source.account),label:String(d.source.label),status:String(d.source.status||'')}}:{})};
+  return {id:generated?id():String(d.id||id()).slice(0,500),place:d.place,title:d.title.trim(),body:d.body,link,kind:String(d.kind||'原稿').slice(0,30),sample:Boolean(d.sample),createdAt:time(d.createdAt),updatedAt:time(d.updatedAt),checkedAt:String(d.checkedAt||'').slice(0,80),...(d.source&&typeof d.source==='object'?{source:{id:String(d.source.id),account:String(d.source.account),label:String(d.source.label),status:String(d.source.status||''),taskId:String(d.source.taskId||'').slice(0,300),recordId:String(d.source.recordId||'').slice(0,500),readContract:String(d.source.readContract||'').slice(0,50)}}:{})};
  }
  const samples=Object.entries(seeds).flatMap(([place,rows])=>rows.map((d,i)=>normalize({...d,place,id:`sample-${place}-${i}`,sample:true,createdAt:1,updatedAt:1})));
  function isHidden(draftId){const value=records.get('hidden:'+draftId);return value===true||Boolean(value&&value.hidden!==false)||Boolean(records.get('draft:'+draftId)?.deleted);}
@@ -80,7 +80,7 @@ export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>
   const target=type+':'+draft.id,next=type==='done'&&value?{id:draft.id,place:draft.place,title:draft.title,body:draft.body,time:null,legacy:true,source:{account,id:recordId}}:value;
   saved=inherit(target,next)&&saved;
  }return saved;}
- function replaceSources(rows,{complete=false}={}){const normalized=rows.map(d=>normalize(d));const ids=new Set(normalized.map(d=>d.id));if(complete)for(const [k,v]of [...records])if(k.startsWith('source:')&&!ids.has(v.id))remove(k);for(const d of normalized)put('source:'+d.id,d);migrateLegacy();}
+ function replaceSources(rows,{complete=false}={}){const normalized=rows.filter(d=>!archive?.enabled||archive.acceptsSource(d)).map(d=>normalize(d));const ids=new Set(normalized.map(d=>d.id));if(complete)for(const [k,v]of [...records])if(k.startsWith('source:')&&!ids.has(v.id))remove(k);for(const d of normalized){freshSourceKeys.add('source:'+d.id);put('source:'+d.id,d);}migrateLegacy();}
  migrateLegacy();
  return {sources,replaceSources,list,all,get,save,erase,hiddenDrafts,restore,toggle,flag,remember,visit,copied,copies,copyMark,finish,completed,sync,parseImport,applyImport,migrateLegacy,sourceDraft,inheritCopy,undo:undoAny,
   position:draftId=>Number(records.get('read:'+draftId))||0,selected:place=>records.get('selected:'+place),lastPlace:()=>records.get('lastPlace'),usedToday:place=>dayInJapan(records.get('visit:'+place)||1)===dayInJapan(now()),
