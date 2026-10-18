@@ -1,4 +1,4 @@
-import {createMusicControls} from './music.js?v=34';
+import {createMusicControls} from './music.js?v=38';
 import {createCharacterScenes} from './character-scenes.js?v=35';
 import {createCharacterRig} from './character-rig.js?v=24';
 import {createSkirtAction} from './skirt-action.js?v=24';
@@ -15,7 +15,7 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
  const rig=createCharacterRig({stage,canvas:document.querySelector('#characterRig'),image:document.querySelector('#character'),expressionWindow,blinkWindow:stage.querySelector('.blink-window'),reduced});
  const skirtAction=createSkirtAction({stage,canvas:document.querySelector('#characterAction'),reduced,onFrame:presentAction});
  let expressionTimer=null,expressionActive=false;
- let active=null,characters={},blinkTimer,eyeTimer,speechTimer,context=null,soundEnabled=false,audioEpoch=0;
+ let active=null,characters={},blinkTimer,eyeTimer,speechTimer,context=null,soundEnabled=true,audioEpoch=0,lastSoundAt=-Infinity;
  let reactionTimer=null;
  const touchCounts=new Map();
  const animations=new Map(),activeVoices=new Set(),ready=new Set();
@@ -23,7 +23,7 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
  const scenes=createCharacterScenes({app,stations,reduced,onLine:line=>{if(active)say(active,line,{persistent:true});},onStatus,onReact:()=>sound('select')});
  let music=null,effectsVolume=.5;
  const storageKey='castle-town.sound.v1';
- try{soundEnabled=localStorage.getItem(storageKey)==='on';}catch{}
+ try{soundEnabled=localStorage.getItem(storageKey)!=='off';}catch{}
  function updateSound(){soundButton.setAttribute('aria-pressed',String(soundEnabled));soundButton.setAttribute('aria-label',soundEnabled?'効果音をオフにする':'効果音をオンにする');soundButton.title=soundEnabled?'効果音オン':'効果音オフ';soundButton.querySelector('span').textContent=soundEnabled?'効果音 ON':'効果音 OFF';music?.refresh();}
  function stopSound(){audioEpoch++;for(const voice of activeVoices){try{voice.stop();}catch{}}activeVoices.clear();}
  function tone(ctx,t,freq,end,duration,volume,type='sine'){
@@ -36,6 +36,7 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
  }
  async function sound(kind){
   if(!soundEnabled||document.hidden||effectsVolume===0)return;
+  const now=Date.now();if(now-lastSoundAt<120)return;lastSoundAt=now;
   const epoch=audioEpoch;
   try{
    const Audio=window.AudioContext||window.webkitAudioContext;
@@ -254,6 +255,7 @@ export function createFeedback({app,stations,companion,reduced,onStatus}) {
   pulse(station.querySelector('.reward-stars'),[{opacity:0,transform:'translateY(8px) scale(.7)'},{opacity:1,offset:.3},{opacity:0,transform:'translateY(-28px) scale(1.15)'}],850);
   sound('complete');onStatus(line||cfg.completed);
  }
+ document.addEventListener('click',event=>{if(!event.isTrusted||!soundEnabled||effectsVolume===0||document.hidden||event.target?.closest?.('#soundToggle,#effectsEnabled,#effectsVolume'))return;try{const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;context??=new Audio();if(context.state==='suspended')context.resume().catch(()=>{});}catch{}},{capture:true});
  soundButton.addEventListener('click',()=>{
   soundEnabled=!soundEnabled;stopSound();updateSound();
   try{localStorage.setItem(storageKey,soundEnabled?'on':'off');}catch{}
