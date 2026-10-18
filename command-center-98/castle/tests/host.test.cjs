@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const {parseHTML}=require('linkedom');
 const H=require('../../manual-operation-hub.js');
-test('bridge omits only verified archive records and marks fresh source identity',()=>{const b=boot();b.window.CCThreadsArchive=require('../../threads-archive.js');const rows=[...b.window.CCThreadsArchive.eventIds,5000].map(id=>({id:'task:threads-library-import-v1:'+id,eventRecordId:id,taskId:'threads-library-import-v1',payload:{account:'choi',body_variants:['Synthetic saved copy']}})),result=b.window.CCCastle.drafts(rows);assert.equal(result.length,1);assert.equal(result[0].source.recordId,'5000');assert.equal(result[0].source.readContract,'threads-active-v1');assert.equal(rows.length,9);});
+test('bridge omits only verified archive records and marks fresh source identity',()=>{const b=boot();b.window.CCThreadsArchive=require('../../threads-archive.js');const rows=[...b.window.CCThreadsArchive.eventIds,5000].map(id=>({id:'task:threads-library-import-v1:'+id,eventRecordId:id,taskId:'threads-library-import-v1',payload:{account:'ちょい上等',body_variants:['Synthetic saved copy']}})),result=b.window.CCCastle.drafts(rows);assert.equal(result.length,1);assert.equal(result[0].source.recordId,'5000');assert.equal(result[0].source.readContract,'threads-active-v1');assert.equal(rows.length,9);});
 function boot(fetcher,{mode=null,active=true,purchaseOpen}={}){
  const {window,document}=parseHTML('<html><head></head><body><section id="ccRpgHome"><footer class="rpg-footer"></footer></section></body></html>');
  window.location={origin:'https://example.com'};
