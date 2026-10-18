@@ -8,6 +8,7 @@ import { saveThreadsPayload } from "./threads-payload-store.mjs";
 import postgres from "npm:postgres@3.4.7";
 import { saveGuardedPayload, mutationFailure } from "./guarded-payload.mjs";
 import { castleSignals } from "./castle-signals.mjs";
+import { excludeArchivedThreads } from "./threads-archive.mjs";
 import { sourcingSuppliers } from "./sourcing-read-model.mjs";
 import { SaveError, saveVersionedRow } from "../_shared/save-consistency.mjs";
 
@@ -329,6 +330,7 @@ Deno.serve(async(req:Request)=>{
       const limit=Number.isFinite(rawLimit)?Math.min(100,Math.max(1,Math.floor(rawLimit))):50;
       const offset=Number.isFinite(rawOffset)?Math.max(0,Math.floor(rawOffset)):0;
       let query=admin.from("command_center_task_events").select("id,task_id,event_key,domain,priority,score,title,summary,source_url,impact_yen,deadline,occurred_at,payload",{count:"exact"}).neq("task_id","affiliate-assets-v1");
+      query=excludeArchivedThreads(query);
       const domain=u.searchParams.get("domain"),taskId=u.searchParams.get("taskId");if(domain)query=query.eq("domain",domain);if(taskId)query=query.eq("task_id",taskId);
       const {data,error,count}=await query.order("occurred_at",{ascending:false}).order("id",{ascending:false}).range(offset,offset+limit-1);if(error)throw error;
       const rows=data||[];let deleted=new Set<string>();

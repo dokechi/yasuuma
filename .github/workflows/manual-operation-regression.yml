@@ -61,6 +61,7 @@ jobs:
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-back-browser.cjs
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-flash-browser.cjs
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-home-browser.cjs
+          NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/threads-archive-browser.cjs
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-polish-browser.cjs
       - name: Syntax and manual operation contracts
         env:
@@ -75,7 +76,7 @@ jobs:
           node scripts/manual-operation-hub-safety.test.cjs
           node scripts/rpg-account-pages.test.cjs
           node scripts/threads-manual-ui.test.cjs
-          node --test scripts/threads-manual-api.test.mjs scripts/castle-signals.test.mjs
+          node --test scripts/threads-manual-api.test.mjs scripts/castle-signals.test.mjs scripts/threads-archive.test.mjs
           node command-center-98/rpg-home.test.cjs
           node command-center-98/rpg-workspaces.test.cjs
           node scripts/fp-finished-images.test.mjs

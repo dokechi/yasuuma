@@ -4,12 +4,12 @@
  const origin=w.location.origin,frame=d.createElement('iframe');frame.id='ccCastleFrame';frame.title='司令塔・城下町';frame.allow='clipboard-write';frame.hidden=true;frame.setAttribute('aria-label','司令塔・城下町');
  const style=d.createElement('style');style.textContent='#ccCastleFrame{position:fixed;inset:0;width:100%;height:100dvh;border:0;z-index:200;background:#131725}#ccCastleFrame[hidden]{display:none!important}#ccCastleReturn{position:fixed;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:2147483000;min-height:44px;padding:10px 15px;background:#172333;color:#f5dfb4;border:1px solid #bca574;border-radius:5px}#ccCastleReturn[hidden]{display:none!important}body.castle-visible{overflow:hidden!important}';d.head.append(style);d.body.append(frame);
  const back=d.createElement('button');back.id='ccCastleReturn';back.type='button';back.textContent='← 城下町へ';back.hidden=true;d.body.append(back);
- let ready=false,modern=true,native=false,pending=null,lastPayload=null,controller=null;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}frame.src='./castle/entry-v38.html';let wasHome=!!w.CCHome?.active;
+ let ready=false,modern=true,native=false,pending=null,lastPayload=null,controller=null;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}frame.src='./castle/entry-v39.html';let wasHome=!!w.CCHome?.active;
  function send(type,data={}){if(ready)frame.contentWindow.postMessage({channel:'cc-castle-v1',type,...data},origin);}
  const startupWaiters=new Set();
  function whenReady(){if(ready||!modern||native||!w.CCHome?.active)return null;return new Promise(resolve=>startupWaiters.add(resolve));}
  function sync(){const isHome=!!w.CCHome?.active;if(isHome&&!wasHome&&modern){native=false;back.hidden=true;}wasHome=isHome;const shown=ready&&modern&&!native&&!!w.CCHome?.active;const changed=frame.hidden===shown;frame.hidden=!shown;d.body.classList.toggle('castle-visible',shown);if(changed)send(shown?'resume':'pause');if(shown||!modern||native||!isHome){for(const resolve of startupWaiters)resolve();startupWaiters.clear();}}
- function show(){if(!frame.getAttribute('src'))frame.src='./castle/entry-v38.html';modern=true;native=false;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}if(!w.CCHome?.active)w.CCHome?.show?.();back.hidden=true;sync();frame.focus();send('resume');if(ready)read();}
+ function show(){if(!frame.getAttribute('src'))frame.src='./castle/entry-v39.html';modern=true;native=false;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}if(!w.CCHome?.active)w.CCHome?.show?.();back.hidden=true;sync();frame.focus();send('resume');if(ready)read();}
  function nativeRoute(action,recordId){native=true;send('pause');frame.hidden=true;d.body.classList.remove('castle-visible');back.hidden=false;
   if(action==='classic'){W.openSettings();d.querySelector('dialog[open]')?.addEventListener('close',show,{once:true});}
   else if(action==='kyun'||action==='choi'||action==='tiktok'){H.openAccount(action,{recordId});const dialog=d.querySelector('.rpg-account-page:last-of-type');dialog?.addEventListener('close',show,{once:true});}
@@ -36,8 +36,8 @@
   const caption=text(p.caption)||text(p.draft_caption)||text(p.post_caption);if(caption)lines.push('','【保存キャプション】',caption);
   return {body:lines.join('\n'),status:'確認用・制作条件未確定'};
  }
- function drafts(items,sourcing=[],onInvalid=()=>{}){const rows=[];const add=row=>{row.title=row.title.trim()||'保存原稿';if(typeof row.body!=='string'||!row.body.trim()||row.body.length>100000){onInvalid();return;}rows.push(row);};for(const item of H.unique(items)){try{if(H.isSuppressed(item))continue;for(const key of ['kyun','choi','tiktok']){if(!H.matchesAccount(item,key))continue;const p=H.payload(item),product=H.savedProductLink(p),place=key==='tiktok'?'fp':key;
-   H.savedCopies(p).filter(c=>!c.label.includes('リンク')).forEach((copy,i)=>add({id:'live-'+place+'-'+encodeURIComponent(String(item.id))+'-'+i,place,title:String(item.title||p.post_title||'保存原稿').slice(0,200),body:copy.text,kind:copy.label,link:product?.url||'',checkedAt:H.savedPriceStockCheck(p).label,source:{id:String(item.id),account:key,label:copy.label,status:H.historyState(item,key)||'投稿状態未確認'},createdAt:Date.parse(item.occurredAt||item.createdAt)||1,updatedAt:Date.parse(item.updatedAt||item.occurredAt)||1}));
+ function drafts(items,sourcing=[],onInvalid=()=>{}){const rows=[];const add=row=>{row.title=row.title.trim()||'保存原稿';if(typeof row.body!=='string'||!row.body.trim()||row.body.length>100000){onInvalid();return;}rows.push(row);};for(const item of H.unique(items)){try{if(H.isSuppressed(item)||w.CCThreadsArchive?.isArchivedRecord(item))continue;for(const key of ['kyun','choi','tiktok']){if(!H.matchesAccount(item,key))continue;const p=H.payload(item),product=H.savedProductLink(p),place=key==='tiktok'?'fp':key;
+   H.savedCopies(p).filter(c=>!c.label.includes('リンク')).forEach((copy,i)=>add({id:'live-'+place+'-'+encodeURIComponent(String(item.id))+'-'+i,place,title:String(item.title||p.post_title||'保存原稿').slice(0,200),body:copy.text,kind:copy.label,link:product?.url||'',checkedAt:H.savedPriceStockCheck(p).label,source:{id:String(item.id),account:key,label:copy.label,taskId:item.taskId||'',recordId:String(item.eventRecordId??item.id),readContract:'threads-active-v1',status:H.historyState(item,key)||'投稿状態未確認'},createdAt:Date.parse(item.occurredAt||item.createdAt)||1,updatedAt:Date.parse(item.updatedAt||item.occurredAt)||1}));
   }
   const p=H.payload(item);if((p.content_type==='fp_post_candidate'||['fp_psychology','fp_reaction'].includes(p.category))&&Array.isArray(p.draft_slides)&&p.draft_slides.length){
    const reading=fpReading({...item,payload:p});
@@ -58,7 +58,7 @@
   const run=async(key,label,action,fallback=()=>{})=>{try{await action();states[key]='読込完了';}catch(e){states[key]='読取未確認';errors.push(label+'：'+e.message);fallback();}finally{remaining--;publish();}};
   await Promise.allSettled([
    run('sourcing','仕入れ',async()=>{const data=await get({resource:'sourcing'});if(!Array.isArray(data.items))throw Error('保存候補の応答形式が未確認');sourcing=data.items;},()=>{try{if(typeof sourcingApp!=='undefined')sourcing=sourcingApp.items||[];}catch{}}),
-   run('signals','保存原稿',()=>collect('castle-signals','items','signals'),()=>itemSets.signals.push(...localItems())),
+   run('signals','保存原稿',()=>collect('castle-signals','items','signals'),()=>itemSets.signals.push(...localItems().filter(i=>!w.CCThreadsArchive?.enabled||(!H.matchesAccount(i,'kyun')&&!H.matchesAccount(i,'choi'))))),
    run('events','保存イベント',()=>collect('task-events','events','events',i=>({...i,eventRecordId:i.id,id:'task:'+i.taskId+':'+i.eventKey})))
   ]);
  })().catch(()=>send('status',{message:'情報の表示処理を確認できませんでした。「保存原稿を更新」で再試行できます。保存済みの原稿は保持しています。',loading:false})).finally(()=>pending=null);return pending;}

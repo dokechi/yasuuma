@@ -41,7 +41,7 @@
   if(account.key==='tiktok'){const f=e('button','FP原稿を見る（既存FP）','push-button');f.type='button';f.dataset.homeAction='fp-draft';f.onclick=()=>{desk?.savePosition();dialog.close();};dialog.append(f);}
   let accountConfig=null,accountError='',accountLoading=isThreads,childDialog=null;
   const closeParent=dialog.onclose;dialog.onclose=()=>{if(childDialog)childDialog.close();closeParent();};
-  let items=localItems(),offset=0,hasMore=true,loading=false,loaded=0,total=null,checked=false,readError='',selectedTab='current',focusedRecord=false;
+  let items=localItems().filter(i=>!root.CCThreadsArchive?.enabled||(!api.matchesAccount(i,'kyun')&&!api.matchesAccount(i,'choi'))),offset=0,hasMore=true,loading=false,loaded=0,total=null,checked=false,readError='',selectedTab='current',focusedRecord=false;
   const desk=root.CCRpgDailyDesk?.mount({dialog,account,toolbar,list,onStatus:showOperation});
   if(desk?.tab==='history')selectedTab='history';
   dialog.addEventListener?.('cancel',()=>desk?.savePosition());
@@ -49,7 +49,7 @@
   const more=e('button','保存原稿の続き100件を確認','push-button');more.type='button';dialog.append(more);
   function render(){
    const previousScroll=dialog.scrollTop,previousActiveId=doc.activeElement?.closest?.('.rpg-account-card')?.dataset.recordId;
-   const matches=api.unique(items).filter(i=>!api.isSuppressed(i)&&api.matchesAccount(i,account.key));list.replaceChildren();
+   const matches=api.unique(items).filter(i=>!api.isSuppressed(i)&&!root.CCThreadsArchive?.isArchivedRecord(i)&&api.matchesAccount(i,account.key));list.replaceChildren();
    const target=recordId?matches.find(i=>recordKey(i.id)===recordKey(recordId)):null;if(target&&!focusedRecord)selectedTab=api.historyState(target,account.key)?'history':'current';
    const current=e('div',undefined,'rpg-account-current'),history=details('投稿済み・見送りの履歴'),active=matches.filter(i=>!api.historyState(i,account.key)),archived=matches.filter(i=>api.historyState(i,account.key));
    current.hidden=selectedTab!=='current';history.hidden=selectedTab!=='history';history.className='rpg-account-history';history.open=selectedTab==='history';
