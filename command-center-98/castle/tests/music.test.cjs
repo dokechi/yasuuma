@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const {parseHTML}=require('linkedom');
 function boot(prefs,storageFails=false){
- const {document,window}=parseHTML(fs.readFileSync('entry-v36.html','utf8')),audio=document.querySelector('#bgmAudio');document.hidden=false;window.BroadcastChannel=undefined;
+ const {document,window}=parseHTML(fs.readFileSync('entry-v37.html','utf8')),audio=document.querySelector('#bgmAudio');document.hidden=false;window.BroadcastChannel=undefined;
  let clock=1000;let plays=0,fx={enabled:false,volume:.5},nextPlay=null;const notices=[],saved=new Map(prefs?[['castle-town.audio.v1',JSON.stringify(prefs)]]:[]);
  audio.paused=true;audio.currentTime=44;audio.duration=90;audio.play=()=>{plays++;if(nextPlay)return nextPlay();audio.paused=false;audio.ended=false;return Promise.resolve()};audio.pause=()=>{audio.paused=true};audio.load=()=>{audio.error=null};
  const store={getItem:k=>saved.get(k),setItem:(k,v)=>{if(storageFails)throw Error('quota');saved.set(k,v)}};

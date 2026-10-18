@@ -85,3 +85,8 @@
 
 /* A full view must share the readiness of its current room, never its old bitmap. */
 .scene-dialog[data-ready=false] .scene-full-frame{visibility:hidden}
+
+/* Route exit must retire the legacy art before the next paint. Its return
+   flight and room fade used to expose the older illustration over the town. */
+.app[data-view=home] .companion{visibility:hidden!important}
+.app[data-view=home] .study-scene,.app[data-view=home] .other-room{opacity:0;visibility:hidden;transition:none;animation:none}
