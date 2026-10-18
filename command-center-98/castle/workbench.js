@@ -1,4 +1,5 @@
 import {safeLink,dayInJapan,groupDrafts} from './notebook.js?v=31';
+import {createButtonFeedback} from './interaction.js?v=34';
 import {createWorld} from './world.js?v=33';
 export function createWorkbench({app,places,notebook,reduced,getState,selectId,refresh,onStatus,onReposition,onMotionChange,onCopy,openPlace}){
  const $=s=>document.querySelector(s),drawer=$('#deskDrawer'),body=$('#drawerBody');let pending=null,compareId=null,manual=null,flight=null,scrollTimer=null,drawerReturn=null,waitingWorker=null,applyingUpdate=false,externalPending=false,offlineReady=false;let navStack=[],currentRoute=null,lastList=null,activeSearch=null;const searchStates=new Map();
@@ -21,7 +22,7 @@ export function createWorkbench({app,places,notebook,reduced,getState,selectId,r
  function undo(message){$('#undoMessage').textContent=message;$('#undoBar').hidden=false;}
  $('#undoAction').addEventListener('click',()=>{try{savedMessage(notebook.undo(),'元に戻しました');$('#undoBar').hidden=true;refresh();update();if(drawer.open)menu();}catch(e){onStatus(e.message);}});
  $('#undoDismiss').addEventListener('click',()=>$('#undoBar').hidden=true);
- function haptic(){if(notebook.pref('haptic',false)&&typeof navigator.vibrate==='function'){try{navigator.vibrate(10);}catch{}}}
+ createButtonFeedback({reduced,enabled:()=>notebook.pref('haptic',true)});
  function updateHome(){for(const station of document.querySelectorAll('.station')){const key=station.dataset.place,used=notebook.usedToday(key);station.classList.toggle('visited-today',used);station.querySelector('.station-status').textContent=used?'灯りがともっています · 今日利用':'';}
  }
  function update(){const {draft,place}=getState();updateHome();$('#copyLink').hidden=!draft?.link;$('#pinDraft').disabled=!draft;$('#pinDraft').setAttribute('aria-pressed',String(draft&&notebook.flag('pin',draft.id)));$('#pinDraft').textContent=draft&&notebook.flag('pin',draft.id)?'★ お気に入り':'☆ お気に入り';
@@ -63,7 +64,7 @@ export function createWorkbench({app,places,notebook,reduced,getState,selectId,r
  $('#closeTray').addEventListener('click',()=>{$('#trayRail').hidden=true;app.dataset.tray='off';onReposition();});
  function settings(){open('表示設定');function setting(label,key,choices,fallback){const wrap=el('label',label),select=el('select');for(const [value,text] of choices){const o=el('option',text);o.value=value;select.append(o);}select.value=String(notebook.pref(key,fallback));select.addEventListener('change',()=>{let value=select.value;if(value==='true'||value==='false')value=value==='true';notebook.setPref(key,value);world.refresh();update();onMotionChange();onReposition();});wrap.append(select);body.append(wrap);}
   setting('本文の大きさ','font',[['standard','標準'],['large','大きめ']],'standard');setting('動き','quiet',[['false','標準'],['true','ひかえめ']],false);setting('窓の外の光','light',[['auto','時間帯に合わせる'],['day','昼'],['evening','夕方'],['night','夜']],'auto');setting('ホームの入口','homeMode',[['cards','キャラクターのカード'],['map','城下町のマップ']],'cards');
-  if(typeof navigator.vibrate==='function')setting('コピー時の短い振動','haptic',[['false','オフ'],['true','オン']],false);else body.append(el('p','このブラウザでは振動を利用できません。','drawer-note'));
+  if(typeof navigator.vibrate==='function')setting('ボタンの短い振動','haptic',[['false','オフ'],['true','オン']],true);else body.append(el('p','このブラウザでは振動を利用できません。','drawer-note'));
   body.append(el('p',offlineReady?'オフラインの準備ができています。保存した原稿を通信なしでも開けます。':'オフラインの準備には、このブラウザでの初回読み込みが必要です。','drawer-note'));
   body.append(el('p','音は上部の「音 OFF／ON」で切り替えられます。','drawer-note'));
  }
@@ -83,10 +84,10 @@ export function createWorkbench({app,places,notebook,reduced,getState,selectId,r
  $('#paperScroll').addEventListener('scroll',()=>{clearTimeout(scrollTimer);scrollTimer=setTimeout(savePosition,180);},{passive:true});
  window.addEventListener('pagehide',()=>{savePosition();flight?.cancel();});document.addEventListener('visibilitychange',()=>{if(document.hidden){savePosition();flight?.cancel();}});
  $('#deskMenu').addEventListener('click',menu);$('#searchDrafts').addEventListener('click',search);$('#homeSearchDrafts').addEventListener('click',search);$('#settingsOpen').addEventListener('click',settings);$('#doneStack').addEventListener('click',completed);
- $('#pinDraft').addEventListener('click',()=>{const d=getState().draft;if(!d)return;notebook.toggle('pin',d.id);undo('原稿の留め方を変更しました');refreshPreserving();haptic();});
+ $('#pinDraft').addEventListener('click',()=>{const d=getState().draft;if(!d)return;notebook.toggle('pin',d.id);undo('原稿の留め方を変更しました');refreshPreserving();});
  $('#focusMode').addEventListener('click',()=>{notebook.setPref('focus',!notebook.pref('focus',false));update();onReposition();});$('#copyLink').addEventListener('click',()=>{const d=getState().draft;if(d?.link)onCopy(d,'link');});
  $('#manualCopied').addEventListener('click',()=>{if(manual){notebook.copied(manual.draft,manual.kind,manual.text);copied(manual.draft);manual=null;}});
- function copied(d){update();haptic();flight?.cancel();if(reduced.matches||document.hidden||getState().draft?.id!==d.id)return;const a=$('#copy').getBoundingClientRect(),b=$('#copySeal').getBoundingClientRect(),node=$('#copyFlight');if(!node.animate)return;node.style.left=a.left+a.width/2+'px';node.style.top=a.top+'px';flight=node.animate([{opacity:0,transform:'translate(0,0) scale(.7)'},{opacity:.75,offset:.2},{opacity:0,transform:`translate(${b.left-a.left-a.width/2}px,${b.top-a.top}px) scale(.35)`}],{duration:350,easing:'ease-out'});flight.finished.catch(()=>{});}
+ function copied(d){update();flight?.cancel();if(reduced.matches||document.hidden||getState().draft?.id!==d.id)return;const a=$('#copy').getBoundingClientRect(),b=$('#copySeal').getBoundingClientRect(),node=$('#copyFlight');if(!node.animate)return;node.style.left=a.left+a.width/2+'px';node.style.top=a.top+'px';flight=node.animate([{opacity:0,transform:'translate(0,0) scale(.7)'},{opacity:.75,offset:.2},{opacity:0,transform:`translate(${b.left-a.left-a.width/2}px,${b.top-a.top}px) scale(.35)`}],{duration:350,easing:'ease-out'});flight.finished.catch(()=>{});}
  function enter(key){const first=notebook.visit(key);world.enter(key,first);update();}
  function leave(){savePosition();world.leave();flight?.cancel();updateHome();}
  function finish(d){if(!d)return;notebook.finish(d);undo('読了履歴に記録しました');updateHome();}

@@ -19,3 +19,27 @@ repeats the official loop at runtime. See PROVENANCE.json for SHA-256 hashes.
 This notice applies to these audio assets only, independently of application
 code licensing. Redistribution and adaptation must retain attribution and
 license information and identify changes under CC BY 4.0.
+
+
+Additional music (2026-10-18)
+Lively Tavern — Alexander Nakarada
+Source: https://creatorchords.com/music/lively-tavern/
+Download: https://d19p7hqu4j8vx0.cloudfront.net/media/media/data/mp3s/Lively_Tavern.mp3
+License: CC BY 4.0 https://creativecommons.org/licenses/by/4.0/
+Original regular MP3 renamed only. No transcoding, cuts, mixing or normalization. Runtime volume and shuffled sequential playback. Not a seamless loop.
+
+Enchanted Festival — Matthew Pablo
+Source: https://opengameart.org/content/enchanted-festival
+Download: https://opengameart.org/sites/default/files/Enchanted%20Festival.zip
+License: CC BY 3.0 https://creativecommons.org/licenses/by/3.0/
+Original regular MP3 renamed only. No transcoding, cuts, mixing or normalization. Runtime volume and shuffled sequential playback. Not a seamless loop.
+
+Woodland Fantasy — Matthew Pablo
+Source: https://opengameart.org/content/woodland-fantasy
+Download: https://opengameart.org/sites/default/files/Woodland%20Fantasy_0.mp3
+License: CC BY 3.0 https://creativecommons.org/licenses/by/3.0/
+Original regular MP3 renamed only. No transcoding, cuts, mixing or normalization. Runtime volume and shuffled sequential playback. Not a seamless loop.
+
+Music: Lively Tavern by Alexander Nakarada (https://creatorchords.com) Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0) https://creativecommons.org/licenses/by/4.0/
+Music by Matthew Pablo — https://www.matthewpablo.com
+Track: Enchanted Festival / Woodland Fantasy
