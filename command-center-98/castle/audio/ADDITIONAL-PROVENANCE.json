@@ -1,0 +1,50 @@
+{
+  "tracks": [
+    {
+      "file": "Lively_Tavern.mp3",
+      "title": "Lively Tavern",
+      "author": "Alexander Nakarada",
+      "source": "https://creatorchords.com/music/lively-tavern/",
+      "download": "https://d19p7hqu4j8vx0.cloudfront.net/media/media/data/mp3s/Lively_Tavern.mp3",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "checked": "2026-10-18",
+      "bytes": 8893380,
+      "sha256": "f49488c7eef3f87a965dec52000a25340414de5f60fd9c3c1623cf5bed5caf32",
+      "changes": "Original regular MP3 renamed only. No transcoding, cuts, mixing or normalization. Runtime volume and shuffled sequential playback. Not a seamless loop."
+    },
+    {
+      "file": "Enchanted_Festival.mp3",
+      "title": "Enchanted Festival",
+      "author": "Matthew Pablo",
+      "source": "https://opengameart.org/content/enchanted-festival",
+      "download": "https://opengameart.org/sites/default/files/Enchanted%20Festival.zip",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "checked": "2026-10-18",
+      "bytes": 5068686,
+      "sha256": "97646d2dc615cccec3e734532e332de0a8474c4f8e595775af5c43ae67647ec6",
+      "changes": "Original regular MP3 renamed only. No transcoding, cuts, mixing or normalization. Runtime volume and shuffled sequential playback. Not a seamless loop."
+    },
+    {
+      "file": "Woodland_Fantasy.mp3",
+      "title": "Woodland Fantasy",
+      "author": "Matthew Pablo",
+      "source": "https://opengameart.org/content/woodland-fantasy",
+      "download": "https://opengameart.org/sites/default/files/Woodland%20Fantasy_0.mp3",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "checked": "2026-10-18",
+      "bytes": 6012254,
+      "sha256": "87f9a9d04fdd0b924db98b90e86c2906330f4931cb8734f7b431706e2869aacd",
+      "changes": "Original regular MP3 renamed only. No transcoding, cuts, mixing or normalization. Runtime volume and shuffled sequential playback. Not a seamless loop."
+    }
+  ],
+  "enchantedArchiveSha256": "a67edc7a4867b77da8fdc43e5eb5620ecf45715b6fa0eefcd86783902f4c68b1",
+  "enchantedArchiveMembers": [
+    "Enchanted Festival/Enchanted Festival.mp3",
+    "Enchanted Festival/Enchanted Festival Loop.wav"
+  ],
+  "includedMember": "Enchanted Festival/Enchanted Festival.mp3",
+  "licenseEvidence": "Author submissions on OpenGameArt explicitly CC BY 3.0; author website credited. No custom license, account, purchase or permission requested."
+}
