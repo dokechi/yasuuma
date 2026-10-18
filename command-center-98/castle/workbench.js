@@ -30,7 +30,7 @@ export function createWorkbench({app,places,notebook,reduced,getState,selectId,r
   const count=notebook.completed(place).length;$('#doneCount').textContent=String(count);$('#doneStack').style.setProperty('--papers',String(Math.min(count,5)));
   const rows=notebook.list(place);$('#draftCount').textContent=groupDrafts(rows).length+'原稿・'+rows.length+'案';
   $('#sampleNote').textContent=!draft?'「引き出し」から原稿を追加できます。':draft.sample?'操作体験用のサンプルです。「引き出し」から自分の原稿も追加できます。':`この端末に保存した原稿 · 更新 ${stamp(draft.updatedAt)}${draft.checkedAt?' · 情報確認 '+draft.checkedAt:''}`;
-  app.dataset.font=notebook.pref('font','standard');app.dataset.focus=notebook.pref('focus',false)?'on':'off';$('#focusMode').setAttribute('aria-pressed',String(app.dataset.focus==='on'));$('#focusMode').textContent=app.dataset.focus==='on'?'部屋へ':'集中';
+  app.dataset.paperTheme=['cream','navy'].includes(notebook.pref('paperTheme','standard'))?notebook.pref('paperTheme','standard'):'standard';app.dataset.font=notebook.pref('font','standard');app.dataset.focus=notebook.pref('focus',false)?'on':'off';$('#focusMode').setAttribute('aria-pressed',String(app.dataset.focus==='on'));$('#focusMode').textContent=app.dataset.focus==='on'?'部屋へ':'集中';
   if(!$('#trayRail').hidden)renderTray();if(!$('#comparePane').hidden)renderComparison();
  }
  function refreshPreserving(){const selected=getState().draft?.id;refresh(selected);update();}
@@ -62,8 +62,9 @@ export function createWorkbench({app,places,notebook,reduced,getState,selectId,r
  function closeComparison(){$('#comparePane').hidden=true;app.dataset.compare='off';onReposition();}
  $('#compareSelect').addEventListener('change',e=>{compareId=e.target.value;renderComparison();});$('#closeCompare').addEventListener('click',closeComparison);$('#compareCopy').addEventListener('click',()=>{const d=notebook.get(compareId);if(d)onCopy(d,'body');});
  $('#closeTray').addEventListener('click',()=>{$('#trayRail').hidden=true;app.dataset.tray='off';onReposition();});
- function settings(){open('表示設定');function setting(label,key,choices,fallback){const wrap=el('label',label),select=el('select');for(const [value,text] of choices){const o=el('option',text);o.value=value;select.append(o);}select.value=String(notebook.pref(key,fallback));select.addEventListener('change',()=>{let value=select.value;if(value==='true'||value==='false')value=value==='true';notebook.setPref(key,value);world.refresh();update();onMotionChange();onReposition();});wrap.append(select);body.append(wrap);}
+ function settings(){open('表示設定');function setting(label,key,choices,fallback){const wrap=el('label',label),select=el('select');for(const [value,text] of choices){const o=el('option',text);o.value=value;select.append(o);}select.dataset.pref=key;select.value=String(notebook.pref(key,fallback));select.addEventListener('change',()=>{let value=select.value;if(value==='true'||value==='false')value=value==='true';const saved=notebook.setPref(key,value);if(!saved)savedMessage(false,'');world.refresh();update();onMotionChange();onReposition();});wrap.append(select);body.append(wrap);}
   setting('本文の大きさ','font',[['standard','標準'],['large','大きめ']],'standard');setting('動き','quiet',[['false','標準'],['true','ひかえめ']],false);setting('窓の外の光','light',[['auto','時間帯に合わせる'],['day','昼'],['evening','夕方'],['night','夜']],'auto');setting('ホームの入口','homeMode',[['cards','キャラクターのカード'],['map','城下町のマップ']],'cards');
+  setting('原稿面の背景','paperTheme',[['standard','標準（持ち場ごとの配色）'],['cream','生成り'],['navy','濃紺']],'standard');body.append(el('p','全持ち場の原稿面に適用します。背景絵・キャラクター・場面切替は変わりません。','drawer-note'));
   if(typeof navigator.vibrate==='function')setting('ボタンの短い振動','haptic',[['false','オフ'],['true','オン']],true);else body.append(el('p','このブラウザでは振動を利用できません。','drawer-note'));
   body.append(el('p',offlineReady?'オフラインの準備ができています。保存した原稿を通信なしでも開けます。':'オフラインの準備には、このブラウザでの初回読み込みが必要です。','drawer-note'));
   body.append(el('p','音は上部の「音 OFF／ON」で切り替えられます。','drawer-note'));

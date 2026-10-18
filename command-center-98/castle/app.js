@@ -1,7 +1,7 @@
 import {PERSONA_LINES} from './persona-lines.js?v=28';
 import {createProductionClient} from './production.js?v=41';
 import {createNotebook,groupDrafts} from './notebook.js?v=41';
-import {createWorkbench} from './workbench.js?v=41';
+import {createWorkbench} from './workbench.js?v=42';
 import {createFeedback} from './feedback.js?v=38';
 // Assets, copy and workflow content are independent of the shared motion.
 // Character-specific layered poses also require matching assets and alignment.
