@@ -34,8 +34,17 @@
  "task:6ab2fe61aa2c8191b2adc1a1dc4bd268:sourcing:endclothing.com/jp/adidas-japan-93-home-jersey-top-kt0827.html:KT0827:power-blue:M:1",
  "task:6ab2fe69874c81918f74c3000f635cbd:sourcing:amiami.jp/GOODS-04604436:4522776647549:nagumo:1",
  "task:6ab2fe71b7cc8191b48e33bc75c668de:sourcing:https://detail-online-store.com/en/products/crocs-mega-crush-clog-mega-crush-clog-pink:207988:PINK:M5-23cm:1",
- "task:6ab2fe71b7cc8191bcd66551d6f00a00:sourcing:https://detail-online-store.com/en/products/crocs-mega-crush-clog-mega-crush-clog-pink:207988:PINK:M5-23cm:1"
-]),known=new Set(ids),url='https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit#gid=1293618236';
+ "task:6ab2fe71b7cc8191bcd66551d6f00a00:sourcing:https://detail-online-store.com/en/products/crocs-mega-crush-clog-mega-crush-clog-pink:207988:PINK:M5-23cm:1",
+ "supplier:atomicgolf.jp:teleto-atomic-golf",
+ "supplier:ec.wa-jp.com:orientaltraffic",
+ "supplier:golfmac.jp:golfmac",
+ "supplier:katespade.jp:official",
+ "supplier:parade-shoes.jp:parade",
+ "supplier:store.shopping.yahoo.co.jp:clustic-r",
+ "supplier:store.united-arrows.co.jp:united-arrows-outlet",
+ "task:6a965c1d92408191ac13f417f8f97c6f:candidate-reef-layback-cj4364-black-us9-924",
+ "task:6a965c1d92408191ac13f417f8f97c6f:candidate-reef-sojourn-cj4030-gry-26-2640"
+]),known=new Set(ids),url='https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit#gid=1867368238';
  const archived=id=>known.has(String(id||'').replace(/^(sns:)+/,''));
  return Object.freeze({enabled:true,ids,url,isArchivedRecord:row=>archived(row?.id),isArchivedDraft:d=>d?.source?.account==='sourcing'&&archived(d.source.id),isArchivedCacheKey(key){if(!String(key).startsWith('source:live-shiire-'))return false;try{return archived(decodeURIComponent(key.slice('source:live-shiire-'.length)));}catch{return false;}}});
 });
