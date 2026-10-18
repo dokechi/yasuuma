@@ -16,8 +16,8 @@
     "./binbo-neko.css?v=20261002.2",
     "./v230-request-progress.css?v=20261004.1",
     "./v231-trade-details.css?v=20261004.1",
-    "./rpg-home.css?v=20261018.36-shuffle",
-    "./rpg-theme.css?v=20261018.36-shuffle",
+    "./rpg-home.css?v=20261018.37-back",
+    "./rpg-theme.css?v=20261018.37-back",
     "./rpg-account-pages.css?v=20261013.9-detail",
     "./rpg-workspaces.css?v=20261013.9-detail",
     "./rpg-daily-desk.css?v=20261015.1"
@@ -84,6 +84,6 @@
     "./rpg-workspaces.js?v=20261017.33-unified",
     "./rpg-daily-store.js?v=20261015.1",
     "./rpg-daily-desk.js?v=20261017.33-unified",
-    "./castle-parent.js?v=20261018.36-shuffle"
+    "./castle-parent.js?v=20261018.37-back"
   ]
 }

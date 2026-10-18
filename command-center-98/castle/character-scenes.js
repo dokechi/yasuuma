@@ -30,6 +30,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   });images.set(src,promise);return promise;
  }
  function clearTimers(){clearTimeout(timer);timer=null;}
+ function ready(value){panel.dataset.ready=dialog.dataset.ready=String(value);}
  function syncSelect(){select.value=fullSelect.value=selection;}
  function refresh(){motions[0].visible(Boolean(key)&&!current?.static&&!paused&&!dialog.open&&app.dataset.focus!=='on');motions[1].visible(Boolean(key)&&!current?.static&&!paused&&dialog.open);if(rotationAllowed())activity();else clearTimers();}
  async function show(id){
@@ -37,11 +38,15 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   const cfg=CHARACTER_SCENES[key][id],token=++epoch;cursor=id;panel.dataset.loading='true';
   try{
    await load(cfg.src);if(token!==epoch||!key)return false;
-   motions.forEach(m=>m.stop());current=cfg;failureNotice=false;
+   motions.forEach(m=>m.stop());ready(false);
    image.src=full.src=cfg.src;image.alt=full.alt=`${CHARACTER_LABELS[key]}・${cfg.label}`;
+   // A cached/preloaded file can still have an old bitmap in the visible img.
+   // Commit both views only after their own decoding, and reject departed rooms.
+   await Promise.all([image.decode?.(),full.decode?.()]);if(token!==epoch||!key)return false;
+   current=cfg;failureNotice=false;
    image.style.objectPosition=`${cfg.focus[0]*100}% ${cfg.focus[1]*100}%`;
    panel.dataset.static=dialog.dataset.static=String(Boolean(cfg.static));
-   panel.dataset.scene=dialog.dataset.scene=id;panel.dataset.loading='false';panel.dataset.ready='true';
+   panel.dataset.scene=dialog.dataset.scene=id;panel.dataset.loading='false';ready(true);
    $('#sceneTitle').textContent=`${CHARACTER_LABELS[key]} — ${cfg.label}`;
    if(lastReply)$('#sceneCaption').textContent=lastReply.text;
    $('#sceneCurrent').textContent=cfg.label;
@@ -98,14 +103,15 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
  dialog.addEventListener('close',()=>{refresh();activity();(returnToDraft?$('#draft'):open).focus();returnToDraft=false;});
  function enter(next){
   clearTimers();epoch++;persona.leave(key);motions.forEach(m=>m.stop());key=CHARACTER_SCENES[next]?next:null;current=null;lastReply=null;cursor='welcome';failureNotice=false;
-  panel.hidden=!key;app.dataset.sceneCharacter=key||'';panel.dataset.ready='false';placeUpdate(Boolean(key));
+  panel.hidden=!key;app.dataset.sceneCharacter=key||'';ready(false);placeUpdate(Boolean(key));
   if(dialog.open)dialog.close();if(!key)return;
+  $('#sceneTitle').textContent=`${CHARACTER_LABELS[key]}・読み込み中`;$('#sceneCurrent').textContent='読み込み中';
   selection=choices.get(key)||'auto';syncSelect();
   const target=selection==='auto'?'welcome':selection;
   present(persona.enter(key));
   show(target);
  }
- function leave(){clearTimers();epoch++;persona.leave(key);key=null;current=null;lastReply=null;motions.forEach(m=>m.stop());panel.hidden=true;app.dataset.sceneCharacter='';placeUpdate(false);if(dialog.open)dialog.close();}
+ function leave(){clearTimers();epoch++;persona.leave(key);key=null;current=null;lastReply=null;motions.forEach(m=>m.stop());ready(false);panel.hidden=true;app.dataset.sceneCharacter='';placeUpdate(false);if(dialog.open)dialog.close();}
  function copied(){if(!key)return false;if(selection==='auto'){clearTimers();show('special');}else if(!current?.static)motions[0].react('hand');onStatus('コピーしました');return true;}
  function selected(){if(!key)return;activity();}
  function complete(place){
@@ -119,7 +125,7 @@ export function createCharacterScenes({app,stations,reduced,onLine,onStatus,onRe
   }
  }
  function pause(){paused=true;epoch++;persona.leave(key);panel.dataset.loading='false';clearTimers();motions.forEach(m=>m.stop());}
- function resume(){paused=false;if(key&&(!current||(selection!=='auto'&&current.id!==selection)))show(selection==='auto'?'welcome':selection);refresh();if(key&&lastReply)onLine(lastReply.text);}
+ function resume(){paused=false;if(key&&(!current||panel.dataset.ready!=='true'||(selection!=='auto'&&current.id!==selection)))show(selection==='auto'?(current?.id||'welcome'):selection);refresh();if(key&&lastReply)onLine(lastReply.text);}
  document.addEventListener('visibilitychange',()=>document.hidden?pause():resume());
  window.addEventListener('castle:pause',pause);window.addEventListener('castle:resume',resume);window.addEventListener('pagehide',pause);window.addEventListener('pageshow',resume);
  reduced.addEventListener?.('change',refresh);

@@ -40,8 +40,8 @@ test('unfinished FP editorial choices do not hide saved pages or mutate approval
  delete b.window.__fpContentPipeline;assert.equal(b.window.CCCastle.drafts([item]).length,1);
 });
 test('host opens a versioned HTML filename so a cached canonical shell cannot capture it',()=>{
- const b=boot();assert.equal(b.document.getElementById('ccCastleFrame').getAttribute('src'),'./castle/entry-v34.html');
- assert.equal(fs.readFileSync('entry-v34.html','utf8'),fs.readFileSync('index.html','utf8'));
+ const b=boot();assert.equal(b.document.getElementById('ccCastleFrame').getAttribute('src'),'./castle/entry-v35.html');
+ assert.equal(fs.readFileSync('entry-v35.html','utf8'),fs.readFileSync('index.html','utf8'));
 });
 test('host paginates all events, performs GET only, and marks interrupted reads incomplete',async()=>{
  const requests=[];let fail=false;

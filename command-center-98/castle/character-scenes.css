@@ -82,3 +82,6 @@
  .scene-conversation{flex:1 1 220px}
 }
 @media(prefers-reduced-motion:reduce){.greeting[data-feeling]{transition:none}}
+
+/* A full view must share the readiness of its current room, never its old bitmap. */
+.scene-dialog[data-ready=false] .scene-full-frame{visibility:hidden}
