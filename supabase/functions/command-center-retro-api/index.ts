@@ -8,6 +8,7 @@ import { saveThreadsPayload } from "./threads-payload-store.mjs";
 import postgres from "npm:postgres@3.4.7";
 import { saveGuardedPayload, mutationFailure } from "./guarded-payload.mjs";
 import { castleSignals } from "./castle-signals.mjs";
+import { excludeArchivedSourcing } from "./sourcing-archive.mjs";
 import { excludeArchivedThreads } from "./threads-archive.mjs";
 import { sourcingSuppliers } from "./sourcing-read-model.mjs";
 import { SaveError, saveVersionedRow } from "../_shared/save-consistency.mjs";
@@ -119,7 +120,7 @@ function isSystemSignal(row:any){
 }
 async function allSourcingSignals(){
   const rows:any[]=[];
-  for(let offset=0;;offset+=1000){const {data,error}=await admin.from("command_center_signals").select("id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,updated_at,payload").eq("domain","sourcing").order("id",{ascending:true}).range(offset,offset+999);if(error)throw error;rows.push(...(data||[]));if((data||[]).length<1000)break}
+  for(let offset=0;;offset+=1000){const {data,error}=await excludeArchivedSourcing(admin.from("command_center_signals").select("id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,updated_at,payload").eq("domain","sourcing")).order("id",{ascending:true}).range(offset,offset+999);if(error)throw error;rows.push(...(data||[]));if((data||[]).length<1000)break}
   return rows.filter((x:any)=>!isSystemSignal(x));
 }
 function readySourcing(row:any,reviewIds:Set<string>){return row.review_state==='new'&&!reviewIds.has(row.id)&&['S','A'].includes(row.priority)&&!['research','supplier','run_summary'].includes(row.payload?.result_kind)}
@@ -355,12 +356,13 @@ Deno.serve(async(req:Request)=>{
     const view=u.searchParams.get("view")||"active";
     const {count}=await admin.from("command_center_signals").select("id",{count:"exact",head:true});
     if(view==="active"){
-      const [{data,error},negatives]=await Promise.all([admin.from("command_center_signals").select("id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,updated_at,payload").eq("review_state","new").order("score",{ascending:false}).order("last_seen_at",{ascending:false}).limit(40),negativeExamples()]);
+      const [{data,error},negatives]=await Promise.all([excludeArchivedSourcing(admin.from("command_center_signals").select("id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,updated_at,payload").eq("review_state","new")).order("score",{ascending:false}).order("last_seen_at",{ascending:false}).limit(40),negativeExamples()]);
       if(error)throw error;
       const learned=(data||[]).filter((x:any)=>!isSystemSignal(x)).map((x:any)=>{const penalty=learningPenalty(x,negatives);return mapRow(x,Math.max(0,Number(x.score||0)-penalty),penalty)}).sort((a:any,b:any)=>b.score-a.score||new Date(b.lastSeen||0).getTime()-new Date(a.lastSeen||0).getTime()).slice(0,5);
       return json(req,{ok:true,generatedAt:new Date().toISOString(),items:learned,agents:{connected:7,total:7},storedCount:count??0,view,learning:true});
     }
     let q=admin.from("command_center_signals").select("id,domain,priority,score,title,summary,reason,next_action,impact_yen,impact_label,deadline,confidence,source_title,source_url,review_state,last_seen_at,updated_at,payload");
+    q=excludeArchivedSourcing(q);
     if(view==="sourcing") q=q.eq("domain","sourcing").order("last_seen_at",{ascending:false}).limit(100);
     else if(["read","accepted","rejected"].includes(view)) q=q.eq("review_state",view).order("updated_at",{ascending:false}).limit(100);
     else q=q.order("updated_at",{ascending:false}).limit(100);

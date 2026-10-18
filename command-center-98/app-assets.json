@@ -80,11 +80,12 @@
     "./v231-trade-details.js?v=20261004.1",
     "./fp-finished-images.js?v=20261008.4-state",
     "./threads-archive.js?v=20261018.41-archive",
+    "./sourcing-archive.js?v=20261018.42-sourcing",
     "./manual-operation-hub.js?v=20261018.41-archive",
     "./rpg-home.js?v=20261012.3-workspaces",
     "./rpg-workspaces.js?v=20261017.33-unified",
     "./rpg-daily-store.js?v=20261015.1",
     "./rpg-daily-desk.js?v=20261017.33-unified",
-    "./castle-parent.js?v=20261018.41-archive"
+    "./castle-parent.js?v=20261018.42-sourcing"
   ]
 }

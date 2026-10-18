@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import {castleSignals} from '../supabase/functions/command-center-retro-api/castle-signals.mjs';
 function fixture(rows, override={}) {
  const calls=[];
- const query={select(...args){calls.push(['select',...args]);return this},order(...args){calls.push(['order',...args]);return this},async range(a,b){calls.push(['range',a,b]);return {data:rows.slice(a,b+1),count:rows.length,error:null,...override}}};
+ const query={not(){return this},select(...args){calls.push(['select',...args]);return this},order(...args){calls.push(['order',...args]);return this},async range(a,b){calls.push(['range',a,b]);return {data:rows.slice(a,b+1),count:rows.length,error:null,...override}}};
  return {admin:{from(name){calls.push(['from',name]);return query}},calls};
 }
 test('read all 201 records without the old 100-record cap',async()=>{
