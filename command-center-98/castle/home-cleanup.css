@@ -1,0 +1,5 @@
+/* Home keeps its entrances and art; explanatory copy stays in accessible names. */
+.home{padding-bottom:12px}.home-heading{margin-bottom:16px}.home-tools{margin-bottom:12px}
+.station .portrait{top:12px}.station-label{padding-top:18px;padding-bottom:12px}
+.app[data-view=home] .production-status[data-level=idle]{display:none}
+@media(min-width:680px) and (min-aspect-ratio:4/5){.home{padding-bottom:16px}.home-heading{margin-bottom:20px}.station .portrait{top:20px}}

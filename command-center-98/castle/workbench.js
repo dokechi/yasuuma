@@ -23,7 +23,7 @@ export function createWorkbench({app,places,notebook,reduced,getState,selectId,r
  $('#undoAction').addEventListener('click',()=>{try{savedMessage(notebook.undo(),'元に戻しました');$('#undoBar').hidden=true;refresh();update();if(drawer.open)menu();}catch(e){onStatus(e.message);}});
  $('#undoDismiss').addEventListener('click',()=>$('#undoBar').hidden=true);
  createButtonFeedback({reduced,enabled:()=>notebook.pref('haptic',true)});
- function updateHome(){for(const station of document.querySelectorAll('.station')){const key=station.dataset.place,used=notebook.usedToday(key);station.classList.toggle('visited-today',used);station.querySelector('.station-status').textContent=used?'灯りがともっています · 今日利用':'';}
+ function updateHome(){for(const station of document.querySelectorAll('.station')){const key=station.dataset.place,used=notebook.usedToday(key);station.classList.toggle('visited-today',used);}
  }
  function update(){const {draft,place}=getState();updateHome();$('#copyLink').hidden=!draft?.link;$('#pinDraft').disabled=!draft;$('#pinDraft').setAttribute('aria-pressed',String(draft&&notebook.flag('pin',draft.id)));$('#pinDraft').textContent=draft&&notebook.flag('pin',draft.id)?'★ お気に入り':'☆ お気に入り';
   const mark=draft&&notebook.copyMark(draft);$('#copySeal').hidden=!mark;$('#copySeal').textContent=mark?`コピー済み · ${stamp(mark.time)}`:'';
