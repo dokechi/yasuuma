@@ -61,6 +61,7 @@ jobs:
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-back-browser.cjs
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-flash-browser.cjs
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-home-browser.cjs
+          NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-paper-theme-browser.cjs
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/threads-archive-browser.cjs
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/sourcing-archive-browser.cjs
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-polish-browser.cjs
