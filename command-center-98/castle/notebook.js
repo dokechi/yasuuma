@@ -11,11 +11,11 @@ export function groupDrafts(rows){
 }
 export function safeLink(value){const s=String(value||'').trim();if(!s)return '';try{const u=new URL(s);return ['https:','http:'].includes(u.protocol)?u.href:'';}catch{return '';}}
 export function dayInJapan(time=Date.now()){if(!Number.isFinite(Number(time))||!Number.isFinite(new Date(Number(time)).getTime()))return '';return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(time));}
-export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>{},archive=globalThis.CCThreadsArchive}={}){
+export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>{},archive=globalThis.CCThreadsArchive,sourceArchive=globalThis.CCSourcingArchive}={}){
  const records=new Map(),undoStack=[],freshSourceKeys=new Set();let serial=0,persistent=true;
  const clone=x=>x===undefined?undefined:JSON.parse(JSON.stringify(x));
  const id=()=>`n-${now().toString(36)}-${Math.random().toString(36).slice(2,9)}-${serial++}`;
- function sync(){if(!storage)return;try{records.clear();for(let i=0;i<storage.length;i++){const k=storage.key(i);if(k?.startsWith(NOTEBOOK_PREFIX)){const key=k.slice(NOTEBOOK_PREFIX.length);if(archive?.enabled&&archive.isRemoteThreadsCacheKey(key)&&!freshSourceKeys.has(key))continue;try{records.set(key,JSON.parse(storage.getItem(k)));}catch{}}}}catch{persistent=false;onError();}}
+ function sync(){if(!storage)return;try{records.clear();for(let i=0;i<storage.length;i++){const k=storage.key(i);if(k?.startsWith(NOTEBOOK_PREFIX)){const key=k.slice(NOTEBOOK_PREFIX.length);if(sourceArchive?.enabled&&sourceArchive.isArchivedCacheKey(key))continue;if(archive?.enabled&&archive.isRemoteThreadsCacheKey(key)&&!freshSourceKeys.has(key))continue;try{records.set(key,JSON.parse(storage.getItem(k)));}catch{}}}}catch{persistent=false;onError();}}
  sync();
  function put(key,value){records.set(key,clone(value));try{if(!storage)throw Error('storage');storage.setItem(NOTEBOOK_PREFIX+key,JSON.stringify(value));return true;}catch{persistent=false;onError();return false;}}
  function remove(key){records.delete(key);try{if(!storage)throw Error('storage');storage.removeItem(NOTEBOOK_PREFIX+key);return true;}catch{persistent=false;onError();return false;}}
@@ -80,7 +80,7 @@ export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>
   const target=type+':'+draft.id,next=type==='done'&&value?{id:draft.id,place:draft.place,title:draft.title,body:draft.body,time:null,legacy:true,source:{account,id:recordId}}:value;
   saved=inherit(target,next)&&saved;
  }return saved;}
- function replaceSources(rows,{complete=false}={}){const normalized=rows.filter(d=>!archive?.enabled||archive.acceptsSource(d)).map(d=>normalize(d));const ids=new Set(normalized.map(d=>d.id));if(complete)for(const [k,v]of [...records])if(k.startsWith('source:')&&!ids.has(v.id))remove(k);for(const d of normalized){freshSourceKeys.add('source:'+d.id);put('source:'+d.id,d);}migrateLegacy();}
+ function replaceSources(rows,{complete=false}={}){const normalized=rows.filter(d=>(!archive?.enabled||archive.acceptsSource(d))&&!sourceArchive?.isArchivedDraft(d)).map(d=>normalize(d));const ids=new Set(normalized.map(d=>d.id));if(complete)for(const [k,v]of [...records])if(k.startsWith('source:')&&!ids.has(v.id))remove(k);for(const d of normalized){freshSourceKeys.add('source:'+d.id);put('source:'+d.id,d);}migrateLegacy();}
  migrateLegacy();
  return {sources,replaceSources,list,all,get,save,erase,hiddenDrafts,restore,toggle,flag,remember,visit,copied,copies,copyMark,finish,completed,sync,parseImport,applyImport,migrateLegacy,sourceDraft,inheritCopy,undo:undoAny,
   position:draftId=>Number(records.get('read:'+draftId))||0,selected:place=>records.get('selected:'+place),lastPlace:()=>records.get('lastPlace'),usedToday:place=>dayInJapan(records.get('visit:'+place)||1)===dayInJapan(now()),

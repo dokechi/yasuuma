@@ -9,6 +9,7 @@ import {saveGuardedPayload, validateSourcingVerdict, mutationFailure, MutationEr
 import {sourcingSuppliers} from '../supabase/functions/command-center-retro-api/sourcing-read-model.mjs';
 import {saveSourcingRoute} from '../supabase/functions/command-center-retro-api/sourcing-atomic-route.mjs';
 import {SaveError, saveVersionedRow} from '../supabase/functions/_shared/save-consistency.mjs';
+import {excludeArchivedSourcing, ARCHIVED_SOURCING_IDS} from '../supabase/functions/command-center-retro-api/sourcing-archive.mjs';
 
 // Isolated PostgREST contract simulator. Filters are evaluated at commit time,
 // JSONB comparisons ignore key order, and injected failures commit nothing.
@@ -20,6 +21,7 @@ function store(tables, {failWrite = false, failReadTable = null, readOnly = fals
     constructor(table) { this.table = table; this.filters = []; this.op = 'select'; }
     select(fields) { this.fields=fields;return this; }
     eq(key, value) { this.filters.push(row => key === 'payload' ? isDeepStrictEqual(row[key], JSON.parse(value)) : row[key] === value); return this; }
+    not(key, operator, value) { assert.equal(operator,'in');const excluded=JSON.parse('['+value.slice(1,-1)+']');this.filters.push(row=>!excluded.includes(row[key]));return this; }
     order() { return this; }
     range(start, end) { this.bounds = [start, end]; return this; }
     update(value) { if (readOnly) throw new Error('GET attempted a write'); this.op = 'update'; this.value = value; return this; }
@@ -158,7 +160,7 @@ async function api(s) {
     Deno: {env: {get: name => name === 'SUPABASE_SERVICE_ROLE_KEY' ? 'isolated-test-key' : 'https://example.invalid'}, serve: callback => {handler = callback;}},
     createClient: () => s.admin, crypto: webcrypto, TextEncoder, Headers, Response, URL, structuredClone,
     affiliatePublicAsset: noRoute, affiliatePatch: noRoute, affiliateGet: noRoute, nekoPatch: noRoute, nekoGet: noRoute,
-    fpImagesPatch: noRoute, fpImagesGet: noRoute, threadsManualPatch: noRoute, threadsManualGet: noRoute, saveGuardedPayload, validateSourcingVerdict, mutationFailure, sourcingSuppliers, SaveError, saveVersionedRow, saveSourcingRoute
+    fpImagesPatch: noRoute, fpImagesGet: noRoute, threadsManualPatch: noRoute, threadsManualGet: noRoute, saveGuardedPayload, validateSourcingVerdict, mutationFailure, sourcingSuppliers, SaveError, saveVersionedRow, saveSourcingRoute, excludeArchivedSourcing
   });
   const exp = String(Date.now() + 60000), token = exp + '.' + createHmac('sha256', 'isolated-test-key').update('retro|' + exp).digest('hex');
   return (method, body, resource = '') => handler(new Request('https://example.invalid/?resource=' + resource, {
@@ -171,6 +173,7 @@ test('real sourcing GET handler succeeds while every database mutation is forbid
   assert.equal(response.status, 200); assert.equal(body.ok, true); assert.equal(body.items.length, 1);
   assert.equal(body.suppliers[0].candidateCount, 1); assert.equal(body.items[0].supplierBoost, 0); noWrite(s);
 });
+test('real sourcing GET excludes exactly the archive snapshot without changing purchases or new candidates',async()=>{const retained=['task:6a965c1d92408191ac13f417f8f97c6f:candidate-reef-layback-cj4364-black-us9-924','task:new:latest'],rows=[...ARCHIVED_SOURCING_IDS,...retained].map(id=>({id,domain:'sourcing',title:'Synthetic fixture',score:80,payload:{},source_url:'https://shop.example/item'})),s=store({command_center_signals:rows,command_center_sourcing_reviews:[],command_center_suppliers:[],command_center_supplier_candidates:[]},{readOnly:true}),call=await api(s),response=await call('GET',undefined,'sourcing'),body=await response.json();assert.equal(response.status,200);assert.deepEqual(body.items.map(x=>x.id),retained);assert.equal(s.tables.command_center_signals.length,36);noWrite(s);});
 
 test('real state route refuses old screens and replay; returns the version needed by undo', async () => {
   const version='2026-10-11T00:00:00.123456Z';

@@ -1,0 +1,42 @@
+// Verified archive snapshot only. Original rows and purchase/sales history remain unchanged.
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.CCSourcingArchive=api;})(typeof window==='undefined'?null:window,function(){
+ const ids=Object.freeze([
+ "sourcing:v2:2c8a111b2e3a6ac1adee20edbaffc3e4",
+ "sourcing:v2:62d5e8b7a66059cb8688ca8bdaa81606",
+ "sourcing:v2:71842a42d18d4041da17fe23c7cfb9b9",
+ "sourcing:v2:901880cfbba4d3bfbb5c33bcf892d7a6",
+ "sourcing:v2:9ec05f358c5f7757c3c1b60cec1146e5",
+ "sourcing:v2:c455cd8729a260b2686ae1f7766573b1",
+ "sourcing:v2:d4ab72718453d895a9e95cf772f76b89",
+ "sourcing:v2:fc868da4a697cd39bad5a4d29156417f",
+ "task:6a8f82de29b08191ae995595440dae97:golf:lieto-tsuruya:06011606220010701450000ZL:990:royal-gold-instock",
+ "task:6a965c1d92408191ac13f417f8f97c6f:adidas-je1457-white-xl-1650",
+ "task:6a965c1d92408191ac13f417f8f97c6f:callaway-sport-tote-wms-22jm-5922068-5922069-1980",
+ "task:6a965c1d92408191ac13f417f8f97c6f:reef-seaside-prints-cj3996-navy-us9-660",
+ "task:6a9f5699f6848191be3fccc5e54d9fa6:detail-crocs-echo-207937-black-m9-27cm-2970",
+ "task:6ab2fe263f1c8191b48e33bc75c668de:sourcing:https://store.shopping.yahoo.co.jp/golfpartner-annex/callaway-bag-015.html:callaway-bag-015:BEIGE-GREEN:1",
+ "task:6ab2fe263f1c8191b48e33bc75c668de:sourcing:https://store.shopping.yahoo.co.jp/golfpartner-annex/callaway-bag-015.html:callaway-bag-015:NAVY:1",
+ "task:6ab2fe263f1c8191b48e33bc75c668de:sourcing:https://store.shopping.yahoo.co.jp/golfpartner-annex/callaway-bag-015.html:callaway-bag-015:WHITE-PINK:1",
+ "task:6ab2fe263f1c8191b48e33bc75c668de:sourcing:https://store.shopping.yahoo.co.jp/golfpartner-annex/callaway-bag-016.html:callaway-bag-016:BLACK:1",
+ "task:6ab2fe3b1e28819191b843289174788f:sourcing:https://shop-orange.info/collections/sandals/products/1251-0163-tk:CI9891:Black:US8:1",
+ "task:6ab2fe3b1e28819191b843289174788f:sourcing:https://shop-orange.info/collections/sandals/products/1251-0167-tk:CI2720:Black:US9:1",
+ "task:6ab2fe43360c8191a74ba24328d7f081:sourcing:https://item.rakuten.co.jp/wakeari/4549550348973/:AW-24BFCGPBK:4549550348973:1",
+ "task:6ab2fe43360c8191a74ba24328d7f081:sourcing:https://www.genbaichiba.com/shop/g/g01110525/:79156:4960910791565:1",
+ "task:6ab2fe43360c8191b48e33bc75c668de:sourcing:https://item.rakuten.co.jp/wakeari/4549550310338/:DE-C51L-10000BK:4549550310338:1",
+ "task:6ab2fe43360c8191b48e33bc75c668de:sourcing:https://item.rakuten.co.jp/wakeari/4549550311175/:TB-A24PMFLAG:4549550311175:1",
+ "task:6ab2fe43360c8191b48e33bc75c668de:sourcing:https://item.rakuten.co.jp/wakeari/4549550321365/:DE-AC09-5000BK:4549550321365:1",
+ "task:6ab2fe43360c8191b48e33bc75c668de:sourcing:https://item.rakuten.co.jp/wakeari/4549550335140/:MPA-ACCP30XBK:4549550335140:1",
+ "task:6ab2fe43360c8191b48e33bc75c668de:sourcing:https://item.rakuten.co.jp/wakeari/4549550348690/:AW-24AFCGOBK:4549550348690:1",
+ "task:6ab2fe43360c8191b48e33bc75c668de:sourcing:https://item.rakuten.co.jp/wakeari/4549550349772/:AVA-AP06TSLFCBU:4549550349772:1",
+ "task:6ab2fe57c5b88191ad96f4014d2bbece:sourcing:https://www.play-asia.com/en/genshin-impact-17--scale-pre-painted-figure-aether/13/70flkh:PP997:standard:no-bonus",
+ "task:6ab2fe57c5b88191ad96f4014d2bbece:sourcing:playasia:70eoir:4976219120494",
+ "task:6ab2fe57c5b88191ad96f4014d2bbece:sourcing:playasia:70gicd:4988601258050",
+ "task:6ab2fe61aa2c8191b2adc1a1dc4bd268:sourcing:endclothing.com/jp/adidas-japan-93-home-jersey-top-kt0827.html:KT0827:power-blue:M:1",
+ "task:6ab2fe69874c81918f74c3000f635cbd:sourcing:amiami.jp/GOODS-04604436:4522776647549:nagumo:1",
+ "task:6ab2fe71b7cc8191b48e33bc75c668de:sourcing:https://detail-online-store.com/en/products/crocs-mega-crush-clog-mega-crush-clog-pink:207988:PINK:M5-23cm:1",
+ "task:6ab2fe71b7cc8191bcd66551d6f00a00:sourcing:https://detail-online-store.com/en/products/crocs-mega-crush-clog-mega-crush-clog-pink:207988:PINK:M5-23cm:1"
+]),known=new Set(ids),url='https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit#gid=1293618236';
+ const archived=id=>known.has(String(id||'').replace(/^(sns:)+/,''));
+ return Object.freeze({enabled:true,ids,url,isArchivedRecord:row=>archived(row?.id),isArchivedDraft:d=>d?.source?.account==='sourcing'&&archived(d.source.id),isArchivedCacheKey(key){if(!String(key).startsWith('source:live-shiire-'))return false;try{return archived(decodeURIComponent(key.slice('source:live-shiire-'.length)));}catch{return false;}}});
+});
+
