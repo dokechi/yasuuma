@@ -144,6 +144,12 @@ test('imported snapshots cannot claim to be live server records or overwrite a s
 });
 
 function sceneSource(key,id){return key==='shiire'?'assets/user-'+({welcome:19080,work:19017,rest:19016,tea:19020,special:19018})[id]+'-display.webp':key==='fp'&&id==='tea'?'assets/user-19079-display.webp':`assets/scene-${key}-${id}-v1.jpg`;}
+test('inline and full views stay unready through decoding; a departed room cannot commit its late decode',async()=>{
+ const b=boot();await sceneLoaded(b,'kyun','welcome');const draft=b.read('activeDraft.id');let finish;
+ b.$('#sceneFullImage').decode=()=>new Promise(resolve=>finish=resolve);
+ await b.click('[data-go=choi]');await b.click('#sceneExpand');assert.equal(b.$('#sceneDialog').dataset.ready,'false');await sceneLoaded(b,'choi','welcome');assert.equal(b.$('#characterScenes').dataset.ready,'false');assert.equal(b.$('#sceneDialog').dataset.ready,'false');
+ b.$('#sceneFullImage').decode=undefined;await b.click('[data-go=fp]');await sceneLoaded(b,'fp','welcome');finish();for(let i=0;i<12;i++)await Promise.resolve();assert.equal(b.$('#sceneImage').src,sceneSource('fp','welcome'));assert.equal(b.$('#sceneFullImage').src,sceneSource('fp','welcome'));assert.equal(b.$('#sceneDialog').dataset.ready,'true');assert.equal(b.$('#characterScenes').dataset.ready,'true');await b.click('[data-go=kyun]');assert.equal(b.read('activeDraft.id'),draft);
+});
 async function sceneLoaded(b,key,id){
  const src=sceneSource(key,id),pending=b.images.findLast(i=>i.src===src);
  assert.ok(pending,`requested ${src}`);pending.onload();for(let i=0;i<12;i++)await Promise.resolve();
