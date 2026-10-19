@@ -82,7 +82,7 @@ const API='https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-
 const LEDGER_API='https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-sourcing-ledger-api';
 const AUTH=localStorage.getItem('cc_retro_token')||'';
 const authHeaders=()=>({'Authorization':'Bearer '+AUTH});
-function authExpired(){localStorage.removeItem('cc_retro_token');location.replace('index.html')}
+function authExpired(){localStorage.removeItem('cc_retro_token');const hash=/^#(?:requests|request-[a-z0-9-]+)$/.test(location.hash)?location.hash:'';location.replace('index.html'+hash)}
 const labels={money:'FP・家計',subsidy:'補助金',company:'会社・業界',ai:'AI',deal:'お得',sourcing:'仕入れ',sns:'SNS候補'};
 const stateLabels={new:'未処理',read:'既読',accepted:'採用済',rejected:'却下済'};
 let app={view:'active',domain:'all',rank:'all',data:null,items:[],busy:false,lastUndo:null};
