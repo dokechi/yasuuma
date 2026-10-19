@@ -56,4 +56,5 @@
 .product-direct-row{margin:16px 0}
 .product-direct-url{overflow-wrap:anywhere;user-select:text;margin:6px 0}
 .product-direct-row a,.product-direct-row button{display:inline-block;margin:4px 8px 4px 0;padding:8px 10px;color:inherit;text-decoration:underline;font:inherit}
+.product-direct-row button{background:transparent;border:1px solid currentColor;border-radius:3px;cursor:pointer}
 .product-direct-note{font-size:12px;line-height:1.7}
