@@ -68,7 +68,9 @@
     const product=['kyun','choi'].includes(account.key)?api.savedProductLink(p):null;
     const copies=api.savedCopies(p).filter(copy=>!product||copy.label!=='保存購入リンク');for(const copy of copies){const block=e('section',undefined,'rpg-account-copy');block.dataset.copyLabel=copy.label;block.append(e('h4',copy.label),e('pre',copy.text));const b=e('button',copy.label+'をコピー','push-button');b.type='button';b.onclick=async()=>{try{await root.navigator.clipboard.writeText(copy.text);desk?.copied({id:String(item.id),title:item.title||p.post_title||'保存原稿',label:copy.label,text:copy.text});showOperation('原文をコピーしました。');}catch(_){showOperation('クリップボード未確認。表示全文を選択してコピーしてください。');}};block.append(b);card.append(block);}
     if(!copies.length)card.append(e('p','本文の保存形式は未確認です。元の原稿画面で確認してください。'));
-    if(product){const block=e('section',undefined,'rpg-account-product');block.append(e('h4','商品ページ'));const link=e(product.url?'a':'button','商品ページを開く','push-button rpg-product-open');if(product.url){link.href=product.url;link.target='_blank';link.rel='noopener noreferrer';link.setAttribute('aria-label','商品ページを開く（別タブ）');}else{link.type='button';link.disabled=true;}block.append(link,e('p',product.note,'rpg-product-note'));card.append(block);}
+    if(product){const block=e('section',undefined,'rpg-account-product');block.append(e('h4','商品直リンク'));
+     const rows=api.savedProductLinks(p);if(product.url&&!rows.some(r=>r.url===product.url))rows.push({key:'saved',label:'その他の保存商品URL',url:product.url});for(const row of rows){const line=e('section',undefined,'rpg-product-link');line.append(e('h5',row.label),e('p',row.url||'未登録','rpg-product-url'));if(row.url){const a=externalLink(row.url,row.label+'を開く','rpg-product-open'),b=e('button',row.label+'をコピー','push-button');b.type='button';b.onclick=async()=>{try{await root.navigator.clipboard.writeText(row.url);desk?.copied({id:String(item.id),title:item.title||p.post_title||'保存原稿',label:row.label,text:row.url});showOperation('URLをコピーしました。');}catch{showOperation('コピー未確認。表示URLを選択してコピーしてください。');}};line.append(a,b);}block.append(line);}
+     block.append(e('p',product.note,'rpg-product-note'),e('p','通常の商品ページと投稿用アフィリエイトURLは別です。価格・在庫・色サイズ・送料の同一条件は未確認です。','rpg-product-note'));card.append(block);}
     if(['kyun','choi'].includes(account.key)){
      const comparisons=api.savedMercariComparisons(item),block=e('section',undefined,'rpg-account-mercari');block.append(e('h4','メルカリ相場（保存時点）'));
      if(comparisons.length){
@@ -394,6 +396,15 @@
   const isAffiliate=typeof p.affiliate_url==='string'&&p.affiliate_url.trim()===u.href;
   return {url:u.href,note:isAffiliate?'保存されたアフィリエイトURLです。別タブで開きます。':unissued?'通常の商品URLです。アフィリエイトリンクは未発行です。別タブで開きます。':'保存された商品URLです。アフィリエイト発行状況は未確認です。別タブで開きます。'};
  }
+ // Read only explicit saved product evidence; never infer a URL from a name/SKU.
+ function savedProductLinks(p){
+  const safe=v=>{if(typeof v!=='string')return '';try{const u=new URL(v.trim());return u.protocol==='https:'&&!u.username&&!u.password?u.href:'';}catch{return '';}};
+  const affiliate=safe(p.affiliate_url),sources=Array.isArray(p.sources)?p.sources:[];
+  const yahoo=v=>{const u=safe(v);if(!u||u===affiliate)return '';const x=new URL(u);return x.hostname==='store.shopping.yahoo.co.jp'&&/^\/[^/]+\/[^/]+\.html$/.test(x.pathname)?u:'';};
+  const candidates=[p.ordinary_url,p.purchase_url,p.purchase_link,...sources.filter(s=>s&&['yahoo_product','ordinary_product'].includes(s.type)).map(s=>s.url)];
+  const official=sources.filter(s=>s?.type==='official_product').map(s=>safe(s.url)).find(u=>u&&u!==affiliate&&!yahoo(u))||'';
+  return [{key:'yahoo',label:'Yahoo 商品ページ',url:candidates.map(yahoo).find(Boolean)||''},{key:'official',label:'公式 商品ページ',url:official},{key:'affiliate',label:'投稿用アフィリエイトURL',url:affiliate}];
+ }
  function savedCopies(p){
   const result=[],variants=Array.isArray(p.body_variants)?p.body_variants:Array.isArray(p.body_options)?p.body_options:[];
   variants.forEach((v,i)=>{const t=typeof v==='string'?v:v&&typeof v==='object'?(v.text||v.body):'';if(t)result.push({label:'保存本文案'+(i+1),text:String(t)});});
@@ -403,5 +414,5 @@
   const link=p.purchase_link||p.purchase_url;if(typeof link==='string'&&/^https:\/\//.test(link))result.push({label:'保存購入リンク',text:link});
   return result;
  }
- return {accounts,payload,matchesAccount,unique,savedCopies,isSuppressed,historyState,savedSources,savedProductLink,savedMercariComparisons,mercariComparisonSummary,savedPriceStockCheck,metricLabels,threadsUrl,manualResult,metricNumber,isoFromLocal,localDateTime,displayTime,originalCopies};
+ return {accounts,payload,matchesAccount,unique,savedCopies,isSuppressed,historyState,savedSources,savedProductLink,savedProductLinks,savedMercariComparisons,mercariComparisonSummary,savedPriceStockCheck,metricLabels,threadsUrl,manualResult,metricNumber,isoFromLocal,localDateTime,displayTime,originalCopies};
 });
