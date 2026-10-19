@@ -25,7 +25,7 @@ export function createWorkbench({app,places,notebook,reduced,getState,selectId,r
  createButtonFeedback({reduced,enabled:()=>notebook.pref('haptic',true)});
  function updateHome(){for(const station of document.querySelectorAll('.station')){const key=station.dataset.place,used=notebook.usedToday(key);station.classList.toggle('visited-today',used);}
  }
- function update(){const {draft,place}=getState();updateHome();renderProductLinks(draft,place);$('#copyLink').hidden=!draft?.link||Array.isArray(draft?.productLinks);$('#pinDraft').disabled=!draft;$('#pinDraft').setAttribute('aria-pressed',String(draft&&notebook.flag('pin',draft.id)));$('#pinDraft').textContent=draft&&notebook.flag('pin',draft.id)?'★ お気に入り':'☆ お気に入り';
+ function update(){const {draft,place}=getState();updateHome();renderProductLinks(draft,place);$('#copyLink').hidden=!draft?.link||(Array.isArray(draft?.productLinks)&&draft.productLinks.some(row=>row.url===draft.link));$('#pinDraft').disabled=!draft;$('#pinDraft').setAttribute('aria-pressed',String(draft&&notebook.flag('pin',draft.id)));$('#pinDraft').textContent=draft&&notebook.flag('pin',draft.id)?'★ お気に入り':'☆ お気に入り';
   const mark=draft&&notebook.copyMark(draft);$('#copySeal').hidden=!mark;$('#copySeal').textContent=mark?`コピー済み · ${stamp(mark.time)}`:'';
   const count=notebook.completed(place).length;$('#doneCount').textContent=String(count);$('#doneStack').style.setProperty('--papers',String(Math.min(count,5)));
   const rows=notebook.list(place);$('#draftCount').textContent=groupDrafts(rows).length+'原稿・'+rows.length+'案';
