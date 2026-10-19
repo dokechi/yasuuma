@@ -22,6 +22,10 @@
     const legend=monitor.querySelector('.task-legend');if(legend)legend.textContent='有効／停止は定期実行の設定です。現在の実行状況を示すものではありません。';
     const stat=monitor.querySelector('#taskEnabled')?.previousElementSibling;if(stat)stat.textContent='設定が有効';
     function chooseTab(kind){monitor.hidden=kind!=='monitor';modal.hidden=kind==='monitor';controls.querySelectorAll('button').forEach(b=>{const active=b.dataset.requestTab===kind;b.classList.toggle('selected',active);b.setAttribute('aria-pressed',String(active))})}
+    P.open=(id=null)=>{d.getElementById('menuTasks')?.click();chooseTab('progress');const target=id?modal.querySelector('[data-request-id="'+id+'"]'):null;if(target){target.querySelector('.request-result')?.setAttribute('open','');target.scrollIntoView?.({block:'start'});}else modal.scrollIntoView?.({block:'start'});};
+    const shortcut=d.createElement('nav');shortcut.id='requestProgressShortcut';shortcut.setAttribute('aria-label','依頼の進捗');const open=d.createElement('button');open.type='button';open.className='push-button';open.id='requestProgressOpen';open.textContent='依頼中のこと';open.setAttribute('aria-controls','taskModal');open.onclick=()=>P.open();shortcut.append(open);d.body.append(shortcut);
+    function routeHash(){const hash=w.location.hash;if(hash==='#requests')P.open();else if(/^#request-[a-z0-9-]+$/.test(hash)&&P.loaded){P.open(hash.slice(1));P.deepLinked=true;}}
+    w.addEventListener('hashchange',()=>{P.deepLinked=false;routeHash()});
     controls.addEventListener('click',e=>{const b=e.target.closest('[data-request-tab]');if(b)chooseTab(b.dataset.requestTab)});
     // Source-task links continue to open the original monitor detail.
     d.addEventListener('click',e=>{if(e.target.closest('[data-source-task]'))chooseTab('monitor');if(e.target.closest('#menuTasks,[data-home-action="tasks"]'))chooseTab('progress')},true);
@@ -36,7 +40,7 @@
       d.querySelectorAll('[data-request-refresh]').forEach(b=>b.disabled=P.loading);
       const markup=rows.length?rows.map(card).join(''):'<p class="request-empty">'+(P.error?'状況不明：取得できませんでした。更新ボタンで再試行できます。':P.loaded?'登録された依頼はありません。':'依頼を読み込み中…')+'</p>';
       d.querySelectorAll('[data-request-list]').forEach(el=>{if(el.innerHTML!==markup){const open=new Set([...el.querySelectorAll('.request-result[open]')].map(n=>n.closest('[data-request-id]').dataset.requestId));el.innerHTML=markup;el.querySelectorAll('[data-request-id]').forEach(n=>{if(open.has(n.dataset.requestId))n.querySelector('.request-result')?.setAttribute('open','')})}});
-      if(!P.deepLinked&&/^#request-[a-z0-9-]+$/.test(w.location.hash)&&P.loaded){const id=w.location.hash.slice(1),target=panel.querySelector('[data-request-id="'+id+'"]');if(target){target.querySelector('.request-result')?.setAttribute('open','');target.scrollIntoView?.({block:'start'});P.deepLinked=true}}
+      if(!P.deepLinked&&/^#request-[a-z0-9-]+$/.test(w.location.hash)&&P.loaded)routeHash();
     };
     P.refresh=()=>{
       if(P.pending)return P.pending;
@@ -62,7 +66,7 @@
     w.addEventListener('focus',()=>{if(!d.hidden)P.refresh()});
     d.addEventListener('cc:home-render',()=>{if(!P.loaded&&!P.pending)P.refresh()});
     P.timer=w.setInterval(()=>{if(!d.hidden)P.refresh()},60000);
-    P.render();P.refresh();
+    P.render();P.refresh();routeHash();
   }
 })(typeof globalThis==='object'?globalThis:this,function(){
   'use strict';
