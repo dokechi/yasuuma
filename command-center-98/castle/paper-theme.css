@@ -49,3 +49,11 @@
 .app[data-view=work][data-place][data-paper-theme=navy] .compare-pane,.app[data-view=work][data-place][data-paper-theme=navy] .tray-rail{background:var(--paper-control);color:var(--paper-ink)}
 .app[data-view=work][data-place][data-paper-theme=navy] .compare-pane header,.app[data-view=work][data-place][data-paper-theme=navy] .compare-pane button,.app[data-view=work][data-place][data-paper-theme=navy] .tray-rail header,.app[data-view=work][data-place][data-paper-theme=navy] .tray-rail button{color:var(--paper-ink)}
 .app[data-view=work][data-place][data-paper-theme=navy] .compare-scroll h4,.app[data-view=work][data-place][data-paper-theme=navy] .compare-scroll p{color:var(--paper-ink)}
+/* Product URLs stay with the manuscript, inside its reading scroll area. */
+.product-direct-links{margin:24px 0;padding:16px 0;border-top:1px solid currentColor;font:14px/1.7 sans-serif}
+.product-direct-links[hidden]{display:none}
+.product-direct-links h3,.product-direct-links h4{margin:0 0 8px;font-size:15px}
+.product-direct-row{margin:16px 0}
+.product-direct-url{overflow-wrap:anywhere;user-select:text;margin:6px 0}
+.product-direct-row a,.product-direct-row button{display:inline-block;margin:4px 8px 4px 0;padding:8px 10px;color:inherit;text-decoration:underline;font:inherit}
+.product-direct-note{font-size:12px;line-height:1.7}

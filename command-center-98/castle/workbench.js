@@ -1,4 +1,4 @@
-import {safeLink,dayInJapan,groupDrafts} from './notebook.js?v=41';
+import {safeLink,dayInJapan,groupDrafts,productLinks} from './notebook.js?v=43';
 import {createButtonFeedback} from './interaction.js?v=34';
 import {createWorld} from './world.js?v=33';
 export function createWorkbench({app,places,notebook,reduced,getState,selectId,refresh,onStatus,onReposition,onMotionChange,onCopy,openPlace}){
@@ -25,13 +25,21 @@ export function createWorkbench({app,places,notebook,reduced,getState,selectId,r
  createButtonFeedback({reduced,enabled:()=>notebook.pref('haptic',true)});
  function updateHome(){for(const station of document.querySelectorAll('.station')){const key=station.dataset.place,used=notebook.usedToday(key);station.classList.toggle('visited-today',used);}
  }
- function update(){const {draft,place}=getState();updateHome();$('#copyLink').hidden=!draft?.link;$('#pinDraft').disabled=!draft;$('#pinDraft').setAttribute('aria-pressed',String(draft&&notebook.flag('pin',draft.id)));$('#pinDraft').textContent=draft&&notebook.flag('pin',draft.id)?'★ お気に入り':'☆ お気に入り';
+ function update(){const {draft,place}=getState();updateHome();renderProductLinks(draft,place);$('#copyLink').hidden=!draft?.link||Array.isArray(draft?.productLinks);$('#pinDraft').disabled=!draft;$('#pinDraft').setAttribute('aria-pressed',String(draft&&notebook.flag('pin',draft.id)));$('#pinDraft').textContent=draft&&notebook.flag('pin',draft.id)?'★ お気に入り':'☆ お気に入り';
   const mark=draft&&notebook.copyMark(draft);$('#copySeal').hidden=!mark;$('#copySeal').textContent=mark?`コピー済み · ${stamp(mark.time)}`:'';
   const count=notebook.completed(place).length;$('#doneCount').textContent=String(count);$('#doneStack').style.setProperty('--papers',String(Math.min(count,5)));
   const rows=notebook.list(place);$('#draftCount').textContent=groupDrafts(rows).length+'原稿・'+rows.length+'案';
   $('#sampleNote').textContent=!draft?'「引き出し」から原稿を追加できます。':draft.sample?'操作体験用のサンプルです。「引き出し」から自分の原稿も追加できます。':`この端末に保存した原稿 · 更新 ${stamp(draft.updatedAt)}${draft.checkedAt?' · 情報確認 '+draft.checkedAt:''}`;
   app.dataset.paperTheme=['cream','navy'].includes(notebook.pref('paperTheme','standard'))?notebook.pref('paperTheme','standard'):'standard';app.dataset.font=notebook.pref('font','standard');app.dataset.focus=notebook.pref('focus',false)?'on':'off';$('#focusMode').setAttribute('aria-pressed',String(app.dataset.focus==='on'));$('#focusMode').textContent=app.dataset.focus==='on'?'部屋へ':'集中';
   if(!$('#trayRail').hidden)renderTray();if(!$('#comparePane').hidden)renderComparison();
+ }
+ let productSignature='';
+ function renderProductLinks(draft,place){
+  const enabled=draft&&['kyun','choi'].includes(place),rows=productLinks(draft?.productLinks),signature=JSON.stringify([enabled,draft?.id,rows]);if(productSignature===signature)return;productSignature=signature;
+  let section=$('#productDirectLinks');if(!section){section=el('section',undefined,'product-direct-links');section.id='productDirectLinks';$('#draftBody').after(section);}section.hidden=!enabled;section.replaceChildren();if(!enabled)return;
+  section.append(el('h3','商品直リンク'));
+  for(const row of rows){const line=el('div',undefined,'product-direct-row');line.dataset.linkKind=row.key;line.append(el('h4',row.label),el('p',row.url||'未登録','product-direct-url'));if(row.url){const a=el('a',row.label+'を開く');a.href=row.url;a.target='_blank';a.rel='noopener noreferrer';a.setAttribute('aria-label',row.label+'を開く（別タブ）');const copy=btn(row.label+'をコピー',async()=>{try{await navigator.clipboard.writeText(row.url);notebook.copied(draft,row.key+'-link',row.url);onStatus(row.label+'をコピーしました');}catch{onStatus('コピー未確認。表示URLを選択してコピーしてください。');}});line.append(a,copy);}section.append(line);}
+  section.append(el('p','通常の商品ページと投稿用アフィリエイトURLは別です。価格・在庫・色サイズ・送料の同一条件は未確認です。','product-direct-note'));
  }
  function refreshPreserving(){const selected=getState().draft?.id;refresh(selected);update();}
  function menu(){open('机の引き出し');const d=getState().draft;
