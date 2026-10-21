@@ -20,7 +20,8 @@
     "./rpg-theme.css?v=20261018.41-archive",
     "./rpg-account-pages.css?v=20261019.links1",
     "./rpg-workspaces.css?v=20261013.9-detail",
-    "./rpg-daily-desk.css?v=20261015.1"
+    "./rpg-daily-desk.css?v=20261015.1",
+    "./lounge-workspace.css?v=20261021.3-audio"
   ],
   "scripts": [
     "./sourcing-atomic-save.js?v=20261011.atomic2",
@@ -86,6 +87,7 @@
     "./rpg-workspaces.js?v=20261017.33-unified",
     "./rpg-daily-store.js?v=20261015.1",
     "./rpg-daily-desk.js?v=20261017.33-unified",
-    "./castle-parent.js?v=20261021.2-hidden"
+    "./castle-parent.js?v=20261021.3-audio",
+    "./lounge-workspace.js?v=20261021.3-audio"
   ]
 }

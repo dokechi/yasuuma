@@ -1,0 +1,39 @@
+/* The original ledger keeps its handlers and data; only its room changes. */
+body.lounge-workspace{--rpg-bg:#29241d;--rpg-panel:#f7f1e4;--rpg-raised:#eee3ce;--rpg-sunken:#eee4d2;--rpg-line:#cbb995;--rpg-line-soft:#dfd1b7;--rpg-text:#493e2e;--rpg-muted:#82745c;--rpg-gold:#795e2e;--rpg-link:#616a3c;--rpg-good:#466146;--rpg-bad:#9e4439;--rpg-warning:#8b6626;color-scheme:light;background:#29241d!important;background-image:linear-gradient(#191b1970,#191b19b3),url('./lounge/assets/orange.webp')!important;background-position:center,center 28%!important;background-size:cover!important;background-attachment:fixed!important;color:#493e2e!important;font-family:system-ui,-apple-system,'Noto Sans JP',sans-serif!important;overflow:auto!important}
+body.lounge-workspace::before,body.lounge-workspace::after{display:none!important}
+body.lounge-workspace .desktop{padding:0 20px 40px!important;background:none!important;min-height:100dvh}
+body.lounge-workspace #mainWindow{max-width:1180px!important;width:100%!important;margin:0 auto!important;padding:0!important;border:0!important;box-shadow:none!important;background:transparent!important;overflow:visible!important}
+body.lounge-workspace #mainWindow>.window-body{padding:20px!important;border:1px solid #d9bd82!important;border-radius:12px!important;background:#f7f1e4f7!important;color:#493e2e!important;box-shadow:0 20px 65px #0005!important}
+body.lounge-workspace :is(#mainTitleBar,#menuBar,#ccDestination,#ccPrimaryNav,#rpgArchiveBanner,.hero,.status-bar){display:none!important}
+body.lounge-workspace #ccCastleReturn{display:none!important}
+#loungeWorkspaceHeader[hidden]{display:none!important}
+#loungeWorkspaceHeader{padding:24px 0 27px;color:#fff7e4;text-shadow:0 2px 12px #0008}
+#loungeWorkspaceHeader nav{display:flex;justify-content:space-between;align-items:center;gap:12px}
+#loungeWorkspaceHeader nav>div{display:flex;gap:8px}
+#loungeWorkspaceHeader button{border:1px solid #f1d8ab6b;border-radius:6px;background:#1c211dd9;color:#fff6e5;min-height:42px;padding:9px 14px;font:12px/1.5 system-ui,sans-serif}
+#loungeWorkspaceHeader [data-lounge-home]{background:none;border:0;padding-left:0;font-size:14px}
+.lounge-workspace-caption{margin:28px 0 0}.lounge-workspace-caption p:first-child{font:9px/1.6 Georgia,serif;letter-spacing:.22em;color:#e7d0a3;margin:0 0 6px}.lounge-workspace-caption h1{font:500 30px/1.4 'Yu Mincho','Hiragino Mincho ProN',serif;letter-spacing:.12em;margin:0 0 7px}.lounge-workspace-caption p:last-child{font-size:12px;margin:0;color:#f0e7d3}
+body.lounge-workspace #rpgSourcingAux{margin:0 0 18px!important;gap:6px!important}
+body.lounge-workspace #rpgSourcingAux .push-button{min-height:40px!important;font:11px/1.5 system-ui,sans-serif!important;background:#ebe1ce!important;border:1px solid #cfbfa0!important;border-radius:6px!important;color:#66583f!important;box-shadow:none!important;padding:9px 12px!important}
+body.lounge-workspace #rpgSourcingAux .push-button[aria-current=page]{background:#536052!important;color:#fff7e6!important;border-color:#536052!important}
+body.lounge-workspace :is(#sourcingHub,#sourcingTabs,#sourcingBody,.sourcing-help,.sourcing-section,.sourcing-group,.supplier-ledger,.purchase-ledger){background:transparent!important;color:#493e2e!important;border-color:#d5c7ab!important;box-shadow:none!important}
+body.lounge-workspace #sourcingHub{padding:0!important;border:0!important}
+body.lounge-workspace :is(button.push-button,.sourcing-tabs button){background:#f5eddd!important;color:#554934!important;border:1px solid #cdbd9e!important;border-radius:5px!important;box-shadow:none!important;min-height:40px;font-family:inherit!important;text-shadow:none!important}
+body.lounge-workspace :is(button.selected,.sourcing-tabs button.selected){background:#e4cfaa!important;color:#4b391f!important;border-color:#af905c!important}
+body.lounge-workspace :is(.sourcing-tab-count,.badge,.state-tag){background:#eee2ca!important;color:#73603f!important;border-color:#d1be98!important}
+body.lounge-workspace :is(.sourcing-card,.thread,.reddit-card,.x-card){background:#fffcf3!important;color:#493e2e!important;border:1px solid #d9c8a7!important;border-radius:8px!important;box-shadow:none!important}
+body.lounge-workspace :is(table,thead,tbody,tr,td,th){border-color:#dbceb5!important;color:#493e2e!important;box-shadow:none!important}
+body.lounge-workspace table{background:#fffcf3!important;font-size:12px!important;line-height:1.7!important}
+body.lounge-workspace th{background:#ece1cc!important;color:#6b5735!important;font-weight:600!important}
+body.lounge-workspace td{background:#fffcf3!important}
+body.lounge-workspace :is(.purchase-note,.sourcing-note,.ledger-note,.empty,small){color:#82745c!important}
+body.lounge-workspace :is(input,textarea,select){background:#fffcf5!important;color:#493e2e!important;border:1px solid #cbb995!important;box-shadow:none!important;border-radius:4px!important}
+body.lounge-workspace a{color:#616a3c!important}
+body.lounge-workspace .sourcing-meta .profit{color:#466146!important}
+@media(max-width:600px){body.lounge-workspace .desktop{padding:0 9px 24px!important}body.lounge-workspace #mainWindow>.window-body{padding:12px!important;border-radius:9px!important}#loungeWorkspaceHeader{padding:15px 5px 22px}.lounge-workspace-caption{margin-top:24px}.lounge-workspace-caption h1{font-size:26px}#loungeWorkspaceHeader button{font-size:11px;padding:8px 10px}.lounge-workspace-caption p:last-child{font-size:11px}body.lounge-workspace #rpgSourcingAux{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;padding-bottom:8px!important}body.lounge-workspace #rpgSourcingAux .push-button{flex:0 0 auto!important;font-size:10px!important;min-height:38px!important}body.lounge-workspace table{font-size:11px!important}}
+
+body.lounge-workspace .sourcing-program{border:0!important;box-shadow:none!important;background:transparent!important}body.lounge-workspace .sourcing-program-head{display:none!important}body.lounge-workspace .sourcing-program-body{padding:0!important;background:transparent!important}
+body.lounge-workspace #loungeWorkspaceHeader h1{color:#fff5dd!important;font:500 30px/1.4 'Yu Mincho','Hiragino Mincho ProN',serif!important}
+body.lounge-workspace #mainWindow :is(.trade-table,.purchase-table,.supplier-table,.sourcing-meta) th{background:#ece1cc!important;color:#6b5735!important}
+body.lounge-workspace #mainWindow :is(.trade-table,.purchase-table,.supplier-table,.sourcing-meta) td{background:#fffcf3!important;color:#493e2e!important}
+@media(max-width:600px){body.lounge-workspace #loungeWorkspaceHeader h1{font-size:26px!important}body.lounge-workspace #mainWindow table{font-size:12px!important}}

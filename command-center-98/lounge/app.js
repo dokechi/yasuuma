@@ -1,4 +1,5 @@
-import {createEntrySound} from './entry-sound.js';
+import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
+import {createMusicControls} from './music.js?v=20261021.3-audio';
 import {createDesk} from './desk.js';
 const $ = (id) => document.getElementById(id);
 const app = $('app');
@@ -14,7 +15,7 @@ const rooms = [
   {id:'orange',name:'仕入れ',en:"THE MERCHANT'S TAVERN",sub:'商人の酒場',color:0xb67b3e,roof:0x8b6247,x:6.2,z:3.0,rot:-.28,welcome:'おかえりなさい。',line:'今日も、いいものが見つかるといいね。',focus:'52% 30%'}
 ];
 let phase='town', current=null, world=null, audio=null, lastInput=0, desk=null;
-let entrySound=null,entryAnimated=false;
+let entrySound=null,entryAnimated=false,effectsGain=null,effectsVolume=.5,music=null;
 let entryStart=0, roomTimer=0, replayAfterBack=null;
 const labels=new Map();
 for(const r of rooms){
@@ -36,7 +37,8 @@ function saveSettings(){try{localStorage.setItem('shireito-courtyard-v1',JSON.st
 function syncSettings(){
   $('sound').setAttribute('aria-pressed',String(settings.sound));
   $('sound').setAttribute('aria-label',settings.sound?'効果音をオフにする':'効果音をオンにする');
-  $('sound').textContent=settings.sound?'♪ 音 ON':'♩ 音 OFF';
+  $('sound').textContent=settings.sound?'効果音 ON':'効果音 OFF';
+  if(music)music.refresh();
   $('sound-setting').checked=settings.sound;
   $('ambient-setting').checked=settings.ambient;
   $('reduce-setting').checked=settings.reduce;
@@ -44,7 +46,7 @@ function syncSettings(){
 }
 function audioReady(){
   if(!settings.sound)return;
-  try{audio ||= new (window.AudioContext || window.webkitAudioContext)();entrySound ||= createEntrySound(audio); if(audio.state==='suspended') audio.resume().catch(()=>{});}catch{}
+  try{audio ||= new (window.AudioContext || window.webkitAudioContext)();if(!effectsGain){effectsGain=audio.createGain();effectsGain.gain.value=effectsVolume/.5;effectsGain.connect(audio.destination);}entrySound ||= createEntrySound(audio,effectsGain); if(audio.state==='suspended') audio.resume().catch(()=>{});}catch{}
 }
 function tone(freq,time,length,volume,type='sine',end){
   if(!audio||!settings.sound)return;
@@ -52,7 +54,7 @@ function tone(freq,time,length,volume,type='sine',end){
   o.type=type;o.frequency.setValueAtTime(freq,t);
   if(end)o.frequency.exponentialRampToValueAtTime(end,t+length);
   g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(volume,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+length);
-  o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+length+.01);
+  o.connect(g);g.connect(effectsGain);o.start(t);o.stop(t+length+.01);
 }
 function pressSound(){audioReady();tone(720,0,.045,.028,'triangle',280);tone(190,0,.055,.018,'sine',110)}
 function arrivalSound(){if(settings.sound&&!document.hidden){audioReady();entrySound?.arrive(current.id)}}
@@ -114,6 +116,7 @@ document.querySelectorAll('[name=pace]').forEach(i=>i.addEventListener('change',
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.querySelector('dialog[open]'))goBack()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){world?.pause();entrySound?.cancel();audio?.suspend().catch(()=>{})}else if(phase==='town'&&!$('settings').open)world?.resume()});
 desk=createDesk({onHome:()=>goBack(),onPause:()=>{world?.pause();entrySound?.cancel();audio?.suspend().catch(()=>{});app.classList.add('is-away');},onResume:()=>{app.classList.remove('is-away');if(phase==='town'&&!$('settings').open)world?.resume();},onSettings:()=>$('settings-open').click()});
+music=createMusicControls({getEffects:()=>({enabled:settings.sound}),setEffects:change=>{if(typeof change.volume==='number'){effectsVolume=change.volume;if(effectsGain)effectsGain.gain.value=effectsVolume/.5;}if(typeof change.enabled==='boolean'){settings.sound=change.enabled;if(!settings.sound)entrySound?.cancel();saveSettings();syncSettings();}if(change.preview&&settings.sound){audioReady();tone(880,0,.08,.02);}},onStatus:text=>$('bgmStatus').textContent=text});
 syncSettings();app.dataset.phase='town';
 if(history.state?.shireitoRoom)history.replaceState(null,'',location.pathname+location.search);
 

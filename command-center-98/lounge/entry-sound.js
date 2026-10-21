@@ -1,12 +1,12 @@
 // Small synthesized cues, scheduled on the audio clock and cancellable together.
-export function createEntrySound(context){
+export function createEntrySound(context,destination=context.destination){
  const voices=new Set();
  function voice(source,filter,delay,length,volume){
   const gain=context.createGain(),t=context.currentTime+delay;
   gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(volume,t+.008);
   gain.gain.exponentialRampToValueAtTime(.0001,t+length);
   if(filter){source.connect(filter);filter.connect(gain);}else source.connect(gain);
-  gain.connect(context.destination);const v={source,gain,filter};voices.add(v);
+  gain.connect(destination);const v={source,gain,filter};voices.add(v);
   source.onended=()=>{voices.delete(v);source.disconnect();gain.disconnect();filter?.disconnect();};
   source.start(t);source.stop(t+length+.015);return t;
  }

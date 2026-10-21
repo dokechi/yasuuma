@@ -4,11 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#1d211f">
-  <meta name="description" content="描かれた扉が開き、いつもの持ち場へ。司令塔の2Dと3Dの操作体験。">
+  <meta name="description" content="4人のラウンジから、保存原稿・FP制作・仕入れ管理を使う司令塔。">
   <title>司令塔 — いつもの場所で</title>
+
   <link rel="preload" href="assets/manor-lounge-v1.webp" as="image">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="desk.css">
+  <link rel="stylesheet" href="music.css?v=20261021.3-audio">
 </head>
 <body>
   <main id="app" class="town-mode hybrid-hall manor-lounge">
@@ -16,7 +18,7 @@
     <div class="world-vignette" aria-hidden="true"></div>
     <header class="topbar">
       <div class="identity"><span class="crest" aria-hidden="true">✧</span><div><span class="eyebrow">THE COMMAND HALL</span><h1>司令塔</h1></div><span class="edition">体験版</span></div>
-      <div class="top-actions"><button id="sound" class="round-button" aria-label="効果音をオフにする" aria-pressed="true">♪</button><button id="manage" class="round-button">管理画面</button><button id="settings-open" class="round-button" aria-label="表示設定">⚙ 表示設定</button></div>
+      <div class="top-actions"><div id="audioControls" class="audio-controls"><details id="audioSettings" class="audio-settings"><summary><span aria-hidden="true">♫</span> <span class="music-state">BGM 待機</span></summary><section class="audio-panel" aria-label="音の設定"><h2>ラウンジの音</h2><label class="audio-row"><span><input id="bgmEnabled" type="checkbox" checked> BGM</span><output id="bgmVolumeValue">12%</output></label><label for="bgmVolume">BGMの音量</label><input id="bgmVolume" type="range" min="0" max="100" value="12"><p id="bgmTrack">4曲からランダムに再生</p><div class="music-buttons"><button id="bgmStart" hidden>BGMを再生</button><button id="bgmNext">次の曲 ›</button></div><p id="bgmStatus" role="status" aria-live="polite">BGMを準備しています</p><label class="audio-row"><span><input id="effectsEnabled" type="checkbox" checked> 効果音</span><output id="effectsVolumeValue">50%</output></label><label for="effectsVolume">効果音の音量</label><input id="effectsVolume" type="range" min="0" max="100" value="50"><details class="music-credit"><summary>音楽クレジット</summary><p>Harvest Festival — PeriTune / むつき醒。CC BY 4.0。公式ループ版を無加工で使用。</p><p>Lively Tavern — Alexander Nakarada / CreatorChords。CC BY 4.0。Music: Lively Tavern by Alexander Nakarada (https://creatorchords.com) Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).</p><p>Enchanted Festival / Woodland Fantasy — Music by Matthew Pablo (https://www.matthewpablo.com)。CC BY 3.0。通常MP3を無加工で使用。</p><p><a href="https://dokechi.github.io/yasuuma/command-center-98/castle/audio/LICENSE.txt" target="_blank" rel="noopener noreferrer">配布元・ライセンス</a> · <a href="https://dokechi.github.io/yasuuma/command-center-98/castle/audio/ADDITIONAL-PROVENANCE.json" target="_blank" rel="noopener noreferrer">追加3曲の出典</a></p></details><audio id="bgmAudio" preload="none" playsinline></audio></section></details></div><button id="sound" class="round-button" aria-label="効果音をオフにする" aria-pressed="true">♪</button><button id="manage" class="round-button">管理画面</button><button id="settings-open" class="round-button" aria-label="表示設定">⚙ 表示設定</button></div>
     </header>
     <section class="town-copy sr-only" aria-label="司令塔の広間">
       <span class="eyebrow">A LITTLE MAGIC, EVERY DAY</span>
@@ -79,6 +81,6 @@
   <dialog id="desk-history-dialog" class="desk-dialog" aria-labelledby="desk-history-title"><header><h2 id="desk-history-title">コピー履歴</h2><button id="desk-history-close" aria-label="コピー履歴を閉じる">×</button></header><div id="desk-history-list"></div></dialog>
   <dialog id="desk-copy-dialog" class="desk-dialog" aria-labelledby="desk-copy-title"><header><h2 id="desk-copy-title">選択してコピー</h2><button id="desk-copy-close" aria-label="コピー画面を閉じる">×</button></header><p>コピーできなかったため、本文を選択してコピーしてください。</p><textarea id="desk-copy-text" readonly aria-label="コピーする本文"></textarea><button id="desk-copy-manual">コピーした</button></dialog>
   <script src="threads-archive.js"></script><script src="sourcing-archive.js"></script>
-  <script type="module" src="app.js?v=20261021.2-hidden"></script>
+  <script type="module" src="app.js?v=20261021.3-audio"></script>
 </body>
 </html>
