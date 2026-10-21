@@ -1,0 +1,12 @@
+/* Independent translate/scale preserve the doors' existing anchored transforms. */
+.feedback-still{filter:brightness(.96)}
+.feedback-down:not(.door-touch-target){translate:0 1.5px;scale:.985;filter:brightness(.96);transition:translate 65ms ease-out,scale 65ms ease-out,filter 65ms ease-out!important}
+.feedback-release:not(.door-touch-target){animation:feedback-return 190ms cubic-bezier(.2,.7,.3,1)!important}
+@keyframes feedback-return{0%{translate:0 1.5px;scale:.985}55%{translate:0 -.35px;scale:1.006}100%{translate:0 0;scale:1}}
+.manor-lounge button:not(.place-label):not(.door-touch-target):active,body.lounge-workspace button:active{transform:none!important}
+.manor-lounge .place-label:active,.manor-lounge .place-label.pressed{transform:translate(-50%,-50%)!important}
+.contact-halo{position:absolute;width:9px;height:9px;border:1px solid #efd39c88;border-radius:50%;pointer-events:none;translate:-50% -50%;animation:contact-light 280ms ease-out both;box-shadow:0 0 8px #f8dba32e}
+@keyframes contact-light{from{scale:.6;opacity:.65}to{scale:3.8;opacity:0}}
+.feedback-preview{padding:12px 0 16px;border-top:1px solid #e5decb}.feedback-preview p{font-size:11px;color:#7b715b;margin:0 0 9px}.feedback-preview div{display:flex;gap:6px}.feedback-preview button{flex:1;min-height:40px;padding:8px;background:#eee5d2;border:1px solid #cebc99;border-radius:5px;font-size:11px;color:#5e5139}.feedback-preview button:disabled{opacity:.45}
+[data-feedback-motion="reduced"] .feedback-down{translate:none;scale:none}[data-feedback-motion="reduced"] .feedback-release{animation:none!important}
+@media(prefers-reduced-motion:reduce){.feedback-down{translate:none;scale:none}.feedback-release,.contact-halo{animation:none!important}}

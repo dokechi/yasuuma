@@ -22,7 +22,7 @@
     "./rpg-workspaces.css?v=20261013.9-detail",
     "./rpg-daily-desk.css?v=20261015.1",
     "./lounge-workspace.css?v=20261021.3-audio",
-    "./lounge/interaction-feedback.css?v=20261021.4-touch"
+    "./lounge-feedback.css?v=20261021.5-boot"
   ],
   "scripts": [
     "./sourcing-atomic-save.js?v=20261011.atomic2",
