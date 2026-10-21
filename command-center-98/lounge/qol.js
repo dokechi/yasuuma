@@ -1,11 +1,14 @@
-import {placeNames} from './desk-model.js?v=20261021.7-qol';
-import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,currentPosted,savedLinks} from './qol-model.js?v=20261021.7-qol';
+import {createHallTools} from './hall-tools.js?v=20261021.8-hall';
+import {placeNames} from './desk-model.js?v=20261021.8-hall';
+import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,currentPosted,savedLinks} from './qol-model.js?v=20261021.8-hall';
 
 export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},send=()=>{}}){
  const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const button=(text,fn)=>{const b=el('button',text);b.type='button';b.addEventListener('click',fn);return b;};
  let current=null,selectedLater='',postDraft=null,latest=[],readState='unknown',install={state:'instructions'};
  const tools=el('div',undefined,'lounge-conveniences'),resume=button('',()=>{const c=notebook.pref('lastWork',null);if(c)open({...c,resume:true});}),tray=button('あとで箱',()=>showTray());resume.id='lounge-resume';tray.id='lounge-later';tools.append(resume,tray);document.querySelector('.town-footer').prepend(tools);
+ const hall=createHallTools({notebook,open,copy,showTray,onFeedback});const search=button('全体検索',()=>hall.showSearch());search.id='lounge-search';tools.append(search);
+ const deskSearch=button('全体検索',()=>hall.showSearch());$('desk-footer-tools').append(deskSearch);
  const trayInDesk=button('あとで箱',()=>showTray());$('desk-footer-tools').append(trayInDesk);
  const later=button('あとで考える',()=>{if(!current)return;add(current);showTray(current.id);}),post=button('投稿セット',()=>{if(!current)return;postDraft={...current};renderPost();$('posting-dialog').showModal();});
  later.id='desk-later';post.id='desk-posting';$('reader-qol').append(post,later);
@@ -13,16 +16,16 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
  function changeItems(fn){const rows=Object.fromEntries(items().map(x=>[x.draft.id,x]));fn(rows);notebook.changePref('laterItems',rows);refresh();}
  function add(d,memo=''){changeItems(rows=>{rows[d.id]={draft:JSON.parse(JSON.stringify(d)),memo:rows[d.id]?.memo||memo,time:Date.now()};});onFeedback('pin');}
  function markSeen(d){const seen=notebook.pref('seenRevisions',{});if(seen[d.id]!==seenRevision(d)){seen[d.id]=seenRevision(d);notebook.setPref('seenRevisions',seen);}}
- function status(payload){if(Array.isArray(payload.drafts)){const map=new Map((payload.complete===true&&payload.loading!==true?[]:latest).map(d=>[d.id,d]));for(const d of payload.drafts)map.set(d.id,d);latest=[...map.values()];}readState=payload.loading?'loading':payload.complete?'complete':'unknown';refresh();}
+ function status(payload){hall.receive(payload);if(Array.isArray(payload.drafts)){const map=new Map((payload.complete===true&&payload.loading!==true?[]:latest).map(d=>[d.id,d]));for(const d of payload.drafts)map.set(d.id,d);latest=[...map.values()];}readState=payload.loading?'loading':payload.complete?'complete':'unknown';refresh();}
  function refresh(){
   const last=notebook.pref('lastWork',null);resume.hidden=!last||!roomForPlace[last.place];resume.replaceChildren(el('small','前回の続き'),el('span',last?placeNames[last.place]+' · '+(last.title||'持ち場'):''));resume.title=last?.title||'';
   const count=items().length;tray.textContent='あとで箱'+(count?' · '+count:'');trayInDesk.textContent=tray.textContent;
   const seen=notebook.pref('seenRevisions',{});
   for(const [place,room]of Object.entries(roomForPlace)){const b=document.querySelector('.place-label[data-room="'+room+'"]');if(!b)continue;let badge=b.querySelector('.door-letter');if(!badge){badge=el('span',undefined,'door-letter');badge.setAttribute('aria-hidden','true');b.append(badge);}const n=unreadGroups(latest.filter(d=>d.place===place),seen),unknown=readState!=='complete';badge.textContent=n?'✉':unknown?'·':'';badge.hidden=!n&&!unknown;b.dataset.unread=String(n);const message=n?'未読・更新 '+n+'件'+(unknown?'（残りの読取は確認中）':''):unknown?'原稿の読取を確認中':'未読の保存原稿なし';b.title=message;b.setAttribute('aria-label',placeNames[place]+'に入る。'+message);}
   post.disabled=!current;later.disabled=!current;later.textContent=current&&items().some(x=>x.draft.id===current.id)?'あとで箱に保存済み':'あとで考える';post.hidden=!!current&&current.place==='shiire';
-  if($('posting-dialog').open)renderPost();
+  if($('posting-dialog').open)renderPost();hall.refresh();
  }
- function update(d){current=d;if(d){markSeen(d);}refresh();}
+ function update(d){current=d;hall.update(d);if(d){markSeen(d);}refresh();}
  function renderTray(){
   const rows=items(),list=$('later-list'),detail=$('later-detail');list.replaceChildren();detail.replaceChildren();$('later-empty').hidden=!!rows.length;$('later-undo').disabled=!notebook.canUndo();
   if(!rows.some(x=>x.draft.id===selectedLater))selectedLater=rows[0]?.draft.id||'';
@@ -31,7 +34,7 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
   memo.addEventListener('input',()=>{changeItems(rows=>{rows[d.id]={...rows[d.id],memo:memo.value.slice(0,500)};});const card=[...list.children].find(b=>b.dataset.laterId===d.id);if(card)card.lastElementChild.textContent=memo.value||'理由を添えて、あとで';});
   const summary=el('p',live?'持ち場で最新の保存内容を開けます。':'保存時点のメモです。元の項目が見つからない場合も残ります。','qol-note');
   detail.append(el('small',placeNames[d.place]),el('h3',d.title),label,summary,el('pre',d.body.slice(0,3000),'later-preview'));
-  const actions=el('div',undefined,'qol-actions');actions.append(button(d.native?'この持ち場を開く':live?'この原稿を開く':'持ち場を開く',()=>{$('later-dialog').close();open({place:d.place,id:live?.id,title:d.title,native:d.native});}));
+  const actions=el('div',undefined,'qol-actions');actions.append(button(d.native?'この持ち場を開く':live?'この原稿を開く':'持ち場を開く',()=>{$('later-dialog').close();open({place:d.place,id:live?.id,title:d.title,native:d.native,section:d.section});}));
   actions.append(button('あとで箱から外す',()=>{if(notebook.flag('tray',d.id))notebook.toggle('tray',d.id);changeItems(rows=>delete rows[d.id]);renderTray();onFeedback('unpin');}));detail.append(actions);
  }
  function showTray(id){selectedLater=id||selectedLater;renderTray();$('later-dialog').showModal();}
@@ -51,5 +54,5 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
  $('install-close').addEventListener('click',()=>$('install-dialog').close());
  function installState(value){install=value||{};installButton.hidden=install.state==='standalone';installButton.textContent=install.state==='available'?'アプリとして追加':'ホーム画面に追加';if(install.state==='dismissed'){$('install-dialog').showModal();}if(install.state==='installed')installButton.hidden=true;}
  function nativeLater(value){if(!value||!roomForPlace[value.place]||typeof value.title!=='string')return;const d={id:'native-'+value.place+'-'+(['sourcing','watches','cards'].includes(value.native)?value.native:'sourcing'),place:value.place,title:value.title.slice(0,200),body:String(value.body||'この持ち場をあとで確認する。').slice(0,3000),kind:'持ち場のメモ',native:['sourcing','watches','cards'].includes(value.native)?value.native:'sourcing'};add(d);showTray(d.id);}
- refresh();return {update,status,refresh,showTray,installState,nativeLater};
+ refresh();return {update,status,refresh,showTray,installState,nativeLater,showSearch:hall.showSearch,workMarks:hall.marks};
 }

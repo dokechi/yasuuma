@@ -1,3 +1,4 @@
+import {createKeepsakes} from './work-memory.js?v=20261021.8-hall';
 import {sampleEntry} from './entry-motion.js';
 // The painting and door faces use the same coordinates; no WebGL is required.
 const W=1536,H=1024,PLATE='assets/manor-lounge-v1.webp';
@@ -19,7 +20,7 @@ function halfPolygon(points,bound,left){
  }
  return out;
 }
-export async function createHybridWorld({app,host,rooms,labels,getSettings,getPhase}){
+export async function createHybridWorld({app,host,rooms,labels,getSettings,getPhase,getWorkMarks=()=>[]}){
  const plate=new Image();plate.src=PLATE;await plate.decode();
  const stage=document.createElement('div');stage.className='painting-world';stage.setAttribute('aria-hidden','true');
  plate.className='painting-plate';plate.alt='';stage.append(plate);host.append(stage);
@@ -50,8 +51,9 @@ export async function createHybridWorld({app,host,rooms,labels,getSettings,getPh
  // Keep the original silhouettes in front of door leaves, including the close chair.
  const foreground=new Image();foreground.src=PLATE;foreground.alt='';foreground.className='painting-foreground';
  const foregroundEdge=[[0,29],[2,22],[5,17],[11,15],[17,18],[20,24],[21,37],[25,34],[28,29],[34,28],[38,33],[41,43],[46,45],[51,48],[57,55],[62,43],[66,35],[69,32],[73,31],[76,35],[80,47],[81,32],[82,23],[85,14],[89,10],[94,10],[98,14],[100,19]];stage.append(foreground);
+ const keepsakes=createKeepsakes({stage,getMarks:getWorkMarks});
  function variant(useSquare){
-  square=useSquare;sceneH=square?1536:H;offsetY=square?244:0;const src=square?FOLD_PLATE:PLATE;
+  square=useSquare;keepsakes.position(useSquare?244:0);sceneH=square?1536:H;offsetY=square?244:0;const src=square?FOLD_PLATE:PLATE;
   plate.src=src;foreground.src=src;stage.style.height=sceneH+'px';plate.style.height=foreground.style.height=sceneH+'px';
   foreground.style.clipPath='polygon('+foregroundEdge.map(([x,y])=>`${x}% ${(y*H/100+offsetY)/sceneH*100}%`).concat(['100% 100%','0% 100%']).join(',')+')';
   app.classList.toggle('square-lounge',square);
@@ -87,7 +89,7 @@ export async function createHybridWorld({app,host,rooms,labels,getSettings,getPh
   }
   render();if(!document.hidden)raf=requestAnimationFrame(frame);
  }
- function resume(){if(!paused&&raf)return;paused=false;last=performance.now();raf=requestAnimationFrame(frame);}
+ function resume(){keepsakes.refresh();if(!paused&&raf)return;paused=false;last=performance.now();raf=requestAnimationFrame(frame);}
  function pause(){paused=true;cancelAnimationFrame(raf);raf=0;}
  new ResizeObserver(resize).observe(app);resize();resume();
  return {enter(id,duration){motion={id,start:performance.now(),duration};app.dataset.entering=id;resume();},reset(){motion=null;focused=hovered=null;mouse.x=mouse.y=0;app.dataset.entering='';app.style.removeProperty('--entry-light');for(const e of entries.values()){for(const l of e.leaves){l.leaf.style.transform='translateZ(1px)';l.back.style.transform='translateZ(-2px)';}e.aperture.style.filter='';e.glow.style.opacity='.06';}resize();resume();},highlight(id){focused=id;app.dataset.hover=id||'';},pause,resume};

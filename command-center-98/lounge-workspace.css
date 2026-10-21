@@ -37,3 +37,5 @@ body.lounge-workspace #loungeWorkspaceHeader h1{color:#fff5dd!important;font:500
 body.lounge-workspace #mainWindow :is(.trade-table,.purchase-table,.supplier-table,.sourcing-meta) th{background:#ece1cc!important;color:#6b5735!important}
 body.lounge-workspace #mainWindow :is(.trade-table,.purchase-table,.supplier-table,.sourcing-meta) td{background:#fffcf3!important;color:#493e2e!important}
 @media(max-width:600px){body.lounge-workspace #loungeWorkspaceHeader h1{font-size:26px!important}body.lounge-workspace #mainWindow table{font-size:12px!important}}
+
+#loungeWorkspaceHeader nav>div{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}#loungeWorkspaceHeader nav{gap:8px;flex-wrap:wrap}

@@ -21,7 +21,7 @@
     "./rpg-account-pages.css?v=20261019.links1",
     "./rpg-workspaces.css?v=20261013.9-detail",
     "./rpg-daily-desk.css?v=20261015.1",
-    "./lounge-workspace.css?v=20261021.3-audio",
+    "./lounge-workspace.css?v=20261021.8-hall",
     "./lounge-feedback.css?v=20261021.5-boot"
   ],
   "scripts": [
@@ -88,7 +88,7 @@
     "./rpg-workspaces.js?v=20261017.33-unified",
     "./rpg-daily-store.js?v=20261015.1",
     "./rpg-daily-desk.js?v=20261017.33-unified",
-    "./castle-parent.js?v=20261021.7-qol",
-    "./lounge-workspace.js?v=20261021.6-qol"
+    "./castle-parent.js?v=20261021.8-hall",
+    "./lounge-workspace.js?v=20261021.8-hall"
   ]
 }

@@ -1,4 +1,4 @@
-import {groupDrafts,safeLink} from './notebook.js?v=20261021.7-qol';
+import {groupDrafts,safeLink} from './notebook.js?v=20261021.8-hall';
 
 export const roomForPlace={kyun:'red',choi:'purple',fp:'silver',shiire:'orange'};
 export function savedLinks(d){return (Array.isArray(d?.productLinks)?d.productLinks:d?.link?[{key:'saved',label:'保存されたリンク',url:d.link}]:[]).filter(x=>safeLink(x.url));}
