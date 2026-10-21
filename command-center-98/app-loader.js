@@ -10,7 +10,7 @@
 })(typeof window === 'undefined' ? globalThis : window, function () {
   'use strict';
 
-  const MANIFEST_URL = './app-assets.json?v=20261003.1';
+  const MANIFEST_URL = './app-assets.json?v=20261021.9-refresh';
 
   function escapeAttribute(value) {
     return value.replace(/[&<>"']/g, character => ({
@@ -107,6 +107,7 @@
       const shellResponse = await fetch(manifest.shell, {cache: 'no-store'});
       if (!shellResponse.ok) throw new Error('HTTP ' + shellResponse.status);
       const html = composeDocument(await shellResponse.text(), manifest);
+      if (document.defaultView) document.defaultView.CCLoadedManifest = JSON.stringify(manifest);
       // Keep parser-inserted, blocking scripts: feature patches depend on earlier globals.
       // Dynamic/async script insertion or innerHTML would change execution semantics.
       document.open();
