@@ -5,12 +5,13 @@
   if (typeof module === 'object' && module.exports) {
     module.exports = loader;
   } else {
+    if (root.CCEntryRedirecting) return;
     loader.boot({document: root.document, fetch: root.fetch.bind(root)});
   }
 })(typeof window === 'undefined' ? globalThis : window, function () {
   'use strict';
 
-  const MANIFEST_URL = './app-assets.json?v=20261021.9-refresh';
+  const MANIFEST_URL = './app-assets.json?v=20261022.10-entry';
 
   function escapeAttribute(value) {
     return value.replace(/[&<>"']/g, character => ({
@@ -59,7 +60,7 @@
   }
   function completeStartup(document, finish) {
     const w = document.defaultView;
-    if (!w.CCRpgHome || !w.CCRpgWorkspaces) return finish(document, false);
+    if (!w.CCRpgHome || !w.CCRpgWorkspaces || (w.CCHome?.active && !w.CCCastle?.unified)) return finish(document, false);
     // The legacy modules mount first. Keep their UI covered until the chosen
     // castle surface is actually ready; saved records load independently.
     const pending = w.CCCastle?.whenReady?.();

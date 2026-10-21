@@ -1,5 +1,5 @@
 {
-  "shell": "./app.html?v=20261021.9-refresh",
+  "shell": "./app.html?v=20261022.10-entry",
   "styles": [
     "./v140-reddit.css?v=175",
     "./v141-reddit-mobile.css?v=175",
@@ -84,7 +84,7 @@
     "./threads-archive.js?v=20261018.41-archive",
     "./sourcing-archive.js?v=20261018.43-empty",
     "./manual-operation-hub.js?v=20261019.links1",
-    "./rpg-home.js?v=20261012.3-workspaces",
+    "./rpg-home.js?v=20261022.10-entry",
     "./rpg-workspaces.js?v=20261017.33-unified",
     "./rpg-daily-store.js?v=20261015.1",
     "./rpg-daily-desk.js?v=20261017.33-unified",

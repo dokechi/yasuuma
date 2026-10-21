@@ -184,7 +184,7 @@ test('malformed shell responses keep the loading document available for the erro
 test('the unchanged public entry URL boots through the external loader in a browser context', async () => {
   const wrapper = fs.readFileSync(path.join(__dirname, 'app-v130.html'), 'utf8');
   const scripts = [...wrapper.matchAll(/<script src="([^"]+)"><\/script>/g)].map(match => match[1]);
-  assert.deepEqual(scripts, ['./app-loader.js?v=20261021.9-refresh']);
+  assert.deepEqual(scripts, ['./app-loader.js?v=20261022.10-entry']);
   assert.ok(!wrapper.includes('h.replace'));
   const document = documentStub();
   const window = {document, fetch: successfulFetch()};

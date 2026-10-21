@@ -1,6 +1,12 @@
 /* RPG HOME presentation only. Existing account review, auth, data and routes stay authoritative. */
 (function(root){
  'use strict';
+ // Pre-manifest entry documents can keep loading this unchanged public URL.
+ // Migrate before creating the retired HOME, without touching saved user data.
+ if(root.location&&!root.CCLoadedManifest){
+  root.location.replace(new URL('./app-v130.html?v=20261022.10-entry',root.location.href).href);
+  return;
+ }
  const doc=root.document,H=root.CCHome,main=doc?.getElementById('mainWindow'),home=doc?.getElementById('commandHome');
  if(!H||!main||!home||root.CCRpgHome)return;
  const accountHub=root.CCManualOperationHub;
