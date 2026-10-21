@@ -17,7 +17,7 @@ function product(row){const p=row.product||{};const urls=[p.url,row.url,row.link
 export function productMatch(a,b){const x=product(a),y=product(b);if(x.variant&&y.variant&&x.variant!==y.variant)return null;
  const page=x.urls.some(u=>y.urls.includes(u)),jan=/^\d{8,14}$/.test(x.jan)&&x.jan===y.jan,sku=!!x.sku&&x.sku===y.sku&&!!x.brand&&x.brand===y.brand;
  if(!page&&!jan&&!sku)return null;const variantKnown=!!x.variant&&x.variant===y.variant;
- return {exact:variantKnown,basis:page?'同じ商品URL':jan?'同じJAN':'同じブランド・型番',note:variantKnown?'サイズ・色も一致':'サイズ・色の一致は未確認'};
+ return {exact:variantKnown,basis:page?'同じ商品URL':jan?'同じJAN':'同じブランド・型番',note:variantKnown?'保存された仕様表記が一致':'仕様の一致は未確認'};
 }
 export function relatedRecords(current,rows){return rows.filter(r=>r.type==='research'&&(String(r.originId)!==String(current.source?.id||current.originId||'')||r.time>0&&r.time<(current.time||current.updatedAt||0))).map(row=>({row,match:productMatch(current,row)})).filter(x=>x.match).sort((a,b)=>b.row.time-a.row.time);}
 export function priceChange(current,previous){const match=productMatch(current,previous);if(!match?.exact||current.priceBasis!==previous.priceBasis||current.price===null||previous.price===null||!Number.isFinite(current.price)||!Number.isFinite(previous.price))return null;return current.price-previous.price;}
