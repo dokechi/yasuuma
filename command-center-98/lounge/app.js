@@ -1,6 +1,6 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
 import {createMusicControls} from './music.js?v=20261021.3-audio';
-import {createDesk} from './desk.js?v=20261021.4-touch';
+import {createDesk} from './desk.js?v=20261021.6-qol';
 import {createInteractionSound} from './interaction-sound.js?v=20261021.4-touch';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261021.4-touch';
 const $ = (id) => document.getElementById(id);
@@ -18,6 +18,8 @@ const rooms = [
 ];
 let phase='town', current=null, world=null, audio=null, desk=null;
 let entrySound=null,entryAnimated=false,effectsGain=null,effectsVolume=.5,music=null,interactionSound=null,feedback=null;
+let nextContextRoom=null;
+function openContext(place){const id=({kyun:'red',choi:'purple',fp:'silver',shiire:'orange'})[place];if(!id)return;if(phase==='town')enterRoom(id);else if(phase==='room'){nextContextRoom=id;goBack();}}
 let entryStart=0, roomTimer=0, replayAfterBack=null;
 const labels=new Map();
 for(const r of rooms){
@@ -85,12 +87,12 @@ function goBack(replay=false,fromHistory=false){
   if(phase==='town')return;
   entrySound?.cancel();
   if(!fromHistory&&history.state?.shireitoRoom){if(replay)replayAfterBack=current.id;history.back();return;}
-  clearTimeout(roomTimer);phase='town';app.dataset.phase=phase;room.hidden=true;room.classList.remove('entered');app.classList.remove('room-mode','leaving');app.classList.add('town-mode');
   desk?.leave();
+  clearTimeout(roomTimer);phase='town';app.dataset.phase=phase;room.hidden=true;room.classList.remove('entered');app.classList.remove('room-mode','leaving');app.classList.add('town-mode');
   world?.reset();labels.get(current?.id)?.focus({preventScroll:true});$('announcer').textContent='司令塔に戻りました';
   if(replay){const id=current.id;requestAnimationFrame(()=>requestAnimationFrame(()=>enterRoom(id)))}
 }
-window.addEventListener('popstate',ev=>{if(phase!=='town')goBack(false,true);if(replayAfterBack){const id=replayAfterBack;replayAfterBack=null;requestAnimationFrame(()=>enterRoom(id))}else if(ev.state?.shireitoRoom){enterRoom(ev.state.shireitoRoom,true)}});
+window.addEventListener('popstate',ev=>{if(phase!=='town')goBack(false,true);if(nextContextRoom){const id=nextContextRoom;nextContextRoom=null;requestAnimationFrame(()=>enterRoom(id));}else if(replayAfterBack){const id=replayAfterBack;replayAfterBack=null;requestAnimationFrame(()=>enterRoom(id))}else if(ev.state?.shireitoRoom){enterRoom(ev.state.shireitoRoom,true)}});
 $('back').addEventListener('click',()=>goBack());$('again').addEventListener('click',()=>goBack(true));
 document.querySelectorAll('.quick').forEach(b=>b.addEventListener('click',()=>enterRoom(b.dataset.room,true)));
 $('sound').addEventListener('click',()=>{settings.sound=!settings.sound;if(!settings.sound)silenceEffects();saveSettings();syncSettings();if(settings.sound)playFeedback('latch')});
@@ -102,7 +104,7 @@ for(const [id,key] of [['sound-setting','sound'],['ambient-setting','ambient'],[
 document.querySelectorAll('[name=pace]').forEach(i=>i.addEventListener('change',e=>{settings.pace=e.target.value;saveSettings()}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.querySelector('dialog[open]'))goBack()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){world?.pause();silenceEffects();audio?.suspend().catch(()=>{})}else if(phase==='town'&&!$('settings').open)world?.resume()});
-desk=createDesk({onHome:()=>goBack(),onPause:()=>{world?.pause();silenceEffects();audio?.suspend().catch(()=>{});app.classList.add('is-away');},onResume:()=>{app.classList.remove('is-away');if(phase==='town'&&!$('settings').open)world?.resume();},onSettings:()=>$('settings-open').click(),onFeedback:playFeedback});
+desk=createDesk({onOpenRoom:openContext,onHome:()=>goBack(),onPause:()=>{world?.pause();silenceEffects();audio?.suspend().catch(()=>{});app.classList.add('is-away');},onResume:()=>{app.classList.remove('is-away');if(phase==='town'&&!$('settings').open)world?.resume();},onSettings:()=>$('settings-open').click(),onFeedback:playFeedback});
 music=createMusicControls({getEffects:()=>({enabled:settings.sound}),setEffects:change=>{if(typeof change.volume==='number'){effectsVolume=change.volume;if(effectsGain)effectsGain.gain.value=effectsVolume/.5;}if(typeof change.enabled==='boolean'){settings.sound=change.enabled;if(!settings.sound)silenceEffects();saveSettings();syncSettings();}if(change.preview&&settings.sound)playFeedback('latch');},onStatus:text=>$('bgmStatus').textContent=text});
 feedback=createInteractionFeedback({play:playFeedback,active:()=>!app.classList.contains('is-away'),reduced:()=>settings.reduce||reducedMedia.matches,room:()=>current?.id||'red'});
 document.querySelectorAll('[data-feedback-preview]').forEach(b=>b.addEventListener('click',()=>playFeedback(b.dataset.feedbackPreview)));

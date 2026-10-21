@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#1d211f">
   <meta name="description" content="4人のラウンジから、保存原稿・FP制作・仕入れ管理を使う司令塔。">
   <title>司令塔 — いつもの場所で</title>
-
   <link rel="preload" href="assets/manor-lounge-v1.webp" as="image">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="desk.css">
+  <link rel="stylesheet" href="qol.css?v=20261021.6-qol">
   <link rel="stylesheet" href="music.css?v=20261021.3-audio">
   <link rel="stylesheet" href="interaction-feedback.css?v=20261021.4-touch">
 </head>
@@ -58,10 +58,10 @@
           <section class="manuscript-reader" aria-label="原稿を読む">
             <nav id="desk-variants" class="desk-variants" aria-label="本文の別案"></nav>
             <div class="reader-scroll" id="desk-scroll" tabindex="0"><article id="desk-article"><p id="draft-kind" class="draft-kind"></p><h4 id="draft-title"></h4><p id="draft-meta" class="draft-meta"></p><div id="draft-body" class="draft-body"></div><div id="draft-links" class="draft-links"></div></article><p id="desk-empty" class="desk-empty"></p></div>
-            <footer class="reader-actions"><button id="desk-copy" class="desk-primary">本文をコピー</button><button id="desk-pin" aria-pressed="false">☆</button><button id="desk-done">読了にして戻る</button></footer>
+            <div id="reader-qol" class="reader-qol" aria-label="この原稿の作業"></div><footer class="reader-actions"><button id="desk-copy" class="desk-primary">本文をコピー</button><button id="desk-pin" aria-pressed="false">☆</button><button id="desk-done">読了にして戻る</button></footer>
           </section>
         </div>
-        <footer class="desk-footer"><button id="desk-history">コピー履歴</button><button id="desk-undo" hidden>元に戻す</button><p id="desk-operation" role="status" aria-live="polite"></p><button id="again">扉から入り直す ↺</button></footer>
+        <footer class="desk-footer"><span id="desk-footer-tools"></span><button id="desk-history">コピー履歴</button><button id="desk-undo" hidden>元に戻す</button><p id="desk-operation" role="status" aria-live="polite"></p><button id="again">扉から入り直す ↺</button></footer>
       </section>
     </section>
     <div id="entry-wash" aria-hidden="true"></div>
@@ -82,7 +82,10 @@
   </main>
   <dialog id="desk-history-dialog" class="desk-dialog" aria-labelledby="desk-history-title"><header><h2 id="desk-history-title">コピー履歴</h2><button id="desk-history-close" aria-label="コピー履歴を閉じる">×</button></header><div id="desk-history-list"></div></dialog>
   <dialog id="desk-copy-dialog" class="desk-dialog" aria-labelledby="desk-copy-title"><header><h2 id="desk-copy-title">選択してコピー</h2><button id="desk-copy-close" aria-label="コピー画面を閉じる">×</button></header><p>コピーできなかったため、本文を選択してコピーしてください。</p><textarea id="desk-copy-text" readonly aria-label="コピーする本文"></textarea><button id="desk-copy-manual">コピーした</button></dialog>
+  <dialog id="later-dialog" class="qol-dialog" aria-labelledby="later-title"><header><div><small>ONE THING AT A TIME</small><h2 id="later-title">あとで箱</h2></div><button id="later-close" aria-label="あとで箱を閉じる">×</button></header><p class="qol-note">気になったものを、理由と一緒に。この端末に覚えておきます。</p><p id="later-empty">まだ空です。原稿の「あとで考える」から入れられます。</p><div class="later-layout"><nav id="later-list" aria-label="あとで確認するもの"></nav><section id="later-detail" aria-label="あとで箱の詳細"></section></div><footer><button id="later-undo">直前の端末メモを元に戻す</button><p id="later-status" role="status"></p></footer></dialog>
+  <dialog id="posting-dialog" class="qol-dialog" aria-labelledby="posting-heading"><header><div><small>READY TO SHARE</small><h2 id="posting-heading">投稿セット</h2></div><button id="posting-close" aria-label="投稿セットを閉じる">×</button></header><h3 id="posting-title"></h3><p class="qol-note">本文とリンクを順にコピー。価格・在庫は商品ページで確認してから投稿できます。</p><p id="posting-changed" hidden>保存原稿が更新されています。閉じて最新の原稿で開き直してください。</p><div id="posting-steps"></div><p id="posting-progress" role="status" aria-live="polite"></p><div class="qol-actions"><button id="posting-complete">投稿したので完了</button><button id="posting-native">本体の投稿結果へ</button></div><p class="qol-note">完了はこの端末のメモです。本体の投稿結果は「本体の投稿結果へ」で記録できます。コピーだけでは投稿済みになりません。</p></dialog>
+  <dialog id="install-dialog" class="qol-dialog" aria-labelledby="install-title"><header><h2 id="install-title">いつもの場所へ、ひと押しで</h2><button id="install-close" aria-label="アプリ追加の案内を閉じる">×</button></header><p>AndroidのChromeで本体を開き、ブラウザの「︙」から「ホーム画面に追加」→「インストール」を選んでください。</p><p class="qol-note">司令塔のアイコンから起動できます。項目名はブラウザにより異なります。ログインは今までの司令塔と共通です。</p></dialog>
   <script src="threads-archive.js"></script><script src="sourcing-archive.js"></script>
-  <script type="module" src="app.js?v=20261021.4-touch"></script>
+  <script type="module" src="app.js?v=20261021.6-qol"></script>
 </body>
 </html>

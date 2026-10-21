@@ -1,20 +1,23 @@
+import {createConveniences} from './qol.js?v=20261021.6-qol';
+import {resumeView} from './qol-model.js';
 import {createNotebook,safeLink} from './notebook.js';
 import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js';
 
-export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}}){
+export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{},onOpenRoom=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const button=(text,fn,cls)=>{const n=el('button',text,cls);n.type='button';n.addEventListener('click',fn);return n;};
  let storage;try{storage=window.localStorage;}catch{}
  let storageError=false;
  const notebook=createNotebook({seeds:{kyun:[],choi:[],fp:[],shiire:[]},storage,onError:()=>{storageError=true;}});
- let place=null,active=null,query='',filter='all',pending=null,loading=false,complete=false,connected=false,autoReturn=false,manual=null,scrollTimer=0,externalNotes=false;
- const selections=new Map(),views=new Map();
+ let place=null,active=null,query='',filter='all',pending=null,loading=false,complete=false,connected=false,autoReturn=false,manual=null,scrollTimer=0,externalNotes=false,nativeWork=null;
+ const selections=new Map(),views=new Map();let requested=null;
+ const conveniences=createConveniences({notebook,open:context=>{requested=context;if(context.id)selections.set(context.place,context.id);onOpenRoom(context.place);},copy:(...args)=>copy(...args),native,onFeedback,send:(...args)=>send(...args)});
  const send=(type,extra={})=>{if(embedded)window.parent.postMessage({channel:'cc-castle-v1',type,...extra},origin);};
  function operation(text){$('desk-operation').textContent=text+(storageError?'（端末に保存できないため、この画面内で保持）':'');}
  function native(action,recordId,returnHome=false){
   if(!embedded){window.top.location.href=productionURL;return;}
-  savePosition();autoReturn=returnHome;send('native',{action,...(typeof recordId==='string'&&recordId.length<=500?{recordId}:{})});
+  savePosition();autoReturn=returnHome;if(place==='shiire'&&['sourcing','watches','cards'].includes(action))nativeWork=action;if(['sourcing','watches','cards','fp','tiktok'].includes(action)){const p=['fp','tiktok'].includes(action)?'fp':'shiire';notebook.setPref('lastWork',{place:p,title:({sourcing:'仕入れ帳',watches:'海外時計・価格差',cards:'カード',fp:'FP 台本・画像',tiktok:'TikTok 投稿結果'})[action],native:action,recordId});conveniences.refresh();}send('native',{action,...(typeof recordId==='string'&&recordId.length<=500?{recordId}:{})});
  }
  function setStatus(message,{loading:busy=false,complete:done=false}={}){
   loading=busy;complete=done&&!busy;
@@ -25,8 +28,8 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  }
  function doneIds(){return new Set(notebook.completed(place).map(d=>d.id));}
  function groups(){const done=doneIds();return visibleGroups(notebook.list(place),{query,filter,isPinned:id=>notebook.flag('pin',id),isDone:id=>done.has(id)});}
- function savePosition(){clearTimeout(scrollTimer);if(place&&active)notebook.remember(place,active.id,$('desk-scroll').scrollTop);}
- function rememberView(){if(place)views.set(place,{query,filter});}
+ function savePosition(){clearTimeout(scrollTimer);if(place&&active){const scroll=$('desk-scroll');notebook.remember(place,active.id,scroll.clientHeight>0?scroll.scrollTop:notebook.position(active.id));if(!nativeWork)notebook.setPref('lastWork',{place,id:active.id,title:active.title});}rememberView();conveniences.refresh();}
+ function rememberView(){if(place){views.set(place,{query,filter});notebook.setPref('view:'+place,{query,filter});}}
  function routes(){
   const host=$('desk-routes');host.replaceChildren();
   if(place==='fp')host.append(button('FP 台本・画像',()=>native('fp')),button('TikTok 投稿結果',()=>native('tiktok',active?.source?.account==='tiktok'?active.source.id:undefined)));
@@ -56,6 +59,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   $('desk-article').hidden=!active;$('desk-empty').hidden=!!active;$('desk-empty').textContent=emptyText();
   for(const id of ['desk-copy','desk-pin','desk-done'])$(id).disabled=!active;
   $('desk-variants').replaceChildren();$('draft-links').replaceChildren();
+  conveniences.update(active);
   if(!active)return;
   const d=active,group=groups().find(g=>g.some(x=>x.id===d.id))||[d];
   if(group.length>1)for(const variant of group){const b=button(variant.kind,()=>select(variant.id));b.setAttribute('aria-pressed',String(variant.id===d.id));$('desk-variants').append(b);}
@@ -80,18 +84,18 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   if(pending&&!holdsActiveText(active,pending.drafts,pending.complete))applyPending();
  }
  function enter(roomId){
-  savePosition();rememberView();if(externalNotes&&notebook.persistent()){notebook.sync();externalNotes=false;}place=placeForRoom[roomId];active=null;const view=views.get(place)||{query:'',filter:'all'};query=view.query;filter=view.filter;$('desk-query').value=query;
+  savePosition();rememberView();if(externalNotes&&notebook.persistent()){notebook.sync();externalNotes=false;}place=placeForRoom[roomId];active=null;const view=requested?.id&&!requested.resume?{query:'',filter:'all'}:resumeView(views.get(place)||notebook.pref('view:'+place,null));query=view.query;filter=view.filter;$('desk-query').value=query;
   notebook.visit(place);$('desk-title').textContent=place==='shiire'?'仕入れの持ち場':'保存原稿';$('desk-kicker').textContent=place==='fp'?'SCRIPTS & CONTENT':place==='shiire'?'THE MERCHANT’S DESK':'YOUR MANUSCRIPTS';
   $('desk').dataset.place=place;routes();render({restore:true});
   if(pending)applyPending();
-  if(place==='shiire'&&embedded)native('sourcing',undefined,true);
+  if(requested?.native&&embedded&&(['sourcing','watches','cards'].includes(requested.native)&&place==='shiire'||['fp','tiktok'].includes(requested.native)&&place==='fp'))native(requested.native,requested.recordId,true);else if(place==='shiire'&&embedded)native('sourcing',undefined,true);requested=null;
  }
  function receive(payload){
   connected=true;$('desk-connect').hidden=true;
   setStatus(payload.message,payload);
   if(!Array.isArray(payload.drafts))return;
   const rows=payload.drafts.filter(d=>(!window.CCThreadsArchive?.enabled||window.CCThreadsArchive.acceptsSource(d))&&!window.CCSourcingArchive?.isArchivedDraft(d));
-  const next={...payload,drafts:rows};
+  const next={...payload,drafts:rows};conveniences.status(next);
   if(place&&holdsActiveText(active,rows,next.complete)){
    pending=next;$('desk-pending').hidden=false;
    try{notebook.replaceSources(rows.filter(d=>d.id!==active.id),{complete:false});renderList();}catch{operation('取得した原稿の形式を確認できませんでした。');}
@@ -116,8 +120,8 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   for(const row of rows){const card=el('details'),summary=el('summary',row.title),body=el('pre',row.text);card.append(summary,el('small',new Date(row.time).toLocaleString('ja-JP')),body,button('もう一度コピー',()=>copy({id:row.draftId,place:row.place,title:row.title,body:row.text},row.kind,row.text)));list.append(card);}
   $('desk-history-dialog').showModal();
  }
- $('desk-query').addEventListener('input',e=>{savePosition();query=e.target.value;render();});
- document.querySelectorAll('[data-desk-filter]').forEach(b=>b.addEventListener('click',()=>{savePosition();filter=b.dataset.deskFilter;render();}));
+ $('desk-query').addEventListener('input',e=>{savePosition();query=e.target.value;rememberView();render();});
+ document.querySelectorAll('[data-desk-filter]').forEach(b=>b.addEventListener('click',()=>{savePosition();filter=b.dataset.deskFilter;rememberView();render();}));
  $('desk-copy').addEventListener('click',()=>{if(active)copy(active);});
  $('desk-pin').addEventListener('click',()=>{if(!active)return;notebook.toggle('pin',active.id);operation(notebook.flag('pin',active.id)?'お気に入りに保存しました。':'お気に入りを解除しました。');onFeedback(notebook.flag('pin',active.id)?'pin':'unpin');render();});
  $('desk-done').addEventListener('click',()=>{if(!active)return;savePosition();notebook.finish(active);operation('端末の読了履歴に記録しました。');onFeedback('done');onHome();});
@@ -138,9 +142,11 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  window.addEventListener('message',event=>{
   if(!embedded||!trustedMessage(event,origin,window.parent))return;const m=event.data;
   if(m.type==='records')receive(m);
-  if(m.type==='status'){connected=true;setStatus(m.message,{loading:m.loading!==false});if(!active)render();}
+  if(m.type==='status'){connected=true;setStatus(m.message,{loading:m.loading!==false});conveniences.status({loading:m.loading!==false,complete:false});if(!active)render();}
   if(m.type==='pause'){savePosition();onPause();}
   if(m.type==='resume'){if(autoReturn){autoReturn=false;onHome();}onResume();}
+  if(m.type==='install-state')conveniences.installState(m);
+  if(m.type==='later-context')conveniences.nativeLater(m.context);
   if(m.type==='reading-settings')onSettings();
   if(m.type==='interaction'&&['tap','paper','latch','back','door'].includes(m.kind))onFeedback(m.kind,'orange');
   if(m.type==='reading-copy'&&m.event){notebook.inheritCopy(m.event,m.event.eventId);render();}
@@ -150,5 +156,5 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  document.addEventListener('visibilitychange',()=>{if(document.hidden)savePosition();});
  window.addEventListener('storage',e=>{if(e.key?.startsWith('castle-production.v1.')){externalNotes=true;operation('別の画面で読書メモが更新されました。部屋に入り直すと反映します。');}});
  if(!embedded){$('desk-connect').hidden=false;setStatus('本体から開くと、ログイン中の保存原稿・履歴・仕入れ管理を使えます。');}
- return {enter,leave:()=>{savePosition();rememberView();place=null;active=null;if(pending)applyPending();},native,ready:()=>{if(embedded){setStatus('本体の保存原稿に接続しています…',{loading:true});send('ready');}},receive,notebook};
+ return {enter,leave:()=>{savePosition();rememberView();place=null;active=null;nativeWork=null;conveniences.update(null);if(pending)applyPending();},native,ready:()=>{if(embedded){setStatus('本体の保存原稿に接続しています…',{loading:true});send('ready');}},receive,notebook};
 }

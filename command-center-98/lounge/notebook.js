@@ -87,5 +87,6 @@ export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>
  return {sources,replaceSources,list,all,get,save,erase,hiddenDrafts,restore,toggle,flag,remember,visit,copied,copies,copyMark,finish,completed,sync,parseImport,applyImport,migrateLegacy,sourceDraft,inheritCopy,undo:undoAny,
   position:draftId=>Number(records.get('read:'+draftId))||0,selected:place=>records.get('selected:'+place),lastPlace:()=>records.get('lastPlace'),usedToday:place=>dayInJapan(records.get('visit:'+place)||1)===dayInJapan(now()),
   pref:(key,fallback)=>records.has('pref:'+key)?clone(records.get('pref:'+key)):fallback,setPref:(key,v)=>put('pref:'+key,v),
+  changePref:(key,v)=>change('pref:'+key,v),
   export:()=>JSON.stringify({format:'command-center-v1',exportedAt:new Date(now()).toISOString(),drafts:all({includeHidden:true})},null,2),persistent:()=>persistent,canUndo:()=>undoStack.length>0};
 }
