@@ -1,8 +1,10 @@
 import {createKeepsakes} from './work-memory.js?v=20261021.8-hall';
 import {sampleEntry} from './entry-motion.js';
 // The painting and door faces use the same coordinates; no WebGL is required.
-const W=1536,H=1024,PLATE='assets/manor-lounge-v1.webp';
-const FOLD_PLATE='assets/manor-lounge-fold-v1.webp';
+const W=1536,H=1024,PLATE='assets/manor-lounge-wardrobe-20261022.jpg';
+const FOLD_PLATE=PLATE;
+// The supplied square painting contains the desktop view from y=244 to 1268.
+const PAINTING_H=1536,DESKTOP_CROP_Y=244;
 const DOORS=[
  {id:'red',left:282,right:390,top:100,bottom:403,rightHinge:true,label:[349,167],points:[[0,0],[108,32],[108,303],[0,299]]},
  {id:'purple',left:645,right:727,top:57,bottom:331,label:[686,283],points:[[0,274],[82,274],[82,62],[75,37],[59,14],[40,0],[21,14],[6,37],[0,62]]},
@@ -55,11 +57,12 @@ export async function createHybridWorld({app,host,rooms,labels,getSettings,getPh
  function variant(useSquare){
   square=useSquare;keepsakes.position(useSquare?244:0);sceneH=square?1536:H;offsetY=square?244:0;const src=square?FOLD_PLATE:PLATE;
   plate.src=src;foreground.src=src;stage.style.height=sceneH+'px';plate.style.height=foreground.style.height=sceneH+'px';
+  for(const image of [plate,foreground]){image.style.objectFit='cover';image.style.objectPosition=`50% ${DESKTOP_CROP_Y/(PAINTING_H-H)*100}%`;}
   foreground.style.clipPath='polygon('+foregroundEdge.map(([x,y])=>`${x}% ${(y*H/100+offsetY)/sceneH*100}%`).concat(['100% 100%','0% 100%']).join(',')+')';
   app.classList.toggle('square-lounge',square);
   for(const e of entries.values()){
    e.entrance.style.top=(e.d.top+offsetY)+'px';e.glow.style.top=(e.d.bottom+offsetY-10)+'px';
-   for(const l of e.leaves){l.leaf.style.backgroundImage=`url('${src}')`;l.leaf.style.backgroundSize=`${W}px ${sceneH}px`;l.leaf.style.backgroundPosition=`-${e.d.left+l.left}px -${e.d.top+offsetY}px`;}
+   for(const l of e.leaves){l.leaf.style.backgroundImage=`url('${src}')`;l.leaf.style.backgroundSize=`${W}px ${PAINTING_H}px`;l.leaf.style.backgroundPosition=`-${e.d.left+l.left}px -${e.d.top+DESKTOP_CROP_Y}px`;}
   }
  }
  function render(){

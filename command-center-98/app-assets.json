@@ -1,5 +1,5 @@
 {
-  "shell": "./app.html?v=20261022.10-entry",
+  "shell": "./app.html?v=20261022.11-wardrobe",
   "styles": [
     "./v140-reddit.css?v=175",
     "./v141-reddit-mobile.css?v=175",
@@ -88,7 +88,7 @@
     "./rpg-workspaces.js?v=20261017.33-unified",
     "./rpg-daily-store.js?v=20261015.1",
     "./rpg-daily-desk.js?v=20261017.33-unified",
-    "./castle-parent.js?v=20261021.8-hall",
+    "./castle-parent.js?v=20261022.11-wardrobe",
     "./lounge-workspace.js?v=20261021.8-hall"
   ]
 }
