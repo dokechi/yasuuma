@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="desk.css">
   <link rel="stylesheet" href="music.css?v=20261021.3-audio">
+  <link rel="stylesheet" href="interaction-feedback.css?v=20261021.4-touch">
 </head>
 <body>
   <main id="app" class="town-mode hybrid-hall manor-lounge">
@@ -69,7 +70,8 @@
     <dialog id="settings" aria-labelledby="settings-title">
       <div class="dialog-heading"><div><span class="eyebrow">MAKE YOURSELF AT HOME</span><h2 id="settings-title">心地よさの設定</h2></div><button id="settings-close" class="round-button" aria-label="設定を閉じる">×</button></div>
       <fieldset><legend>部屋に入る速さ</legend><div class="segmented"><label><input type="radio" name="pace" value="quick"><span>きびきび</span><small>0.65秒</small></label><label><input type="radio" name="pace" value="normal" checked><span>なめらか</span><small>1秒</small></label><label><input type="radio" name="pace" value="slow"><span>ゆったり</span><small>1.4秒</small></label></div></fieldset>
-      <label class="setting-line"><span>効果音<small>押す音と、短い入室の音</small></span><input id="sound-setting" type="checkbox" checked></label>
+      <label class="setting-line"><span>効果音<small>木や紙に触れる音と、短い完了の響き</small></span><input id="sound-setting" type="checkbox" checked></label>
+      <section class="feedback-preview" aria-label="操作音を試す"><p>操作音を試す</p><div><button data-feedback-preview="door" aria-label="扉の音を試す">扉</button><button data-feedback-preview="paper" aria-label="原稿の音を試す">原稿</button><button data-feedback-preview="copy" aria-label="完了の音を試す">完了</button></div></section>
       <label class="setting-line"><span>視点のゆらぎ<small>視線に合わせた小さな動き</small></span><input id="ambient-setting" type="checkbox" checked></label>
       <label class="setting-line"><span>移動の演出を省略<small>選んだ部屋をすぐに表示</small></span><input id="reduce-setting" type="checkbox"></label>
       <label class="setting-line"><span>本文の大きさ<small>部屋の中で読む原稿の文字</small></span><select id="desk-font" aria-label="本文の大きさ"><option value="standard">標準</option><option value="large">大きめ</option></select></label>
@@ -81,6 +83,6 @@
   <dialog id="desk-history-dialog" class="desk-dialog" aria-labelledby="desk-history-title"><header><h2 id="desk-history-title">コピー履歴</h2><button id="desk-history-close" aria-label="コピー履歴を閉じる">×</button></header><div id="desk-history-list"></div></dialog>
   <dialog id="desk-copy-dialog" class="desk-dialog" aria-labelledby="desk-copy-title"><header><h2 id="desk-copy-title">選択してコピー</h2><button id="desk-copy-close" aria-label="コピー画面を閉じる">×</button></header><p>コピーできなかったため、本文を選択してコピーしてください。</p><textarea id="desk-copy-text" readonly aria-label="コピーする本文"></textarea><button id="desk-copy-manual">コピーした</button></dialog>
   <script src="threads-archive.js"></script><script src="sourcing-archive.js"></script>
-  <script type="module" src="app.js?v=20261021.3-audio"></script>
+  <script type="module" src="app.js?v=20261021.4-touch"></script>
 </body>
 </html>

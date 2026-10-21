@@ -1,7 +1,7 @@
 import {createNotebook,safeLink} from './notebook.js';
 import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js';
 
-export function createDesk({onHome,onPause,onResume,onSettings}){
+export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const button=(text,fn,cls)=>{const n=el('button',text,cls);n.type='button';n.addEventListener('click',fn);return n;};
@@ -107,7 +107,7 @@ export function createDesk({onHome,onPause,onResume,onSettings}){
  }
  async function copy(d,kind='body',text=d.body){
   const snapshot={...d};
-  try{await navigator.clipboard.writeText(text);notebook.copied(snapshot,kind,text);if(active?.id===snapshot.id)renderReader();operation(kind==='body'?'本文をコピーしました。':'URLをコピーしました。');}
+  try{await navigator.clipboard.writeText(text);notebook.copied(snapshot,kind,text);if(active?.id===snapshot.id)renderReader();operation(kind==='body'?'本文をコピーしました。':'URLをコピーしました。');onFeedback('copy');}
   catch{manual={draft:snapshot,kind,text};$('desk-copy-text').value=text;$('desk-copy-dialog').showModal();$('desk-copy-text').focus();$('desk-copy-text').select();}
  }
  function history(){
@@ -119,12 +119,12 @@ export function createDesk({onHome,onPause,onResume,onSettings}){
  $('desk-query').addEventListener('input',e=>{savePosition();query=e.target.value;render();});
  document.querySelectorAll('[data-desk-filter]').forEach(b=>b.addEventListener('click',()=>{savePosition();filter=b.dataset.deskFilter;render();}));
  $('desk-copy').addEventListener('click',()=>{if(active)copy(active);});
- $('desk-pin').addEventListener('click',()=>{if(!active)return;notebook.toggle('pin',active.id);operation(notebook.flag('pin',active.id)?'お気に入りに保存しました。':'お気に入りを解除しました。');render();});
- $('desk-done').addEventListener('click',()=>{if(!active)return;savePosition();notebook.finish(active);operation('端末の読了履歴に記録しました。');onHome();});
+ $('desk-pin').addEventListener('click',()=>{if(!active)return;notebook.toggle('pin',active.id);operation(notebook.flag('pin',active.id)?'お気に入りに保存しました。':'お気に入りを解除しました。');onFeedback(notebook.flag('pin',active.id)?'pin':'unpin');render();});
+ $('desk-done').addEventListener('click',()=>{if(!active)return;savePosition();notebook.finish(active);operation('端末の読了履歴に記録しました。');onFeedback('done');onHome();});
  $('desk-undo').addEventListener('click',()=>{try{notebook.undo();render();operation('直前の操作を元に戻しました。');}catch(error){operation(error.message);}});
  $('desk-history').addEventListener('click',history);$('desk-history-close').addEventListener('click',()=>$('desk-history-dialog').close());
  $('desk-copy-close').addEventListener('click',()=>$('desk-copy-dialog').close());
- $('desk-copy-manual').addEventListener('click',()=>{if(manual){notebook.copied(manual.draft,manual.kind,manual.text);manual=null;renderReader();operation('コピー履歴に記録しました。');}$('desk-copy-dialog').close();});
+ $('desk-copy-manual').addEventListener('click',()=>{if(manual){notebook.copied(manual.draft,manual.kind,manual.text);manual=null;renderReader();operation('コピー履歴に記録しました。');onFeedback('copy');}$('desk-copy-dialog').close();});
  $('desk-copy-dialog').addEventListener('close',()=>manual=null);
  $('desk-pending').addEventListener('click',applyPending);
  $('desk-refresh').addEventListener('click',()=>{if(!embedded){window.top.location.href=productionURL;return;}setStatus('保存原稿を読み込み中…',{loading:true});send('refresh');});
@@ -142,6 +142,7 @@ export function createDesk({onHome,onPause,onResume,onSettings}){
   if(m.type==='pause'){savePosition();onPause();}
   if(m.type==='resume'){if(autoReturn){autoReturn=false;onHome();}onResume();}
   if(m.type==='reading-settings')onSettings();
+  if(m.type==='interaction'&&['tap','paper','latch','back','door'].includes(m.kind))onFeedback(m.kind,'orange');
   if(m.type==='reading-copy'&&m.event){notebook.inheritCopy(m.event,m.event.eventId);render();}
   if(m.type==='host-update'){operation('管理画面の更新があります。');}
  });

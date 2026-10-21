@@ -17,4 +17,13 @@
  new MutationObserver(sync).observe(main,{attributes:true,attributeFilter:['data-cc-view','class']});
  new MutationObserver(sync).observe(d.body,{attributes:true,attributeFilter:['class']});
  d.addEventListener('cc:home-render',sync);sync();
+ // The original ledger stays in this document; its quiet sounds play through
+ // the same audio context and volume control as the lounge.
+ import('./lounge/interaction-feedback.js?v=20261021.4-touch').then(({createInteractionFeedback})=>{
+  const reduced=()=>{try{return JSON.parse(w.localStorage.getItem('shireito-courtyard-v1')||'{}').reduce===true||w.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch{return true;}};
+  createInteractionFeedback({doc:d,win:w,active:()=>d.body.classList.contains('lounge-workspace'),reduced,room:()=> 'orange',play:kind=>{
+   d.body.dataset.feedbackMotion=reduced()?'reduced':'normal';
+   d.getElementById('ccCastleFrame')?.contentWindow.postMessage({channel:'cc-castle-v1',type:'interaction',kind},w.location.origin);
+  }});
+ }).catch(()=>{});
 })(window);
