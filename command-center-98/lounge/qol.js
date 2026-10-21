@@ -1,5 +1,5 @@
-import {placeNames} from './desk-model.js';
-import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,currentPosted,savedLinks} from './qol-model.js';
+import {placeNames} from './desk-model.js?v=20261021.7-qol';
+import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,currentPosted,savedLinks} from './qol-model.js?v=20261021.7-qol';
 
 export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},send=()=>{}}){
  const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};

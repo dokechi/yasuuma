@@ -1,7 +1,7 @@
-import {createConveniences} from './qol.js?v=20261021.6-qol';
-import {resumeView} from './qol-model.js';
-import {createNotebook,safeLink} from './notebook.js';
-import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js';
+import {createConveniences} from './qol.js?v=20261021.7-qol';
+import {resumeView} from './qol-model.js?v=20261021.7-qol';
+import {createNotebook,safeLink} from './notebook.js?v=20261021.7-qol';
+import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261021.7-qol';
 
 export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{},onOpenRoom=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;
