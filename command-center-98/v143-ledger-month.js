@@ -24,9 +24,9 @@
     document.head.appendChild(s);
   }
   function monthTabsHtml(){
-    const months=monthRange();
+    const months=['all',...monthRange()];
     const active=String(sourcingApp.purchaseMonth||currentJstMonth());
-    return '<div class="ledger-month-tabs" role="tablist" aria-label="仕入れ月">'+months.map(m=>'<button type="button" class="ledger-month-tab'+(m===active?' selected':'')+'" data-ledger-month="'+m+'" role="tab" aria-selected="'+(m===active?'true':'false')+'">'+Number(m.slice(5))+'月</button>').join('')+'</div>';
+    return '<div class="ledger-month-tabs" role="tablist" aria-label="仕入れ・販売の集計期間">'+months.map(m=>'<button type="button" class="ledger-month-tab'+(m===active?' selected':'')+'" data-ledger-month="'+m+'" role="tab" aria-selected="'+(m===active?'true':'false')+'">'+(m==='all'?'累計':Number(m.slice(5))+'月')+'</button>').join('')+'</div>';
   }
   function bindMonthTabs(host){
     host.querySelectorAll('[data-ledger-month]').forEach(btn=>btn.onclick=async()=>{
@@ -36,7 +36,7 @@
       host.querySelectorAll('[data-ledger-month]').forEach(b=>b.disabled=true);
       sourcingApp.purchaseMonth=month;
       sourcingApp.sub='purchases';
-      if(typeof setStatus==='function')setStatus(Number(month.slice(5))+'月を再集計中...',true);
+      if(typeof setStatus==='function')setStatus((month==='all'?'累計':Number(month.slice(5))+'月')+'を再集計中...',true);
       await load('sourcing');
     });
   }
@@ -44,7 +44,7 @@
     injectStyle();
     if(typeof sourcingApp!=='undefined'){
       const month=currentJstMonth();
-      if(month)sourcingApp.purchaseMonth=month;
+      if(month)sourcingApp.purchaseMonth='all';
     }
     if(typeof renderSourcing==='function'){
       const baseRenderSourcing=renderSourcing;
