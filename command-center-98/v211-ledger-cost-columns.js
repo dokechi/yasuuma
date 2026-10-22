@@ -9,8 +9,8 @@
     const totalIndex=headers.findIndex(th=>th.textContent.trim()==='実質原価');
     if(displayIndex<0||unitIndex<0||totalIndex<0)return;
 
-    headers[unitIndex].textContent='1個原価';
-    headers[totalIndex].textContent='仕入総額';
+    headers[unitIndex].textContent='商品支払額/個';
+    headers[totalIndex].textContent='商品支払額計';
 
     table.querySelectorAll('tbody tr').forEach(tr=>{
       const cells=[...tr.children];

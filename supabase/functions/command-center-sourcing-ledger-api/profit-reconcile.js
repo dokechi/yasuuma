@@ -7,6 +7,7 @@
  const family=p=>JSON.stringify([p.supplier_key,p.sku||title(p.product_name),text(p.variant)]);
  const before=(p,s)=>Number.isFinite(Date.parse(p.ordered_at))&&Number.isFinite(Date.parse(s.sold_at))&&Date.parse(p.ordered_at)<=Date.parse(s.sold_at);
  const active=s=>['completed','in_progress'].includes(s.status);
+ const codes=p=>[...new Set((text([p.sku,p.variant,p.product_name].join(' ')).match(/\b[a-z0-9]+(?:-[a-z0-9]+)+\b/g)||[]).filter(c=>c.length>=6&&(/^[a-z][a-z0-9]*-[a-z0-9-]*\d[a-z0-9-]*$/.test(c)||/^\d{3,}-\d{3,}$/.test(c))))];
  function project(sales,purchases,allocations,components=[],componentAllocations=[]){
   const ps=purchases.filter(p=>p.status==='purchased'),byP=new Map(ps.map(p=>[String(p.id),p])),byS=new Map(sales.map(s=>[String(s.id),s])),byC=new Map(components.map(c=>[String(c.id),c]));
   const direct=new Map(),split=new Map(),reserved=new Map(),componentReserved=new Map(),families=new Map(),seeds=new Map(),output=new Map();
@@ -29,6 +30,11 @@
    if(matches.length){const cost=directCost(s,matches);if(cost!==null)output.set(id,{estimated_purchase_cost_yen:cost,cost_estimate_note:'保存済みの仕入割当を使用（高確度の照合を含む）'});continue;}
    if(parts.length){const cost=componentCost(s,parts);if(cost!==null)output.set(id,{estimated_purchase_cost_yen:cost,cost_estimate_note:'福袋原価を登録済み6構成品へ均等配分（仮）'});continue;}
    const h=honma(s);if(h){const r=takeComponents(s,h);if(r)output.set(id,{estimated_purchase_cost_yen:r.cost,cost_estimate_note:'商品名・構成品・購入時期・残数で照合。福袋6構成へ均等配分（仮）'});continue;}
+   const saleCodes=codes({product_name:s.product_name}),matchedCodes=saleCodes.filter(code=>ps.some(p=>codes(p).includes(code)));
+   if(matchedCodes.length===1&&!/セット|まとめ|[2-9][個点枚]/.test(s.product_name||'')){
+    const code=matchedCodes[0],pool=ps.filter(p=>codes(p).includes(code)),r=take(s,[[pool,Number(s.quantity)]]);
+    if(r){const points=r.links.some(a=>Number(byP.get(String(a.id))?.metadata?.points_used_yen)>0);output.set(id,{estimated_purchase_cost_yen:r.cost,cost_estimate_note:'型番 '+code.toUpperCase()+' が一致。購入時期・残数を確認し、先に購入した同型品から計算'+(points?'（ポイント利用後の保存額を使用）':'')});continue;}
+   }
    const keys=[...new Set(seeds.get(title(s.product_name))||[])];
    if(keys.length===1){const r=take(s,JSON.parse(keys[0]).map(([key,qty])=>[families.get(key)||[],qty]));if(r){output.set(id,{estimated_purchase_cost_yen:r.cost,cost_estimate_note:'照合済み販売と同じ商品名・バリエーションから原価を推計'});continue;}}
    const t=text(s.product_name),size=t.match(/(?:^|[^a-z0-9])(2xl|xl|l|m)(?=$|[^a-z0-9])/i)?.[1]?.toUpperCase();

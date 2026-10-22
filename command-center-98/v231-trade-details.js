@@ -12,6 +12,14 @@
  const statuses={completed:'完了',in_progress:'取引中',cancelled:'取消',canceled:'取消'};
  let expanded=true,purchasesExpanded=false;
  function date(value){if(!value||!Number.isFinite(Date.parse(value)))return '未確認';return new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric'}).format(new Date(value));}
+ function purchaseSummary(state,available){
+  if(!available||!Array.isArray(state.purchases))return '';
+  const rows=state.purchases.filter(p=>p.status==='purchased'),orders=new Map();
+  for(const p of rows){const key=JSON.stringify([p.supplier_key,p.order_id||p.source_message_id||p.id]);if(!orders.has(key))orders.set(key,[]);orders.get(key).push(M.known(p.order_total_yen));}
+  let total=0,unknown=0;for(const values of orders.values()){if(values.some(v=>v===null)||new Set(values).size!==1)unknown++;else total+=values[0];}
+  const times=rows.map(p=>Date.parse(p.ordered_at)).filter(Number.isFinite).sort((a,b)=>a-b),range=times.length?date(new Date(times[0]).toISOString())+'〜'+date(new Date(times[times.length-1]).toISOString()):'日付確認中';
+  return '<div class="purchase-paid-overview"><div><span>仕入れの支払額（記録済み・在庫分も含む）</span><strong>'+ (orders.size?money(total):'—')+(unknown?' ＋ 未確認':'')+'</strong></div><p>注文日 '+range+' · '+orders.size+'注文'+(unknown?'（金額未確認 '+unknown+'注文）':'')+'。ポイント・値引を反映した保存額を注文ごとに集計しています。全購入の取込完了は未確認です。</p></div>';
+ }
  function row(sale){
   const cancelled=['cancelled','canceled'].includes(sale.status),r=M.projected(sale),actual=M.result(sale),status=statuses[sale.status]||'状態確認中',profit=sale.status==='completed'?r.profit:null;
   const detail='<details class="trade-raw"><summary>内訳を見る</summary><dl>'+[['販売総額',sale.gross_sale_yen],['支払受付額',sale.gross_payment_yen],['純受取',sale.net_received_yen],['販売手数料',sale.fee_yen],['発送送料',sale.shipping_yen],['控除合計',sale.aggregate_deductions_yen]].map(([k,v])=>'<div><dt>'+k+'</dt><dd>'+money(v)+'</dd></div>').join('')+'</dl><p>'+escape(sale.profit_cost_note||(r.cost===null?'仕入原価は確認中です':'仕入原価を確認済みです'))+'</p><p>取引ID '+escape(sale.sale_id||'未確認')+' / '+escape(sale.quantity??'未確認')+'点<br>成約 '+date(sale.sold_at)+' / 完了 '+date(sale.completed_at)+'</p>'+(M.known(sale.unverified_recorded_yen)!==null?'<p>金額基準未確認の旧記録 '+money(sale.unverified_recorded_yen)+'</p>':'')+'</details>';
@@ -24,11 +32,11 @@
   const amount=!available?'確認中':incomplete?'未確定':known?signed(s.profit):'—';
   const coverage=available&&s.settled?'<small class="profit-coverage">'+(partial?'取得できた取引のうち': '完了 '+s.settled+'件のうち')+'計算済み '+s.computed+'件'+(s.estimated?'（実額 '+s.confirmed+'件・見込み '+s.estimated+'件）':'')+(s.pending?' · 未計算 '+s.pending+'件':'')+'</small>':'';
   const subtotal=incomplete&&known?'<p class="profit-subtotal">計算済み '+s.computed+'件の儲け'+(s.estimated?'（見込み含む）':'')+' <b>'+signed(s.profit)+'</b></p>':'';
-  const cards='<div class="profit-overview"><div class="profit-card profit-primary'+(incomplete?' profit-incomplete':'')+'"><span>'+period+' · 全体の儲け</span><strong class="'+(!incomplete&&s.profit<0?'negative':'')+'">'+amount+'</strong>'+coverage+subtotal+'</div><div class="profit-card"><span>'+subset+'仕入れ（売れた分の原価）</span><strong>'+ (known?money(s.cost):'—')+'</strong></div><div class="profit-card"><span>'+subset+'販売（手数料・送料を引いた手取り）</span><strong>'+(known?signed(s.received):'—')+'</strong></div></div>';
+  const cards='<div class="profit-overview"><div class="profit-card profit-primary'+(incomplete?' profit-incomplete':'')+'"><span>'+period+' · 全体の儲け</span><strong class="'+(!incomplete&&s.profit<0?'negative':'')+'">'+amount+'</strong>'+coverage+subtotal+'</div><div class="profit-card"><span>売れた商品の原価（'+(incomplete?'計算済み '+s.computed+'件':'全件')+'）</span><strong>'+ (known?money(s.cost):'—')+'</strong></div><div class="profit-card"><span>'+subset+'販売（手数料・送料を引いた手取り）</span><strong>'+(known?signed(s.received):'—')+'</strong></div></div>';
   const note=!available?'取引の読取を確認できませんでした。上の「更新」で再試行できます。':s.settled?(incomplete?(s.pending?'未計算 '+s.pending+'件は金額に含まれていません。':'')+(s.estimated?'見込みを含むため、実額の合計は未確定です。'+(s.confirmed?'実額確認済み '+s.confirmed+'件の儲け '+signed(s.confirmedProfit)+'。':'実額を確認できた取引はまだありません。'):'全体の儲けはまだ分かりません。表示金額は計算済み分だけです。'):'原価・手数料・送料を確認できた全 '+s.confirmed+'件の合計です。')+' 取引中 '+s.inProgress+'件は確定後に加算します。':'この期間に確定した販売はありません。取引中 '+s.inProgress+'件。';
   const breakdown=s.groups.length?'<details class="profit-markets"><summary>販路別の儲け</summary><ul>'+s.groups.map(g=>'<li><b>'+escape(g.name)+'</b><strong>'+(g.pending||g.estimated||partial?'未確定':signed(g.profit))+'</strong><small>実額 '+g.confirmed+'件・見込み '+g.estimated+'件'+(g.pending?' / 未計算 '+g.pending+'件':'')+(g.computed&&(g.pending||g.estimated||partial)?' · 計算済み分の儲け '+signed(g.profit):'')+'</small></li>').join('')+'</ul></details>':'';
   const assumptions=s.estimated?'<details class="profit-assumptions"><summary>見込みの計算条件</summary><p>メルカリの販売手数料が不明な分は10%。発送送料が不明な分は、小物・衣類等220円、靴類870円を仮置きしています。配送サイズの実額は未確認です。控除済みの受取額があれば、そこから重ねて引きません。</p><p>原価は保存済みの割当、同じ商品名・サイズ・数量、購入時期、残数で照合。HONMA福袋は付属バッグを含む6構成へ均等配分した見込みです。仕入れを特定できない取引は加算しません。</p></details>':'';
-  return '<section id="ledgerProfitSummary" aria-label="仕入れ・販売・儲け">'+cards+'<p class="profit-note">'+note+'</p>'+(partial?'<p class="trade-unavailable">取引データは一部のみです。期間全体の合計ではありません。</p>':'')+breakdown+assumptions+'</section>';
+  return '<section id="ledgerProfitSummary" aria-label="仕入れ・販売・儲け">'+purchaseSummary(state,available)+cards+'<p class="profit-note">'+note+'</p>'+(partial?'<p class="trade-unavailable">取引データは一部のみです。期間全体の合計ではありません。</p>':'')+breakdown+assumptions+'</section>';
  }
  function html(state){
   const available=Array.isArray(state.sales)&&state.salesMonth===state.purchaseMonth,rows=available?state.sales:[],count=rows.length+'件';
@@ -50,5 +58,5 @@
 
   host.querySelector('[data-trade-progress]')?.addEventListener('click',()=>{document.getElementById('menuTasks')?.click();const target=document.querySelector('#taskModal [data-request-id="request-daily-trade-import"]');if(target){target.querySelector('.request-result')?.setAttribute('open','');target.scrollIntoView?.({block:'start'});}});
  }
- return {html,row,money,render,summary};
+ return {html,row,money,render,summary,purchaseSummary};
 });
