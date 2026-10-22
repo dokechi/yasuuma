@@ -13,19 +13,25 @@
  }
  function month(s){const raw=s.completed_at||s.sold_at;if(!raw||!Number.isFinite(Date.parse(raw)))return '';return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit'}).format(new Date(raw));}
  function result(s){const cost=known(s.purchase_cost_yen),received=net(s);return {cost,received,profit:cost!==null&&received!==null?received-cost:null};}
- function projected(s){const actual=result(s),cost=actual.cost??known(s.estimated_purchase_cost_yen);let received=actual.received,fee=null,shipping=null;const notes=[];
+ function projected(s){const actual=result(s);let cost=actual.cost??known(s.estimated_purchase_cost_yen),received=actual.received,fee=null,shipping=null,legacy=false;const notes=[];
   if(actual.cost===null&&cost!==null)notes.push(s.cost_estimate_note||'仕入原価を推計');
   if(received===null&&s.marketplace==='mercari'&&known(s.gross_sale_yen)!==null){const name=String(s.product_name||'');if(!/INNOCN|モニター|トランク|スーツケース|椅子|冷蔵庫/i.test(name)){
    fee=known(s.fee_yen)??Math.floor(Number(s.gross_sale_yen)*.1);shipping=known(s.shipping_yen)??(/cm|クロッグ|スニーカー|サンダル|シューズ|ブーツ|サイドゴア/i.test(name)&&!/ソックス|靴下|タオル/.test(name)?870:220);received=Number(s.gross_sale_yen)-fee-shipping;
    if(known(s.fee_yen)===null)notes.push('販売手数料10%で仮計算');if(known(s.shipping_yen)===null)notes.push('発送送料'+shipping+'円で仮計算');
   }}
-  return {cost,received,profit:cost!==null&&received!==null?received-cost:null,estimated:actual.profit===null,notes,fee,shipping};
+  if(cost===null&&received!==null&&s.profit_estimate_policy==='legacy_or_unknown_net_40'){
+   legacy=true;notes.push(s.cost_estimate_note||'旧在庫・購入時期未確認：販売の手取りの40%を儲けとして仮計算');
+   // A negative receipt remains a loss; the rule must never erase selling costs.
+   cost=received>=0?Math.round(received*.6*100)/100:0;
+  }
+  return {cost,received,profit:cost!==null&&received!==null?Math.round((received-cost)*100)/100:null,estimated:actual.profit===null,legacy,notes,fee,shipping};
  }
  function summarize(rows,selectedMonth,includeEstimates=false){
   const settled=rows.filter(s=>s.status==='completed'&&(!selectedMonth||month(s)===selectedMonth)),confirmed=settled.filter(s=>result(s).profit!==null),calc=includeEstimates?projected:result,computed=settled.filter(s=>calc(s).profit!==null);
   const totals=computed.reduce((a,s)=>{const r=calc(s);a.cost+=r.cost;a.received+=r.received;a.profit+=r.profit;return a;},{cost:0,received:0,profit:0});
   const groups=[...new Set(settled.map(s=>market(s.marketplace)))].map(name=>{const list=settled.filter(s=>market(s.marketplace)===name),ready=list.filter(s=>calc(s).profit!==null),actual=list.filter(s=>result(s).profit!==null);return {name,confirmed:actual.length,estimated:ready.length-actual.length,computed:ready.length,pending:list.length-ready.length,profit:ready.length?ready.reduce((n,s)=>n+calc(s).profit,0):null};});
-  return {...totals,confirmed:confirmed.length,confirmedProfit:confirmed.reduce((n,s)=>n+result(s).profit,0),estimated:computed.length-confirmed.length,computed:computed.length,pending:settled.length-computed.length,settled:settled.length,inProgress:rows.filter(s=>s.status==='in_progress'&&(!selectedMonth||month(s)===selectedMonth)).length,groups};
+  const legacy=includeEstimates?computed.filter(s=>projected(s).legacy):[];
+  return {...totals,legacy:legacy.length,legacyProfit:legacy.reduce((n,s)=>n+projected(s).profit,0),confirmed:confirmed.length,confirmedProfit:confirmed.reduce((n,s)=>n+result(s).profit,0),estimated:computed.length-confirmed.length,computed:computed.length,pending:settled.length-computed.length,settled:settled.length,inProgress:rows.filter(s=>s.status==='in_progress'&&(!selectedMonth||month(s)===selectedMonth)).length,groups};
  }
  function costs(sales,allocations,purchases){
   const byId=new Map(purchases.map(p=>[String(p.id),p])),orders=new Map();

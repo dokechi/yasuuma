@@ -51,7 +51,7 @@ async function profitCosts(sales:any[]){
    admin.from("command_center_sourcing_component_sale_allocations").select("sale_row_id,component_id,quantity,confidence",{count:"exact"}).limit(10001)
   ]);
   if([components,componentAllocations].some(r=>r.error||r.count===null||r.count!==(r.data||[]).length))return {available:true,costs,estimates:new Map<string,any>()};
-  return {available:true,costs,estimates:Reconcile.project(sales,response.data||[],allocations,components.data||[],componentAllocations.data||[])};
+  return {available:true,costs,estimates:Reconcile.project(sales,response.data||[],allocations,components.data||[],componentAllocations.data||[],{legacyUnknownNet40:true})};
  }catch{return fail;}
 }
 Deno.serve(async(req:Request)=>{
@@ -63,7 +63,7 @@ Deno.serve(async(req:Request)=>{
   let q=admin.from("command_center_sourcing_inventory").select("id,ordered_at,supplier_key,supplier_name,order_id,source_message_id,source_subject,line_no,product_name,sku,variant,quantity,unit_price_yen,line_total_yen,allocated_net_line_yen,allocated_net_unit_yen,order_subtotal_yen,order_shipping_yen,order_discount_yen,order_total_yen,status,source_url,metadata,sold_quantity,remaining_quantity,sold_amount_yen,matched_sales,inventory_match_status,adjustment_quantity").order("ordered_at",{ascending:false}).order("order_id",{ascending:false}).order("line_no",{ascending:true}).limit(3000);
   if(b)q=q.gte("ordered_at",b.start).lt("ordered_at",b.end);
   // Cost estimates reserve inventory across all periods before the visible month is selected.
-  const salesQuery=admin.from("command_center_sourcing_sales").select("id,sale_id,marketplace,product_name,quantity,status,sold_at,sale_price_yen,matched_purchase_id,metadata",{count:"exact"}).order("sold_at",{ascending:false,nullsFirst:false}).order("id",{ascending:false}).limit(3001);
+  const salesQuery=admin.from("command_center_sourcing_sales").select("id,sale_id,marketplace,product_name,quantity,status,sold_at,sale_price_yen,matched_purchase_id,inventory_key,metadata",{count:"exact"}).order("sold_at",{ascending:false,nullsFirst:false}).order("id",{ascending:false}).limit(3001);
   const [{data:p,error:pe},{data:s,error:se},{count:unresolvedSales,error:ue},{data:saleRows,error:saleError,count:saleCount}]=await Promise.all([q,admin.from("command_center_suppliers").select("supplier_key,supplier_name,purchase_order_count,purchase_unit_count,purchase_spend_yen,last_purchase_at,success_count,priority_boost,trust_score").gt("purchase_order_count",0).order("purchase_spend_yen",{ascending:false}),admin.from("command_center_sourcing_sales").select("id",{count:"exact",head:true}).eq("status","completed").is("matched_purchase_id",null).or("inventory_key.is.null,inventory_key.eq.UNKNOWN_BUNDLE"),salesQuery]);
   if(pe)throw pe;if(se)throw se;if(ue)throw ue;
   const rows=p||[],bundlePurchaseIds=rows.filter((x:any)=>x.metadata?.bundle_decomposed===true).map((x:any)=>x.id);let bundleComponents:any[]=[];let bundleSummaries:any[]=[];

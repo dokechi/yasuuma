@@ -8,7 +8,32 @@
  const before=(p,s)=>Number.isFinite(Date.parse(p.ordered_at))&&Number.isFinite(Date.parse(s.sold_at))&&Date.parse(p.ordered_at)<=Date.parse(s.sold_at);
  const active=s=>['completed','in_progress'].includes(s.status);
  const codes=p=>[...new Set((text([p.sku,p.variant,p.product_name].join(' ')).match(/\b[a-z0-9]+(?:-[a-z0-9]+)+\b/g)||[]).filter(c=>c.length>=6&&(/^[a-z][a-z0-9]*-[a-z0-9-]*\d[a-z0-9-]*$/.test(c)||/^\d{3,}-\d{3,}$/.test(c))))];
- function project(sales,purchases,allocations,components=[],componentAllocations=[]){
+ const canonical=v=>text(v).replace(/ジーフォア|g\/fore/g,'gfore').replace(/ナイキ/g,'nike').replace(/ティエンポ/g,'tiempo').replace(/レジェンド/g,'legend').replace(/ディズニー|disney/g,'disney').replace(/ミッキーマウス|ミッキー|mickey/g,'mickey').replace(/ゴールデングロウ/g,'goldenglow').replace(/スライド/g,'slide').replace(/アディダス/g,'adidas').replace(/クロシェ/g,'crochet').replace(/tシャツ/g,'t-shirt').replace(/ミズノ/g,'mizuno').replace(/ふくらはぎサポーター|カーフサポート/g,'calf-support').replace(/ディーゼル/g,'diesel').replace(/フラグメントケース|カードケース/g,'cardcase');
+ function sizeOf(v){const t=canonical(v).replace(/x-large/g,'xl').replace(/x-small/g,'xs');return t.match(/\b(\d{2}(?:\.\d+)?)\s*cm/)?.[1]?.replace(/\.0$/,'')||t.match(/(?:^|[^a-z0-9])(2xl|xl|xs|s|m|l)(?=$|[^a-z0-9])/)?.[1]||(/gfore/.test(t)?({'34':'xs','36':'s','38':'m','40':'l'}[t.match(/\b(34|36|38|40)\b/)?.[1]]||null):null);}
+ const colorsOf=v=>{const t=text(v);return [['black',/ブラック|\bblack\b|黒/],['white',/ホワイト|\bwhite\b|白/],['navy',/ネイビー|\bnavy\b|紺/],['pink',/ピンク|\bpink\b/],['beige',/ベージュ|\bbeige\b/],['red',/レッド|\bred\b|赤/],['green',/グリーン|\bgreen\b|緑/],['blue',/ブルー|\bblue\b|青/],['grey',/グレー|\bgr[ae]y\b/],['purple',/パープル|\bpurple\b|紫/],['yellow',/イエロー|\byellow\b|黄/],['silver',/シルバー|\bsilver\b|銀/],['brown',/ブラウン|\bbrown\b|茶/]].filter(([,r])=>r.test(t)).map(([c])=>c);};
+ // Explicit product families only: a shared brand alone is never a candidate.
+ function candidateFamily(s){const t=canonical(s.product_name);
+  if(/mizuno/.test(t)&&/calf-support/.test(t))return p=>/mizuno/.test(canonical(p.product_name))&&/calf-support/.test(canonical(p.product_name));
+  if(/nike/.test(t)&&/sb\s*shane/.test(t))return p=>/nike.*sb\s*shane/.test(canonical(p.product_name));
+  if(/nike/.test(t)&&/tiempo.*(?:legend\s*)?10.*pro/.test(t))return p=>/nike.*tiempo.*legend\s*10.*pro/.test(canonical(p.product_name));
+  if(/ugg/.test(t)&&/goldenglow/.test(t)&&/slide/.test(t))return p=>/ugg.*goldenglow.*slide/.test(canonical(p.product_name));
+  if(/aviot|te-q3-hk/.test(t)&&/ハイキュー/.test(t))return p=>/te-q3-hk/i.test(p.product_name||'')&&/ハイキュー/.test(p.product_name||'');
+  if(/adidas/.test(t)&&/crochet/.test(t))return p=>/adidas.*crochet/.test(canonical(p.product_name));
+  if(/adidas/.test(t)&&/サイドテープスカート/.test(t))return p=>/adidas/.test(canonical(p.product_name))&&/サイドテープスカート/.test(p.product_name);
+  if(/adidas/.test(t)&&/ult365/.test(t)&&/プリーツスカート/.test(t))return p=>/adidas/.test(canonical(p.product_name))&&/ult365/.test(canonical(p.product_name))&&/プリーツスカート/.test(p.product_name);
+  if(/adidas/.test(t)&&/中綿|中わた/.test(t)&&/スカート/.test(t))return p=>/adidas/.test(canonical(p.product_name))&&/中わた/.test(p.product_name)&&/スカート/.test(p.product_name);
+  if(/disney/.test(t)&&/mickey/.test(t)&&/コスプレ|コスチューム/.test(t))return p=>/disney/.test(canonical(p.product_name))&&/mickey/.test(canonical(p.product_name))&&/コスチューム/.test(p.product_name);
+  if(/polo.*ralph.*lauren/.test(t)&&/靴下|ソックス/.test(t)&&/3足/.test(t))return p=>/polo.*ralph.*lauren/i.test(p.product_name||'')&&/ソックス/.test(p.product_name)&&/3足/.test(p.product_name);
+  if(/diesel/.test(t)&&/cardcase/.test(t))return p=>/diesel/.test(canonical(p.product_name))&&/cardcase/.test(canonical(p.product_name));
+  if(/gfore/.test(t)){const kind=/ハーフジップ/.test(t)?'ハーフジップ':/ポロ/.test(t)?'ポロ':/モックネック/.test(t)?'モックネック':/プリーツスカート/.test(t)?'プリーツスカート':/スカート/.test(t)?'スカート':null;if(kind)return p=>/gfore/.test(canonical(p.product_name))&&String(p.product_name).includes(kind);}
+  return null;
+ }
+ function candidates(s,pool){const name=text(s.product_name),size=sizeOf(s.product_name),colors=colorsOf(s.product_name);return pool.filter(p=>{const variant=String(p.variant||''),other=sizeOf(variant),pc=colorsOf(variant);if(colors.length&&pc.length&&!colors.some(c=>pc.includes(c)))return false;
+   if(/disney/.test(canonical(s.product_name))){if(/12-18m/.test(name))return /70[～~〜-]80/.test(text(variant));if(/2t|90cm/.test(name))return /85[～~〜-]95/.test(text(variant));return false;}
+   if(size&&other&&size!==other)return false;
+   return true;
+  });}
+ function project(sales,purchases,allocations,components=[],componentAllocations=[],options={}){
   const ps=purchases.filter(p=>p.status==='purchased'),byP=new Map(ps.map(p=>[String(p.id),p])),byS=new Map(sales.map(s=>[String(s.id),s])),byC=new Map(components.map(c=>[String(c.id),c]));
   const direct=new Map(),split=new Map(),reserved=new Map(),componentReserved=new Map(),families=new Map(),seeds=new Map(),output=new Map();
   const add=(map,key,value)=>{key=String(key);if(!map.has(key))map.set(key,[]);map.get(key).push(value);};
@@ -37,12 +62,26 @@
    }
    const keys=[...new Set(seeds.get(title(s.product_name))||[])];
    if(keys.length===1){const r=take(s,JSON.parse(keys[0]).map(([key,qty])=>[families.get(key)||[],qty]));if(r){output.set(id,{estimated_purchase_cost_yen:r.cost,cost_estimate_note:'照合済み販売と同じ商品名・バリエーションから原価を推計'});continue;}}
+   const related=candidateFamily(s),pool=related?ps.filter(related):[];
+   if(pool.length&&!/リクエスト|まとめ商品|[2-9]個セット/.test(s.product_name||'')){
+    const compatible=candidates(s,pool),r=take(s,[[compatible,Number(s.quantity)]]);
+    if(r){output.set(id,{estimated_purchase_cost_yen:r.cost,cost_estimate_note:'購入候補から推定：'+[...new Set(r.links.map(a=>{const p=byP.get(String(a.id));return p.product_name+' / '+(p.variant||'仕様未記録');}))].join('、')+'。購入時期・残数を確認。型番・色・サイズ等の省略部分は未確定',estimated_purchase_ids:r.links.map(a=>a.id)});continue;}
+   }
    const t=text(s.product_name),size=t.match(/(?:^|[^a-z0-9])(2xl|xl|l|m)(?=$|[^a-z0-9])/i)?.[1]?.toUpperCase();
    if(/mizuno|ミズノ/.test(t)&&/golf|ゴルフ/.test(t)&&/モックネック/.test(t)&&/長袖/.test(t)&&size&&!/リクエスト/.test(t)){
     const colors=[['ブラック','black'],['ホワイト','white'],['ネイビー','navy']].filter(([ja,en])=>t.includes(ja)||t.includes(en)).map(([ja])=>ja);if(colors.length>1)continue;
     const pool=ps.filter(p=>p.sku==='E2JJ050'&&new RegExp('(?:^|[ /])'+size+'(?:$|[ /])').test(String(p.variant))&&(!colors.length||String(p.variant).includes(colors[0]))),values=new Set(pool.filter(p=>before(p,s)).map(unit));
     const count=t.match(/計(\d+)点/)?.[1],qty=count?Number(count):Number(s.quantity);
     if(qty>0&&qty<=10&&!values.has(null)&&values.size===1){const r=take(s,[[pool,qty]]);if(r)output.set(id,{estimated_purchase_cost_yen:r.cost,cost_estimate_note:'ミズノE2JJ050の同型・サイズ・数量で照合'+(!colors.length?'。色不明のため同原価のロットから推計':'')});}
+   }
+  }
+  if(options.legacyUnknownNet40===true){
+   const knownKeys=new Set(sales.filter(s=>s.inventory_key&&((direct.get(String(s.id))||[]).length||output.has(String(s.id)))).map(s=>s.inventory_key)),knownTitles=new Set(sales.filter(s=>output.has(String(s.id))).map(s=>title(s.product_name)));
+   for(const s of sales.filter(active)){const id=String(s.id);if(output.has(id)||(direct.get(id)||[]).length||(split.get(id)||[]).length||s.matched_purchase_id||knownKeys.has(s.inventory_key)||knownTitles.has(title(s.product_name)))continue;
+    const related=candidateFamily(s),code=codes({product_name:s.product_name}),name=text(s.product_name);
+    const unresolvedPack=/スクラッチカードダス|アーセナルベース/.test(name)&&ps.some(p=>/スクラッチカードダス|アーセナルベース/.test(text(p.product_name)));
+    if(related&&ps.some(related)||code.some(c=>ps.some(p=>codes(p).includes(c)))||honma(s)||unresolvedPack||/mizuno|ミズノ/i.test(s.product_name||'')&&/モックネック/.test(s.product_name||''))continue;
+    output.set(id,{profit_estimate_policy:'legacy_or_unknown_net_40',cost_estimate_note:'旧在庫・購入時期未確認の仮ルール：手数料・送料を引いた手取りの40%を儲けとし、60%を仮原価に置く。購入記録が分かれば実額を優先'});
    }
   }
   return output;
