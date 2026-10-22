@@ -4,7 +4,7 @@
  if(typeof module==='object'&&module.exports){module.exports=api;return;}root.CCTradeDetails=api;
  if(typeof purchaseLedgerHtml==='function')purchaseLedgerHtml=function(){return api.html(sourcingApp);};
  if(typeof renderSourcing==='function'){const previous=renderSourcing;renderSourcing=function(){previous.apply(this,arguments);api.render();};}
- document.addEventListener('click',function(event){const button=event.target.closest?.('[data-profit-purchase]');if(!button)return;const target=document.getElementById(A.rowId(button.dataset.profitPurchase));if(target){target.scrollIntoView({block:'center',behavior:'auto'});target.focus({preventScroll:true});}});
+ document.addEventListener('click',function(event){const button=event.target.closest?.('[data-profit-purchase]');if(!button)return;const target=document.getElementById(A.rowId(button.dataset.profitPurchase));if(target){if(button.dataset.profitComponent)target.querySelector('.purchase-profit-detail')?.setAttribute('open','');target.scrollIntoView({block:'center',behavior:'auto'});target.focus({preventScroll:true});}});
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',api.render);else api.render();
 })(typeof window==='undefined'?globalThis:window,function(M,A){
  'use strict';
@@ -31,7 +31,7 @@
   const sales=(r.sales||[]).filter(s=>s.quantity),parts=(r.components||[]);
   if(!sales.length&&!r.basis&&!r.remaining_priced_quantity)return '';
   const list=sales.map(s=>'<li>'+esc(s.status==='manual'?'実数確認分':M.market(s.marketplace))+' · '+s.quantity+'点'+(s.status==='in_progress'?'（取引中）':'')+'：'+money(s.profit_yen)+(s.estimated?' 概算':'')+'<small>'+(numeric(s.net_yen)?'手取り '+money(s.net_yen)+' − 原価 '+money(s.cost_yen)+'。 ':'')+esc(s.note||'')+'</small></li>').join('');
-  return '<details class="purchase-profit-detail"><summary>内訳</summary>'+(sales.length?'<ul>'+list+'</ul>':'')+(r.reference_note?'<p>残りの見込み：'+esc(r.reference_note)+'</p>':'')+(parts.length?'<ul>'+parts.map(c=>'<li>'+esc(c.component_name||c.component_key)+'：残 '+c.remaining_quantity+'点</li>').join('')+'</ul>':'')+'</details>';
+  return '<details class="purchase-profit-detail"><summary>内訳</summary>'+(sales.length?'<ul>'+list+'</ul>':'')+(r.reference_note?'<p>残りの見込み：'+esc(r.reference_note)+'</p>':'')+(parts.length?'<ul>'+parts.map(c=>'<li>'+esc(c.component_name||c.component_key)+'：残 '+c.remaining_quantity+'点'+(numeric(c.remaining_profit_yen)?' · 残り見込み '+money(c.remaining_profit_yen):'')+'</li>').join('')+'</ul>':'')+'</details>';
  }
  function row(p,r){
   const unit=r?.unit_cost_yen??null,original=M.known(p.unit_price_yen),remaining=r&&numeric(r.remaining_profit_yen)&&r.remaining_priced_quantity>0;
