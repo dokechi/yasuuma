@@ -1,7 +1,7 @@
-import {createConveniences} from './qol.js?v=20261021.8-hall';
-import {resumeView} from './qol-model.js?v=20261021.8-hall';
-import {createNotebook,safeLink} from './notebook.js?v=20261021.8-hall';
-import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261021.8-hall';
+import {createConveniences} from './qol.js?v=20261022.12-profit';
+import {resumeView,postingReadiness} from './qol-model.js?v=20261022.12-profit';
+import {createNotebook,safeLink} from './notebook.js?v=20261022.12-profit';
+import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261022.12-profit';
 
 export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{},onOpenRoom=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;
@@ -43,6 +43,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
    b.dataset.draftId=d.id;b.setAttribute('aria-pressed',String(group.some(x=>x.id===active?.id)));
    b.append(el('small',(group.some(x=>notebook.flag('pin',x.id))?'★ ':'')+d.kind),el('strong',d.title),el('span',d.body.slice(0,75)));
    if(group.length>1)b.append(el('small',group.length+'種類の本文'));
+   if(['kyun','choi'].includes(d.place))b.append(el('small',postingReadiness(d).label,'posting-readiness'));
    list.append(b);
   }
   document.querySelectorAll('[data-desk-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.deskFilter===filter)));
@@ -64,7 +65,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   const d=active,group=groups().find(g=>g.some(x=>x.id===d.id))||[d];
   if(group.length>1)for(const variant of group){const b=button(variant.kind,()=>select(variant.id));b.setAttribute('aria-pressed',String(variant.id===d.id));$('desk-variants').append(b);}
   $('draft-kind').textContent=d.kind;$('draft-title').textContent=d.title;$('draft-body').textContent=d.body;
-  $('draft-meta').textContent=[d.source?.status,d.checkedAt?'価格・在庫の保存時確認：'+d.checkedAt:''].filter(Boolean).join(' · ');
+  $('draft-meta').textContent=[d.source?.status,['kyun','choi'].includes(d.place)?postingReadiness(d).label:'',d.checkedAt?'価格・在庫の保存時確認：'+d.checkedAt:''].filter(Boolean).join(' · ');
   const links=Array.isArray(d.productLinks)?d.productLinks.filter(x=>safeLink(x.url)):d.link?[{label:'保存されたリンク',url:d.link}]:[];
   if(links.length){$('draft-links').append(el('p','保存された商品リンク','draft-kind'));for(const row of links){const line=el('div',undefined,'product-link'),a=el('a',row.label+' ↗');a.href=safeLink(row.url);a.target='_blank';a.rel='noopener noreferrer';line.append(a,button('URLをコピー',()=>copy(d,'link',row.url)));$('draft-links').append(line);}if(['kyun','choi'].includes(place))$('draft-links').append(el('small','現在の価格・在庫は商品ページで確認してください。'));}
   $('desk-copy').textContent=notebook.copyMark(d)?'✓ 本文をコピー済み':'本文をコピー';
@@ -111,7 +112,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  }
  async function copy(d,kind='body',text=d.body){
   const snapshot={...d};
-  try{await navigator.clipboard.writeText(text);notebook.copied(snapshot,kind,text);if(active?.id===snapshot.id)renderReader();operation(kind==='body'?'本文をコピーしました。':'URLをコピーしました。');onFeedback('copy');}
+  try{await navigator.clipboard.writeText(text);notebook.copied(snapshot,kind,text);if(active?.id===snapshot.id)renderReader();operation(kind==='body'?'本文をコピーしました。':kind==='posting-set'?'本文・返信・投稿用リンクをまとめてコピーしました。':kind==='reply'?'自己返信をコピーしました。':'URLをコピーしました。');onFeedback('copy');}
   catch{manual={draft:snapshot,kind,text};$('desk-copy-text').value=text;$('desk-copy-dialog').showModal();$('desk-copy-text').focus();$('desk-copy-text').select();}
  }
  function history(){
@@ -137,7 +138,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  $('desk-font').value=notebook.pref('font','standard')==='large'?'large':'standard';document.body.dataset.readingFont=$('desk-font').value;
  $('desk-font').addEventListener('change',()=>{document.body.dataset.readingFont=$('desk-font').value;notebook.setPref('font',$('desk-font').value);});
  $('desk-scroll').addEventListener('scroll',()=>{clearTimeout(scrollTimer);scrollTimer=setTimeout(savePosition,180);},{passive:true});
- $('manage').addEventListener('click',()=>native('settings'));
+ $('manage').addEventListener('click',()=>{$('settings').close();native('settings');});
  for(const [action,label] of [['daily','作業日報'],['cooney','クーニー'],['shiire','仕入れ命'],['watches','海外時計'],['cards','カード']])$('service-links').append(button(label,()=>{$('settings').close();native(action);}));
  window.addEventListener('message',event=>{
   if(!embedded||!trustedMessage(event,origin,window.parent))return;const m=event.data;

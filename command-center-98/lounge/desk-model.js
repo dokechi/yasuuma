@@ -1,4 +1,4 @@
-import {groupDrafts} from './notebook.js?v=20261021.8-hall';
+import {groupDrafts} from './notebook.js?v=20261022.12-profit';
 
 export const placeForRoom={red:'kyun',purple:'choi',silver:'fp',orange:'shiire'};
 export const placeNames={kyun:'キュン拾い',choi:'ちょい上等',fp:'FP・TikTok',shiire:'仕入れ'};
@@ -13,7 +13,7 @@ export function holdsActiveText(active,rows,complete){
  if(!active?.source)return false;
  const next=rows.find(d=>d.id===active.id);
  if(!next)return complete===true;
- return ['title','body','link','kind','checkedAt'].some(k=>(active[k]||'')!==(next[k]||''))||JSON.stringify(active.productLinks||[])!==JSON.stringify(next.productLinks||[])||(active.source.status||'')!==(next.source?.status||'');
+ return ['title','body','link','kind','checkedAt'].some(k=>(active[k]||'')!==(next[k]||''))||JSON.stringify(active.productLinks||[])!==JSON.stringify(next.productLinks||[])||JSON.stringify(active.posting||{})!==JSON.stringify(next.posting||{})||(active.source.status||'')!==(next.source?.status||'');
 }
 export function nativeForDraft(place,draft){
  const action=place==='shiire'?'sourcing':place==='fp'?(draft?.source?.account==='tiktok'?'tiktok':'fp'):place;

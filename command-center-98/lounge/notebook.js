@@ -10,6 +10,11 @@ export function groupDrafts(rows){
  return [...groups.values()];
 }
 export function safeLink(value){const s=String(value||'').trim();if(!s)return '';try{const u=new URL(s);return ['https:','http:'].includes(u.protocol)?u.href:'';}catch{return '';}}
+export function postingAssets(value){
+ const safe=v=>{const link=safeLink(v);if(!link)return '';const u=new URL(link);return u.protocol==='https:'&&!u.username&&!u.password?link:'';};
+ const images=(Array.isArray(value?.images)?value.images:[]).slice(0,20).map(x=>({url:safe(typeof x==='string'?x:x?.url),label:String(x?.label||'保存画像').slice(0,100)})).filter(x=>x.url);
+ return {images,reply:typeof value?.reply==='string'?value.reply.slice(0,100000):''};
+}
 export function productLinks(value){return ['yahoo','official','affiliate'].map(key=>{const raw=Array.isArray(value)?value.find(r=>r?.key===key)?.url:'',url=safeLink(raw);let safe='';if(url){const u=new URL(url);if(u.protocol==='https:'&&!u.username&&!u.password&&(key!=='yahoo'||u.hostname==='store.shopping.yahoo.co.jp'&&/^\/[^/]+\/[^/]+\.html$/.test(u.pathname)))safe=url;}return {key,label:{yahoo:'Yahoo 商品ページ',official:'公式 商品ページ',affiliate:'投稿用アフィリエイトURL'}[key],url:safe};});}
 export function dayInJapan(time=Date.now()){if(!Number.isFinite(Number(time))||!Number.isFinite(new Date(Number(time)).getTime()))return '';return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(time));}
 export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>{},archive=globalThis.CCThreadsArchive,sourceArchive=globalThis.CCSourcingArchive}={}){
@@ -26,7 +31,7 @@ export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>
   if(d.title.length>200||d.body.length>100000)throw Error('見出しは200文字、本文は10万文字以内です');
   const time=value=>Number.isFinite(new Date(Number(value)).getTime())&&Number(value)>0?Number(value):now();
   const link=safeLink(d.link);if(d.link&&!link)throw Error('リンクは http または https のURLにしてください');
-  const links=Array.isArray(d.productLinks)?{productLinks:productLinks(d.productLinks)}:{};
+  const links={...(Array.isArray(d.productLinks)?{productLinks:productLinks(d.productLinks)}:{}),...(d.posting?{posting:postingAssets(d.posting)}:{})};
   return {id:generated?id():String(d.id||id()).slice(0,500),place:d.place,title:d.title.trim(),body:d.body,link,...links,kind:String(d.kind||'原稿').slice(0,30),sample:Boolean(d.sample),createdAt:time(d.createdAt),updatedAt:time(d.updatedAt),checkedAt:String(d.checkedAt||'').slice(0,80),...(d.source&&typeof d.source==='object'?{source:{id:String(d.source.id),account:String(d.source.account),label:String(d.source.label),status:String(d.source.status||''),taskId:String(d.source.taskId||'').slice(0,300),recordId:String(d.source.recordId||'').slice(0,500),readContract:String(d.source.readContract||'').slice(0,50)}}:{})};
  }
  const samples=Object.entries(seeds).flatMap(([place,rows])=>rows.map((d,i)=>normalize({...d,place,id:`sample-${place}-${i}`,sample:true,createdAt:1,updatedAt:1})));

@@ -32,7 +32,7 @@
   };
   R.profit=x=>{
     const p=R.payload(x);
-    return numeric(x?.impact??pget(p,['net_profit_yen','profit_yen','estimated_profit_yen','expected_profit_yen','想定純利益','利益']));
+    return window.CCSourcingEconomics.assess(x,sourcingFields({...x,payload:p}),p).profit;
   };
   R.sold=x=>{
     const p=R.payload(x);
@@ -46,14 +46,15 @@
     return String(p.missing_checks||p['未確認の条件']||p.next_action||x?.next||x?.summary||'').trim();
   };
   R.classify=x=>{
-    const p=R.payload(x),fields=sourcingFields(x),sold=R.sold(x),profit=R.profit(x),text=R.missingText(x);
+    const p=R.payload(x),fields=sourcingFields({...x,payload:p}),sold=R.sold(x),profit=R.profit(x),text=R.missingText(x);
     const human=[];
     if(/在庫|即納|購入可能|買える|売り切れ|売切|取寄|取り寄せ|stock|availability|現(?:在|時点).{0,10}価格|価格.{0,10}現(?:在|時点)/i.test(text))human.push('stock');
     if(/同一商品|商品一致|同じ商品|型番|品番|sku|モデル.{0,8}(?:一致|同一)|サイズ.{0,8}(?:一致|同一)|(?:色|カラー).{0,8}(?:一致|同一)/i.test(text))human.push('match');
     if(/新品として|新品・未使用|未使用|展示品|タグ.{0,5}(?:欠|無)|状態|付属品|開封|箱.{0,6}(?:欠|傷)/i.test(text))human.push('condition');
     if(/sold|成約根拠|売れ行き|売れた|売却実績|販売実績/i.test(text))human.push('sold');
     const issues=uniq(human);
-    const blockers=[];
+    const calculation=window.CCSourcingEconomics.assess(x,fields,p);
+    const blockers=calculation.ok?[]:[calculation.note];
     const url=typeof safeHttpUrl==='function'?safeHttpUrl(x?.url):null;
     const buy=numeric(fields.buy),sell=numeric(fields.sell);
     if(!url)blockers.push('商品URL');
@@ -91,7 +92,7 @@
   };
   R.promoted=x=>{
     const s=R.state(x);
-    return !!s&&s.verification==='pass'&&s.execution==='done';
+    return !!s&&s.verification==='pass'&&s.execution==='done'&&W.verifyChecks(x).ok;
   };
 
   const baseReady=isReadySourcing;

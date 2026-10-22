@@ -405,6 +405,11 @@
   const official=sources.filter(s=>s?.type==='official_product').map(s=>safe(s.url)).find(u=>u&&u!==affiliate&&!yahoo(u))||'';
   return [{key:'yahoo',label:'Yahoo 商品ページ',url:candidates.map(yahoo).find(Boolean)||''},{key:'official',label:'公式 商品ページ',url:official},{key:'affiliate',label:'投稿用アフィリエイトURL',url:affiliate}];
  }
+ function savedPostingAssets(p){
+  const raw=Array.isArray(p.post_images)?p.post_images:Array.isArray(p.image_urls)?p.image_urls:Array.isArray(p.finished_images?.pages)?p.finished_images.pages:[];
+  const images=raw.slice(0,20).map((x,i)=>({url:typeof x==='string'?x:String(x?.url||x?.image_url||x?.src||''),label:String(x?.label||((i+1)+'枚目'))}));
+  return {images,reply:String(p.self_reply||p.reply_text||p.threads_reply||p.link_reply||'')};
+ }
  function savedCopies(p){
   const result=[],variants=Array.isArray(p.body_variants)?p.body_variants:Array.isArray(p.body_options)?p.body_options:[];
   variants.forEach((v,i)=>{const t=typeof v==='string'?v:v&&typeof v==='object'?(v.text||v.body):'';if(t)result.push({label:'保存本文案'+(i+1),text:String(t)});});
@@ -414,5 +419,5 @@
   const link=p.purchase_link||p.purchase_url;if(typeof link==='string'&&/^https:\/\//.test(link))result.push({label:'保存購入リンク',text:link});
   return result;
  }
- return {accounts,payload,matchesAccount,unique,savedCopies,isSuppressed,historyState,savedSources,savedProductLink,savedProductLinks,savedMercariComparisons,mercariComparisonSummary,savedPriceStockCheck,metricLabels,threadsUrl,manualResult,metricNumber,isoFromLocal,localDateTime,displayTime,originalCopies};
+ return {accounts,payload,matchesAccount,unique,savedCopies,savedPostingAssets,isSuppressed,historyState,savedSources,savedProductLink,savedProductLinks,savedMercariComparisons,mercariComparisonSummary,savedPriceStockCheck,metricLabels,threadsUrl,manualResult,metricNumber,isoFromLocal,localDateTime,displayTime,originalCopies};
 });

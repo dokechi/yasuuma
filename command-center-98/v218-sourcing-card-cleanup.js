@@ -25,9 +25,9 @@
   function normalizeBoosts(){
     for(const x of sourcingApp.items||[]){
       const raw=Number(x?.supplierBoost||0);
-      const capped=Number.isFinite(raw)?Math.min(10,Math.max(0,raw)):0;
+      const capped=0; // Purchase success is not evidence of realized profit.
       x.supplierBoost=capped;
-      const base=Number(x?.baseScore);
+      const base=x.baseScore!==null&&x.baseScore!==undefined?Number(x.baseScore):Number(x.score)-raw;
       if(Number.isFinite(base)){
         x.score=Math.min(100,base+capped);
         x.priority=rank(x.score);
@@ -35,7 +35,7 @@
     }
     for(const s of sourcingApp.suppliers||[]){
       const raw=Number(s?.priorityBoost||0);
-      if(Number.isFinite(raw))s.priorityBoost=Math.min(10,Math.max(0,raw));
+      if(Number.isFinite(raw))s.priorityBoost=0;
     }
   }
 

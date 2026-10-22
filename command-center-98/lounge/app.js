@@ -1,6 +1,6 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
 import {createMusicControls} from './music.js?v=20261021.3-audio';
-import {createDesk} from './desk.js?v=20261021.8-hall';
+import {createDesk} from './desk.js?v=20261022.12-profit';
 import {createInteractionSound} from './interaction-sound.js?v=20261021.4-touch';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261021.4-touch';
 const $ = (id) => document.getElementById(id);

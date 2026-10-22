@@ -1,6 +1,6 @@
 import {createHallTools} from './hall-tools.js?v=20261021.8-hall';
-import {placeNames} from './desk-model.js?v=20261021.8-hall';
-import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,currentPosted,savedLinks} from './qol-model.js?v=20261021.8-hall';
+import {placeNames} from './desk-model.js?v=20261022.12-profit';
+import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261022.12-profit';
 
 export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},send=()=>{}}){
  const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
@@ -39,13 +39,18 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
  }
  function showTray(id){selectedLater=id||selectedLater;renderTray();$('later-dialog').showModal();}
  function renderPost(){
-  const d=postDraft;if(!d)return;const host=$('posting-steps');host.replaceChildren();$('posting-title').textContent=d.title;
+  const d=postDraft;if(!d)return;const scroll=$('posting-dialog').scrollTop;const host=$('posting-steps');host.replaceChildren();$('posting-title').textContent=d.title;
   const changed=notebook.get(d.id)&&revision(notebook.get(d.id))!==revision(d);$('posting-changed').hidden=!changed;
-  const steps=postingSteps(d,notebook.copies());for(const [i,step]of steps.entries()){const row=el('div',undefined,'posting-step');row.append(el('span',step.copied?'✓':String(i+1),'step-number'),el('strong',step.label),button(step.copied?'もう一度コピー':'コピー',()=>copy(d,step.kind,step.text)));if(step.kind==='link')row.append(el('small',step.text));host.append(row);}
+  const readiness=postingReadiness(d);$('posting-readiness').textContent=readiness.label;$('posting-copy-all').disabled=!!changed;
+  const steps=postingSteps(d,notebook.copies());for(const [i,step]of steps.entries()){const row=el('div',undefined,'posting-step');row.append(el('span',step.copied?'✓':String(i+1),'step-number'),el('strong',step.label),button(step.copied?'もう一度コピー':'コピー',()=>copy(d,step.kind,step.text)));row.append(el(step.kind==='link'?'small':'pre',step.text));host.append(row);}
   if(!savedLinks(d).length)host.append(el('p','この原稿には保存された商品リンクがありません。','qol-note'));
+  if(readiness.commercial&&!readiness.affiliate)host.append(el('p','収益リンクは未設定です。通常の商品URLは投稿用リンクへ置き換えません。','qol-note'));
+  const references=savedLinks(d).filter(x=>readiness.commercial&&x.key!=='affiliate');if(references.length){const refs=el('details'),summary=el('summary','価格・在庫の確認用リンク');refs.append(summary);for(const link of references){const a=el('a',link.label+' ↗');a.href=link.url;a.target='_blank';a.rel='noopener noreferrer';refs.append(a);}host.append(refs);}
+  const images=$('posting-images');images.replaceChildren();if(readiness.images.length){images.append(el('h3','保存画像'));for(const [i,asset]of readiness.images.entries()){const line=el('section'),a=el('a',(i+1)+'枚目を開く ↗'),img=el('img');a.href=asset.url;a.target='_blank';a.rel='noopener noreferrer';img.src=asset.url;img.alt=asset.label;img.loading='lazy';img.referrerPolicy='no-referrer';line.append(a,img);images.append(line);}}else images.append(el('p','この投稿にひもづく画像は未保存です。','qol-note'));
   const posted=currentPosted(d,notebook.pref('posted:'+d.id,null)),mark=$('posting-complete');mark.textContent=posted?'投稿済みメモを取り消す':'投稿したので完了';mark.disabled=!!changed;
-  $('posting-progress').textContent=posted?'✓ この本文を投稿済みとして端末に記録しました。':steps.filter(s=>s.copied).length+' / '+steps.length+' コピー済み。投稿後、下のボタンで完了を記録できます。';
+  $('posting-progress').textContent=posted?'✓ この本文を投稿済みとして端末に記録しました。':steps.filter(s=>s.copied).length+' / '+steps.length+' コピー済み。投稿後、下のボタンで完了を記録できます。';$('posting-dialog').scrollTop=scroll;
  }
+ $('posting-copy-all').addEventListener('click',()=>{if(postDraft)copy(postDraft,'posting-set',postingText(postDraft));});
  $('posting-complete').addEventListener('click',()=>{if(!postDraft)return;const key='posted:'+postDraft.id,posted=currentPosted(postDraft,notebook.pref(key,null));notebook.changePref(key,posted?null:{revision:revision(postDraft),time:Date.now()});renderPost();onFeedback(posted?'unpin':'done');});
  $('posting-native').addEventListener('click',()=>{if(!postDraft)return;$('posting-dialog').close();const d=postDraft;native(d.place==='fp'?(d.source?.account==='tiktok'?'tiktok':'fp'):d.place,d.source?.id);});
  $('later-undo').addEventListener('click',()=>{try{notebook.undo();$('later-status').textContent='直前の端末メモを元に戻しました。';}catch(e){$('later-status').textContent=e.message;}refresh();renderTray();});
