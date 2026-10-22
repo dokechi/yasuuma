@@ -19,7 +19,10 @@ export function createInteractionSound(context,destination=context.destination){
   if(!important&&t-last<.035)return;last=t;const variation=[.985,1,1.012][turn++%3];
   if(kind==='door'){
    const f=({red:138,purple:180,silver:115,orange:154})[room]||138;
-   body(f*variation,f*.67,.105,.020,'triangle');brush(room==='silver'?760:1120,.036,.018);body(f*2.1,f*1.7,.045,.0035,'sine',.012);
+   // Metal latch, a second catch, then a short wooden body; under 200 ms.
+   body(920*variation,650,.034,.010,'triangle');brush(2200,.025,.018);
+   body(f*1.9,f*1.4,.06,.007,'triangle',.035);brush(room==='silver'?1250:1500,.042,.012,.046);
+   body(f*variation,f*.67,.125,.022,'triangle',.068);brush(650,.085,.010,.08);
   }else if(kind==='paper'){
    brush(1550,.095,.016);brush(2700,.055,.005,.016);body(210,166,.055,.005);
   }else if(kind==='latch'){

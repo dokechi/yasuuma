@@ -5,6 +5,22 @@ const TRACKS=[
  {id:'enchanted',title:'Enchanted Festival',sources:[['Enchanted_Festival.mp3','audio/mpeg']]},
  {id:'woodland',title:'Woodland Fantasy',sources:[['Woodland_Fantasy.mp3','audio/mpeg']]}
 ];
+// Store playback order separately so volume changes in another tab cannot rewind it.
+export function createMusicOrder(tracks,{storage,previous=null,random=Math.random}={}){
+ const key='castle-town.music-order.v1',catalog=new Map(tracks.map(t=>[t.id,t]));
+ let last=catalog.has(previous)?previous:null,remaining=[];
+ return {next(){
+  try{const saved=JSON.parse(storage?.getItem(key)||'null');if(saved&&Array.isArray(saved.remaining)){if(catalog.has(saved.last))last=saved.last;remaining=[...new Set(saved.remaining)].filter(id=>catalog.has(id)&&id!==last);}}catch{}
+  if(!remaining.length){
+   remaining=[...catalog.keys()];
+   for(let i=remaining.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[remaining[i],remaining[j]]=[remaining[j],remaining[i]];}
+   if(remaining.length>1&&remaining.at(-1)===last)[remaining[0],remaining[remaining.length-1]]=[remaining.at(-1),remaining[0]];
+  }
+  const id=remaining.pop();if(id===undefined)return null;last=id;
+  try{storage?.setItem(key,JSON.stringify({last,remaining}));}catch{}
+  return catalog.get(id);
+ }};
+}
 // Optional music only. Existing effects retain their own toggle and audio context.
 export function createMusicControls({onStatus=()=>{},getEffects,setEffects,storage,sourceBase="https://dokechi.github.io/yasuuma/command-center-98/castle/audio/",doc=document,win=window}={}){
  const audio=doc.querySelector('#bgmAudio');if(!audio||typeof audio.play!=='function')return null;
@@ -14,8 +30,8 @@ export function createMusicControls({onStatus=()=>{},getEffects,setEffects,stora
  let prefs={};try{prefs=JSON.parse(storage?.getItem(key)||'{}')||{};}catch{}
  let enabled=prefs.bgmEnabled!==false,volume=clamp(prefs.bgmVolume,.12),effectsVolume=clamp(prefs.effectsVolume,.5),armed=false,awaitingGesture=false,hostActive=true,departed=false,pending=null,epoch=0,failed=false,recoverTime=0,notified=false;
  const $=s=>doc.querySelector(s),menu=$('#audioSettings'),group=$('#audioControls'),toggle=$('#bgmEnabled'),slider=$('#bgmVolume'),start=$('#bgmStart'),status=$('#bgmStatus'),effects=$('#effectsEnabled'),effectsSlider=$('#effectsVolume');
- let sources=[],track=null,loaded=false,bag=[],nextAt=-Infinity;const sourceErrors=new Set();
- function choose(){if(!bag.length){bag=TRACKS.slice();for(let i=bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]];}if(bag.at(-1)?.id===track?.id){[bag[0],bag[bag.length-1]]=[bag.at(-1),bag[0]];}}return bag.pop();}
+ let sources=[],track=null,loaded=false,nextAt=-Infinity;const sourceErrors=new Set(),order=createMusicOrder(TRACKS,{storage,previous:prefs.track});
+ function choose(){return order.next();}
  function loadTrack(next){epoch++;pending=null;audio.pause();track=next;loaded=true;recoverTime=0;failed=false;sourceErrors.clear();audio.replaceChildren();sources=track.sources.map(([file,type])=>{const source=doc.createElement('source');source.src=sourceBase+file;source.type=type;source.addEventListener('error',()=>{if(!sources.includes(source))return;sourceErrors.add(source);if(sourceErrors.size===sources.length&&wanted())failure();});audio.append(source);return source;});audio.load();save();}
  function advance(manual=false){if(!enabled||volume===0||(!manual&&(!wanted()||!audio.ended||pending)))return;const time=Date.now();if(time-nextAt<350)return;nextAt=time;loadTrack(choose());armed=true;notified=false;claim();reconcile();}
  $('#bgmNext')?.addEventListener('click',()=>advance(true));
@@ -26,7 +42,7 @@ export function createMusicControls({onStatus=()=>{},getEffects,setEffects,stora
  function refresh(){const fx=getEffects();toggle.checked=enabled;slider.value=String(Math.round(volume*100));$('#bgmVolumeValue').textContent=slider.value+'%';effects.checked=fx.enabled;effectsSlider.value=String(Math.round(effectsVolume*100));$('#effectsVolumeValue').textContent=effectsSlider.value+'%';
   const state=!enabled?'off':volume===0?'muted':failed?'retry':pending?'loading':!audio.paused?'playing':!armed?'waiting':'paused';audio.dataset.state=state;start.hidden=!enabled||volume===0||!!pending||!audio.paused;
   const stateName={off:'切',muted:'消音',retry:'再試行',loading:'読込中',playing:'再生中',waiting:'待機',paused:'停止'}[state],summary=menu.querySelector('summary'),badge=summary.querySelector('.music-state');if(badge)badge.textContent='BGM '+stateName;summary.dataset.musicState=state;summary.setAttribute('aria-label',`音設定。BGM${state==='off'?'オフ':stateName}、音量${Math.round(volume*100)}%。効果音${!fx.enabled?'オフ':effectsVolume===0?'消音':'オン'}。`);summary.title=summary.getAttribute('aria-label');
-  if($('#bgmTrack'))$('#bgmTrack').textContent=track?.title||'4曲からランダムに再生';if($('#bgmNext'))$('#bgmNext').disabled=!enabled;
+  if($('#bgmTrack'))$('#bgmTrack').textContent=track?.title||'４曲を重複なしでシャッフル';if($('#bgmNext'))$('#bgmNext').disabled=!enabled;
   start.textContent=failed?'BGMを再試行':'BGMを再生';status.textContent={off:'BGMはオフです',muted:'音量0・一時停止',retry:'音源を読み込めませんでした。オンラインで再試行できます',loading:'BGMを読み込み中…',playing:(track?.title||'BGM')+' を再生中',waiting:'最初のタップでBGMを開始します',paused:'BGMは一時停止中です'}[state];
  }
  function pause(){epoch++;try{audio.pause();}catch{}refresh();}
