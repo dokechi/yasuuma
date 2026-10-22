@@ -52,27 +52,27 @@
   function honma(s){const t=text(s.product_name);if(!/honma|本間|ホンマ/.test(t))return null;const prefix='HONMA_LUCKY_BAG_';if(/キャップ/.test(t)&&/白黒|ホワイト.*ブラック/.test(t))return [[prefix+'CAP',1]];if(/ソックス/.test(t)&&/白|ホワイト/.test(t)&&/3足/.test(t))return [[prefix+'SOCKS',1]];if(/トート|ランドリー/.test(t))return [[prefix+'TOTE',1]];if(/クールタオル/.test(t))return [[prefix+'COOL_TOWEL',1]];if(/ポロ/.test(t)&&/\bm\b/.test(t)){if(/白紺2枚/.test(t))return [[prefix+'POLO_WHITE_M',1],[prefix+'POLO_NAVY_M',1]];if(/白|ホワイト/.test(t))return [[prefix+'POLO_WHITE_M',1]];if(/紺|ネイビー/.test(t))return [[prefix+'POLO_NAVY_M',1]];}return null;}
   for(const s of [...sales].filter(active).sort((a,b)=>Date.parse(a.sold_at||a.completed_at)-Date.parse(b.sold_at||b.completed_at)||Number(a.id)-Number(b.id))){
    const id=String(s.id),matches=direct.get(id)||[],parts=split.get(id)||[];
-   if(matches.length){const cost=directCost(s,matches);if(cost!==null)output.set(id,{estimated_purchase_cost_yen:cost,cost_estimate_note:'保存済みの仕入割当を使用（高確度の照合を含む）'});continue;}
-   if(parts.length){const cost=componentCost(s,parts);if(cost!==null)output.set(id,{estimated_purchase_cost_yen:cost,cost_estimate_note:'福袋原価を登録済み6構成品へ均等配分（仮）'});continue;}
-   const h=honma(s);if(h){const r=takeComponents(s,h);if(r)output.set(id,{estimated_purchase_cost_yen:r.cost,cost_estimate_note:'商品名・構成品・購入時期・残数で照合。福袋6構成へ均等配分（仮）'});continue;}
+   if(matches.length){const cost=directCost(s,matches);if(cost!==null)output.set(id,{estimated_purchase_cost_yen:cost,cost_purchase_links:matches.map(a=>({purchase_id:a.purchase_id,quantity:a.quantity})),cost_estimate_note:'保存済みの仕入割当を使用（高確度の照合を含む）'});continue;}
+   if(parts.length){const cost=componentCost(s,parts);if(cost!==null)output.set(id,{estimated_purchase_cost_yen:cost,cost_component_links:parts.map(a=>({component_id:a.component_id,quantity:a.quantity})),cost_estimate_note:'福袋原価を登録済み6構成品へ均等配分（仮）'});continue;}
+   const h=honma(s);if(h){const r=takeComponents(s,h);if(r)output.set(id,{estimated_purchase_cost_yen:r.cost,cost_component_links:r.links,cost_estimate_note:'商品名・構成品・購入時期・残数で照合。福袋6構成へ均等配分（仮）'});continue;}
    const saleCodes=codes({product_name:s.product_name}),matchedCodes=saleCodes.filter(code=>ps.some(p=>codes(p).includes(code)));
    if(matchedCodes.length===1&&!/セット|まとめ|[2-9][個点枚]/.test(s.product_name||'')){
     const code=matchedCodes[0],pool=ps.filter(p=>codes(p).includes(code)),r=take(s,[[pool,Number(s.quantity)]]);
-    if(r){const points=r.links.some(a=>Number(byP.get(String(a.id))?.metadata?.points_used_yen)>0);output.set(id,{estimated_purchase_cost_yen:r.cost,cost_estimate_note:'型番 '+code.toUpperCase()+' が一致。購入時期・残数を確認し、先に購入した同型品から計算'+(points?'（ポイント利用後の保存額を使用）':'')});continue;}
+    if(r){const points=r.links.some(a=>Number(byP.get(String(a.id))?.metadata?.points_used_yen)>0);output.set(id,{estimated_purchase_cost_yen:r.cost,cost_purchase_links:r.links.map(a=>({purchase_id:a.id,quantity:a.quantity})),cost_estimate_note:'型番 '+code.toUpperCase()+' が一致。購入時期・残数を確認し、先に購入した同型品から計算'+(points?'（ポイント利用後の保存額を使用）':'')});continue;}
    }
    const keys=[...new Set(seeds.get(title(s.product_name))||[])];
-   if(keys.length===1){const r=take(s,JSON.parse(keys[0]).map(([key,qty])=>[families.get(key)||[],qty]));if(r){output.set(id,{estimated_purchase_cost_yen:r.cost,cost_estimate_note:'照合済み販売と同じ商品名・バリエーションから原価を推計'});continue;}}
+   if(keys.length===1){const r=take(s,JSON.parse(keys[0]).map(([key,qty])=>[families.get(key)||[],qty]));if(r){output.set(id,{estimated_purchase_cost_yen:r.cost,cost_purchase_links:r.links.map(a=>({purchase_id:a.id,quantity:a.quantity})),cost_estimate_note:'照合済み販売と同じ商品名・バリエーションから原価を推計'});continue;}}
    const related=candidateFamily(s),pool=related?ps.filter(related):[];
    if(pool.length&&!/リクエスト|まとめ商品|[2-9]個セット/.test(s.product_name||'')){
     const compatible=candidates(s,pool),r=take(s,[[compatible,Number(s.quantity)]]);
-    if(r){output.set(id,{estimated_purchase_cost_yen:r.cost,cost_estimate_note:'購入候補から推定：'+[...new Set(r.links.map(a=>{const p=byP.get(String(a.id));return p.product_name+' / '+(p.variant||'仕様未記録');}))].join('、')+'。購入時期・残数を確認。型番・色・サイズ等の省略部分は未確定',estimated_purchase_ids:r.links.map(a=>a.id)});continue;}
+    if(r){output.set(id,{estimated_purchase_cost_yen:r.cost,cost_purchase_links:r.links.map(a=>({purchase_id:a.id,quantity:a.quantity})),cost_estimate_note:'購入候補から推定：'+[...new Set(r.links.map(a=>{const p=byP.get(String(a.id));return p.product_name+' / '+(p.variant||'仕様未記録');}))].join('、')+'。購入時期・残数を確認。型番・色・サイズ等の省略部分は未確定',estimated_purchase_ids:r.links.map(a=>a.id)});continue;}
    }
    const t=text(s.product_name),size=t.match(/(?:^|[^a-z0-9])(2xl|xl|l|m)(?=$|[^a-z0-9])/i)?.[1]?.toUpperCase();
    if(/mizuno|ミズノ/.test(t)&&/golf|ゴルフ/.test(t)&&/モックネック/.test(t)&&/長袖/.test(t)&&size&&!/リクエスト/.test(t)){
     const colors=[['ブラック','black'],['ホワイト','white'],['ネイビー','navy']].filter(([ja,en])=>t.includes(ja)||t.includes(en)).map(([ja])=>ja);if(colors.length>1)continue;
     const pool=ps.filter(p=>p.sku==='E2JJ050'&&new RegExp('(?:^|[ /])'+size+'(?:$|[ /])').test(String(p.variant))&&(!colors.length||String(p.variant).includes(colors[0]))),values=new Set(pool.filter(p=>before(p,s)).map(unit));
     const count=t.match(/計(\d+)点/)?.[1],qty=count?Number(count):Number(s.quantity);
-    if(qty>0&&qty<=10&&!values.has(null)&&values.size===1){const r=take(s,[[pool,qty]]);if(r)output.set(id,{estimated_purchase_cost_yen:r.cost,cost_estimate_note:'ミズノE2JJ050の同型・サイズ・数量で照合'+(!colors.length?'。色不明のため同原価のロットから推計':'')});}
+    if(qty>0&&qty<=10&&!values.has(null)&&values.size===1){const r=take(s,[[pool,qty]]);if(r)output.set(id,{estimated_purchase_cost_yen:r.cost,cost_purchase_links:r.links.map(a=>({purchase_id:a.id,quantity:a.quantity})),cost_estimate_note:'ミズノE2JJ050の同型・サイズ・数量で照合'+(!colors.length?'。色不明のため同原価のロットから推計':'')});}
    }
   }
   if(options.legacyUnknownNet40===true){
