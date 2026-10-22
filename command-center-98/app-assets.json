@@ -22,7 +22,8 @@
     "./rpg-workspaces.css?v=20261013.9-detail",
     "./rpg-daily-desk.css?v=20261015.1",
     "./lounge-workspace.css?v=20261021.8-hall",
-    "./lounge-feedback.css?v=20261021.5-boot"
+    "./lounge-feedback.css?v=20261021.5-boot",
+    "./overseas-profit-readiness.css?v=20261023.1-profit-route"
   ],
   "scripts": [
     "./sourcing-atomic-save.js?v=20261011.atomic2",
@@ -33,6 +34,7 @@
     "./v140-reddit-ui.js?v=175",
     "./v140-reddit-editor.js?v=175",
     "./v141-reddit-enhancements.js?v=175",
+    "./overseas-profit-readiness.js?v=20261023.1-profit-route",
     "./v142-x-desk.js?v=20261011.jst2",
     "./v145-application-automation.js?v=175",
     "./v146-agent-pipeline.js?v=175",
