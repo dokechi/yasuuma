@@ -19,10 +19,13 @@
  }
  function summary(state,rows,available){
   const s=M.summarize(rows,state.purchaseMonth==='all'?'':state.purchaseMonth),period=state.purchaseMonth&&state.purchaseMonth!=='all'?escape(state.purchaseMonth.replace('-','年')+'月'):'累計',partial=state.salesTruncated===true,known=available&&s.confirmed>0;
-  const label=!available?'読取を確認中':s.pending||partial?'確認できた分の儲け':'儲け';
-  const cards='<div class="profit-overview"><div class="profit-card profit-primary"><span>'+period+' · '+label+'</span><strong class="'+(s.profit<0?'negative':'')+'">'+(!available?'確認中':known?signed(s.profit):s.settled?'計算待ち':'—')+'</strong></div><div class="profit-card"><span>仕入れ（売れた分の原価）</span><strong>'+ (known?money(s.cost):'—')+'</strong></div><div class="profit-card"><span>販売（手数料・送料を引いた手取り）</span><strong>'+(known?signed(s.received):'—')+'</strong></div></div>';
-  const note=!available?'取引の読取を確認できませんでした。上の「更新」で再試行できます。':s.settled?'この3額は計算できた '+s.confirmed+'件の合計です。'+(s.pending?' 未計算 '+s.pending+'件（原価・手数料・送料等を確認中）。':'')+' 取引中 '+s.inProgress+'件は確定後に加算します。':'この期間に確定した販売はありません。取引中 '+s.inProgress+'件。';
-  const breakdown=s.groups.length?'<details class="profit-markets"><summary>販路別の儲け</summary><ul>'+s.groups.map(g=>'<li><b>'+escape(g.name)+'</b><strong>'+signed(g.profit)+'</strong><small>確認 '+g.confirmed+'件'+(g.pending?' / 未計算 '+g.pending+'件':'')+'</small></li>').join('')+'</ul></details>':'';
+  const incomplete=available&&(s.pending>0||partial),subset=incomplete?'計算済み '+s.confirmed+'件の':'';
+  const amount=!available?'確認中':incomplete?'未確定':known?signed(s.profit):'—';
+  const coverage=available&&s.settled?'<small class="profit-coverage">'+(partial?'取得できた取引のうち': '完了 '+s.settled+'件のうち')+'計算済み '+s.confirmed+'件'+(s.pending?' · 未計算 '+s.pending+'件':'')+'</small>':'';
+  const subtotal=incomplete&&known?'<p class="profit-subtotal">計算済み '+s.confirmed+'件の儲け <b>'+signed(s.profit)+'</b></p>':'';
+  const cards='<div class="profit-overview"><div class="profit-card profit-primary'+(incomplete?' profit-incomplete':'')+'"><span>'+period+' · 全体の儲け</span><strong class="'+(!incomplete&&s.profit<0?'negative':'')+'">'+amount+'</strong>'+coverage+subtotal+'</div><div class="profit-card"><span>'+subset+'仕入れ（売れた分の原価）</span><strong>'+ (known?money(s.cost):'—')+'</strong></div><div class="profit-card"><span>'+subset+'販売（手数料・送料を引いた手取り）</span><strong>'+(known?signed(s.received):'—')+'</strong></div></div>';
+  const note=!available?'取引の読取を確認できませんでした。上の「更新」で再試行できます。':s.settled?(incomplete?(s.pending?'未計算 '+s.pending+'件':'未取得の取引')+'は金額に含まれていません。全体の儲けはまだ分かりません。表示金額は計算済み分だけです。':'原価・手数料・送料を確認できた全 '+s.confirmed+'件の合計です。')+' 取引中 '+s.inProgress+'件は確定後に加算します。':'この期間に確定した販売はありません。取引中 '+s.inProgress+'件。';
+  const breakdown=s.groups.length?'<details class="profit-markets"><summary>販路別の儲け</summary><ul>'+s.groups.map(g=>'<li><b>'+escape(g.name)+'</b><strong>'+(g.pending||partial?'未確定':signed(g.profit))+'</strong><small>計算済み '+g.confirmed+'件'+(g.pending?' / 未計算 '+g.pending+'件':'')+(g.confirmed&&(g.pending||partial)?' · 計算済み分の儲け '+signed(g.profit):'')+'</small></li>').join('')+'</ul></details>':'';
   return '<section id="ledgerProfitSummary" aria-label="仕入れ・販売・儲け">'+cards+'<p class="profit-note">'+note+'</p>'+(partial?'<p class="trade-unavailable">取引データは一部のみです。期間全体の合計ではありません。</p>':'')+breakdown+'</section>';
  }
  function html(state){

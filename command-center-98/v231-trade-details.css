@@ -8,3 +8,4 @@
 @media(max-width:700px){.profit-overview{grid-template-columns:1fr 1fr;gap:7px}.profit-card{padding:12px}.profit-card.profit-primary{grid-column:1/-1}.profit-card strong{font-size:20px}.profit-card.profit-primary strong{font-size:32px}.profit-card span{font-size:10px}.profit-markets li small{width:100%}}
 
 .purchase-archive{margin:20px 0;border-top:1px solid #cfbf9d;padding-top:10px}.purchase-archive>summary{cursor:pointer;min-height:44px;line-height:44px;font-weight:600;font-size:12px;color:#746347}.purchase-archive[open]>summary{margin-bottom:10px}
+.profit-card.profit-incomplete{background:#fff0cf;color:#694b20;border-color:#c7a775}.profit-coverage{display:block;margin-top:10px;font-size:12px;line-height:1.7}.profit-subtotal{margin:10px 0 0;padding-top:10px;border-top:1px solid #c7a775;font-size:11px;line-height:1.8}.profit-subtotal b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
