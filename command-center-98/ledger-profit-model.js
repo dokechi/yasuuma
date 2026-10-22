@@ -13,11 +13,19 @@
  }
  function month(s){const raw=s.completed_at||s.sold_at;if(!raw||!Number.isFinite(Date.parse(raw)))return '';return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit'}).format(new Date(raw));}
  function result(s){const cost=known(s.purchase_cost_yen),received=net(s);return {cost,received,profit:cost!==null&&received!==null?received-cost:null};}
- function summarize(rows,selectedMonth){
-  const settled=rows.filter(s=>s.status==='completed'&&(!selectedMonth||month(s)===selectedMonth)),confirmed=settled.filter(s=>result(s).profit!==null);
-  const totals=confirmed.reduce((a,s)=>{const r=result(s);a.cost+=r.cost;a.received+=r.received;a.profit+=r.profit;return a;},{cost:0,received:0,profit:0});
-  const groups=[...new Set(settled.map(s=>market(s.marketplace)))].map(name=>{const list=settled.filter(s=>market(s.marketplace)===name),ready=list.filter(s=>result(s).profit!==null);return {name,confirmed:ready.length,pending:list.length-ready.length,profit:ready.length?ready.reduce((n,s)=>n+result(s).profit,0):null};});
-  return {...totals,confirmed:confirmed.length,pending:settled.length-confirmed.length,settled:settled.length,inProgress:rows.filter(s=>s.status==='in_progress'&&(!selectedMonth||month(s)===selectedMonth)).length,groups};
+ function projected(s){const actual=result(s),cost=actual.cost??known(s.estimated_purchase_cost_yen);let received=actual.received,fee=null,shipping=null;const notes=[];
+  if(actual.cost===null&&cost!==null)notes.push(s.cost_estimate_note||'仕入原価を推計');
+  if(received===null&&s.marketplace==='mercari'&&known(s.gross_sale_yen)!==null){const name=String(s.product_name||'');if(!/INNOCN|モニター|トランク|スーツケース|椅子|冷蔵庫/i.test(name)){
+   fee=known(s.fee_yen)??Math.floor(Number(s.gross_sale_yen)*.1);shipping=known(s.shipping_yen)??(/cm|クロッグ|スニーカー|サンダル|シューズ|ブーツ|サイドゴア/i.test(name)&&!/ソックス|靴下|タオル/.test(name)?870:220);received=Number(s.gross_sale_yen)-fee-shipping;
+   if(known(s.fee_yen)===null)notes.push('販売手数料10%で仮計算');if(known(s.shipping_yen)===null)notes.push('発送送料'+shipping+'円で仮計算');
+  }}
+  return {cost,received,profit:cost!==null&&received!==null?received-cost:null,estimated:actual.profit===null,notes,fee,shipping};
+ }
+ function summarize(rows,selectedMonth,includeEstimates=false){
+  const settled=rows.filter(s=>s.status==='completed'&&(!selectedMonth||month(s)===selectedMonth)),confirmed=settled.filter(s=>result(s).profit!==null),calc=includeEstimates?projected:result,computed=settled.filter(s=>calc(s).profit!==null);
+  const totals=computed.reduce((a,s)=>{const r=calc(s);a.cost+=r.cost;a.received+=r.received;a.profit+=r.profit;return a;},{cost:0,received:0,profit:0});
+  const groups=[...new Set(settled.map(s=>market(s.marketplace)))].map(name=>{const list=settled.filter(s=>market(s.marketplace)===name),ready=list.filter(s=>calc(s).profit!==null),actual=list.filter(s=>result(s).profit!==null);return {name,confirmed:actual.length,estimated:ready.length-actual.length,computed:ready.length,pending:list.length-ready.length,profit:ready.length?ready.reduce((n,s)=>n+calc(s).profit,0):null};});
+  return {...totals,confirmed:confirmed.length,confirmedProfit:confirmed.reduce((n,s)=>n+result(s).profit,0),estimated:computed.length-confirmed.length,computed:computed.length,pending:settled.length-computed.length,settled:settled.length,inProgress:rows.filter(s=>s.status==='in_progress'&&(!selectedMonth||month(s)===selectedMonth)).length,groups};
  }
  function costs(sales,allocations,purchases){
   const byId=new Map(purchases.map(p=>[String(p.id),p])),orders=new Map();
@@ -27,6 +35,8 @@
   for(const sale of sales){const matches=allocations.filter(a=>String(a.sale_row_id)===String(sale.id)),qty=known(sale.quantity);let total=0,reason='';
    if(!matches.length||!qty||matches.reduce((n,a)=>n+(known(a.quantity)||0),0)!==qty)reason='売れた数量と仕入れの対応を確認中';
    for(const a of reason?[]:matches){const p=byId.get(String(a.purchase_id));if(a.confidence!=='exact'||!p||p.status!=='purchased'){reason='仕入れとの一致を確認中';break;}
+    if(p.ordered_at&&sale.sold_at&&Date.parse(p.ordered_at)>Date.parse(sale.sold_at)){reason='販売日より後の仕入れ割当を確認中';break;}
+    if(p.metadata?.landed_cost_pending_import_duties===true){reason='輸入諸費用を確認中';break;}
     if(p.metadata?.bundle_decomposed===true){reason='セット原価の配分を確認中';break;}
     const units=known(p.quantity),unitsSold=known(a.quantity),line=lineCost(p),order=orders.get(orderKey(p))||[],shippingValues=order.map(p=>known(p.order_shipping_yen));
     if(!units||!unitsSold||unitsSold>units||line===null||shippingValues.some(v=>v===null)||new Set(shippingValues).size!==1){reason='仕入原価・仕入送料を確認中';break;}
@@ -39,5 +49,5 @@
   }
   return output;
  }
- return {known,market,net,month,result,summarize,costs};
+ return {known,market,net,month,result,projected,summarize,costs};
 });
