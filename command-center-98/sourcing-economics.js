@@ -4,7 +4,7 @@
 })(typeof window==='undefined'?globalThis:window,function(){
  'use strict';
  const value=(p,keys)=>keys.map(k=>p?.[k]).find(v=>v!==null&&v!==undefined&&v!=='');
- function number(v){if(typeof v==='number')return Number.isFinite(v)?v:null;if(typeof v!=='string'||!v.trim())return null;const s=v.trim().replace(/[,￥¥円\s]/g,'');return /^-?\d+(?:\.\d+)?$/.test(s)&&Number.isFinite(Number(s))?Number(s):null;}
+ function number(v){if(typeof v==='number')return Number.isFinite(v)?v:null;if(typeof v!=='string'||!v.trim())return null;const s=v.trim().replace(/^[￥¥]\s*/,'').replace(/\s*円$/,'');if(!/^-?(?:\d+|\d{1,3}(?:[,，]\d{3})+)(?:\.\d+)?$/.test(s))return null;const n=Number(s.replace(/[,，]/g,''));return Number.isFinite(n)?n:null;}
  const money=(p,keys)=>number(value(p,keys));
  const url=v=>{try{const u=new URL(v);return /^https?:$/.test(u.protocol)&&!u.username&&!u.password?u.href:'';}catch{return '';}};
  function competitor(p,now){
