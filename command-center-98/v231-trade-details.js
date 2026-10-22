@@ -1,11 +1,12 @@
 /* One purchase table is the source of both visible profit totals. */
 (function(root,factory){
- 'use strict';const M=typeof module==='object'&&module.exports?require('./ledger-profit-model.js'):root.CCLedgerProfit,api=factory(M);
+ 'use strict';const M=typeof module==='object'&&module.exports?require('./ledger-profit-model.js'):root.CCLedgerProfit,A=typeof module==='object'&&module.exports?require('./purchase-profit-actions.js'):root.CCPurchaseProfitActions,api=factory(M,A);
  if(typeof module==='object'&&module.exports){module.exports=api;return;}root.CCTradeDetails=api;
  if(typeof purchaseLedgerHtml==='function')purchaseLedgerHtml=function(){return api.html(sourcingApp);};
  if(typeof renderSourcing==='function'){const previous=renderSourcing;renderSourcing=function(){previous.apply(this,arguments);api.render();};}
+ document.addEventListener('click',function(event){const button=event.target.closest?.('[data-profit-purchase]');if(!button)return;const target=document.getElementById(A.rowId(button.dataset.profitPurchase));if(target){target.scrollIntoView({block:'center',behavior:'auto'});target.focus({preventScroll:true});}});
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',api.render);else api.render();
-})(typeof window==='undefined'?globalThis:window,function(M){
+})(typeof window==='undefined'?globalThis:window,function(M,A){
  'use strict';
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const numeric=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
@@ -42,7 +43,7 @@
   }
   const rem=!r?'—':esc(r.remaining_quantity)+(r.bundle?'袋分':'')+(r.remaining_loose_quantity?'<small>＋ バラ'+r.remaining_loose_quantity+'点</small>':'');
   const cost=unit!==null?'<b>'+money(unit)+'</b><small>仕入送料込み</small>':'<b>'+money(M.known(p.allocated_net_unit_yen))+'</b><small>商品支払額・送料等確認中</small>';
-  return '<tr data-purchase-id="'+esc(p.id)+'"><td class="purchase-product"><b>'+esc(p.product_name)+'</b></td><td>'+esc(p.sku||'—')+'</td><td>'+esc(p.variant||'—')+'</td><td class="num">'+esc(p.quantity)+'</td><td class="num purchase-unit-cost">'+cost+(original!==null&&(unit===null||Math.abs(original-unit)>.01)?'<small>注文時 '+money(original)+'</small>':'')+'</td><td class="purchase-profit-cell">'+profit+'</td><td class="num purchase-remaining">'+rem+'<small>目安</small></td></tr>';
+  return '<tr id="'+esc(A.rowId(p.id))+'" tabindex="-1" data-purchase-id="'+esc(p.id)+'"><td class="purchase-product"><b>'+esc(p.product_name)+'</b></td><td>'+esc(p.sku||'—')+'</td><td>'+esc(p.variant||'—')+'</td><td class="num">'+esc(p.quantity)+'</td><td class="num purchase-unit-cost">'+cost+(original!==null&&(unit===null||Math.abs(original-unit)>.01)?'<small>注文時 '+money(original)+'</small>':'')+'</td><td class="purchase-profit-cell">'+profit+'</td><td class="num purchase-remaining">'+rem+'<small>目安</small></td></tr>';
  }
  function groups(rows){const orders=new Map();for(const p of rows){const key=orderKey(p);if(!orders.has(key))orders.set(key,{first:p,items:[]});orders.get(key).items.push(p);}return [...orders.values()].sort((a,b)=>(Date.parse(b.first.ordered_at)||0)-(Date.parse(a.first.ordered_at)||0)||Number(b.first.id)-Number(a.first.id));}
  function orderHtml(g,profits){const p=g.first,url=typeof p.source_url==='string'&&/^https:\/\//.test(p.source_url)?p.source_url:null;return '<section class="purchase-order"><div class="purchase-order-head"><span><b>'+esc(p.supplier_name||p.supplier_key)+'</b>　注文 '+esc(p.order_id||'—')+'</span></div><div class="purchase-table-wrap" tabindex="0" aria-label="購入商品の儲け"><table class="purchase-table purchase-profit-table"><thead><tr><th scope="col">商品</th><th scope="col">型番</th><th scope="col">サイズ／色</th><th scope="col">仕入数</th><th scope="col">仕入単価</th><th scope="col">儲け</th><th scope="col">残数</th></tr></thead><tbody>'+g.items.map(p=>row(p,profits.get(String(p.id)))).join('')+'</tbody></table></div>'+(url?'<div class="purchase-source"><a href="'+esc(url)+'" target="_blank" rel="noopener">'+(/^https:\/\/mail\.google\.com\//.test(url)?'Gmail元メールを開く':'注文の記録を開く')+'</a></div>':'')+'</section>';}
@@ -51,7 +52,7 @@
   for(const g of groups(rows)){const key=day(g.first.ordered_at);if(!days.has(key))days.set(key,[]);days.get(key).push(g);}
   let content='';for(const [date,orders]of days){const t=orderTotals(orders.flatMap(g=>g.items));content+='<section class="purchase-day"><div class="purchase-day-head"><b>'+esc(date)+'</b><span>仕入れ計 <strong>'+money(t.total)+(t.unknown?' ＋ 金額確認中':'')+'</strong> · '+t.orders+'注文</span></div>'+orders.map(g=>orderHtml(g,profits)).join('')+'</section>';}
   const pending=purchases.filter(p=>p.status==='unknown');
-  return '<div class="purchase-profit-ledger">'+summary(state)+(content||'<p class="empty">この期間の購入記録はありません。</p>')+(pending.length?'<details class="purchase-pending"><summary>予約・未納／要確認</summary>'+groups(pending).map(g=>orderHtml(g,new Map())).join('')+'</details>':'')+'</div>';
+  return '<div class="purchase-profit-ledger">'+summary(state)+A.html(state)+(content||'<p class="empty">この期間の購入記録はありません。</p>')+(pending.length?'<details class="purchase-pending"><summary>予約・未納／要確認</summary>'+groups(pending).map(g=>orderHtml(g,new Map())).join('')+'</details>':'')+'</div>';
  }
  function render(){if(typeof sourcingApp==='undefined'||sourcingApp.sub!=='purchases')return;const host=document.getElementById('sourcingBody');if(!host||host.querySelector('.purchase-profit-ledger'))return;const tabs=host.querySelector('.ledger-month-tabs');if(tabs)tabs.remove();host.innerHTML=html(sourcingApp);if(tabs)host.prepend(tabs);}
  return {html,row,money,render,summary,purchaseSummary,orderTotals,totals};
