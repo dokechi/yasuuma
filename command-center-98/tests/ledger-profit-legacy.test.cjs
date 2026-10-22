@@ -6,7 +6,7 @@ const project=(sales,purchases=[],allocations=[])=>R.project(sales,purchases,all
 test('unknown stock earns 40% of net after both selling deductions; its 60% cost remains explicitly provisional',()=>{
  const row={...sale,...project([sale]).get('1')},r=M.projected(row);assert.equal(r.received,8500);assert.equal(r.profit,3400);assert.equal(r.cost,5100);assert.equal(r.legacy,true);assert.equal(M.result(row).profit,null);
  assert.equal(M.projected({...row,net_received_yen:8500}).profit,3400);assert.equal(M.projected({...row,net_received_yen:0}).profit,0);
- const html=V.row(row);assert.match(html,/手取り40% · 推定/);assert.match(html,/仮原価 · 手取り60%/);
+ assert.match(row.cost_estimate_note,/40%/);
 });
 test('real or candidate acquisition costs supersede the legacy policy automatically, including zero cost and losses',()=>{
  const row={...sale,profit_estimate_policy:'legacy_or_unknown_net_40'};

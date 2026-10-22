@@ -124,6 +124,7 @@
   function enhanceLedgerSales(){
     if(typeof sourcingApp==='undefined'||sourcingApp.sub!=='purchases')return;
     const host=document.getElementById('sourcingBody');if(!host)return;
+    if(host.querySelector('.purchase-profit-ledger'))return;
     void loadBundleData();
     const groups=purchaseGroups();
     host.querySelectorAll('.purchase-order').forEach((section,sectionIndex)=>{

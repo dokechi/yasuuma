@@ -15,7 +15,7 @@
   const rs=size(r.size),rc=colors(r.color);if(ps.length&&rs.length&&!ps.some(x=>rs.includes(x)))return false;if(pc.length&&rc.length&&!pc.some(x=>rc.includes(x)))return false;
   return true;
  }).sort((a,b)=>(Date.parse(b.at)||0)-(Date.parse(a.at)||0))[0]||null;}
- function forecast({sales,purchases,allocations,components=[],componentAllocations=[],signals=[]}){
+ function forecast({sales,purchases,allocations,components=[],componentAllocations=[],signals=[],includeSoldOut=false}){
   const ps=purchases.filter(p=>p.status==='purchased'),byP=new Map(ps.map(p=>[String(p.id),p])),byC=new Map(components.map(c=>[String(c.id),c]));
   const direct=new Map(),split=new Map(),used=new Map(),componentUsed=new Map(),refs=new Map(),records=plans(signals),output=[];
   const add=(map,key,v)=>{key=String(key);if(!map.has(key))map.set(key,[]);map.get(key).push(v);};
@@ -36,7 +36,7 @@
   const unit=p=>unitCosts.get(String(p.id))?.purchase_cost_yen??null;
   function reference(key){const recent=(refs.get(key)||[]).sort((a,b)=>(Date.parse(b.at)||0)-(Date.parse(a.at)||0)).slice(0,5);if(!recent.length)return null;const values=recent.map(r=>r.received).sort((a,b)=>a-b),mid=Math.floor(values.length/2);return {received:values.length%2?values[mid]:(values[mid-1]+values[mid])/2,note:'同商品の直近'+recent.length+'件の販売手取り中央値（送料等の仮計算を含む）',basis:'sales_history',at:recent[0].at};}
   function record(p,id,name,remaining,cost,key,component=false){
-   if(remaining<=0)return;
+   if(remaining<=0&&!includeSoldOut)return;
    const plan=component?null:matchingPlan(p,records);let ref=null;
    if(plan){const r=M.projected({marketplace:'mercari',product_name:p.product_name+' '+p.variant,gross_sale_yen:plan.sell,fee_yen:plan.fee,shipping_yen:plan.shipping,purchase_cost_yen:cost});if(r.received!==null)ref={received:r.received,note:'保存査定の想定売価 '+plan.sell+'円から販売手数料・発送送料を控除（古い査定・省略仕様は未更新）',basis:'saved_appraisal',at:plan.at};}
    ref=ref||reference(key);

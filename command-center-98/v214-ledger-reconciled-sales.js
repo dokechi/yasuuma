@@ -2,6 +2,7 @@
   function enhanceReconciledSales(){
     if(typeof sourcingApp==='undefined'||sourcingApp.sub!=='purchases')return;
     const host=document.getElementById('sourcingBody');if(!host)return;
+    if(host.querySelector('.purchase-profit-ledger'))return;
     const groups=new Map();
     for(const p of sourcingApp.purchases||[]){
       const key=(p.supplier_key||'')+'|'+(p.order_id||p.source_message_id||p.id);

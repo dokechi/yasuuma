@@ -2,9 +2,10 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import "./profit-model.js";
 import "./profit-reconcile.js";
 import "./profit-forecast.js";
+import "./purchase-profit.js";
 const Profit=(globalThis as any).CCLedgerProfit;
 const Reconcile=(globalThis as any).CCLedgerReconcile;
-const Forecast=(globalThis as any).CCLedgerForecast;
+const PurchaseProfit=(globalThis as any).CCPurchaseProfit;
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPA=Deno.env.get("SUPABASE_URL")||"";
@@ -36,7 +37,7 @@ function saleDetail(row:any){
 }
 // Exact allocation IDs only. This read never changes source transactions or inventory.
 async function profitCosts(sales:any[]){
- const fail={available:false,costs:new Map<string,any>(),estimates:new Map<string,any>(),forecast:null};
+ const fail={available:false,costs:new Map<string,any>(),estimates:new Map<string,any>(),forecast:null,purchaseProfit:null};
  try{
   const allocations:any[]=[];
   for(let i=0;i<sales.length;i+=200){
@@ -44,7 +45,7 @@ async function profitCosts(sales:any[]){
    if(response.error||response.count===null||response.count!==(response.data||[]).length)return fail;
    allocations.push(...(response.data||[]));
   }
-  const response=await admin.from("command_center_sourcing_inventory").select("id,supplier_key,order_id,source_message_id,ordered_at,product_name,sku,variant,quantity,line_total_yen,allocated_net_line_yen,order_shipping_yen,order_discount_yen,status,metadata,adjustment_quantity",{count:"exact"}).eq("status","purchased").limit(10001);
+  const response=await admin.from("command_center_sourcing_inventory").select("id,supplier_key,order_id,source_message_id,ordered_at,product_name,sku,variant,quantity,line_total_yen,allocated_net_line_yen,order_shipping_yen,order_discount_yen,order_total_yen,status,metadata,adjustment_quantity",{count:"exact"}).eq("status","purchased").limit(10001);
   if(response.error||response.count===null||response.count!==(response.data||[]).length)return fail;
   const costs=Profit.costs(sales,allocations,response.data||[]);
   const [components,componentAllocations,signals]=await Promise.all([
@@ -52,10 +53,11 @@ async function profitCosts(sales:any[]){
    admin.from("command_center_sourcing_component_sale_allocations").select("sale_row_id,component_id,quantity,confidence",{count:"exact"}).limit(10001),
    admin.from("command_center_signals").select("id,title,source_url,payload,detected_at",{count:"exact"}).eq("domain","sourcing").limit(10001)
   ]);
-  if([components,componentAllocations].some(r=>r.error||r.count===null||r.count!==(r.data||[]).length))return {available:true,costs,estimates:new Map<string,any>(),forecast:null};
+  if([components,componentAllocations].some(r=>r.error||r.count===null||r.count!==(r.data||[]).length))return {available:true,costs,estimates:new Map<string,any>(),forecast:null,purchaseProfit:null};
   const estimates=Reconcile.project(sales,response.data||[],allocations,components.data||[],componentAllocations.data||[],{legacyUnknownNet40:true}),details=sales.map(s=>({...saleDetail(s),...(costs.get(String(s.id))||{}),...(estimates.get(String(s.id))||{})}));
   const plansAvailable=!signals.error&&signals.count!==null&&signals.count===(signals.data||[]).length;
-  return {available:true,costs,estimates,forecast:Forecast.forecast({sales:details,purchases:response.data||[],allocations,components:components.data||[],componentAllocations:componentAllocations.data||[],signals:plansAvailable?signals.data||[]:[]})};
+  const portfolio=PurchaseProfit.build({sales:details,purchases:response.data||[],allocations,components:components.data||[],componentAllocations:componentAllocations.data||[],signals:plansAvailable?signals.data||[]:[]});
+  return {available:true,costs,estimates,forecast:portfolio.forecast,purchaseProfit:portfolio.rows};
  }catch{return fail;}
 }
 Deno.serve(async(req:Request)=>{
@@ -74,9 +76,10 @@ Deno.serve(async(req:Request)=>{
   if(bundlePurchaseIds.length){const {data:bc,error:bce}=await admin.from("command_center_sourcing_bundle_component_inventory").select("id,purchase_id,bundle_key,component_key,component_name,variant,initial_quantity,sold_quantity,remaining_quantity,sold_amount_yen,matched_sales,inventory_match_status").in("purchase_id",bundlePurchaseIds).order("purchase_id",{ascending:true}).order("component_key",{ascending:true});if(bce)throw bce;bundleComponents=bc||[];const keys=[...new Set(bundleComponents.map((x:any)=>x.bundle_key).filter(Boolean))];if(keys.length){const {data:bs,error:bse}=await admin.from("command_center_sourcing_bundle_summary").select("bundle_key,initial_bundle_quantity,complete_sets_remaining,loose_component_units,component_types").in("bundle_key",keys);if(bse)throw bse;bundleSummaries=bs||[]}}
   const confirmed=rows.filter((x:any)=>x.status==="purchased"),pending=rows.filter((x:any)=>x.status==="unknown"),preorder=pending.filter((x:any)=>x.metadata?.bucket==="preorder_unshipped"),needsReview=pending.filter((x:any)=>x.metadata?.bucket!=="preorder_unshipped");
   const allSales=saleError?[]:(saleRows||[]).slice(0,3000),truncated=!saleError&&(saleCount===null||saleCount!==allSales.length);
-  const projection=saleError||truncated?{available:false,costs:new Map(),estimates:new Map(),forecast:null}:await profitCosts(allSales);
+  const projection=saleError||truncated?{available:false,costs:new Map(),estimates:new Map(),forecast:null,purchaseProfit:null}:await profitCosts(allSales);
   const details=allSales.filter((row:any)=>saleInMonth(row,b)).map((row:any)=>({...saleDetail(row),...(projection.costs.get(String(row.id))||{purchase_cost_yen:null,profit_cost_note:"仕入原価の読取を確認中"}),...(projection.estimates.get(String(row.id))||{})}));
   const purchaseForecast=projection.forecast?.filter((row:any)=>!b||Date.parse(row.ordered_at)>=Date.parse(b.start)&&Date.parse(row.ordered_at)<Date.parse(b.end))??null;
-  return json(req,{ok:true,profitAvailable:projection.available,profitDateBasis:"completed_at_fallback_sold_at",generatedAt:new Date().toISOString(),month:month||null,counts:stats(confirmed),pendingCounts:stats(pending),preorderCounts:stats(preorder),needsReviewCounts:stats(needsReview),allCounts:stats(rows),sales:saleError?null:details,salesAvailable:!saleError,salesTruncated:truncated,salesDateBasis:"sold_or_completed_or_settled",purchases:rows,purchaseForecast,supplierPurchases:s||[],bundleComponents,bundleSummaries,unresolvedSales:unresolvedSales||0,inventoryBasis:"mercari_fifo_bundle_components_manual_floor"});
+  const purchaseProfit=projection.purchaseProfit?.filter((row:any)=>!b||Date.parse(row.ordered_at)>=Date.parse(b.start)&&Date.parse(row.ordered_at)<Date.parse(b.end))??null;
+  return json(req,{ok:true,profitAvailable:projection.available,purchaseProfitAvailable:purchaseProfit!==null,purchaseProfitDateBasis:"purchase_month_including_later_sales",profitDateBasis:"completed_at_fallback_sold_at",generatedAt:new Date().toISOString(),month:month||null,counts:stats(confirmed),pendingCounts:stats(pending),preorderCounts:stats(preorder),needsReviewCounts:stats(needsReview),allCounts:stats(rows),sales:saleError?null:details,salesAvailable:!saleError,salesTruncated:truncated,salesDateBasis:"sold_or_completed_or_settled",purchases:rows,purchaseForecast,purchaseProfit,supplierPurchases:s||[],bundleComponents,bundleSummaries,unresolvedSales:unresolvedSales||0,inventoryBasis:"mercari_fifo_bundle_components_manual_floor"});
  }catch(e){return json(req,{ok:false,error:String((e as any)?.message||e)},500)}
 });

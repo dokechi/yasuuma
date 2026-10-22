@@ -50,7 +50,11 @@
     const units=known(p.quantity),unitsSold=known(a.quantity),line=lineCost(p),order=orders.get(orderKey(p))||[],shippingValues=order.map(p=>known(p.order_shipping_yen));
     if(!units||!unitsSold||unitsSold>units||line===null||shippingValues.some(v=>v===null)||new Set(shippingValues).size!==1){reason='仕入原価・仕入送料を確認中';break;}
     const totalLines=order.map(lineCost);if(totalLines.some(v=>v===null)){reason='注文全体の原価を確認中';break;}
-    const subtotal=totalLines.reduce((a,b)=>a+b,0),orderUnits=order.reduce((n,p)=>n+(known(p.quantity)||0),0),shipping=shippingValues[0];
+    const subtotal=totalLines.reduce((a,b)=>a+b,0),orderUnits=order.reduce((n,p)=>n+(known(p.quantity)||0),0),totals=order.map(p=>known(p.order_total_yen));
+    // Some importers allocated the entire payment, including inbound shipping.
+    // An exact order-total reconciliation avoids charging that shipping twice.
+    const shippingIncluded=totals.every(v=>v!==null)&&new Set(totals).size===1&&Math.abs(subtotal-totals[0])<.01;
+    const shipping=shippingIncluded?0:shippingValues[0];
     if(subtotal===0&&!orderUnits){reason='仕入送料の配分を確認中';break;}
     const share=subtotal>0?line/subtotal:units/orderUnits;total+=(line+shipping*share)/units*unitsSold;
    }
