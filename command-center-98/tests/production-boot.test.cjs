@@ -13,5 +13,5 @@ test('the public boot path composes all production assets before opening the app
  assert.equal(await loader.boot({document,fetch}),true);
  assert.deepEqual(calls,['open','write','close']);
  assert.ok(document.html.includes('href="./lounge-feedback.css?v=20261021.5-boot"'));
- assert.ok(document.html.includes('src="./castle-parent.js?v=20261022.26-audio"'));
+ assert.ok(document.html.includes('src="./castle-parent.js?v=20261023.2-learning"'));
 });

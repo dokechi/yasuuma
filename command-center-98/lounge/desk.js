@@ -1,7 +1,7 @@
 import {createConveniences} from './qol.js?v=20261022.12-profit';
-import {resumeView,postingReadiness} from './qol-model.js?v=20261022.12-profit';
-import {createNotebook,safeLink} from './notebook.js?v=20261022.12-profit';
-import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261022.12-profit';
+import {resumeView,postingReadiness} from './qol-model.js?v=20261023.2-learning';
+import {createNotebook,safeLink} from './notebook.js?v=20261023.2-learning';
+import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261023.2-learning';
 
 export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{},onOpenRoom=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;
@@ -13,6 +13,20 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  let place=null,active=null,query='',filter='all',pending=null,loading=false,complete=false,connected=false,autoReturn=false,manual=null,scrollTimer=0,externalNotes=false,nativeWork=null;
  const selections=new Map(),views=new Map();let requested=null;
  const conveniences=createConveniences({notebook,open:context=>{requested=context;if(context.id)selections.set(context.place,context.id);onOpenRoom(context.place);},copy:(...args)=>copy(...args),native,onFeedback,send:(...args)=>send(...args)});
+ const learningHost=el('div');$('draft-body').after(learningHost);let learningController=null,learningKey='',learningReady=false;
+ function editable(d){
+  let api;try{api=embedded?window.parent.CCPostLearning:window.CCPostLearning;}catch{}
+  const ref=api?.draftBinding(d),key=ref?JSON.stringify([ref,d.body]):'';
+  if(key!==learningKey){learningController?.destroy();learningController=null;learningReady=false;learningKey=key;learningHost.replaceChildren();
+   if(ref){const id=d.id;learningController=api.mount(learningHost,ref,{showCopy:false,
+    onChange:value=>{if(active?.id===id){conveniences.update({...active,body:value});$('desk-copy').textContent='最終稿をコピー';}},
+    onCopied:value=>{notebook.copied({...d,body:value},'body',value);operation('最終稿をコピーしました。');onFeedback('copy');},
+    onReady:ready=>{if(active?.id===id){learningReady=ready;$('draft-body').hidden=ready;}}
+   });}
+  }
+  $('draft-body').hidden=learningReady;
+  if(learningController)conveniences.update({...d,body:learningController.text()||d.body});
+ }
  const send=(type,extra={})=>{if(embedded)window.parent.postMessage({channel:'cc-castle-v1',type,...extra},origin);};
  function operation(text){$('desk-operation').textContent=text+(storageError?'（端末に保存できないため、この画面内で保持）':'');}
  function native(action,recordId,returnHome=false,section){
@@ -61,7 +75,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   for(const id of ['desk-copy','desk-pin','desk-done'])$(id).disabled=!active;
   $('desk-variants').replaceChildren();$('draft-links').replaceChildren();
   conveniences.update(active);
-  if(!active)return;
+  if(!active){editable(null);return;}
   const d=active,group=groups().find(g=>g.some(x=>x.id===d.id))||[d];
   if(group.length>1)for(const variant of group){const b=button(variant.kind,()=>select(variant.id));b.setAttribute('aria-pressed',String(variant.id===d.id));$('desk-variants').append(b);}
   $('draft-kind').textContent=d.kind;$('draft-title').textContent=d.title;$('draft-body').textContent=d.body;
@@ -69,6 +83,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   const links=Array.isArray(d.productLinks)?d.productLinks.filter(x=>safeLink(x.url)):d.link?[{label:'保存されたリンク',url:d.link}]:[];
   if(links.length){$('draft-links').append(el('p','保存された商品リンク','draft-kind'));for(const row of links){const line=el('div',undefined,'product-link'),a=el('a',row.label+' ↗');a.href=safeLink(row.url);a.target='_blank';a.rel='noopener noreferrer';line.append(a,button('URLをコピー',()=>copy(d,'link',row.url)));$('draft-links').append(line);}if(['kyun','choi'].includes(place))$('draft-links').append(el('small','現在の価格・在庫は商品ページで確認してください。'));}
   $('desk-copy').textContent=notebook.copyMark(d)?'✓ 本文をコピー済み':'本文をコピー';
+  editable(d);if(learningController)$('desk-copy').textContent='最終稿をコピー';
   const pin=notebook.flag('pin',d.id);$('desk-pin').setAttribute('aria-pressed',String(pin));$('desk-pin').setAttribute('aria-label',pin?'お気に入りを解除':'お気に入りに保存');$('desk-pin').textContent=pin?'★':'☆';
   $('desk-done').textContent=place==='shiire'?'確認して戻る':'読了にして戻る';
   if(restore)$('desk-scroll').scrollTop=notebook.position(d.id);
@@ -123,7 +138,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  }
  $('desk-query').addEventListener('input',e=>{savePosition();query=e.target.value;rememberView();render();});
  document.querySelectorAll('[data-desk-filter]').forEach(b=>b.addEventListener('click',()=>{savePosition();filter=b.dataset.deskFilter;rememberView();render();}));
- $('desk-copy').addEventListener('click',()=>{if(active)copy(active);});
+ $('desk-copy').addEventListener('click',()=>{if(learningController)learningController.copy();else if(active)copy(active);});
  $('desk-pin').addEventListener('click',()=>{if(!active)return;notebook.toggle('pin',active.id);operation(notebook.flag('pin',active.id)?'お気に入りに保存しました。':'お気に入りを解除しました。');onFeedback(notebook.flag('pin',active.id)?'pin':'unpin');render();});
  $('desk-done').addEventListener('click',()=>{if(!active)return;savePosition();notebook.finish(active);operation('端末の読了履歴に記録しました。');onFeedback('done');onHome();});
  $('desk-undo').addEventListener('click',()=>{try{notebook.undo();render();operation('直前の操作を元に戻しました。');}catch(error){operation(error.message);}});

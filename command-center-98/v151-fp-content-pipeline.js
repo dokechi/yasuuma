@@ -598,7 +598,7 @@
   const performanceSection=(item,payload)=>{
     const p=payload.performance||{};
     const context=[DESIGN_DIRECTIONS[text(payload.design_direction)]?.label,COLOR_PALETTES[paletteKey(payload)]?.label,COVER_MODES[inferredCoverMode(payload)]?.label].filter(Boolean).join(' ／ ');
-    return '<section class="fp-performance"><h4>投稿後の結果</h4><p>主に伸びた媒体の実数を残します。結果と、伸びた理由の仮説は分けて記録します。</p>'+(context?'<p class="fp-performance-context">制作条件：'+escFp(context)+'</p>':'')+'<div class="fp-performance-grid">'
+    return '<details class="fp-performance-optional"><summary>以前の詳細数値を見る（任意）</summary><section class="fp-performance"><h4>投稿後の詳細</h4><p>以前の数値記録です。手直しと「バズった」の記録には入力不要です。</p>'+(context?'<p class="fp-performance-context">制作条件：'+escFp(context)+'</p>':'')+'<div class="fp-performance-grid">'
       +'<label>主に伸びた媒体<select name="platform"><option value="instagram"'+selected(text(p.platform),'instagram')+'>Instagram</option><option value="tiktok"'+selected(text(p.platform),'tiktok')+'>TikTok</option><option value="youtube"'+selected(text(p.platform),'youtube')+'>YouTube</option></select></label>'
       +'<label>投稿日<input name="posted_at" type="datetime-local" value="'+escFp(localDateTime(p.posted_at))+'"></label>'
       +'<label>再生／リーチ<input name="reach" type="number" min="0" inputmode="numeric" value="'+escFp(numberValue(p.reach))+'"></label>'
@@ -609,7 +609,7 @@
       +'<label>コメント<input name="comments" type="number" min="0" inputmode="numeric" value="'+escFp(numberValue(p.comments))+'"></label>'
       +'<label>プロフィール表示<input name="profile_views" type="number" min="0" inputmode="numeric" value="'+escFp(numberValue(p.profile_views))+'"></label>'
       +'<label class="wide">メモ<input name="note" maxlength="500" value="'+escFp(p.note||'')+'" placeholder="事実と仮説を分ける（例：Instagramで伸長／写実画像が寄与した可能性）"></label></div>'
-      +'<div class="fp-performance-save"><span>'+(p.recorded_at?'記録 '+escFp(p.recorded_at):'未記録')+'</span><button class="push-button" data-fp-save-performance="'+escFp(item.id)+'">投稿結果を保存</button></div></section>';
+      +'<div class="fp-performance-save"><span>'+(p.recorded_at?'記録 '+escFp(p.recorded_at):'未記録')+'</span><button class="push-button" data-fp-save-performance="'+escFp(item.id)+'">投稿結果を保存</button></div></section></details>';
   };
   const slideRow=(slide,index,total)=>{
     const heading=slide?.headline||slide?.title||slide?.heading||('スライド '+(index+1));
@@ -617,7 +617,7 @@
     const teaser=text(slide?.teaser||slide?.kicker||slide?.section_label||heading).slice(0,18);
     return'<article class="fp-draft-slide"><div class="fp-page-sticky"><b>'+(slide?.page||index+1)+'/'+total+'</b><small>'+escFp(teaser)+'</small></div><section><h4>'+escFp(heading)+'</h4><p>'+escFp(body).replace(/\n/g,'<br>')+'</p>'+(slide?.visual_mode?'<small class="fp-slide-visual">表現：'+escFp(slide.visual_mode)+'</small>':'')+(slide?.visual?'<small class="fp-slide-visual">画面：'+escFp(slide.visual)+'</small>':'')+(list(slide?.source_refs).length?'<small class="fp-slide-source">根拠：'+escFp(slide.source_refs.join('、'))+'</small>':'')+'</section></article>';
   };
-  const closeDraft=()=>{document.querySelector('[data-fp-modal]')?.remove();document.body.classList.remove('fp-modal-open')};
+  const closeDraft=()=>{const modal=document.querySelector('[data-fp-modal]');modal?.postLearning?.destroy();modal?.remove();document.body.classList.remove('fp-modal-open')};
   const openDraft=item=>{
     const payload=item.payload||{};
     const slides=list(payload.draft_slides);
@@ -645,7 +645,14 @@
       +'<section class="fp-publish-copy"><h4>投稿時にコピー</h4><label>タイトル</label><div class="fp-copy-box"><pre>'+escFp(draftTitle(item,payload))+'</pre><button class="push-button small" data-fp-copy-title="'+escFp(item.id)+'">タイトルをコピー</button></div><label>キャプション</label><div class="fp-copy-box"><pre>'+escFp(draftCaption(payload))+'</pre><button class="push-button small" data-fp-copy-caption="'+escFp(item.id)+'">キャプションをコピー</button></div></section>'
       +performanceSection(item,payload)
       +'</main><footer><button class="push-button fp-close-draft">戻る</button><button class="push-button" data-fp-copy-draft="'+escFp(item.id)+'">原稿をコピー</button><button class="push-button fp-copy-images" data-fp-copy-package="'+escFp(item.id)+'" '+(copyReady?'':'disabled')+'>画像化用にコピー</button></footer></div>';
-    document.body.appendChild(modal);document.body.classList.add('fp-modal-open');modal.querySelector('.fp-close-draft')?.focus();
+    document.body.appendChild(modal);document.body.classList.add('fp-modal-open');
+    if(window.CCPostLearning){
+      const original=modal.querySelector('.fp-publish-copy'),details=document.createElement('details'),summary=document.createElement('summary'),host=document.createElement('div');
+      summary.textContent='元のタイトル・キャプション';original.replaceWith(host,details);details.append(summary,original);
+      modal.postLearning=window.CCPostLearning.mount(host,window.CCPostLearning.descriptor(item,house(item)?'house':'fp','fp_script'),{showCopy:false});
+      modal.querySelector('[data-fp-copy-draft]').textContent='最終稿をコピー';
+    }
+    modal.querySelector('.fp-close-draft')?.focus();
   };
   const reopenDraft=fresh=>{closeDraft();replaceCachedItem(fresh);refreshPanels();renderTop();openDraft(fresh)};
   const savePreflight=async(item,button)=>{
@@ -709,7 +716,7 @@
     const performanceButton=event.target.closest?.('[data-fp-save-performance]');
     if(performanceButton){event.preventDefault();const item=findFpItem(performanceButton.dataset.fpSavePerformance);if(item)savePerformance(item,performanceButton);return}
     const draftButton=event.target.closest?.('[data-fp-copy-draft]');
-    if(draftButton){event.preventDefault();const item=findFpItem(draftButton.dataset.fpCopyDraft);if(item)copyText(buildDraftCopy(item),'原稿をコピーしました');return}
+    if(draftButton){event.preventDefault();const modal=draftButton.closest('[data-fp-modal]');if(modal?.postLearning){modal.postLearning.copy();return}const item=findFpItem(draftButton.dataset.fpCopyDraft);if(item)copyText(buildDraftCopy(item),'原稿をコピーしました');return}
     const titleButton=event.target.closest?.('[data-fp-copy-title]');
     if(titleButton){event.preventDefault();const item=findFpItem(titleButton.dataset.fpCopyTitle);if(item)copyText(draftTitle(item),'タイトルをコピーしました');return}
     const captionButton=event.target.closest?.('[data-fp-copy-caption]');

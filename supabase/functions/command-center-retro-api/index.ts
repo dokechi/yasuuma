@@ -4,6 +4,7 @@ import { affiliatePublicAsset, affiliateGet, affiliatePatch } from "./affiliate-
 import { nekoGet, nekoPatch } from "./binbo-neko-api.ts";
 import { fpImagesGet, fpImagesPatch } from "./fp-finished-images-api.mjs";
 import { threadsManualGet, threadsManualPatch } from "./threads-manual-api.mjs";
+import { POST_LEARNING_TASK, postLearningGet, postLearningPatch } from "./post-learning-api.mjs";
 import { saveThreadsPayload } from "./threads-payload-store.mjs";
 import postgres from "npm:postgres@3.4.7";
 import { saveGuardedPayload, mutationFailure } from "./guarded-payload.mjs";
@@ -168,6 +169,8 @@ Deno.serve(async(req:Request)=>{
   if(req.method==="PATCH"){
     try{
       const body=await req.json().catch(()=>({}));const id=String(body?.id||"");const action=String(body?.action||"");
+      const learningResult=await postLearningPatch(req,body,{admin,json,sha256});
+      if(learningResult)return learningResult;
       const threadsResult=await threadsManualPatch(req,body,{admin,json,sha256,mapEvent,saveThreadsPayload:saveThreadsEvent});
       if(threadsResult)return threadsResult;
       const fpImagesResult=await fpImagesPatch(req,body,{admin,json,sha256});
@@ -303,6 +306,8 @@ Deno.serve(async(req:Request)=>{
   if(req.method!=="GET") return json(req,{ok:false,error:"method_not_allowed"},405);
   try{
     const resource=u.searchParams.get("resource")||"signals";
+    const learningResult=await postLearningGet(req,{admin,json,sha256});
+    if(learningResult)return learningResult;
     const threadsResult=await threadsManualGet(req,{admin,json});
     if(threadsResult)return threadsResult;
     const fpImagesResult=await fpImagesGet(req,{admin,json,sha256});
@@ -330,7 +335,7 @@ Deno.serve(async(req:Request)=>{
       const rawLimit=Number(u.searchParams.get("limit")||50),rawOffset=Number(u.searchParams.get("offset")||0);
       const limit=Number.isFinite(rawLimit)?Math.min(100,Math.max(1,Math.floor(rawLimit))):50;
       const offset=Number.isFinite(rawOffset)?Math.max(0,Math.floor(rawOffset)):0;
-      let query=admin.from("command_center_task_events").select("id,task_id,event_key,domain,priority,score,title,summary,source_url,impact_yen,deadline,occurred_at,payload",{count:"exact"}).neq("task_id","affiliate-assets-v1");
+      let query=admin.from("command_center_task_events").select("id,task_id,event_key,domain,priority,score,title,summary,source_url,impact_yen,deadline,occurred_at,payload",{count:"exact"}).neq("task_id","affiliate-assets-v1").neq("task_id",POST_LEARNING_TASK);
       query=excludeArchivedThreads(query);
       const domain=u.searchParams.get("domain"),taskId=u.searchParams.get("taskId");if(domain)query=query.eq("domain",domain);if(taskId)query=query.eq("task_id",taskId);
       const {data,error,count}=await query.order("occurred_at",{ascending:false}).order("id",{ascending:false}).range(offset,offset+limit-1);if(error)throw error;

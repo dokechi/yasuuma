@@ -1,4 +1,4 @@
-import {groupDrafts} from './notebook.js?v=20261022.12-profit';
+import {groupDrafts} from './notebook.js?v=20261023.2-learning';
 
 export const placeForRoom={red:'kyun',purple:'choi',silver:'fp',orange:'shiire'};
 export const placeNames={kyun:'キュン拾い',choi:'ちょい上等',fp:'FP・TikTok',shiire:'仕入れ'};
