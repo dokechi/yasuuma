@@ -4,12 +4,12 @@
  const origin=w.location.origin,frame=d.createElement('iframe');frame.id='ccCastleFrame';frame.title='司令塔・いつもの場所で';frame.allow='clipboard-write; autoplay';frame.hidden=true;frame.setAttribute('aria-label','司令塔・いつもの場所で');
  const style=d.createElement('style');style.textContent='#ccCastleFrame{position:fixed;inset:0;width:100%;height:100dvh;border:0;z-index:200;background:#131725}#ccCastleFrame[hidden]{display:none!important}#ccCastleReturn{position:fixed;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:2147483000;min-height:44px;padding:10px 15px;background:#172333;color:#f5dfb4;border:1px solid #bca574;border-radius:5px}#ccCastleReturn[hidden]{display:none!important}body.castle-visible{overflow:hidden!important}';d.head.append(style);d.body.append(frame);
  const back=d.createElement('button');back.id='ccCastleReturn';back.type='button';back.textContent='← 司令塔';back.hidden=true;d.body.append(back);
- let ready=false,modern=true,native=false,pending=null,lastPayload=null,controller=null;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}frame.src='./lounge/index.html?v=20261023.3-room-editor';let wasHome=!!w.CCHome?.active;
+ let ready=false,modern=true,native=false,pending=null,lastPayload=null,controller=null;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}frame.src='./lounge/index.html?v=20261023.4-compact-top';let wasHome=!!w.CCHome?.active;
  function send(type,data={}){if(ready)frame.contentWindow.postMessage({channel:'cc-castle-v1',type,...data},origin);}
  const startupWaiters=new Set();
  function whenReady(){if(ready||!modern||native||!w.CCHome?.active)return null;return new Promise(resolve=>startupWaiters.add(resolve));}
  function sync(){const isHome=!!w.CCHome?.active;if(isHome&&!wasHome&&modern){native=false;back.hidden=true;}wasHome=isHome;const shown=ready&&modern&&!native&&!!w.CCHome?.active;const changed=frame.hidden===shown;frame.hidden=!shown;d.body.classList.toggle('castle-visible',shown);if(changed)send(shown?'resume':'pause');if(shown||!modern||native||!isHome){for(const resolve of startupWaiters)resolve();startupWaiters.clear();}}
- function show(){if(!frame.getAttribute('src'))frame.src='./lounge/index.html?v=20261023.3-room-editor';modern=true;native=false;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}if(!w.CCHome?.active)w.CCHome?.show?.();back.hidden=true;sync();frame.focus();send('resume');if(ready)read();}
+ function show(){if(!frame.getAttribute('src'))frame.src='./lounge/index.html?v=20261023.4-compact-top';modern=true;native=false;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}if(!w.CCHome?.active)w.CCHome?.show?.();back.hidden=true;sync();frame.focus();send('resume');if(ready)read();}
  function nativeRoute(action,recordId,section){native=true;send('pause');frame.hidden=true;d.body.classList.remove('castle-visible');back.hidden=false;
   if(action==='classic'){W.openSettings();d.querySelector('dialog[open]')?.addEventListener('close',show,{once:true});}
   else if(action==='kyun'||action==='choi'||action==='tiktok'){H.openAccount(action,{recordId});const dialog=d.querySelector('.rpg-account-page:last-of-type');dialog?.addEventListener('close',show,{once:true});}
@@ -68,6 +68,7 @@
  })().catch(()=>send('status',{message:'情報の表示処理を確認できませんでした。「保存原稿を更新」で再試行できます。保存済みの原稿は保持しています。',loading:false})).finally(()=>pending=null);return pending;}
  w.addEventListener('message',event=>{const m=event.data;if(event.origin!==origin||event.source!==frame.contentWindow||m?.channel!=='cc-castle-v1')return;
   if(m.type==='ready'){ready=true;sync();if(lastPayload)send('records',lastPayload);else read();if(waitingWorker)send('host-update');}
+  if(m.type==='reading-room'&&typeof m.active==='boolean')d.body.classList.toggle('castle-reading',m.active);
   if(m.type==='refresh')read();
   if(m.type==='apply-host-update'&&waitingWorker){applyingUpdate=true;waitingWorker.postMessage({type:'SKIP_WAITING'});}
   if(m.type==='native'&&['classic','kyun','choi','tiktok','fp','sourcing','watches','cards','settings','daily','cooney','shiire'].includes(m.action))nativeRoute(m.action,typeof m.recordId==='string'&&m.recordId.length<=500?m.recordId:undefined,['purchases','research','queue'].includes(m.section)?m.section:undefined);
@@ -81,3 +82,4 @@
   let waitingWorker=null,applyingUpdate=false;try{if('serviceWorker' in w.navigator){w.navigator.serviceWorker.register('./castle-offline.js').then(reg=>{function watch(worker){worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&w.navigator.serviceWorker.controller){waitingWorker=reg.waiting;send('host-update');}});}if(reg.waiting){waitingWorker=reg.waiting;send('host-update');}reg.addEventListener('updatefound',()=>watch(reg.installing));}).catch(()=>send('status',{message:'オフライン準備は未完了です。オンラインで利用できます。'}));w.navigator.serviceWorker.addEventListener('controllerchange',()=>{if(applyingUpdate)w.location.reload();});}}catch{}
  w.addEventListener('pagehide',()=>{controller?.abort();send('pause');});d.addEventListener('visibilitychange',()=>send(d.hidden||frame.hidden?'pause':'resume'));w.CCCastle={unified:true,show,whenReady,classic:()=>nativeRoute('settings'),search:()=>{show();send('search-open');},later:context=>{show();send('later-context',{context});},settings:()=>{show();send('reading-settings');},recordCopy:event=>send('reading-copy',{event:{...event,time:Date.now(),eventId:'native-'+Date.now()+'-'+Math.random().toString(36).slice(2)}}),refresh:read,drafts};
 })(window);
+

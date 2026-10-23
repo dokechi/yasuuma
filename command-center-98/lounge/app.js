@@ -1,6 +1,6 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
 import {createMusicControls} from './music.js?v=20261022.26-audio';
-import {createDesk} from './desk.js?v=20261023.2-learning';
+import {createDesk} from './desk.js?v=20261023.4-compact-top';
 import {createInteractionSound} from './interaction-sound.js?v=20261022.26-audio';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261021.4-touch';
 const $ = (id) => document.getElementById(id);
@@ -117,3 +117,4 @@ try{
  $('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');
 }catch(error){console.error('司令塔の描画を開始できませんでした',error);app.classList.add('fallback-town');$('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');$('town-hint').textContent='看板を選んで、部屋へ'}
 desk.ready();
+

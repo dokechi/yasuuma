@@ -5,3 +5,9 @@ body.castle-visible #requestProgressShortcut{display:flex;position:fixed;inset:0
 body.castle-visible #requestProgressOpen{min-height:40px;padding:7px 18px;background:#e8cd91;color:#211b15;border:1px solid #ffe8b9;border-radius:5px;font:600 14px/1.4 system-ui,sans-serif;cursor:pointer}
 body.castle-visible #ccCastleFrame{top:52px;height:calc(100dvh - 52px)}
 @media(max-height:700px){body.castle-visible #requestProgressShortcut{height:28px;padding:0 8px}body.castle-visible #requestProgressOpen{min-height:28px;padding:3px 12px;font-size:12px}body.castle-visible #ccCastleFrame{top:20px;height:calc(100dvh - 20px)}}
+/* In a reading room, the request shortcut stays on the illustration without reserving a page-wide strip. */
+body.castle-visible.castle-reading #ccCastleFrame{top:0;height:100dvh}
+body.castle-visible.castle-reading #requestProgressShortcut{inset:auto auto max(12px,env(safe-area-inset-bottom)) 16px;width:max-content;height:auto;padding:0;background:transparent;border:0}
+body.castle-visible.castle-reading #requestProgressOpen{min-height:40px;padding:8px 12px;font-size:11px;box-shadow:0 2px 12px #0004}
+@media(max-width:780px),(max-aspect-ratio:4/5){body.castle-visible.castle-reading #requestProgressShortcut{inset:10px 12px auto auto}body.castle-visible.castle-reading #requestProgressOpen{min-height:36px;padding:7px 10px;font-size:10px}}
+

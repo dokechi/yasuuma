@@ -80,3 +80,39 @@ body[data-reading-font='large'] .draft-body{font-size:18px!important;line-height
 }
 @media(max-height:630px) and (min-width:781px){.room-mode .desk-toolbar{padding-top:6px;padding-bottom:3px}}
 
+/* Put the tools on one row and bring the actual manuscript closer to the top. */
+.room-mode .reading-desk{top:6px}
+.desk-toolbar{grid-template-columns:minmax(0,1fr) auto auto;gap:6px 10px;padding:6px 10px}
+.desk-toolbar .desk-heading{justify-content:flex-start;gap:12px}
+.desk-toolbar .desk-heading h3{font-size:15px}
+.desk-toolbar .desk-state{grid-column:3;max-width:200px}
+.desk-toolbar .desk-state summary{max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.desk-toolbar:has(.desk-state details[open]) .desk-state{grid-column:1/-1;max-width:none}
+.room-mode .desk-variants{padding:5px 14px 0}
+.room-mode .reader-scroll{padding:8px 14px 18px}
+.room-mode #draft-kind{display:none}
+.room-mode #draft-title{font-size:15px;line-height:1.45;margin:0 0 4px}
+.room-mode .draft-meta{font-size:9px;line-height:1.5;padding-bottom:4px}
+.room-mode .reading-desk .cc-post-learning{margin:5px 0;padding:9px}
+.room-mode .reading-desk .cc-post-learning>h4{display:none}
+.room-mode .reading-desk .cc-post-learning>details:first-of-type{float:right;margin:0 0 4px 8px}
+.room-mode .reading-desk .cc-post-learning>details:first-of-type summary{font-size:11px}
+.room-mode .reading-desk .cc-post-learning>label{margin:0;font-size:11px;line-height:1.7}
+.room-mode .reading-desk .cc-post-learning textarea{clear:both;margin-top:6px}
+@media(max-width:1000px){
+ .desk-toolbar{grid-template-columns:minmax(0,1fr) auto;gap:3px 8px;padding:5px 9px}
+ .desk-toolbar .desk-state{grid-column:1/-1;max-width:none}
+ .desk-toolbar .desk-heading{gap:8px}
+}
+@media(max-width:780px),(max-aspect-ratio:4/5){
+ .room-mode .reading-desk,.room-mode .desk-focused .reading-desk{top:140px}
+ .room-mode .reading-desk .cc-post-learning>details:first-of-type{float:none;margin:0 0 4px}
+}
+@media(max-width:550px){
+ .desk-toolbar .desk-routes{justify-content:flex-end}
+ .desk-toolbar .desk-routes button{font-size:9px;padding:5px 7px}
+ .desk-toolbar .desk-heading h3{font-size:14px}
+ .room-mode #draft-title{font-size:14px}
+}
+
+

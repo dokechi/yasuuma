@@ -100,6 +100,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   if(pending&&!holdsActiveText(active,pending.drafts,pending.complete))applyPending();
  }
  function enter(roomId){
+  send('reading-room',{active:true});
   savePosition();rememberView();if(externalNotes&&notebook.persistent()){notebook.sync();externalNotes=false;}place=placeForRoom[roomId];active=null;const view=requested?.id&&!requested.resume?{query:'',filter:'all'}:resumeView(views.get(place)||notebook.pref('view:'+place,null));query=view.query;filter=view.filter;$('desk-query').value=query;
   notebook.visit(place);$('desk-title').textContent=place==='shiire'?'仕入れの持ち場':'保存原稿';$('desk-kicker').textContent=place==='fp'?'SCRIPTS & CONTENT':place==='shiire'?'THE MERCHANT’S DESK':'YOUR MANUSCRIPTS';
   $('desk').dataset.place=place;routes();render({restore:true});
@@ -173,5 +174,6 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  document.addEventListener('visibilitychange',()=>{if(document.hidden)savePosition();});
  window.addEventListener('storage',e=>{if(e.key?.startsWith('castle-production.v1.')){externalNotes=true;operation('別の画面で読書メモが更新されました。部屋に入り直すと反映します。');}});
  if(!embedded){$('desk-connect').hidden=false;setStatus('本体から開くと、ログイン中の保存原稿・履歴・仕入れ管理を使えます。');}
- return {enter,leave:()=>{savePosition();rememberView();place=null;active=null;nativeWork=null;conveniences.update(null);if(pending)applyPending();},native,ready:()=>{if(embedded){setStatus('本体の保存原稿に接続しています…',{loading:true});send('ready');}},receive,notebook,workMarks:conveniences.workMarks};
+ return {enter,leave:()=>{send('reading-room',{active:false});savePosition();rememberView();place=null;active=null;nativeWork=null;conveniences.update(null);if(pending)applyPending();},native,ready:()=>{if(embedded){setStatus('本体の保存原稿に接続しています…',{loading:true});send('ready');}},receive,notebook,workMarks:conveniences.workMarks};
 }
+
