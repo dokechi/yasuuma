@@ -8,7 +8,7 @@
   <title>司令塔 — いつもの場所で</title>
   <link rel="preload" href="assets/manor-lounge-wardrobe-20261022.jpg" as="image">
   <link rel="stylesheet" href="style.css?v=20261022.12-profit">
-  <link rel="stylesheet" href="desk.css">
+  <link rel="stylesheet" href="desk.css?v=20261023.3-room-editor">
   <link rel="stylesheet" href="qol.css?v=20261022.12-profit">
   <link rel="stylesheet" href="hall-tools.css?v=20261021.8-hall">
   <link rel="stylesheet" href="music.css?v=20261021.3-audio">
@@ -40,9 +40,11 @@
       <button id="back" class="back-button">← 司令塔へ</button>
       <div class="room-caption"><span class="eyebrow" id="room-location">THE MERCHANT'S TAVERN</span><h2 id="room-title">仕入れ</h2></div>
       <section id="desk" class="reading-desk" aria-label="持ち場の作業机">
+        <div class="desk-toolbar">
         <header class="desk-heading"><div><span id="desk-kicker" class="eyebrow">THE READING DESK</span><h3 id="desk-title">保存原稿</h3></div><button id="desk-focus" aria-pressed="false">集中</button></header>
         <nav id="desk-routes" class="desk-routes" aria-label="本体の機能"></nav>
         <div class="desk-state"><details><summary id="desk-status-label">保存原稿の状態</summary><p id="desk-status" role="status">本体との接続を確認しています</p></details><button id="desk-refresh">↻ 更新</button></div>
+        </div>
         <button id="desk-pending" class="desk-pending" hidden>読んでいる原稿の更新を反映</button>
         <a id="desk-connect" class="desk-connect" href="https://dokechi.github.io/yasuuma/command-center-98/app-v130.html" target="_top" hidden>本体と連動して使う ↗</a>
         <div class="desk-content">
@@ -90,3 +92,4 @@
   <script type="module" src="app.js?v=20261023.2-learning"></script>
 </body>
 </html>
+
