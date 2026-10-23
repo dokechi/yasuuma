@@ -13,7 +13,7 @@ test('legacy last-song preferences avoid the same first song; invalid or duplica
  const storage=memory();assert.notEqual(createMusicOrder(catalog,{storage,previous:'woodland',random:()=>.999}).next().id,'woodland');
  storage.setItem('castle-town.music-order.v1',JSON.stringify({last:'harvest',remaining:['harvest','missing','lively','lively','enchanted']}));
  const order=createMusicOrder(catalog,{storage});assert.equal(order.next().id,'enchanted');assert.equal(order.next().id,'lively');
- assert.ok(catalog.some(t=>t.id===order.next().id));
+ const next=order.next().id;assert.ok(catalog.some(t=>t.id===next));
 });
 test('blocked or corrupt storage still shuffles within the current visit without crashing',()=>{
  for(const storage of [{getItem(){throw Error('blocked');},setItem(){throw Error('blocked');}},{getItem:()=>'{broken',setItem(){throw Error('full');}}]){
