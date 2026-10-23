@@ -1,7 +1,7 @@
 import {createKeepsakes} from './work-memory.js?v=20261021.8-hall';
 import {sampleEntry} from './entry-motion.js';
 // The painting and door faces use the same coordinates; no WebGL is required.
-const W=1536,H=1024,PLATE='assets/manor-lounge-wardrobe-20261022.jpg';
+const W=1536,H=1024,PLATE='assets/lounge-top-20261023.webp';
 const FOLD_PLATE=PLATE;
 // The supplied square painting contains the desktop view from y=244 to 1268.
 const PAINTING_H=1536,DESKTOP_CROP_Y=244;

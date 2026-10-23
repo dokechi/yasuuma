@@ -112,7 +112,7 @@ syncSettings();app.dataset.phase='town';
 if(history.state?.shireitoRoom)history.replaceState(null,'',location.pathname+location.search);
 
 try{
- const {createHybridWorld}=await import('./hybrid-world.js?v=20261022.11-wardrobe');
+ const {createHybridWorld}=await import('./hybrid-world.js?v=20261023.5-new-top');
  world=await createHybridWorld({app,host:$('world'),rooms,labels,getPhase:()=>phase,getSettings:()=>settings,getWorkMarks:()=>desk?.workMarks()||[],onEnter:enterRoom});
  $('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');
 }catch(error){console.error('司令塔の描画を開始できませんでした',error);app.classList.add('fallback-town');$('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');$('town-hint').textContent='看板を選んで、部屋へ'}
