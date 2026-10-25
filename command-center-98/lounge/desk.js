@@ -1,7 +1,7 @@
-import {createConveniences} from './qol.js?v=20261022.12-profit';
-import {resumeView,postingReadiness} from './qol-model.js?v=20261023.2-learning';
-import {createNotebook,safeLink} from './notebook.js?v=20261023.2-learning';
-import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261023.2-learning';
+import {createConveniences} from './qol.js?v=20261026.2-paired-posts';
+import {resumeView,postingReadiness} from './qol-model.js?v=20261026.2-paired-posts';
+import {createNotebook,safeLink} from './notebook.js?v=20261026.2-paired-posts';
+import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261026.2-paired-posts';
 
 export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{},onOpenRoom=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;
@@ -16,7 +16,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  const learningHost=el('div');$('draft-body').after(learningHost);let learningController=null,learningKey='',learningReady=false;
  function editable(d){
   let api;try{api=embedded?window.parent.CCPostLearning:window.CCPostLearning;}catch{}
-  const ref=api?.draftBinding(d),key=ref?JSON.stringify([ref,d.body]):'';
+  const ref=d.source?.label?.startsWith('日本語｜')?null:api?.draftBinding(d),key=ref?JSON.stringify([ref,d.body]):'';
   if(key!==learningKey){learningController?.destroy();learningController=null;learningReady=false;learningKey=key;learningHost.replaceChildren();
    if(ref){const id=d.id;learningController=api.mount(learningHost,ref,{showCopy:false,
     onChange:value=>{if(active?.id===id){conveniences.update({...active,body:value});$('desk-copy').textContent='最終稿をコピー';}},
