@@ -67,9 +67,9 @@
     if(isThreads){const checked=api.savedPriceStockCheck(p);const stamp=e('section',undefined,'rpg-account-price-stock-check');stamp.append(e('h4','価格・在庫の確認（保存時点）'),e('p',checked.label,'rpg-account-price-stock-time'),e('p','現在の価格・在庫は、商品ページで確認してください。','rpg-account-price-stock-note'));card.append(stamp);appendResult(card,item);}
     const product=['kyun','choi'].includes(account.key)?api.savedProductLink(p):null;
     const copies=api.savedCopies(p).filter(copy=>!product||copy.label!=='保存購入リンク');for(const copy of copies){const block=e('section',undefined,'rpg-account-copy');block.dataset.copyLabel=copy.label;block.append(e('h4',copy.label),e('pre',copy.text));const b=e('button',copy.label+'をコピー','push-button');b.type='button';b.onclick=async()=>{try{await root.navigator.clipboard.writeText(copy.text);desk?.copied({id:String(item.id),title:item.title||p.post_title||'保存原稿',label:copy.label,text:copy.text});showOperation('原文をコピーしました。');}catch(_){showOperation('クリップボード未確認。表示全文を選択してコピーしてください。');}};block.append(b);
-     if(root.CCPostLearning&&copy.label!=='保存購入リンク'){
+     if(root.CCPostLearning&&copy.label!=='保存購入リンク'&&copy.learningKey!==null){
       const edit=details('手直し・バズを記録');let controller=null;
-      edit.addEventListener('toggle',()=>{if(edit.open&&!controller)controller=root.CCPostLearning.mount(edit,root.CCPostLearning.descriptor(item,account.key,copy.label));});
+      edit.addEventListener('toggle',()=>{if(edit.open&&!controller)controller=root.CCPostLearning.mount(edit,root.CCPostLearning.descriptor(item,account.key,copy.learningKey||copy.label));});
       dialog.addEventListener('close',()=>controller?.destroy(),{once:true});block.append(edit);
      }
      card.append(block);}
@@ -417,6 +417,17 @@
   return {images,reply:String(p.self_reply||p.reply_text||p.threads_reply||p.link_reply||'')};
  }
  function savedCopies(p){
+  const posts=p.post_sets_v1;
+  if(posts&&typeof posts==='object'){
+   const copies=[];
+   for(const [key,language] of [['en','英語'],['ja','日本語']]){
+    const set=posts[key];if(!set||typeof set!=='object')continue;
+    const first=set.first_post,second=set.second_reply;
+    if(typeof first==='string'&&first.trim())copies.push({label:language+'｜1通目（本文）',text:first,learningKey:key==='en'?'保存主投稿':null});
+    if(typeof second==='string'&&second.trim())copies.push({label:language+'｜2通目（自分への返信）',text:second,learningKey:key==='en'?'保存自己返信':null});
+   }
+   if(copies.length)return copies;
+  }
   const result=[],variants=Array.isArray(p.body_variants)?p.body_variants:Array.isArray(p.body_options)?p.body_options:[];
   variants.forEach((v,i)=>{const t=typeof v==='string'?v:v&&typeof v==='object'?(v.text||v.body):'';if(t)result.push({label:'保存本文案'+(i+1),text:String(t)});});
   const main=p.main_post||p.threads_main_post||p.post_text||p.caption||p.draft_caption||(typeof p.draft==='string'?p.draft:'');if(main&&!result.some(r=>r.text===main))result.push({label:'保存主投稿',text:String(main)});
