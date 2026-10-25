@@ -1,4 +1,4 @@
-import {groupDrafts,safeLink,postingAssets} from './notebook.js?v=20261023.2-learning';
+import {groupDrafts,safeLink,postingAssets} from './notebook.js?v=20261026.2-paired-posts';
 
 export const roomForPlace={kyun:'red',choi:'purple',fp:'silver',shiire:'orange'};
 export function savedLinks(d){return (Array.isArray(d?.productLinks)?d.productLinks:d?.link?[{key:'saved',label:'保存されたリンク',url:d.link}]:[]).filter(x=>safeLink(x.url));}
@@ -10,8 +10,9 @@ export function seenRevision(d){if(fingerprints.has(d))return fingerprints.get(d
 export function unreadGroups(rows,seen={}){return groupDrafts(rows).filter(group=>group.some(d=>seen[d.id]!==seenRevision(d))).length;}
 export function postingReadiness(d){const images=postingAssets(d?.posting).images,commercial=['kyun','choi'].includes(d?.place),affiliate=savedLinks(d).find(x=>x.key==='affiliate');return {images,commercial,affiliate:affiliate?.url||'',label:(images.length?'画像 '+images.length+'枚':'画像未保存')+(commercial?' · '+(affiliate?'収益リンクあり':'収益リンク未設定'):'')};}
 export function postingSteps(d,copies=[]){
- const assets=postingAssets(d.posting),commercial=['kyun','choi'].includes(d.place),links=savedLinks(d).filter(x=>!commercial||x.key==='affiliate');
- const steps=[{key:'body',label:'本文',kind:'body',text:d.body},...(assets.reply&&assets.reply!==d.body?[{key:'reply',label:'自己返信',kind:'reply',text:assets.reply}]:[]),...links.map((x,i)=>({key:'link-'+i,label:x.label,kind:'link',text:x.url}))];
+ const assets=postingAssets(d.posting),commercial=['kyun','choi'].includes(d.place),paired=!!assets.main,main=assets.main||d.body;
+ const links=savedLinks(d).filter(x=>(!commercial||x.key==='affiliate')&&!(paired&&assets.reply.includes(x.url)));
+ const steps=[{key:'body',label:paired?'1通目｜本文':'本文',kind:'body',text:main},...(assets.reply&&assets.reply!==main?[{key:'reply',label:paired?'2通目｜自分への返信':'自己返信',kind:'reply',text:assets.reply}]:[]),...links.map((x,i)=>({key:'link-'+i,label:x.label,kind:'link',text:x.url}))];
  const allText=[...new Set(steps.map(s=>s.text))].join('\n\n'),allCopied=copies.some(c=>c.draftId===d.id&&c.kind==='posting-set'&&c.text===allText);
  return steps.map(step=>({...step,copied:allCopied||copies.some(c=>c.draftId===d.id&&c.kind===step.kind&&c.text===step.text)}));
 }

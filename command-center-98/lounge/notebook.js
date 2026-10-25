@@ -13,7 +13,7 @@ export function safeLink(value){const s=String(value||'').trim();if(!s)return ''
 export function postingAssets(value){
  const safe=v=>{const link=safeLink(v);if(!link)return '';const u=new URL(link);return u.protocol==='https:'&&!u.username&&!u.password?link:'';};
  const images=(Array.isArray(value?.images)?value.images:[]).slice(0,20).map(x=>({url:safe(typeof x==='string'?x:x?.url),label:String(x?.label||'保存画像').slice(0,100)})).filter(x=>x.url);
- return {images,reply:typeof value?.reply==='string'?value.reply.slice(0,100000):''};
+ return {images,...(typeof value?.main==='string'&&value.main?{main:value.main.slice(0,100000)}:{}),reply:typeof value?.reply==='string'?value.reply.slice(0,100000):''};
 }
 export function productLinks(value){return ['yahoo','official','affiliate'].map(key=>{const raw=Array.isArray(value)?value.find(r=>r?.key===key)?.url:'',url=safeLink(raw);let safe='';if(url){const u=new URL(url);if(u.protocol==='https:'&&!u.username&&!u.password&&(key!=='yahoo'||u.hostname==='store.shopping.yahoo.co.jp'&&/^\/[^/]+\/[^/]+\.html$/.test(u.pathname)))safe=url;}return {key,label:{yahoo:'Yahoo 商品ページ',official:'公式 商品ページ',affiliate:'投稿用アフィリエイトURL'}[key],url:safe};});}
 export function dayInJapan(time=Date.now()){if(!Number.isFinite(Number(time))||!Number.isFinite(new Date(Number(time)).getTime()))return '';return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(time));}
