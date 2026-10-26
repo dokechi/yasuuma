@@ -18,7 +18,11 @@
   const input=el('input');input.type='file';input.accept='image/png,image/jpeg,image/webp';input.multiple=true;input.hidden=true;input.setAttribute('aria-label','投稿に添付する画像を選択');
   const status=el('p','画像を読み込み中…');status.className='cc-threads-images-status';status.setAttribute('aria-live','polite');
   const actions=el('div');actions.className='cc-threads-image-actions';
-  let images=[],revision=0,dirty=false,busy=false,loaded=false,disposed=false,lastSignature='',mutationId='',generation=0;
+  let images=[],revision=0,dirty=false,busy=false,loaded=false,disposed=false,lastSignature='',mutationId='',generation=0;const openUrls=new Map();
+  function openUrl(image){
+   if(!image.dataUrl)return safeUrl(image.url);if(openUrls.has(image.dataUrl))return openUrls.get(image.dataUrl);
+   const [header,encoded]=image.dataUrl.split(','),raw=root.atob(encoded),bytes=Uint8Array.from(raw,c=>c.charCodeAt(0)),url=root.URL.createObjectURL(new root.Blob([bytes],{type:header.slice(5).split(';')[0]}));openUrls.set(image.dataUrl,url);return url;
+  }
   const add=button('画像を追加',()=>input.click()),save=button('画像と順番を保存',persist),reset=button('保存済みの状態に戻す',()=>load(true)),retry=button('再読込',()=>load());save.className='cc-threads-save';retry.hidden=true;
   actions.append(add,save,reset,retry);section.append(heading,note,list,input,actions,status);host.append(section);
   function say(text,error=false){if(disposed)return;status.textContent=text;status.dataset.error=String(error);}
@@ -38,7 +42,7 @@
     const controls=el('div');controls.className='cc-threads-image-actions';
     const before=button('前へ',()=>{[images[i-1],images[i]]=[images[i],images[i-1]];changed();}),after=button('後へ',()=>{[images[i],images[i+1]]=[images[i+1],images[i]];changed();}),remove=button('外す',()=>{images.splice(i,1);changed();});before.dataset.edge=String(i===0);after.dataset.edge=String(i===images.length-1);
     before.setAttribute('aria-label',(i+1)+'枚目を前へ');after.setAttribute('aria-label',(i+1)+'枚目を後へ');remove.setAttribute('aria-label',(i+1)+'枚目を下書きから外す');
-    const open=el('a','画像を開く ↗');open.href=src;open.target='_blank';open.rel='noopener noreferrer';
+    const open=el('a','画像を開く ↗');open.href=openUrl(image);open.target='_blank';open.rel='noopener noreferrer';
     controls.append(button('この画像を保存',()=>download(image,i)),before,after,remove,open);
     card.append(img,el('figcaption',(i+1)+'枚目 / '+images.length+'｜'+(image.label||image.name||'投稿画像')),controls);list.append(card);
    }
@@ -70,7 +74,7 @@
    }catch(error){say(error.message||'画像を読み込めませんでした。',true);}
    finally{busy=false;input.value='';if(!disposed)paint();}
   };
-  const controller={key:JSON.stringify(ref),refresh:()=>{if(!dirty)load();},destroy(){disposed=true;generation++;controllers.delete(controller);section.remove();},dirty:()=>dirty};controllers.add(controller);load();return controller;
+  const controller={key:JSON.stringify(ref),refresh:()=>{if(!dirty)load();},destroy(){disposed=true;generation++;controllers.delete(controller);for(const url of openUrls.values())root.URL.revokeObjectURL(url);openUrls.clear();section.remove();},dirty:()=>dirty};controllers.add(controller);load();return controller;
  }
  return {binding,mount,safeUrl};
 });

@@ -1,6 +1,7 @@
 import {createHallTools} from './hall-tools.js?v=20261021.8-hall';
 import {placeNames} from './desk-model.js?v=20261022.12-profit';
-import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261026.3-draft-images';
+import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261026.4-draft-images';
+import {postingAssets} from './notebook.js?v=20261026.4-draft-images';
 
 export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},send=()=>{}}){
  const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
@@ -50,7 +51,7 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
   const images=$('posting-images');let imageApi;try{imageApi=window.parent.CCThreadsImages||window.CCThreadsImages;}catch{}
   const ref=imageApi?.binding(d),key=ref?JSON.stringify(ref):'';
   if(ref){
-   if(key!==imageKey){imageController?.destroy();images.replaceChildren();imageKey=key;imageController=imageApi.mount(images,ref,{onCount:count=>{$('posting-readiness').textContent=readiness.label.replace(/画像 \d+枚|画像未保存/,count?'画像 '+count+'枚':'画像未保存');}});}
+   if(key!==imageKey){imageController?.destroy();images.replaceChildren();imageKey=key;imageController=imageApi.mount(images,ref,{onSaved:data=>{postDraft={...postDraft,posting:{...postDraft.posting,images:postingAssets({images:data.manifest.images}).images}};},onCount:count=>{$('posting-readiness').textContent=readiness.label.replace(/画像 \d+枚|画像未保存/,count?'画像 '+count+'枚':'画像未保存');}});}
   }else{imageController?.destroy();imageController=null;imageKey='';images.replaceChildren();if(readiness.images.length){images.append(el('h3','保存画像'));for(const [i,asset]of readiness.images.entries()){const line=el('section'),a=el('a',(i+1)+'枚目を開く ↗'),img=el('img');a.href=asset.url;a.target='_blank';a.rel='noopener noreferrer';img.src=asset.url;img.alt=asset.label;img.loading='lazy';img.referrerPolicy='no-referrer';line.append(a,img);images.append(line);}}else images.append(el('p','この投稿にひもづく画像は未保存です。','qol-note'));}
   const posted=currentPosted(d,notebook.pref('posted:'+d.id,null)),mark=$('posting-complete');mark.textContent=posted?'投稿済みメモを取り消す':'投稿したので完了';mark.disabled=!!changed;
   $('posting-progress').textContent=posted?'✓ この本文を投稿済みとして端末に記録しました。':steps.filter(s=>s.copied).length+' / '+steps.length+' コピー済み。投稿後、下のボタンで完了を記録できます。';$('posting-dialog').scrollTop=scroll;
