@@ -1,11 +1,12 @@
 import {createHallTools} from './hall-tools.js?v=20261021.8-hall';
 import {placeNames} from './desk-model.js?v=20261022.12-profit';
-import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261026.2-paired-posts';
+import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261026.3-draft-images';
 
 export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},send=()=>{}}){
  const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const button=(text,fn)=>{const b=el('button',text);b.type='button';b.addEventListener('click',fn);return b;};
  let current=null,selectedLater='',postDraft=null,latest=[],readState='unknown',install={state:'instructions'};
+ let imageController=null,imageKey='';
  const tools=el('div',undefined,'lounge-conveniences'),resume=button('',()=>{const c=notebook.pref('lastWork',null);if(c)open({...c,resume:true});}),tray=button('あとで箱',()=>showTray());resume.id='lounge-resume';tray.id='lounge-later';tools.append(resume,tray);document.querySelector('.town-footer').prepend(tools);
  const hall=createHallTools({notebook,open,copy,showTray,onFeedback});const search=button('全体検索',()=>hall.showSearch());search.id='lounge-search';tools.append(search);
  const deskSearch=button('全体検索',()=>hall.showSearch());$('desk-footer-tools').append(deskSearch);
@@ -46,7 +47,11 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
   if(!savedLinks(d).length)host.append(el('p','この原稿には保存された商品リンクがありません。','qol-note'));
   if(readiness.commercial&&!readiness.affiliate)host.append(el('p','収益リンクは未設定です。通常の商品URLは投稿用リンクへ置き換えません。','qol-note'));
   const references=savedLinks(d).filter(x=>readiness.commercial&&x.key!=='affiliate');if(references.length){const refs=el('details'),summary=el('summary','価格・在庫の確認用リンク');refs.append(summary);for(const link of references){const a=el('a',link.label+' ↗');a.href=link.url;a.target='_blank';a.rel='noopener noreferrer';refs.append(a);}host.append(refs);}
-  const images=$('posting-images');images.replaceChildren();if(readiness.images.length){images.append(el('h3','保存画像'));for(const [i,asset]of readiness.images.entries()){const line=el('section'),a=el('a',(i+1)+'枚目を開く ↗'),img=el('img');a.href=asset.url;a.target='_blank';a.rel='noopener noreferrer';img.src=asset.url;img.alt=asset.label;img.loading='lazy';img.referrerPolicy='no-referrer';line.append(a,img);images.append(line);}}else images.append(el('p','この投稿にひもづく画像は未保存です。','qol-note'));
+  const images=$('posting-images');let imageApi;try{imageApi=window.parent.CCThreadsImages||window.CCThreadsImages;}catch{}
+  const ref=imageApi?.binding(d),key=ref?JSON.stringify(ref):'';
+  if(ref){
+   if(key!==imageKey){imageController?.destroy();images.replaceChildren();imageKey=key;imageController=imageApi.mount(images,ref,{onCount:count=>{$('posting-readiness').textContent=readiness.label.replace(/画像 \d+枚|画像未保存/,count?'画像 '+count+'枚':'画像未保存');}});}
+  }else{imageController?.destroy();imageController=null;imageKey='';images.replaceChildren();if(readiness.images.length){images.append(el('h3','保存画像'));for(const [i,asset]of readiness.images.entries()){const line=el('section'),a=el('a',(i+1)+'枚目を開く ↗'),img=el('img');a.href=asset.url;a.target='_blank';a.rel='noopener noreferrer';img.src=asset.url;img.alt=asset.label;img.loading='lazy';img.referrerPolicy='no-referrer';line.append(a,img);images.append(line);}}else images.append(el('p','この投稿にひもづく画像は未保存です。','qol-note'));}
   const posted=currentPosted(d,notebook.pref('posted:'+d.id,null)),mark=$('posting-complete');mark.textContent=posted?'投稿済みメモを取り消す':'投稿したので完了';mark.disabled=!!changed;
   $('posting-progress').textContent=posted?'✓ この本文を投稿済みとして端末に記録しました。':steps.filter(s=>s.copied).length+' / '+steps.length+' コピー済み。投稿後、下のボタンで完了を記録できます。';$('posting-dialog').scrollTop=scroll;
  }

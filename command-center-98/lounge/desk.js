@@ -1,7 +1,7 @@
-import {createConveniences} from './qol.js?v=20261026.2-paired-posts';
-import {resumeView,postingReadiness} from './qol-model.js?v=20261026.2-paired-posts';
-import {createNotebook,safeLink} from './notebook.js?v=20261026.2-paired-posts';
-import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261026.2-paired-posts';
+import {createConveniences} from './qol.js?v=20261026.3-draft-images';
+import {resumeView,postingReadiness} from './qol-model.js?v=20261026.3-draft-images';
+import {createNotebook,safeLink} from './notebook.js?v=20261026.3-draft-images';
+import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261026.3-draft-images';
 
 export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{},onOpenRoom=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;
@@ -14,9 +14,16 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  const selections=new Map(),views=new Map();let requested=null;
  const conveniences=createConveniences({notebook,open:context=>{requested=context;if(context.id)selections.set(context.place,context.id);onOpenRoom(context.place);},copy:(...args)=>copy(...args),native,onFeedback,send:(...args)=>send(...args)});
  const learningHost=el('div');$('draft-body').after(learningHost);let learningController=null,learningKey='',learningReady=false;
+ const imageHost=el('div');learningHost.after(imageHost);let imageController=null,imageKey='';
+ function attachments(d){
+  let api;try{api=embedded?window.parent.CCThreadsImages:window.CCThreadsImages;}catch{}
+  const ref=api?.binding(d),key=ref?JSON.stringify(ref):'';
+  if(key===imageKey)return;imageController?.destroy();imageController=null;imageHost.replaceChildren();imageKey=key;
+  if(ref)imageController=api.mount(imageHost,ref,{onSaved:()=>operation('画像と順番を保存しました。')});
+ }
  function editable(d){
   let api;try{api=embedded?window.parent.CCPostLearning:window.CCPostLearning;}catch{}
-  const ref=d.source?.label?.startsWith('日本語｜')?null:api?.draftBinding(d),key=ref?JSON.stringify([ref,d.body]):'';
+  const ref=d?.source?.label?.startsWith('日本語｜')?null:api?.draftBinding(d),key=ref?JSON.stringify([ref,d.body]):'';
   if(key!==learningKey){learningController?.destroy();learningController=null;learningReady=false;learningKey=key;learningHost.replaceChildren();
    if(ref){const id=d.id;learningController=api.mount(learningHost,ref,{showCopy:false,
     onChange:value=>{if(active?.id===id){conveniences.update({...active,body:value});$('desk-copy').textContent='最終稿をコピー';}},
@@ -75,6 +82,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   for(const id of ['desk-copy','desk-pin','desk-done'])$(id).disabled=!active;
   $('desk-variants').replaceChildren();$('draft-links').replaceChildren();
   conveniences.update(active);
+  attachments(active);
   if(!active){editable(null);return;}
   const d=active,group=groups().find(g=>g.some(x=>x.id===d.id))||[d];
   if(group.length>1)for(const variant of group){const b=button(variant.kind,()=>select(variant.id));b.setAttribute('aria-pressed',String(variant.id===d.id));$('desk-variants').append(b);}

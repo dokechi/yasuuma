@@ -4,6 +4,7 @@ import { affiliatePublicAsset, affiliateGet, affiliatePatch } from "./affiliate-
 import { nekoGet, nekoPatch } from "./binbo-neko-api.ts";
 import { fpImagesGet, fpImagesPatch } from "./fp-finished-images-api.mjs";
 import { threadsManualGet, threadsManualPatch } from "./threads-manual-api.mjs";
+import { threadsImagesGet, threadsImagesPatch } from "./threads-images-api.mjs";
 import { POST_LEARNING_TASK, postLearningGet, postLearningPatch } from "./post-learning-api.mjs";
 import { saveThreadsPayload } from "./threads-payload-store.mjs";
 import postgres from "npm:postgres@3.4.7";
@@ -173,6 +174,8 @@ Deno.serve(async(req:Request)=>{
       if(learningResult)return learningResult;
       const threadsResult=await threadsManualPatch(req,body,{admin,json,sha256,mapEvent,saveThreadsPayload:saveThreadsEvent});
       if(threadsResult)return threadsResult;
+      const threadsImagesResult=await threadsImagesPatch(req,body,{admin,json,sha256,saveThreadsPayload:saveThreadsEvent});
+      if(threadsImagesResult)return threadsImagesResult;
       const fpImagesResult=await fpImagesPatch(req,body,{admin,json,sha256});
       if(fpImagesResult)return fpImagesResult;
       const affiliateResult=await affiliatePatch(req,body,affiliateDeps);
@@ -310,6 +313,8 @@ Deno.serve(async(req:Request)=>{
     if(learningResult)return learningResult;
     const threadsResult=await threadsManualGet(req,{admin,json});
     if(threadsResult)return threadsResult;
+    const threadsImagesResult=await threadsImagesGet(req,{admin,json});
+    if(threadsImagesResult)return threadsImagesResult;
     const fpImagesResult=await fpImagesGet(req,{admin,json,sha256});
     if(fpImagesResult)return fpImagesResult;
     const affiliateResult=await affiliateGet(req,affiliateDeps);

@@ -7,6 +7,7 @@ import {stripTypeScriptTypes} from 'node:module';
 import {runInNewContext} from 'node:vm';
 import {saveThreadsPayload, THREADS_PAYLOAD_UPDATE_SQL} from '../supabase/functions/command-center-retro-api/threads-payload-store.mjs';
 import {threadsUrl, threadsAccount, threadsManualGet, threadsManualPatch, THREADS_TASK, PROFILE_CONTRACT, RESULT_CONTRACT} from '../supabase/functions/command-center-retro-api/threads-manual-api.mjs';
+import {threadsImagesGet,threadsImagesPatch} from '../supabase/functions/command-center-retro-api/threads-images-api.mjs';
 
 if (process.env.REQUIRE_THREADS_SQL === '1') assert.ok(process.env.PGLITE_MODULE, 'PGLITE_MODULE must be configured for required Threads SQL coverage');
 
@@ -248,7 +249,7 @@ test('actual API dispatcher requires existing auth for both Threads routes; no l
     }}, serve: cb => {handler = cb;}},
     createClient: () => s.deps.admin, crypto: webcrypto, TextEncoder, Headers, Response, URL, structuredClone,
     affiliatePublicAsset: noRoute, affiliatePatch: noRoute, affiliateGet: noRoute, nekoPatch: noRoute, nekoGet: noRoute,
-    fpImagesPatch: noRoute, fpImagesGet: noRoute, threadsManualGet, threadsManualPatch, saveThreadsPayload,
+    fpImagesPatch: noRoute, fpImagesGet: noRoute, threadsManualGet, threadsManualPatch, threadsImagesGet, threadsImagesPatch, postLearningGet:noRoute,postLearningPatch:noRoute, saveThreadsPayload,
     postgres: () => { dbClients++; return {unsafe: async (statement, params) => {
       if (driverFailure) throw Error("synthetic-private-password-must-not-leak");
       assert.equal(statement, THREADS_PAYLOAD_UPDATE_SQL);
@@ -263,6 +264,7 @@ test('actual API dispatcher requires existing auth for both Threads routes; no l
     assert.equal(response.status, 401); assert.deepEqual(await response.json(), {ok: false, error: 'unauthorized'});
   }
   assert.equal(s.writes.length, 0);
+  for(const method of ['GET','PATCH'])assert.equal((await handler(new Request('https://example.invalid/?resource=threads-images&id=1&accountKey=kyun',{method,...(method==='PATCH'?{body:JSON.stringify({action:'threads_images_save',id:1})}:{})}))).status,401);
   const exp = String(Date.now() + 60000), token = exp + '.' + createHmac('sha256', 'synthetic-test-key').update('retro|' + exp).digest('hex');
   const headers = {authorization: 'Bearer ' + token, 'content-type': 'application/json'};
   const read = await handler(new Request('https://example.invalid/?resource=threads-manual-accounts', {headers}));

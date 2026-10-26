@@ -38,7 +38,7 @@ function identity(id) {
   }
   fail('threads_invalid_event_id');
 }
-async function readEvent(d, id) {
+export async function readEvent(d, id) {
   const ref = identity(id);
   let query = d.admin.from(TABLE).select(FIELDS).eq('task_id', THREADS_TASK);
   query = ref.id ? query.eq('id', ref.id) : query.eq('event_key', ref.key);

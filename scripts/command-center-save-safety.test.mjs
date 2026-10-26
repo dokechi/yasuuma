@@ -160,7 +160,7 @@ async function api(s) {
     Deno: {env: {get: name => name === 'SUPABASE_SERVICE_ROLE_KEY' ? 'isolated-test-key' : 'https://example.invalid'}, serve: callback => {handler = callback;}},
     createClient: () => s.admin, crypto: webcrypto, TextEncoder, Headers, Response, URL, structuredClone,
     affiliatePublicAsset: noRoute, affiliatePatch: noRoute, affiliateGet: noRoute, nekoPatch: noRoute, nekoGet: noRoute,
-    fpImagesPatch: noRoute, fpImagesGet: noRoute, threadsManualPatch: noRoute, threadsManualGet: noRoute, saveGuardedPayload, validateSourcingVerdict, mutationFailure, sourcingSuppliers, SaveError, saveVersionedRow, saveSourcingRoute, excludeArchivedSourcing
+    fpImagesPatch: noRoute, fpImagesGet: noRoute, threadsManualPatch: noRoute, threadsManualGet: noRoute, threadsImagesGet:noRoute,threadsImagesPatch:noRoute,postLearningGet:noRoute,postLearningPatch:noRoute, saveGuardedPayload, validateSourcingVerdict, mutationFailure, sourcingSuppliers, SaveError, saveVersionedRow, saveSourcingRoute, excludeArchivedSourcing
   });
   const exp = String(Date.now() + 60000), token = exp + '.' + createHmac('sha256', 'isolated-test-key').update('retro|' + exp).digest('hex');
   return (method, body, resource = '') => handler(new Request('https://example.invalid/?resource=' + resource, {

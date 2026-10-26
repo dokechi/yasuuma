@@ -39,8 +39,9 @@
   const isThreads=['kyun','choi'].includes(account.key),accountActions=e('div',undefined,'rpg-threads-account-actions'),readSummary=e('div',undefined,'rpg-account-read-summary');readSummary.setAttribute('aria-live','polite');
   status.setAttribute('aria-live','polite');dialog.append(toolbar,header,...(isThreads?[accountActions]:[]),tabs,...(isThreads?[readSummary]:[]),status,coverageDetails,list,policy);doc.body.append(dialog);dialog.onclose=()=>dialog.remove();dialog.showModal();
   if(account.key==='tiktok'){const f=e('button','FP原稿を見る（既存FP）','push-button');f.type='button';f.dataset.homeAction='fp-draft';f.onclick=()=>{desk?.savePosition();dialog.close();};dialog.append(f);}
-  let accountConfig=null,accountError='',accountLoading=isThreads,childDialog=null;
-  const closeParent=dialog.onclose;dialog.onclose=()=>{if(childDialog)childDialog.close();closeParent();};
+  let accountConfig=null,accountError='',accountLoading=isThreads,childDialog=null;const imageControllers=[];
+  const clearImages=()=>{for(const c of imageControllers)c?.destroy();imageControllers.length=0;};
+  const closeParent=dialog.onclose;dialog.onclose=()=>{clearImages();if(childDialog)childDialog.close();closeParent();};
   let items=localItems().filter(i=>!root.CCThreadsArchive?.enabled||(!api.matchesAccount(i,'kyun')&&!api.matchesAccount(i,'choi'))),offset=0,hasMore=true,loading=false,loaded=0,total=null,checked=false,readError='',selectedTab='current',focusedRecord=false;
   const desk=root.CCRpgDailyDesk?.mount({dialog,account,toolbar,list,onStatus:showOperation});
   if(desk?.tab==='history')selectedTab='history';
@@ -48,6 +49,7 @@
   currentTab.onclick=()=>{selectedTab='current';render();};historyTab.onclick=()=>{selectedTab='history';render();};
   const more=e('button','保存原稿の続き100件を確認','push-button');more.type='button';dialog.append(more);
   function render(){
+   clearImages();
    const previousScroll=dialog.scrollTop,previousActiveId=doc.activeElement?.closest?.('.rpg-account-card')?.dataset.recordId;
    const matches=api.unique(items).filter(i=>!api.isSuppressed(i)&&!root.CCThreadsArchive?.isArchivedRecord(i)&&api.matchesAccount(i,account.key));list.replaceChildren();
    const target=recordId?matches.find(i=>recordKey(i.id)===recordKey(recordId)):null;if(target&&!focusedRecord)selectedTab=api.historyState(target,account.key)?'history':'current';
@@ -74,6 +76,7 @@
      }
      card.append(block);}
     if(!copies.length)card.append(e('p','本文の保存形式は未確認です。元の原稿画面で確認してください。'));
+    if(isThreads&&root.CCThreadsImages){const images=details('添付画像を表示・追加');card.append(images);let controller=null;images.addEventListener('toggle',()=>{if(images.open&&!controller){controller=root.CCThreadsImages.mount(images,{id:item.eventRecordId??item.id,accountKey:account.key});imageControllers.push(controller);}});}
     if(product){const block=e('section',undefined,'rpg-account-product');block.append(e('h4','商品直リンク'));
      const rows=api.savedProductLinks(p);if(product.url&&!rows.some(r=>r.url===product.url))rows.push({key:'saved',label:'その他の保存商品URL',url:product.url});for(const row of rows){const line=e('section',undefined,'rpg-product-link');line.append(e('h5',row.label),e('p',row.url||'未登録','rpg-product-url'));if(row.url){const a=externalLink(row.url,row.label+'を開く','rpg-product-open'),b=e('button',row.label+'をコピー','push-button');b.type='button';b.onclick=async()=>{try{await root.navigator.clipboard.writeText(row.url);desk?.copied({id:String(item.id),title:item.title||p.post_title||'保存原稿',label:row.label,text:row.url});showOperation('URLをコピーしました。');}catch{showOperation('コピー未確認。表示URLを選択してコピーしてください。');}};line.append(a,b);}block.append(line);}
      block.append(e('p',product.note,'rpg-product-note'),e('p','通常の商品ページと投稿用アフィリエイトURLは別です。価格・在庫・色サイズ・送料の同一条件は未確認です。','rpg-product-note'));card.append(block);}
@@ -412,8 +415,9 @@
   return [{key:'yahoo',label:'Yahoo 商品ページ',url:candidates.map(yahoo).find(Boolean)||''},{key:'official',label:'公式 商品ページ',url:official},{key:'affiliate',label:'投稿用アフィリエイトURL',url:affiliate}];
  }
  function savedPostingAssets(p){
-  const raw=Array.isArray(p.post_images)?p.post_images:Array.isArray(p.image_urls)?p.image_urls:Array.isArray(p.finished_images?.pages)?p.finished_images.pages:[];
-  const images=raw.slice(0,20).map((x,i)=>({url:typeof x==='string'?x:String(x?.url||x?.image_url||x?.src||''),label:String(x?.label||((i+1)+'枚目'))}));
+  const managed=p.threads_images_v1?.contract==='threads-post-images-v1'&&Array.isArray(p.threads_images_v1.images);
+  const raw=managed?p.threads_images_v1.images:Array.isArray(p.post_images)?p.post_images:Array.isArray(p.image_urls)?p.image_urls:Array.isArray(p.finished_images?.pages)?p.finished_images.pages:[];
+  const images=raw.slice(0,20).map((x,i)=>({url:typeof x==='string'?x:String(x?.url||x?.image_url||x?.src||''),label:String(x?.label||((i+1)+'枚目')),...(managed&&typeof x?.assetKey==='string'?{assetKey:x.assetKey}:{})}));
   return {images,reply:String(p.self_reply||p.reply_text||p.threads_reply||p.link_reply||'')};
  }
  function savedCopies(p){
