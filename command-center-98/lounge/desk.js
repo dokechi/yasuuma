@@ -55,7 +55,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   const host=$('desk-routes');host.replaceChildren();
   if(place==='fp')host.append(button('FP 台本・画像',()=>native('fp')),button('TikTok 投稿結果',()=>native('tiktok',active?.source?.account==='tiktok'?active.source.id:undefined)));
   else if(place==='shiire')host.append(button('購入・在庫・売却を開く',()=>native('sourcing')));
-  else host.append(button('投稿結果・価格を確認',()=>{const dest=nativeForDraft(place,active);native(dest.action,dest.recordId);}));
+  else host.append(button(place==='kyun'?'出典・画像構成を確認':'過去原稿を開く',()=>{const dest=nativeForDraft(place,active);native(dest.action,dest.recordId);}));
  }
  function renderList(){
   const rows=groups(),list=$('desk-list');list.replaceChildren();
@@ -87,7 +87,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   const d=active,group=groups().find(g=>g.some(x=>x.id===d.id))||[d];
   if(group.length>1)for(const variant of group){const b=button(variant.kind,()=>select(variant.id));b.setAttribute('aria-pressed',String(variant.id===d.id));$('desk-variants').append(b);}
   $('draft-kind').textContent=d.kind;$('draft-title').textContent=d.title;$('draft-body').textContent=d.body;
-  $('draft-meta').textContent=[d.source?.status,['kyun','choi'].includes(d.place)?postingReadiness(d).label:'',d.checkedAt?'価格・在庫の保存時確認：'+d.checkedAt:''].filter(Boolean).join(' · ');
+  $('draft-meta').textContent=[d.source?.status,d.source?.account==='insurance'?'':(['kyun','choi'].includes(d.place)?postingReadiness(d).label:''),d.checkedAt?(d.source?.account==='insurance'?'資料確認日：':'価格・在庫の保存時確認：')+d.checkedAt:''].filter(Boolean).join(' · ');
   const links=Array.isArray(d.productLinks)?d.productLinks.filter(x=>safeLink(x.url)):d.link?[{label:'保存されたリンク',url:d.link}]:[];
   if(links.length){$('draft-links').append(el('p','保存された商品リンク','draft-kind'));for(const row of links){const line=el('div',undefined,'product-link'),a=el('a',row.label+' ↗');a.href=safeLink(row.url);a.target='_blank';a.rel='noopener noreferrer';line.append(a,button('URLをコピー',()=>copy(d,'link',row.url)));$('draft-links').append(line);}if(['kyun','choi'].includes(place))$('draft-links').append(el('small','現在の価格・在庫は商品ページで確認してください。'));}
   $('desk-copy').textContent=notebook.copyMark(d)?'✓ 本文をコピー済み':'本文をコピー';
