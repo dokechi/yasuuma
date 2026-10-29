@@ -1,7 +1,7 @@
-import {createConveniences} from './qol.js?v=20261029.1-keiri';
-import {resumeView,postingReadiness} from './qol-model.js?v=20261029.1-keiri';
+import {createConveniences} from './qol.js?v=20261029.3-images';
+import {resumeView,postingReadiness} from './qol-model.js?v=20261029.3-images';
 import {createNotebook,safeLink} from './notebook.js?v=20261029.1-keiri';
-import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261029.1-keiri';
+import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261029.3-images';
 
 export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{},onOpenRoom=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;
@@ -64,7 +64,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
    b.dataset.draftId=d.id;b.setAttribute('aria-pressed',String(group.some(x=>x.id===active?.id)));
    b.append(el('small',(group.some(x=>notebook.flag('pin',x.id))?'★ ':'')+d.kind),el('strong',d.title),el('span',d.body.slice(0,75)));
    if(group.length>1)b.append(el('small',group.length+'種類の本文'));
-   if(['kyun','choi'].includes(d.place))b.append(el('small',postingReadiness(d).label,'posting-readiness'));
+   if(['kyun','choi'].includes(d.place))b.append(el('small',d.source?.account==='insurance'?'画像 '+(d.source.imageCount||0)+'枚':postingReadiness(d).label,'posting-readiness'));
    list.append(b);
   }
   document.querySelectorAll('[data-desk-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.deskFilter===filter)));

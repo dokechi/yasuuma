@@ -11,7 +11,7 @@ WHERE event.id = $2::bigint
 RETURNING to_jsonb(event) AS row
 `;
 export async function saveThreadsPayload(query, row, payload) {
-  if (!row || row.domain !== 'sns' || row.task_id !== 'threads-library-import-v1' || !Number.isSafeInteger(Number(row.id)) || Number(row.id) <= 0 ||
+  if (!row || row.domain !== 'sns' || !(row.task_id === 'threads-library-import-v1' || (row.task_id === 'insurance-threads-v1' && row.payload?.account === '保険' && row.payload?.handle === '@sucker0508')) || !Number.isSafeInteger(Number(row.id)) || Number(row.id) <= 0 ||
       typeof row.event_key !== 'string' || !row.event_key || !row.payload || Array.isArray(row.payload) || typeof row.payload !== 'object' ||
       !payload || Array.isArray(payload) || typeof payload !== 'object') throw new Error('threads_invalid_storage_scope');
   const parameters = [JSON.stringify(payload), Number(row.id), row.task_id, row.event_key, JSON.stringify(row.payload)];

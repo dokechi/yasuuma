@@ -1,6 +1,6 @@
 import {createHallTools} from './hall-tools.js?v=20261021.8-hall';
-import {placeNames} from './desk-model.js?v=20261022.12-profit';
-import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261026.4-draft-images';
+import {placeNames} from './desk-model.js?v=20261029.3-images';
+import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261029.3-images';
 import {postingAssets} from './notebook.js?v=20261026.4-draft-images';
 
 export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},send=()=>{}}){

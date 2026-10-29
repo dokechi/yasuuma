@@ -2,7 +2,7 @@
 (function(root,factory){const api=factory(root);if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.CCThreadsImages=api;})(typeof window==='undefined'?null:window,function(root){
  'use strict';
  const API='https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-retro-api',CONTRACT='threads-post-images-v1',controllers=new Set();
- function binding(draft){const s=draft?.source,id=String(s?.recordId||s?.id||'').replace(/^(sns:)+/,'');return ['kyun','choi'].includes(s?.account)&&(/^[1-9]\d*$/.test(id)||/^task:threads-library-import-v1:/.test(id))?{id,accountKey:s.account}:null;}
+ function binding(draft){const s=draft?.source,id=String(s?.recordId||s?.id||'').replace(/^(sns:)+/,'');return ['kyun','choi','insurance'].includes(s?.account)&&(/^[1-9]\d*$/.test(id)||/^task:threads-library-import-v1:/.test(id))?{id,accountKey:s.account}:null;}
  function safeUrl(value){try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password?u.href:'';}catch{return '';}}
  function styles(doc){
   if(doc.getElementById('cc-threads-images-style'))return;const style=doc.createElement('style');style.id='cc-threads-images-style';

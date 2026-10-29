@@ -68,3 +68,12 @@ test('removing an attachment keeps original bytes and source; empty managed mani
 test('failed image persistence returns a safe error and never changes the source draft',async()=>{
  const s=fixture();s.failAsset=true;const result=await patch(s);assert.equal(result.status,500);assert.equal(result.body.error,'threads_images_save_failed');assert.equal(s.writes.length,0);assert.equal(s.rows[0].payload.threads_images_v1,undefined);
 });
+test('insurance attachments preserve draft and reject wrong identity or asset owner',async()=>{
+ const s=fixture();s.rows[0]={...s.rows[0],task_id:'insurance-threads-v1',event_key:'2026-10-29-1',payload:{account:'保険',handle:'@sucker0508',draft:'完成原稿'}};
+ const first=good(await patch(s,request({accountKey:'insurance'})));assert.equal(first.assets[0].dataUrl,png);assert.equal(s.rows[0].payload.draft,'完成原稿');
+ assert.equal(good(await get(s,1,'insurance')).assets.length,1);
+ assert.equal((await get(s,1,'kyun')).status,409);
+ s.rows[1]={...s.rows[0],id:2,event_key:'2026-10-29-2',payload:{account:'保険',handle:'@sucker0508',draft:'別原稿'}};
+ assert.equal((await patch(s,request({id:2,accountKey:'insurance',images:[{assetKey:first.assets[0].assetKey}]}))).status,404);
+ s.rows[0].payload.handle='@another';assert.notEqual((await get(s,1,'insurance')).status,200);
+});

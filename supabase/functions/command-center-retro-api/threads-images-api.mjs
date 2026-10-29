@@ -1,6 +1,18 @@
 // Private image attachments. Originals are immutable and fetched only on demand.
 // Reuse the existing excluded asset store and the guarded Threads payload update.
-import {readEvent, threadsAccount} from './threads-manual-api.mjs';
+import {readEvent as readLegacyEvent, threadsAccount as legacyAccount} from './threads-manual-api.mjs';
+function threadsAccount(row) {
+ if(row?.task_id==='insurance-threads-v1' && row?.domain==='sns' && row?.payload?.account==='保険' && row?.payload?.handle==='@sucker0508') return 'insurance';
+ return legacyAccount(row);
+}
+async function readEvent(d,id) {
+ if(/^[1-9]\d{0,14}$/.test(String(id))){
+  const {data,error}=await d.admin.from('command_center_task_events').select('*').eq('task_id','insurance-threads-v1').eq('id',Number(id)).maybeSingle();
+  if(error)throw error;
+  if(data){threadsAccount(data);return data;}
+ }
+ return readLegacyEvent(d,id);
+}
 export const IMAGE_CONTRACT = 'threads-post-images-v1';
 export const ASSET_TASK = 'affiliate-assets-v1';
 const TABLE = 'command_center_task_events';

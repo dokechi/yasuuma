@@ -12,7 +12,7 @@
   const card=e('article');card.append(e('h3',account.label),details('媒体の方針',e('p',account.policy)));
   if(account.key==='sourcing'){const b=e('button','仕入れ・在庫管理カードを開く','push-button');b.type='button';b.dataset.homeAction='sourcing-queue';card.append(b);}
   else{
-   const b=e('button','この媒体の保存原稿を確認','push-button');b.type='button';b.onclick=()=>account.key==='choi'?insuranceDesk():open(account);card.append(b);
+   const b=e('button','この媒体の保存原稿を確認','push-button');b.type='button';b.onclick=()=>account.key==='kyun'?insuranceDesk():open(account);card.append(b);
    if(account.key==='tiktok'){const f=e('button','既存FP原稿を個別に確認','push-button');f.type='button';f.dataset.homeAction='fp-draft';card.append(f,details('既存FP原稿について',e('small','媒体設定のある原稿だけを表示。保険アフィの具体案件・広告リンクは未登録。')));}
   }
   grid.append(card);
@@ -237,7 +237,7 @@
  
  async function insuranceDesk(){
  const box=e('dialog',undefined,'manual-operation-review');box.append(e('h2','経理｜@sucker0508'));
- const close=e('button','閉じる');close.onclick=()=>{box.close();box.remove();};box.append(close);
+ const imageControllers=[];const close=e('button','閉じる');close.onclick=()=>{imageControllers.forEach(c=>c?.destroy());box.close();box.remove();};box.append(close);
  const archive=e('a','過去原稿を開く');archive.href='https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit';archive.target='_blank';archive.rel='noopener';box.append(archive);
  const status=e('p','原稿を読み込んでいます…');box.append(status);doc.body.append(box);box.showModal();
  try{
@@ -245,7 +245,7 @@
  const r=await fetch(u,{headers:{Authorization:'Bearer '+(localStorage.getItem('cc_retro_token')||'')},cache:'no-store'});const data=await r.json();if(!r.ok||!data.ok)throw Error('原稿を取得できません。ログイン状態を確認してください。');
  status.textContent='保存原稿 '+data.events.length+'本（最新100本まで）｜本文のみコピーできます。';
  for(const row of data.events){const p=row.payload||{};const card=e('article');card.append(e('h3',row.title),e('p',(p.date||'')+' ・確認用下書き'),e('pre',p.draft||''));
- const copy=e('button','本文をコピー');copy.onclick=async()=>{try{await navigator.clipboard.writeText(p.draft||'');copy.textContent='コピーしました';}catch{copy.textContent='コピーできません。本文を選択してください';}};card.append(copy,details('出典・着想・確認記録',e('pre',p.sources_note||'')));if(p.image_plan)card.append(details('画像構成',e('pre',p.image_plan)));box.append(card);}
+ const copy=e('button','本文をコピー');copy.onclick=async()=>{try{await navigator.clipboard.writeText(p.draft||'');copy.textContent='コピーしました';}catch{copy.textContent='コピーできません。本文を選択してください';}};card.append(copy,details('出典・着想・確認記録',e('pre',p.sources_note||'')));if(p.image_plan)card.append(details('画像構成',e('pre',p.image_plan)));const imageHost=e('div');card.append(imageHost);box.append(card);if(root.CCThreadsImages)imageControllers.push(root.CCThreadsImages.mount(imageHost,{id:String(row.id),accountKey:'insurance'}));}
  }catch(err){status.textContent=err.message;}
  }
 
