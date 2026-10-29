@@ -1,4 +1,4 @@
-import {currentPosted} from './qol-model.js?v=20261029.3-images';
+import {currentPosted} from './qol-model.js?v=20261029.4-images';
 const places=['kyun','choi','fp','shiire'];
 const dayFormatter=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'});
 export function japanDay(time){return dayFormatter.format(new Date(time));}
