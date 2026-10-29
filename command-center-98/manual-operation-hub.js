@@ -12,7 +12,7 @@
   const card=e('article');card.append(e('h3',account.label),details('媒体の方針',e('p',account.policy)));
   if(account.key==='sourcing'){const b=e('button','仕入れ・在庫管理カードを開く','push-button');b.type='button';b.dataset.homeAction='sourcing-queue';card.append(b);}
   else{
-   const b=e('button','この媒体の保存原稿を確認','push-button');b.type='button';b.onclick=()=>open(account);card.append(b);
+   const b=e('button','この媒体の保存原稿を確認','push-button');b.type='button';b.onclick=()=>account.key==='choi'?insuranceDesk():open(account);card.append(b);
    if(account.key==='tiktok'){const f=e('button','既存FP原稿を個別に確認','push-button');f.type='button';f.dataset.homeAction='fp-draft';card.append(f,details('既存FP原稿について',e('small','媒体設定のある原稿だけを表示。保険アフィの具体案件・広告リンクは未登録。')));}
   }
   grid.append(card);
@@ -234,7 +234,23 @@
   more.onclick=()=>fetchMore(true);render();(async()=>{do{await fetchMore(Boolean(recordId));}while(dialog.open&&recordId&&!focusedRecord&&hasMore&&!readError);})();if(isThreads)loadAccount();
  }
  // Presentation-only bridge: reuse the existing explicitly matched account review.
+ 
+ async function insuranceDesk(){
+ const box=e('dialog',undefined,'manual-operation-review');box.append(e('h2','保険｜@sucker0508'));
+ const close=e('button','閉じる');close.onclick=()=>{box.close();box.remove();};box.append(close);
+ const archive=e('a','過去原稿を開く');archive.href='https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit';archive.target='_blank';archive.rel='noopener';box.append(archive);
+ const status=e('p','原稿を読み込んでいます…');box.append(status);doc.body.append(box);box.showModal();
+ try{
+ const u=new URL('https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-retro-api');u.searchParams.set('resource','task-events');u.searchParams.set('taskId','insurance-threads-v1');u.searchParams.set('limit','100');
+ const r=await fetch(u,{headers:{Authorization:'Bearer '+(localStorage.getItem('cc_retro_token')||'')},cache:'no-store'});const data=await r.json();if(!r.ok||!data.ok)throw Error('原稿を取得できません。ログイン状態を確認してください。');
+ status.textContent='保存原稿 '+data.events.length+'本（最新100本まで）｜本文のみコピーできます。';
+ for(const row of data.events){const p=row.payload||{};const card=e('article');card.append(e('h3',row.title),e('p',(p.date||'')+' ・確認用下書き'),e('pre',p.draft||''));
+ const copy=e('button','本文をコピー');copy.onclick=async()=>{try{await navigator.clipboard.writeText(p.draft||'');copy.textContent='コピーしました';}catch{copy.textContent='コピーできません。本文を選択してください';}};card.append(copy,details('出典・着想・確認記録',e('pre',p.sources_note||'')));if(p.image_plan)card.append(details('画像構成',e('pre',p.image_plan)));box.append(card);}
+ }catch(err){status.textContent=err.message;}
+ }
+
  api.openAccount=function(key,options={}){
+  if(key==='choi'){insuranceDesk();return true;}
   const account=api.accounts.find(item=>item.key===key&&item.key!=='sourcing');
   if(!account)return false;
   open(account,{recordId:typeof options.recordId==='string'?options.recordId:null});return true;
@@ -266,7 +282,7 @@
  const accounts=[
   {key:'tiktok',label:'TikTok @sucker0508',policy:'働く人のお金判断。1投稿1疑問。答え・数字・条件を先に示し、次に確認することへ。既存の個別構成を優先。'},
   {key:'kyun',label:'Threads キュン拾い',policy:'レディースの服・靴・バッグ・小物。友達に好きな具体的部分を見せる口調。見た目・用途・仕様・安さを使い分ける。'},
-  {key:'choi',label:'Threads ちょい上等',policy:'メンズの服・靴・バッグ・小物。落ち着いた友達口調で用途→具体仕様→価格条件。かわいさ対品質の二分法に固定しない。'},
+  {key:'choi',label:'保険 Threads @sucker0508',policy:'毎日5本。3ブログで着想→需要確認→現行の公式資料で裏取り。上品な語り口で、流れてきた読者にも伝わる一つの発見。'},
   {key:'sourcing',label:'仕入れ・在庫管理',policy:'既存の仕入れ・在庫カードで価格・仕様・確認状態を管理。社内Excel日報・行動予定表には書き込まない。'}
  ];
  function payload(i){return i?.payload||i?.sourcePayload?.event?.payload||i?.source_payload?.event?.payload||{};}
