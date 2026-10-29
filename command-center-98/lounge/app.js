@@ -11,8 +11,8 @@ let settings = {sound:true, ambient:!reducedMedia.matches, reduce:reducedMedia.m
 try { settings = {...settings, ...JSON.parse(localStorage.getItem('shireito-courtyard-v1') || '{}')}; } catch {}
 if (!['quick','normal','slow'].includes(settings.pace)) settings.pace='normal';
 const rooms = [
-  {id:'red', name:'キュン拾い', en:'THE LETTER ROOM', sub:'手紙の書斎', color:0x9e4c4c, roof:0x744746, x:-5.3,z:-3.8,rot:.10, welcome:'おかえり。',line:'気になっていたこと、一緒に見ていこう。',focus:'47% 34%'},
-  {id:'purple', name:'ちょい上等',en:'THE PROMENADE',sub:'散歩の支度',color:0x79648c,roof:0x625c75,x:5.3,z:-4.2,rot:-.10,welcome:'ちょうど、よかった。',line:'今日はどんなものを見つけに行こうか。',focus:'57% 34%'},
+  {id:'red', name:'経理', en:'THE LETTER ROOM', sub:'手紙の書斎', color:0x9e4c4c, roof:0x744746, x:-5.3,z:-3.8,rot:.10, welcome:'おかえり。',line:'気になっていたこと、一緒に見ていこう。',focus:'47% 34%'},
+  {id:'purple', name:'過去原稿',en:'THE PROMENADE',sub:'散歩の支度',color:0x79648c,roof:0x625c75,x:5.3,z:-4.2,rot:-.10,welcome:'ちょうど、よかった。',line:'今日はどんなものを見つけに行こうか。',focus:'57% 34%'},
   {id:'silver',name:'FP・TikTok',en:'THE ROYAL LIBRARY',sub:'王都の図書室',color:0x527e8f,roof:0x526f77,x:-6.2,z:3.0,rot:.28,welcome:'お待ちしていました。',line:'読みかけの続き、ここから始めましょう。',focus:'50% 33%'},
   {id:'orange',name:'仕入れ',en:"THE MERCHANT'S TAVERN",sub:'商人の酒場',color:0xb67b3e,roof:0x8b6247,x:6.2,z:3.0,rot:-.28,welcome:'おかえりなさい。',line:'今日も、いいものが見つかるといいね。',focus:'52% 30%'}
 ];
