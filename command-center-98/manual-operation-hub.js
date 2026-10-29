@@ -236,7 +236,7 @@
  // Presentation-only bridge: reuse the existing explicitly matched account review.
  
  async function insuranceDesk(){
- const box=e('dialog',undefined,'manual-operation-review');box.append(e('h2','保険｜@sucker0508'));
+ const box=e('dialog',undefined,'manual-operation-review');box.append(e('h2','経理｜@sucker0508'));
  const close=e('button','閉じる');close.onclick=()=>{box.close();box.remove();};box.append(close);
  const archive=e('a','過去原稿を開く');archive.href='https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit';archive.target='_blank';archive.rel='noopener';box.append(archive);
  const status=e('p','原稿を読み込んでいます…');box.append(status);doc.body.append(box);box.showModal();
@@ -250,8 +250,8 @@
  }
 
  api.openAccount=function(key,options={}){
-  if(key==='choi'){insuranceDesk();return true;}
- if(key==='kyun'){root.open('https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit','_blank','noopener');return true;}
+  if(key==='kyun'){insuranceDesk();return true;}
+ if(key==='choi'){root.open('https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit','_blank','noopener');return true;}
   const account=api.accounts.find(item=>item.key===key&&item.key!=='sourcing');
   if(!account)return false;
   open(account,{recordId:typeof options.recordId==='string'?options.recordId:null});return true;
