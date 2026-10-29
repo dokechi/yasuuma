@@ -19,7 +19,7 @@
  <header class="rpg-masthead"><button type="button" class="rpg-tools" data-rpg-tools>設定</button><h1 tabindex="-1">司令塔</h1><p>今日の確認</p></header>
  <nav class="rpg-portals" aria-label="四つの入口">
  <button class="rpg-portal" type="button" data-rpg-account="kyun"><span class="rpg-copy"><span class="rpg-heading"><span class="rpg-name">キュン拾い ›</span></span><span class="rpg-description">今回の原稿を確認</span><span class="rpg-detail">本文・商品リンク</span></span><span class="rpg-edge" aria-hidden="true"></span></button>
- <button class="rpg-portal" type="button" data-rpg-account="choi"><span class="rpg-copy"><span class="rpg-heading"><span class="rpg-name">ちょい上等 ›</span></span><span class="rpg-description">今回の原稿を確認</span><span class="rpg-detail">本文・商品リンク</span></span><span class="rpg-edge" aria-hidden="true"></span></button>
+ <button class="rpg-portal" type="button" data-rpg-account="choi"><span class="rpg-copy"><span class="rpg-heading"><span class="rpg-name">保険 ›</span></span><span class="rpg-description">今回の原稿を確認</span><span class="rpg-detail">本文・商品リンク</span></span><span class="rpg-edge" aria-hidden="true"></span></button>
  <button class="rpg-portal" type="button" data-rpg-fp><span class="rpg-copy"><span class="rpg-heading"><span class="rpg-name">FP・TikTok ›</span></span><span class="rpg-description">台本と画像を確認</span></span><span class="rpg-edge" aria-hidden="true"></span></button>
  <button class="rpg-portal" type="button" data-rpg-sourcing><span class="rpg-copy"><span class="rpg-heading"><span class="rpg-name">仕入れ ›</span></span><span class="rpg-description">候補・購入・在庫・売却</span></span><span class="rpg-edge" aria-hidden="true"></span></button>
  </nav></div><footer class="rpg-footer">
