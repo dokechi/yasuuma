@@ -251,6 +251,7 @@
 
  api.openAccount=function(key,options={}){
   if(key==='choi'){insuranceDesk();return true;}
+ if(key==='kyun'){root.open('https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit','_blank','noopener');return true;}
   const account=api.accounts.find(item=>item.key===key&&item.key!=='sourcing');
   if(!account)return false;
   open(account,{recordId:typeof options.recordId==='string'?options.recordId:null});return true;
