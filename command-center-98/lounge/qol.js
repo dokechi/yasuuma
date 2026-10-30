@@ -1,7 +1,7 @@
-import {createHallTools} from './hall-tools.js?v=20261021.8-hall';
-import {placeNames} from './desk-model.js?v=20261029.4-images';
-import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261029.4-images';
-import {postingAssets} from './notebook.js?v=20261029.4-images';
+import {createHallTools} from './hall-tools.js?v=20261030.1-otoku';
+import {placeNames} from './desk-model.js?v=20261030.1-otoku';
+import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261030.1-otoku';
+import {postingAssets} from './notebook.js?v=20261030.1-otoku';
 
 export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},send=()=>{}}){
  const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
@@ -23,7 +23,7 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
   const last=notebook.pref('lastWork',null);resume.hidden=!last||!roomForPlace[last.place];resume.replaceChildren(el('small','前回の続き'),el('span',last?placeNames[last.place]+' · '+(last.title||'持ち場'):''));resume.title=last?.title||'';
   const count=items().length;tray.textContent='あとで箱'+(count?' · '+count:'');trayInDesk.textContent=tray.textContent;
   const seen=notebook.pref('seenRevisions',{});
-  for(const [place,room]of Object.entries(roomForPlace)){const b=document.querySelector('.place-label[data-room="'+room+'"]');if(!b)continue;let badge=b.querySelector('.door-letter');if(!badge){badge=el('span',undefined,'door-letter');badge.setAttribute('aria-hidden','true');b.append(badge);}const n=unreadGroups(latest.filter(d=>d.place===place),seen),unknown=readState!=='complete';badge.textContent=n?'✉':unknown?'·':'';badge.hidden=!n&&!unknown;b.dataset.unread=String(n);const message=n?'未読・更新 '+n+'件'+(unknown?'（残りの読取は確認中）':''):unknown?'原稿の読取を確認中':'未読の保存原稿なし';b.title=message;b.setAttribute('aria-label',placeNames[place]+'に入る。'+message);}
+  for(const [place,room]of Object.entries(roomForPlace).filter(([key])=>key!=='otoku')){const b=document.querySelector('.place-label[data-room="'+room+'"]');if(!b)continue;let badge=b.querySelector('.door-letter');if(!badge){badge=el('span',undefined,'door-letter');badge.setAttribute('aria-hidden','true');b.append(badge);}const n=unreadGroups(latest.filter(d=>d.place===place||(place==='choi'&&d.place==='otoku')),seen),unknown=readState!=='complete';badge.textContent=n?'✉':unknown?'·':'';badge.hidden=!n&&!unknown;b.dataset.unread=String(n);const message=n?'未読・更新 '+n+'件'+(unknown?'（残りの読取は確認中）':''):unknown?'原稿の読取を確認中':'未読の保存原稿なし';b.title=message;b.setAttribute('aria-label',(place==='choi'?'過去原稿':placeNames[place])+'に入る。'+message);}
   post.disabled=!current;later.disabled=!current;later.textContent=current&&items().some(x=>x.draft.id===current.id)?'あとで箱に保存済み':'あとで考える';post.hidden=!!current&&current.place==='shiire';
   if($('posting-dialog').open)renderPost();hall.refresh();
  }
@@ -52,7 +52,7 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
   const ref=imageApi?.binding(d),key=ref?JSON.stringify(ref):'';
   if(ref){
    if(key!==imageKey){imageController?.destroy();images.replaceChildren();imageKey=key;imageController=imageApi.mount(images,ref,{onSaved:data=>{postDraft={...postDraft,posting:{...postDraft.posting,images:postingAssets({images:data.manifest.images}).images}};},onCount:count=>{$('posting-readiness').textContent=readiness.label.replace(/画像 \d+枚|画像未保存/,count?'画像 '+count+'枚':'画像未保存');}});}
-  }else{imageController?.destroy();imageController=null;imageKey='';images.replaceChildren();if(readiness.images.length){images.append(el('h3','保存画像'));for(const [i,asset]of readiness.images.entries()){const line=el('section'),a=el('a',(i+1)+'枚目を開く ↗'),img=el('img');a.href=asset.url;a.target='_blank';a.rel='noopener noreferrer';img.src=asset.url;img.alt=asset.label;img.loading='lazy';img.referrerPolicy='no-referrer';line.append(a,img);images.append(line);}}else images.append(el('p','この投稿にひもづく画像は未保存です。','qol-note'));}
+  }else{imageController?.destroy();imageController=null;imageKey='';images.replaceChildren();if(readiness.images.length){images.append(el('h3','保存画像'));for(const [i,asset]of readiness.images.entries()){const line=el('section'),a=el('a',(i+1)+'枚目を開く ↗'),img=el('img');a.href=asset.url;a.target='_blank';a.rel='noopener noreferrer';img.src=asset.url;img.alt=asset.label;img.loading='lazy';img.referrerPolicy='no-referrer';line.append(a,img);images.append(line);}}else if(d.place!=='otoku')images.append(el('p','この投稿にひもづく画像は未保存です。','qol-note'));}
   const posted=currentPosted(d,notebook.pref('posted:'+d.id,null)),mark=$('posting-complete');mark.textContent=posted?'投稿済みメモを取り消す':'投稿したので完了';mark.disabled=!!changed;
   $('posting-progress').textContent=posted?'✓ この本文を投稿済みとして端末に記録しました。':steps.filter(s=>s.copied).length+' / '+steps.length+' コピー済み。投稿後、下のボタンで完了を記録できます。';$('posting-dialog').scrollTop=scroll;
  }

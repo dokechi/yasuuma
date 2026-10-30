@@ -1,7 +1,7 @@
-import {createConveniences} from './qol.js?v=20261029.4-images';
-import {resumeView,postingReadiness} from './qol-model.js?v=20261029.4-images';
-import {createNotebook,safeLink} from './notebook.js?v=20261029.4-images';
-import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261029.4-images';
+import {createConveniences} from './qol.js?v=20261030.1-otoku';
+import {resumeView,postingReadiness} from './qol-model.js?v=20261030.1-otoku';
+import {createNotebook,safeLink} from './notebook.js?v=20261030.1-otoku';
+import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261030.1-otoku';
 
 export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{},onOpenRoom=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;
@@ -9,7 +9,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  const button=(text,fn,cls)=>{const n=el('button',text,cls);n.type='button';n.addEventListener('click',fn);return n;};
  let storage;try{storage=window.localStorage;}catch{}
  let storageError=false;
- const notebook=createNotebook({seeds:{kyun:[],choi:[],fp:[],shiire:[]},storage,onError:()=>{storageError=true;}});
+ const notebook=createNotebook({seeds:{kyun:[],choi:[],otoku:[],fp:[],shiire:[]},storage,onError:()=>{storageError=true;}});
  let place=null,active=null,query='',filter='all',pending=null,loading=false,complete=false,connected=false,autoReturn=false,manual=null,scrollTimer=0,externalNotes=false,nativeWork=null;
  const selections=new Map(),views=new Map();let requested=null;
  const conveniences=createConveniences({notebook,open:context=>{requested=context;if(context.id)selections.set(context.place,context.id);onOpenRoom(context.place);},copy:(...args)=>copy(...args),native,onFeedback,send:(...args)=>send(...args)});
@@ -53,7 +53,9 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  function rememberView(){if(place){views.set(place,{query,filter});notebook.setPref('view:'+place,{query,filter});}}
  function routes(){
   const host=$('desk-routes');host.replaceChildren();
-  if(place==='fp')host.append(button('FP 台本・画像',()=>native('fp')),button('TikTok 投稿結果',()=>native('tiktok',active?.source?.account==='tiktok'?active.source.id:undefined)));
+  if(['choi','otoku'].includes(place)){for(const key of ['otoku','choi']){const tab=button(placeNames[key],()=>{requested={place:key};enter('purple');});tab.setAttribute('aria-pressed',String(place===key));host.append(tab);}}
+  if(place==='otoku'){host.append(button('出典・確認記録',()=>native('otoku')));const profile=el('a','@thats_a_steal0601 ↗');profile.href='https://www.threads.com/@thats_a_steal0601';profile.target='_blank';profile.rel='noopener noreferrer';host.append(profile);}
+  else if(place==='fp')host.append(button('FP 台本・画像',()=>native('fp')),button('TikTok 投稿結果',()=>native('tiktok',active?.source?.account==='tiktok'?active.source.id:undefined)));
   else if(place==='shiire')host.append(button('購入・在庫・売却を開く',()=>native('sourcing')));
   else host.append(button(place==='kyun'?'出典・画像構成を確認':'過去原稿を開く',()=>{const dest=nativeForDraft(place,active);native(dest.action,dest.recordId);}));
  }
@@ -109,8 +111,8 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  }
  function enter(roomId){
   send('reading-room',{active:true});
-  savePosition();rememberView();if(externalNotes&&notebook.persistent()){notebook.sync();externalNotes=false;}place=placeForRoom[roomId];active=null;const view=requested?.id&&!requested.resume?{query:'',filter:'all'}:resumeView(views.get(place)||notebook.pref('view:'+place,null));query=view.query;filter=view.filter;$('desk-query').value=query;
-  notebook.visit(place);$('desk-title').textContent=place==='shiire'?'仕入れの持ち場':'保存原稿';$('desk-kicker').textContent=place==='fp'?'SCRIPTS & CONTENT':place==='shiire'?'THE MERCHANT’S DESK':'YOUR MANUSCRIPTS';
+  savePosition();rememberView();if(externalNotes&&notebook.persistent()){notebook.sync();externalNotes=false;}place=roomId==='purple'?(requested?.place==='choi'?'choi':'otoku'):placeForRoom[roomId];active=null;const view=requested?.id&&!requested.resume?{query:'',filter:'all'}:resumeView(views.get(place)||notebook.pref('view:'+place,null));query=view.query;filter=view.filter;$('desk-query').value=query;
+  notebook.visit(place);$('desk-title').textContent=place==='shiire'?'仕入れの持ち場':place==='otoku'?placeNames.otoku:'保存原稿';$('desk-kicker').textContent=place==='fp'?'SCRIPTS & CONTENT':place==='shiire'?'THE MERCHANT’S DESK':'YOUR MANUSCRIPTS';
   $('desk').dataset.place=place;routes();render({restore:true});
   if(pending)applyPending();
   if(requested?.native&&embedded&&(['sourcing','watches','cards'].includes(requested.native)&&place==='shiire'||['fp','tiktok'].includes(requested.native)&&place==='fp'))native(requested.native,requested.recordId,true,requested.section);else if(place==='shiire'&&embedded)native('sourcing',undefined,true);requested=null;
