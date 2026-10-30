@@ -38,7 +38,6 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
    const tile=btn('',()=>travel(a));tile.className='account-tile';tile.dataset.destination=a.key;tile.disabled=!!a.pending;
    const art=el('img');art.src='assets/panel-'+a.key+'.webp';art.alt='';art.loading='eager';art.onerror=()=>{art.onerror=null;art.src='assets/'+(['red','purple','orange','silver','purple','red','orange','silver'][i])+'-face.webp';};
    const caption=el('span',undefined,'account-tile-caption');caption.append(el('small',String(i+1).padStart(2,'0')+' / '+(a.pending?'準備中':a.key==='sourcing'?'SOURCING':'THREADS')),el('strong',a.name),el('span',a.handle|| (a.pending?'名前・用途は未設定':'購入・在庫・売却')));
-   if(!a.pending&&a.key!=='sourcing')caption.append(el('small',new Set(draftsForAccount(rows(),a).map(d=>d.source.id)).size+'本の保存原稿'));
    tile.append(art,caption);tiles.append(tile);
   }
   status.textContent=message||(complete?'保存原稿を読込済み。追加3枠は未設定です。':'読込済みの原稿を表示しています。');
