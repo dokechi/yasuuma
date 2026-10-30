@@ -91,12 +91,12 @@
     "./sourcing-archive.js?v=20261018.43-empty",
     "./sourcing-profit-guard.js?v=20261022.12-profit",
     "./threads-images.js?v=20261029.4-images",
-    "./manual-operation-hub.js?v=20261030.2-otoku",
+    "./manual-operation-hub.js?v=20261030.3-rakuten",
     "./rpg-home.js?v=20261029-insurance",
     "./rpg-workspaces.js?v=20261017.33-unified",
     "./rpg-daily-store.js?v=20261015.1",
     "./rpg-daily-desk.js?v=20261017.33-unified",
-    "./castle-parent.js?v=20261030.2-otoku",
+    "./castle-parent.js?v=20261030.3-rakuten",
     "./lounge-workspace.js?v=20261021.8-hall"
   ]
 }

@@ -1,7 +1,7 @@
-import {groupDrafts} from './notebook.js?v=20261030.2-otoku';
+import {groupDrafts} from './notebook.js?v=20261030.3-rakuten';
 
 export const placeForRoom={red:'kyun',purple:'choi',silver:'fp',orange:'shiire'};
-export const placeNames={kyun:'経理',choi:'以前の原稿',otoku:'まだ安く買えるはず',fp:'FP・TikTok',shiire:'仕入れ'};
+export const placeNames={kyun:'経理',choi:'以前の原稿',otoku:'まだ安く買えるはず',rakuten:'楽天犬',fp:'FP・TikTok',shiire:'仕入れ'};
 export const productionURL='https://dokechi.github.io/yasuuma/command-center-98/app-v130.html';
 
 export function visibleGroups(rows,{query='',filter='all',isPinned=()=>false,isDone=()=>false}={}){

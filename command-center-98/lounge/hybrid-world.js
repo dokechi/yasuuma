@@ -1,4 +1,4 @@
-import {createKeepsakes} from './work-memory.js?v=20261030.2-otoku';
+import {createKeepsakes} from './work-memory.js?v=20261030.3-rakuten';
 import {sampleEntry} from './entry-motion.js';
 // The painting and door faces use the same coordinates; no WebGL is required.
 const W=1536,H=1024,PLATE='assets/lounge-top-20261023.webp';

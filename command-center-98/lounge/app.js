@@ -1,6 +1,6 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
 import {createMusicControls} from './music.js?v=20261022.26-audio';
-import {createDesk} from './desk.js?v=20261030.2-otoku';
+import {createDesk} from './desk.js?v=20261030.3-rakuten';
 import {createInteractionSound} from './interaction-sound.js?v=20261022.26-audio';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261021.4-touch';
 const $ = (id) => document.getElementById(id);
@@ -19,7 +19,7 @@ const rooms = [
 let phase='town', current=null, world=null, audio=null, desk=null;
 let entrySound=null,entryAnimated=false,effectsGain=null,effectsVolume=.5,music=null,interactionSound=null,feedback=null;
 let nextContextRoom=null;
-function openContext(place){const id=({kyun:'red',choi:'purple',otoku:'purple',fp:'silver',shiire:'orange'})[place];if(!id)return;if(phase==='town')enterRoom(id);else if(phase==='room'){nextContextRoom=id;goBack();}}
+function openContext(place){const id=({kyun:'red',choi:'purple',otoku:'purple',rakuten:'purple',fp:'silver',shiire:'orange'})[place];if(!id)return;if(phase==='town')enterRoom(id);else if(phase==='room'){nextContextRoom=id;goBack();}}
 let entryStart=0, roomTimer=0, replayAfterBack=null;
 const labels=new Map();
 for(const r of rooms){
@@ -112,7 +112,7 @@ syncSettings();app.dataset.phase='town';
 if(history.state?.shireitoRoom)history.replaceState(null,'',location.pathname+location.search);
 
 try{
- const {createHybridWorld}=await import('./hybrid-world.js?v=20261030.2-otoku');
+ const {createHybridWorld}=await import('./hybrid-world.js?v=20261030.3-rakuten');
  world=await createHybridWorld({app,host:$('world'),rooms,labels,getPhase:()=>phase,getSettings:()=>settings,getWorkMarks:()=>desk?.workMarks()||[],onEnter:enterRoom});
  $('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');
 }catch(error){console.error('司令塔の描画を開始できませんでした',error);app.classList.add('fallback-town');$('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');$('town-hint').textContent='看板を選んで、部屋へ'}
