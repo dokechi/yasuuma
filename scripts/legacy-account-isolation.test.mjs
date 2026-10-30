@@ -38,3 +38,10 @@ test('old completion and posting marks do not appear under current account label
  assert.deepEqual(workMarks(book,now).map(m=>m.id),['read:insurance']);
  assert.equal(book.completed('kyun').length,2,'old completion is preserved');
 });
+
+import fs from 'node:fs';import vm from 'node:vm';
+test('new offline shell clears only superseded application caches, not account storage',async()=>{
+ const handlers={},deleted=[];const code=fs.readFileSync(new URL('../command-center-98/castle-offline.js',import.meta.url),'utf8');
+ vm.runInNewContext(code,{URL,Set,self:{location:{href:'https://example.test/command-center-98/castle-offline.js'},addEventListener:(name,fn)=>handlers[name]=fn,clients:{claim:async()=>{}}},caches:{keys:async()=>['cc-production-shell-69','cc-production-shell-70','user-backup'],delete:async key=>deleted.push(key)}});
+ let task;handlers.activate({waitUntil:p=>task=p});await task;assert.deepEqual(deleted,['cc-production-shell-69']);assert.match(code,/await fetch\(r\)/,'online files are network-first, not an old cached account screen');
+});
