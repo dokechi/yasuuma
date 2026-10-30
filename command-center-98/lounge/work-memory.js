@@ -1,10 +1,11 @@
-import {currentPosted} from './qol-model.js?v=20261030.3-rakuten';
+import {isLegacyPublishingDraft} from './notebook.js?v=20261030.4-accounts';
+import {currentPosted} from './qol-model.js?v=20261030.4-accounts';
 const places=['kyun','choi','otoku','rakuten','fp','shiire'];
 const dayFormatter=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'});
 export function japanDay(time){return dayFormatter.format(new Date(time));}
 export function workMarks(notebook,now=Date.now()){
- const day=japanDay(now),marks=[];for(const place of places)for(const done of notebook.completed(place))if(Number.isFinite(done.time)&&japanDay(done.time)===day)marks.push({id:'read:'+done.id,place,time:done.time,kind:'read',title:done.title});
- for(const d of notebook.all()){const p=notebook.pref('posted:'+d.id,null);if(p&&Number.isFinite(p.time)&&japanDay(p.time)===day&&currentPosted(d,p))marks.push({id:'posted:'+d.id,place:d.place,time:p.time,kind:'posted',title:d.title});}
+ const day=japanDay(now),marks=[];for(const place of places)for(const done of notebook.completed(place))if(!isLegacyPublishingDraft(notebook.get?.(done.id)||done)&&Number.isFinite(done.time)&&japanDay(done.time)===day)marks.push({id:'read:'+done.id,place,time:done.time,kind:'read',title:done.title});
+ for(const d of notebook.all().filter(d=>!isLegacyPublishingDraft(d))){const p=notebook.pref('posted:'+d.id,null);if(p&&Number.isFinite(p.time)&&japanDay(p.time)===day&&currentPosted(d,p))marks.push({id:'posted:'+d.id,place:d.place,time:p.time,kind:'posted',title:d.title});}
  return marks.sort((a,b)=>b.time-a.time);
 }
 export function createKeepsakes({stage,getMarks=()=>[],doc=document}){

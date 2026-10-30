@@ -1,17 +1,17 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
-import {createMusicControls} from './music.js?v=20261022.26-audio';
-import {createDesk} from './desk.js?v=20261030.3-rakuten';
+import {createMusicControls} from './music.js?v=20261030.4-accounts';
+import {createDesk} from './desk.js?v=20261030.4-accounts';
 import {createInteractionSound} from './interaction-sound.js?v=20261022.26-audio';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261021.4-touch';
 const $ = (id) => document.getElementById(id);
 const app = $('app');
 const room = $('room');
 const reducedMedia = matchMedia('(prefers-reduced-motion: reduce)');
-let settings = {sound:true, ambient:!reducedMedia.matches, reduce:reducedMedia.matches, pace:'normal'};
+let settings = {sound:false, ambient:!reducedMedia.matches, reduce:reducedMedia.matches, pace:'normal'};
 try { settings = {...settings, ...JSON.parse(localStorage.getItem('shireito-courtyard-v1') || '{}')}; } catch {}
 if (!['quick','normal','slow'].includes(settings.pace)) settings.pace='normal';
 const rooms = [
-  {id:'red', name:'経理', en:'THE LETTER ROOM', sub:'手紙の書斎', color:0x9e4c4c, roof:0x744746, x:-5.3,z:-3.8,rot:.10, welcome:'おかえり。',line:'気になっていたこと、一緒に見ていこう。',focus:'47% 34%'},
+  {id:'red', name:'保険', en:'THE LETTER ROOM', sub:'手紙の書斎', color:0x9e4c4c, roof:0x744746, x:-5.3,z:-3.8,rot:.10, welcome:'おかえり。',line:'気になっていたこと、一緒に見ていこう。',focus:'47% 34%'},
   {id:'purple', name:'過去原稿',en:'THE PROMENADE',sub:'散歩の支度',color:0x79648c,roof:0x625c75,x:5.3,z:-4.2,rot:-.10,welcome:'ちょうど、よかった。',line:'今日はどんなものを見つけに行こうか。',focus:'57% 34%'},
   {id:'silver',name:'FP・TikTok',en:'THE ROYAL LIBRARY',sub:'王都の図書室',color:0x527e8f,roof:0x526f77,x:-6.2,z:3.0,rot:.28,welcome:'お待ちしていました。',line:'読みかけの続き、ここから始めましょう。',focus:'50% 33%'},
   {id:'orange',name:'仕入れ',en:"THE MERCHANT'S TAVERN",sub:'商人の酒場',color:0xb67b3e,roof:0x8b6247,x:6.2,z:3.0,rot:-.28,welcome:'おかえりなさい。',line:'今日も、いいものが見つかるといいね。',focus:'52% 30%'}
@@ -19,7 +19,7 @@ const rooms = [
 let phase='town', current=null, world=null, audio=null, desk=null;
 let entrySound=null,entryAnimated=false,effectsGain=null,effectsVolume=.5,music=null,interactionSound=null,feedback=null;
 let nextContextRoom=null;
-function openContext(place){const id=({kyun:'red',choi:'purple',otoku:'purple',rakuten:'purple',fp:'silver',shiire:'orange'})[place];if(!id)return;if(phase==='town')enterRoom(id);else if(phase==='room'){nextContextRoom=id;goBack();}}
+function openContext(place){const id=({kyun:'red',choi:'purple',otoku:'purple',rakuten:'purple',fp:'silver',shiire:'orange'})[place];if(!id)return;if(phase==='town')enterRoom(id,true);else if(phase==='room'){nextContextRoom=id;goBack();}}
 let entryStart=0, roomTimer=0, replayAfterBack=null;
 const labels=new Map();
 for(const r of rooms){
@@ -35,7 +35,7 @@ for(const r of rooms){
   b.addEventListener('pointercancel',()=>b.classList.remove('pressed'));
   b.addEventListener('click',()=>enterRoom(r.id));
   $('labels').append(b); labels.set(r.id,b);
-  const im=new Image(); im.src=`assets/${r.id}.webp`;
+
 }
 function saveSettings(){try{localStorage.setItem('shireito-courtyard-v1',JSON.stringify(settings))}catch{}}
 function syncSettings(){
@@ -104,17 +104,21 @@ for(const [id,key] of [['sound-setting','sound'],['ambient-setting','ambient'],[
 document.querySelectorAll('[name=pace]').forEach(i=>i.addEventListener('change',e=>{settings.pace=e.target.value;saveSettings()}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.querySelector('dialog[open]'))goBack()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){world?.pause();silenceEffects();audio?.suspend().catch(()=>{})}else if(phase==='town'&&!$('settings').open)world?.resume()});
-desk=createDesk({onOpenRoom:openContext,onHome:()=>goBack(),onPause:()=>{world?.pause();silenceEffects();audio?.suspend().catch(()=>{});app.classList.add('is-away');},onResume:()=>{app.classList.remove('is-away');if(phase==='town'&&!$('settings').open)world?.resume();},onSettings:()=>$('settings-open').click(),onFeedback:playFeedback});
-music=createMusicControls({getEffects:()=>({enabled:settings.sound}),setEffects:change=>{if(typeof change.volume==='number'){effectsVolume=change.volume;if(effectsGain)effectsGain.gain.value=effectsVolume/.5;}if(typeof change.enabled==='boolean'){settings.sound=change.enabled;if(!settings.sound)silenceEffects();saveSettings();syncSettings();}if(change.preview&&settings.sound)playFeedback('latch');},onStatus:text=>$('bgmStatus').textContent=text});
+desk=createDesk({onLounge:()=>initializeWorld(),onOpenRoom:openContext,onHome:()=>goBack(),onPause:()=>{world?.pause();silenceEffects();audio?.suspend().catch(()=>{});app.classList.add('is-away');},onResume:()=>{app.classList.remove('is-away');if(phase==='town'&&!$('settings').open)world?.resume();},onSettings:()=>$('settings-open').click(),onFeedback:playFeedback});
+music=createMusicControls({autoplay:false,getEffects:()=>({enabled:settings.sound}),setEffects:change=>{if(typeof change.volume==='number'){effectsVolume=change.volume;if(effectsGain)effectsGain.gain.value=effectsVolume/.5;}if(typeof change.enabled==='boolean'){settings.sound=change.enabled;if(!settings.sound)silenceEffects();saveSettings();syncSettings();}if(change.preview&&settings.sound)playFeedback('latch');},onStatus:text=>$('bgmStatus').textContent=text});
 feedback=createInteractionFeedback({play:playFeedback,active:()=>!app.classList.contains('is-away'),reduced:()=>settings.reduce||reducedMedia.matches,room:()=>current?.id||'red'});
 document.querySelectorAll('[data-feedback-preview]').forEach(b=>b.addEventListener('click',()=>playFeedback(b.dataset.feedbackPreview)));
 syncSettings();app.dataset.phase='town';
 if(history.state?.shireitoRoom)history.replaceState(null,'',location.pathname+location.search);
 
+let worldLoading=null;
+function initializeWorld(){if(worldLoading)return worldLoading;worldLoading=(async()=>{
 try{
- const {createHybridWorld}=await import('./hybrid-world.js?v=20261030.3-rakuten');
+ const {createHybridWorld}=await import('./hybrid-world.js?v=20261030.4-accounts');
  world=await createHybridWorld({app,host:$('world'),rooms,labels,getPhase:()=>phase,getSettings:()=>settings,getWorkMarks:()=>desk?.workMarks()||[],onEnter:enterRoom});
  $('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');
 }catch(error){console.error('司令塔の描画を開始できませんでした',error);app.classList.add('fallback-town');$('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');$('town-hint').textContent='看板を選んで、部屋へ'}
+})();return worldLoading;}
+$('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');
 desk.ready();
 

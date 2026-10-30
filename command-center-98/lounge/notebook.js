@@ -1,5 +1,7 @@
 // Portable, browser-local records. No credentials and no production writes.
 export const NOTEBOOK_PREFIX='castle-production.v1.';
+// Old room names are not publishing identities. Keep unmatched saved text in history.
+export function isLegacyPublishingDraft(d){const expected={kyun:'insurance',otoku:'otoku',rakuten:'rakuten'};return d?.place==='choi'||Object.hasOwn(expected,d?.place)&&d?.source?.account!==expected[d.place];}
 // Presentation only: explicit source identity, never titles or guessed URLs.
 export function groupDrafts(rows){
  const groups=new Map();
@@ -63,6 +65,7 @@ export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>
  }
  function applyImport(rows){const changes=[];let saved=true;for(const row of rows){const d=normalize(row),key='draft:'+d.id;changes.push({key,before:clone(records.get(key)),after:d});saved=put(key,d)&&saved;}if(rows.legacyBackup){for(const event of rows.legacyBackup.copyHistory||[]){const key='copy:legacy:'+event.eventId,before=clone(records.get(key)),ok=inheritCopy(event,event.eventId);saved=ok&&saved;if(before===undefined&&records.has(key))changes.push({key,before,after:clone(records.get(key))});}for(const [key,value]of rows.legacyMarks||[]) {const before=clone(records.get(key));saved=inherit(key,value)&&saved;if(before===undefined&&records.has(key))changes.push({key,before,after:clone(records.get(key))});}}undoStack.push({batch:changes});return saved;}
  function undoAny(){const op=undoStack.at(-1);if(!op?.batch)return undo();undoStack.pop();for(const x of op.batch)if(!unchanged(x))throw Error('別の画面の更新があるため、取り込みを元に戻せません');let ok=true;for(const x of op.batch)ok=(x.before===undefined?remove(x.key):put(x.key,x.before))&&ok;return ok;}
+ function legacySources(){const rows=new Map();for(const [key,value]of records)if(key.startsWith('legacy-source:')){try{const d=normalize(value);rows.set(d.id,d);}catch{}}for(const d of all({includeHidden:true}))if(isLegacyPublishingDraft(d))rows.set(d.id,d);return [...rows.values()].map(clone);}
  function sources(){return [...records].filter(([k])=>k.startsWith('source:')).map(([,v])=>clone(v));}
  // Import only the old reading namespace. Each target is independently durable;
  // absent manuscripts remain pending, and retries never overwrite a new false.
@@ -87,11 +90,11 @@ export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>
   const target=type+':'+draft.id,next=type==='done'&&value?{id:draft.id,place:draft.place,title:draft.title,body:draft.body,time:null,legacy:true,source:{account,id:recordId}}:value;
   saved=inherit(target,next)&&saved;
  }return saved;}
- function replaceSources(rows,{complete=false}={}){const normalized=rows.filter(d=>(!archive?.enabled||archive.acceptsSource(d))&&!sourceArchive?.isArchivedDraft(d)).map(d=>normalize(d));const ids=new Set(normalized.map(d=>d.id));if(complete)for(const [k,v]of [...records])if(k.startsWith('source:')&&!ids.has(v.id))remove(k);for(const d of normalized){freshSourceKeys.add('source:'+d.id);put('source:'+d.id,d);}migrateLegacy();}
+ function replaceSources(rows,{complete=false}={}){const normalized=rows.filter(d=>(!archive?.enabled||archive.acceptsSource(d))&&!sourceArchive?.isArchivedDraft(d)).map(d=>normalize(d));const ids=new Set(normalized.map(d=>d.id));if(complete)for(const [k,v]of [...records])if(k.startsWith('source:')&&!ids.has(v.id)){if(isLegacyPublishingDraft(v)){if(put('legacy-source:'+v.id,v))remove(k);}else remove(k);}for(const d of normalized){freshSourceKeys.add('source:'+d.id);put('source:'+d.id,d);}migrateLegacy();}
  migrateLegacy();
- return {sources,replaceSources,list,all,get,save,erase,hiddenDrafts,restore,toggle,flag,remember,visit,copied,copies,copyMark,finish,completed,sync,parseImport,applyImport,migrateLegacy,sourceDraft,inheritCopy,undo:undoAny,
+ return {sources,legacySources,replaceSources,list,all,get,save,erase,hiddenDrafts,restore,toggle,flag,remember,visit,copied,copies,copyMark,finish,completed,sync,parseImport,applyImport,migrateLegacy,sourceDraft,inheritCopy,undo:undoAny,
   position:draftId=>Number(records.get('read:'+draftId))||0,selected:place=>records.get('selected:'+place),lastPlace:()=>records.get('lastPlace'),usedToday:place=>dayInJapan(records.get('visit:'+place)||1)===dayInJapan(now()),
   pref:(key,fallback)=>records.has('pref:'+key)?clone(records.get('pref:'+key)):fallback,setPref:(key,v)=>put('pref:'+key,v),
   changePref:(key,v)=>change('pref:'+key,v),
-  export:()=>JSON.stringify({format:'command-center-v1',exportedAt:new Date(now()).toISOString(),drafts:all({includeHidden:true})},null,2),persistent:()=>persistent,canUndo:()=>undoStack.length>0};
+  export:()=>JSON.stringify({format:'command-center-v1',exportedAt:new Date(now()).toISOString(),drafts:[...new Map([...legacySources(),...all({includeHidden:true})].map(d=>[d.id,d])).values()]},null,2),persistent:()=>persistent,canUndo:()=>undoStack.length>0};
 }
