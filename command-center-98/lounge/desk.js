@@ -1,8 +1,8 @@
-import {publishingAccounts,draftsForAccount,createAccountBoard} from './accounts.js?v=20261030.7-living';
-import {createConveniences} from './qol.js?v=20261030.4-accounts';
-import {resumeView,postingReadiness} from './qol-model.js?v=20261030.4-accounts';
-import {createNotebook,safeLink} from './notebook.js?v=20261030.4-accounts';
-import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261030.4-accounts';
+import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261030.8-integrated';
+import {createConveniences} from './qol.js?v=20261030.8-integrated';
+import {resumeView,postingReadiness} from './qol-model.js?v=20261030.8-integrated';
+import {createNotebook,safeLink} from './notebook.js?v=20261030.8-integrated';
+import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261030.8-integrated';
 
 export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{},onOpenRoom=()=>{},onLounge=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;
@@ -19,6 +19,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   const dialog=el('dialog',undefined,'legacy-account-archive'),header=el('header');header.append(el('h2','旧データの保管庫'),button('閉じる',()=>dialog.close()));dialog.append(header,el('p','過去のアカウント・投稿先未確定の保存記録です。現在の3アカウントには混ぜず、閲覧用として保持しています。'));
   const records=notebook.legacySources();if(!records.length)dialog.append(el('p','この端末に保管された旧原稿はありません。'));
   for(const d of records){const entry=el('details'),summary=el('summary',d.title||'名称未確認');entry.append(summary,el('p','元の区分: '+(d.source?.account||'未確定')+' / '+(d.checkedAt||'日付未確認')),el('pre',d.body||''));dialog.append(entry);}
+  const oldCopies=notebook.copies().filter(c=>['kyun','choi','otoku','rakuten'].includes(c.place)&&!publishingAccounts.some(a=>copiesForAccount([c],a,id=>notebook.get(id)).length));if(oldCopies.length)dialog.append(el('h3','旧・投稿先未確定のコピー履歴'));for(const c of oldCopies){const item=el('details');item.append(el('summary',c.title||'以前のコピー'),el('pre',c.text));dialog.append(item);}
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();
  }
  const conveniences=createConveniences({notebook,open:context=>{requested=context;if(context.id)selections.set(context.place,context.id);onOpenRoom(context.place);},copy:(...args)=>copy(...args),native,onFeedback,send:(...args)=>send(...args)});
@@ -154,9 +155,9 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   catch{manual={draft:snapshot,kind,text};$('desk-copy-text').value=text;$('desk-copy-dialog').showModal();$('desk-copy-text').focus();$('desk-copy-text').select();}
  }
  function history(){
-  const list=$('desk-history-list');list.replaceChildren();const rows=notebook.copies().filter(c=>c.place===place).slice(0,100);
+  const list=$('desk-history-list');list.replaceChildren();const account=publishingAccounts.find(a=>a.place===place),allCopies=notebook.copies();const rows=(account?copiesForAccount(allCopies,account,id=>notebook.get(id)):allCopies.filter(c=>c.place===place)).slice(0,100);
   if(!rows.length)list.append(el('p','この持ち場のコピー履歴はまだありません。'));
-  for(const row of rows){const card=el('details'),summary=el('summary',row.title),body=el('pre',row.text);card.append(summary,el('small',new Date(row.time).toLocaleString('ja-JP')),body,button('もう一度コピー',()=>copy({id:row.draftId,place:row.place,title:row.title,body:row.text},row.kind,row.text)));list.append(card);}
+  for(const row of rows){const card=el('details'),summary=el('summary',row.title),body=el('pre',row.text);card.append(summary,el('small',new Date(row.time).toLocaleString('ja-JP')),body,button('もう一度コピー',()=>copy({id:row.draftId,place:row.place,title:row.title,body:row.text,source:row.source||notebook.get(row.draftId)?.source},row.kind,row.text)));list.append(card);}
   $('desk-history-dialog').showModal();
  }
  $('desk-query').addEventListener('input',e=>{savePosition();query=e.target.value;rememberView();render();});
