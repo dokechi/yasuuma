@@ -1,13 +1,14 @@
+import {isLegacyPublishingDraft} from './notebook.js?v=20261030.4-accounts';
 import {searchRows,mergeIndex,rememberResearch,relatedRecords,priceChange,safeURL} from './hall-model.js?v=20261021.8-hall';
-import {workMarks} from './work-memory.js?v=20261030.3-rakuten';
-import {placeNames} from './desk-model.js?v=20261030.3-rakuten';
+import {workMarks} from './work-memory.js?v=20261030.4-accounts';
+import {placeNames} from './desk-model.js?v=20261030.4-accounts';
 
 export function createHallTools({notebook,open,copy,showTray,onFeedback=()=>{}}){
  const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;},button=(label,fn)=>{const b=el('button',label);b.type='button';b.addEventListener('click',fn);return b;};
  let remote=[],message='仕入れ履歴・過去の調査は、本体との接続を確認中です。',active=null,selected='',filter='all',productFocus=null,limit=100;
  const date=t=>t?new Date(t).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):'日時未確認',labels={draft:'保存原稿',purchase:'仕入れ履歴',research:'調査履歴',copy:'コピー履歴',later:'あとで箱'};
  function historyRows(){const value=notebook.pref('researchMemory',[]),saved=Array.isArray(value)?value:[],keys=new Set(rememberResearch([],remote).map(r=>r.snapshotKey));return saved.filter(r=>!keys.has(r.snapshotKey)).map(r=>({...r,id:'memory:'+r.snapshotKey,stored:true}));}
- function rows(){return [...notebook.all().map(d=>({id:'draft:'+d.id,draftId:d.id,place:d.place,type:'draft',title:d.title,body:d.body,url:d.link,productLinks:d.productLinks,time:d.updatedAt,source:d.source,draft:d})),...remote,...historyRows(),...notebook.copies().map(c=>({id:'copy:'+c.id,draftId:c.draftId,place:c.place,type:'copy',title:c.title||'以前のコピー',body:c.text,time:c.time,copy:c})),...Object.values(notebook.pref('laterItems',{})).filter(x=>x?.draft&&placeNames[x.draft.place]).map(x=>({id:'later:'+x.draft.id,draftId:x.draft.id,place:x.draft.place,type:'later',title:x.draft.title,body:[x.memo,x.draft.body].filter(Boolean).join('\n\n'),time:x.time,draft:x.draft,memo:x.memo}))];}
+ function rows(){return [...notebook.all().map(d=>({id:'draft:'+d.id,draftId:d.id,place:d.place,type:'draft',title:d.title,body:d.body,url:d.link,productLinks:d.productLinks,time:d.updatedAt,source:d.source,draft:d})),...remote,...historyRows(),...notebook.copies().map(c=>({id:'copy:'+c.id,draftId:c.draftId,place:c.place,type:'copy',title:c.title||'以前のコピー',body:c.text,time:c.time,copy:c})),...Object.values(notebook.pref('laterItems',{})).filter(x=>x?.draft&&placeNames[x.draft.place]).map(x=>({id:'later:'+x.draft.id,draftId:x.draft.id,place:x.draft.place,type:'later',title:x.draft.title,body:[x.memo,x.draft.body].filter(Boolean).join('\n\n'),time:x.time,draft:x.draft,memo:x.memo}))].filter(row=>!isLegacyPublishingDraft(row.draft||notebook.get(row.draftId)||row));}
  function receive(payload){if(Array.isArray(payload.searchRecords)){remote=mergeIndex(remote,payload.searchRecords,{complete:payload.indexComplete===true&&!payload.indexLoading});const previous=notebook.pref('researchMemory',[]),next=rememberResearch(previous,remote);if(JSON.stringify(previous)!==JSON.stringify(next))notebook.setPref('researchMemory',next);}message=payload.searchMessage||message;refresh();}
  function selection(row){selected=row.id;renderResults();}
  function related(row){const current=row.draft||row;return relatedRecords(current,[...remote,...historyRows()]);}

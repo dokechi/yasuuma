@@ -11,27 +11,31 @@ export function draftsForAccount(rows,account){
   .sort((a,b)=>b.updatedAt-a.updatedAt);
 }
 export function timeOfDay(date=new Date()){const hour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Tokyo',hour:'2-digit',hourCycle:'h23'}).format(date));return hour>=6&&hour<16?'day':hour>=16&&hour<19?'dusk':'night';}
-export function createAccountBoard({host,rows,open,onLounge,onRefresh}){
+export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy}){
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const btn=(text,fn)=>{const b=el('button',text);b.type='button';b.onclick=fn;return b;};
  const panel=el('section',undefined,'account-board');panel.setAttribute('aria-label','司令塔の8パネル');
  const sky=el('div',undefined,'account-sky');sky.setAttribute('aria-hidden','true');panel.append(sky);
  const updateTime=()=>{panel.dataset.time=timeOfDay();panel.dataset.paused=String(document.hidden);};updateTime();const timer=setInterval(updateTime,60000);timer.unref?.();document.addEventListener('visibilitychange',updateTime);window.addEventListener('pagehide',()=>clearInterval(timer),{once:true});
  const header=el('header',undefined,'account-board-heading'),titles=el('div');
- titles.append(el('small','PUBLISHING DESK'),el('h1','今日は、どこから？'),el('p','6つのアカウントと仕入れ。自分の持ち場へ。'));
+ titles.append(el('small','THE WANDERING ATELIER'),el('h1','ただいま、魔法の仕事部屋。'),el('p','扉の向こうは、あなたの持ち場。'));
+ const atmosphere=el('div',undefined,'room-atmosphere');atmosphere.setAttribute('aria-hidden','true');atmosphere.innerHTML='<span class=hearth-glow></span><span class=window-sky></span><span class=room-motes>✧　·　　✦　　·</span>';panel.prepend(atmosphere);
+ const threshold=el('div',undefined,'door-threshold');threshold.setAttribute('aria-hidden','true');document.body.append(threshold);let transitionTimer;
+ function travel(a,id){threshold.dataset.tone=a.tone||'green';threshold.classList.remove('is-travelling');void threshold.offsetWidth;threshold.classList.add('is-travelling');clearTimeout(transitionTimer);transitionTimer=setTimeout(()=>threshold.classList.remove('is-travelling'),550);transitionTimer.unref?.();hide();open(a,id);}
+ const foyer=el('div',undefined,'room-foyer');foyer.innerHTML='<div class=magic-dial aria-hidden=true><i></i><span>✦</span></div><div><small>行き先を選ぶ、小さな魔法。</small><p>6つの手紙の部屋と、商人の扉。</p></div><span class=room-clock>日本時間の空と灯り</span>';
  const actions=el('nav');actions.setAttribute('aria-label','投稿一覧の操作');
- const refresh=btn('↻ 原稿を更新',onRefresh),lounge=btn('ラウンジ・管理へ',()=>{hide();onLounge();});const mode=btn('6アカウントの原稿一覧',()=>{tiles.hidden=!tiles.hidden;scroller.hidden=!tiles.hidden;mode.textContent=tiles.hidden?'← 8パネルへ':'6アカウントの原稿一覧';});actions.append(mode,refresh,lounge);header.append(titles,actions);
+ const refresh=btn('↻ 原稿を更新',onRefresh),lounge=btn('ラウンジ・管理へ',()=>{hide();onLounge();});const mode=btn('6アカウントの原稿一覧',()=>{tiles.hidden=!tiles.hidden;scroller.hidden=!tiles.hidden;mode.textContent=tiles.hidden?'← 8パネルへ':'6アカウントの原稿一覧';});actions.append(mode,refresh,lounge);if(onLegacy)actions.append(btn('旧データの保管庫',onLegacy));header.append(titles,actions);
  const status=el('p','本体の保存原稿を確認しています…','account-board-status');status.setAttribute('role','status');
  const scroller=el('div',undefined,'account-columns-scroll');scroller.tabIndex=0;scroller.setAttribute('aria-label','アカウント一覧。横にスクロールできます');
  const columns=el('div',undefined,'account-columns');scroller.append(columns);scroller.hidden=true;
  const tiles=el('nav',undefined,'account-tiles');tiles.setAttribute('aria-label','6アカウント・仕入れ・予備');
- panel.append(header,status,tiles,scroller);host.append(panel);
+ panel.append(header,foyer,status,tiles,scroller);host.append(panel);
  function render({message,loading=false,complete=false}={}){
   const left=scroller.scrollLeft,scrolls=new Map([...columns.children].map(c=>[c.dataset.account,c.querySelector('.account-drafts')?.scrollTop||0]));
   columns.replaceChildren();tiles.replaceChildren();refresh.disabled=loading;
   const destinations=[...publishingAccounts,{key:'sourcing',place:'shiire',name:'仕入れ',tone:'green'},{key:'reserve',name:'予備の持ち場',pending:true}];
   for(const [i,a] of destinations.entries()){
-   const tile=btn('',()=>{hide();open(a);});tile.className='account-tile';tile.dataset.destination=a.key;tile.disabled=!!a.pending;
+   const tile=btn('',()=>travel(a));tile.className='account-tile';tile.dataset.destination=a.key;tile.disabled=!!a.pending;
    const art=el('img');art.src='assets/panel-'+a.key+'.webp';art.alt='';art.loading='eager';art.onerror=()=>{art.onerror=null;art.src='assets/'+(['red','purple','orange','silver','purple','red','orange','silver'][i])+'-face.webp';};
    const caption=el('span',undefined,'account-tile-caption');caption.append(el('small',String(i+1).padStart(2,'0')+' / '+(a.pending?'準備中':a.key==='sourcing'?'SOURCING':'THREADS')),el('strong',a.name),el('span',a.handle|| (a.pending?'名前・用途は未設定':'購入・在庫・売却')));
    if(!a.pending&&a.key!=='sourcing')caption.append(el('small',new Set(draftsForAccount(rows(),a).map(d=>d.source.id)).size+'本の保存原稿'));
@@ -50,11 +54,11 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh}){
     const list=el('div',undefined,'account-drafts');
     if(!groups.size)list.append(el('p',loading?'読み込み中…':complete?'このアカウントの保存原稿はまだありません。':'保存原稿の読取状況を確認してください。','account-placeholder'));
     for(const d of groups.values()){
-     const card=btn('',()=>{hide();open(a,d.id);});card.className='account-draft';card.dataset.draftId=d.id;
+     const card=btn('',()=>travel(a,d.id));card.className='account-draft';card.dataset.draftId=d.id;
      card.append(el('small',d.checkedAt||'日付未確認'),el('strong',d.title),el('span',d.body.slice(0,110)),el('small',[d.posting?.reply?'本文＋返信':'本文',d.source.imageCount?'画像 '+d.source.imageCount+'枚':''].filter(Boolean).join(' · ')));
      list.append(card);
     }
-    column.append(list,btn('このアカウントを開く',()=>{hide();open(a);}));list.scrollTop=scrolls.get(a.key)||0;
+    column.append(list,btn('このアカウントを開く',()=>travel(a)));list.scrollTop=scrolls.get(a.key)||0;
    }
    columns.append(column);
   }

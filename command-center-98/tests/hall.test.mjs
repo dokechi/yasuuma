@@ -38,7 +38,7 @@ test('search covers copied literal text, SKU and memo; research snapshots keep r
  assert.equal(searchRows([{...next,type:'copy',body:'改行\n「そのまま」'}],'そのまま',{filter:'copy'}).length,1);
 });
 test('table keepsakes count explicit completion in Japan and invalidate old posted snapshots',()=>{
- const now=Date.parse('2026-10-21T15:30:00Z'),n=createNotebook({seeds:{kyun:[],choi:[],fp:[],shiire:[]},now:()=>now}),d={id:'a',place:'kyun',title:'原稿',body:'そのまま',kind:'本文',createdAt:now,updatedAt:now};n.replaceSources([d]);n.copied(d,'body',d.body);assert.equal(workMarks(n,now).length,0);
+ const now=Date.parse('2026-10-21T15:30:00Z'),n=createNotebook({seeds:{kyun:[],choi:[],fp:[],shiire:[]},now:()=>now}),d={id:'a',place:'kyun',source:{id:'a',account:'insurance'},title:'原稿',body:'そのまま',kind:'本文',createdAt:now,updatedAt:now};n.replaceSources([d]);n.copied(d,'body',d.body);assert.equal(workMarks(n,now).length,0);
  n.finish(d);n.setPref('posted:a',{time:now,revision:revision(d)});assert.equal(workMarks(n,now).length,2);assert.equal(workMarks(n,now-86400000).length,0);
  n.replaceSources([{...d,body:'更新'}]);assert.equal(workMarks(n,now).length,1);
 });

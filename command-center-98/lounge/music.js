@@ -22,7 +22,7 @@ export function createMusicOrder(tracks,{storage,previous=null,random=Math.rando
  }};
 }
 // Optional music only. Existing effects retain their own toggle and audio context.
-export function createMusicControls({onStatus=()=>{},getEffects,setEffects,storage,sourceBase="https://dokechi.github.io/yasuuma/command-center-98/castle/audio/",doc=document,win=window}={}){
+export function createMusicControls({autoplay=true,onStatus=()=>{},getEffects,setEffects,storage,sourceBase="https://dokechi.github.io/yasuuma/command-center-98/castle/audio/",doc=document,win=window}={}){
  const audio=doc.querySelector('#bgmAudio');if(!audio||typeof audio.play!=='function')return null;
  if(audio.__castleMusic)return audio.__castleMusic;
  if(storage===undefined){try{storage=globalThis.localStorage;}catch{storage=null;}}
@@ -72,6 +72,6 @@ export function createMusicControls({onStatus=()=>{},getEffects,setEffects,stora
  // Native click includes keyboard activation. Run after the target's OFF
  // handler, and retry only a browser-policy rejection, never a network error.
  doc.addEventListener('click',event=>{if(!event.isTrusted||event.target?.closest?.('#audioSettings,#soundToggle,#sound'))return;if(enabled&&awaitingGesture)begin();});
- setEffects({volume:effectsVolume});refresh();if(enabled&&volume>0)begin();
+ setEffects({volume:effectsVolume});refresh();if(autoplay&&enabled&&volume>0)begin();
  const api={refresh,pause,state:()=>({enabled,volume,armed,awaitingGesture,hostActive,departed,pending:!!pending,track:track?.id})};audio.__castleMusic=api;return api;
 }

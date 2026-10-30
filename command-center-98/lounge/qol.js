@@ -1,7 +1,7 @@
-import {createHallTools} from './hall-tools.js?v=20261030.3-rakuten';
-import {placeNames} from './desk-model.js?v=20261030.3-rakuten';
-import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261030.3-rakuten';
-import {postingAssets} from './notebook.js?v=20261030.3-rakuten';
+import {createHallTools} from './hall-tools.js?v=20261030.4-accounts';
+import {placeNames} from './desk-model.js?v=20261030.4-accounts';
+import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261030.4-accounts';
+import {isLegacyPublishingDraft,postingAssets} from './notebook.js?v=20261030.4-accounts';
 
 export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},send=()=>{}}){
  const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
@@ -14,16 +14,16 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
  const trayInDesk=button('あとで箱',()=>showTray());$('desk-footer-tools').append(trayInDesk);
  const later=button('あとで考える',()=>{if(!current)return;add(current);showTray(current.id);}),post=button('投稿セット',()=>{if(!current)return;postDraft={...current};renderPost();$('posting-dialog').showModal();});
  later.id='desk-later';post.id='desk-posting';$('reader-qol').append(post,later);
- function items(){const saved=notebook.pref('laterItems',{});for(const d of notebook.all())if(notebook.flag('tray',d.id)&&!saved[d.id])saved[d.id]={draft:d,memo:'',time:1};return Object.values(saved).filter(x=>x?.draft&&roomForPlace[x.draft.place]).sort((a,b)=>b.time-a.time);}
+ function items(){const saved=notebook.pref('laterItems',{});for(const d of notebook.all())if(notebook.flag('tray',d.id)&&!saved[d.id])saved[d.id]={draft:d,memo:'',time:1};return Object.values(saved).filter(x=>x?.draft&&roomForPlace[x.draft.place]&&!isLegacyPublishingDraft(x.draft)).sort((a,b)=>b.time-a.time);}
  function changeItems(fn){const rows=Object.fromEntries(items().map(x=>[x.draft.id,x]));fn(rows);notebook.changePref('laterItems',rows);refresh();}
  function add(d,memo=''){changeItems(rows=>{rows[d.id]={draft:JSON.parse(JSON.stringify(d)),memo:rows[d.id]?.memo||memo,time:Date.now()};});onFeedback('pin');}
  function markSeen(d){const seen=notebook.pref('seenRevisions',{});if(seen[d.id]!==seenRevision(d)){seen[d.id]=seenRevision(d);notebook.setPref('seenRevisions',seen);}}
  function status(payload){hall.receive(payload);if(Array.isArray(payload.drafts)){const map=new Map((payload.complete===true&&payload.loading!==true?[]:latest).map(d=>[d.id,d]));for(const d of payload.drafts)map.set(d.id,d);latest=[...map.values()];}readState=payload.loading?'loading':payload.complete?'complete':'unknown';refresh();}
  function refresh(){
-  const last=notebook.pref('lastWork',null);resume.hidden=!last||!roomForPlace[last.place];resume.replaceChildren(el('small','前回の続き'),el('span',last?placeNames[last.place]+' · '+(last.title||'持ち場'):''));resume.title=last?.title||'';
+  const last=notebook.pref('lastWork',null);resume.hidden=!last||!roomForPlace[last.place]||isLegacyPublishingDraft(notebook.get(last.id)||last);resume.replaceChildren(el('small','前回の続き'),el('span',last?placeNames[last.place]+' · '+(last.title||'持ち場'):''));resume.title=last?.title||'';
   const count=items().length;tray.textContent='あとで箱'+(count?' · '+count:'');trayInDesk.textContent=tray.textContent;
   const seen=notebook.pref('seenRevisions',{});
-  for(const [place,room]of Object.entries(roomForPlace).filter(([key])=>!['otoku','rakuten'].includes(key))){const b=document.querySelector('.place-label[data-room="'+room+'"]');if(!b)continue;let badge=b.querySelector('.door-letter');if(!badge){badge=el('span',undefined,'door-letter');badge.setAttribute('aria-hidden','true');b.append(badge);}const n=unreadGroups(latest.filter(d=>d.place===place||(place==='choi'&&['otoku','rakuten'].includes(d.place))),seen),unknown=readState!=='complete';badge.textContent=n?'✉':unknown?'·':'';badge.hidden=!n&&!unknown;b.dataset.unread=String(n);const message=n?'未読・更新 '+n+'件'+(unknown?'（残りの読取は確認中）':''):unknown?'原稿の読取を確認中':'未読の保存原稿なし';b.title=message;b.setAttribute('aria-label',(place==='choi'?'過去原稿':placeNames[place])+'に入る。'+message);}
+  for(const [place,room]of Object.entries(roomForPlace).filter(([key])=>!['otoku','rakuten'].includes(key))){const b=document.querySelector('.place-label[data-room="'+room+'"]');if(!b)continue;let badge=b.querySelector('.door-letter');if(!badge){badge=el('span',undefined,'door-letter');badge.setAttribute('aria-hidden','true');b.append(badge);}const n=unreadGroups(latest.filter(d=>!isLegacyPublishingDraft(d)&&(d.place===place||(place==='choi'&&['otoku','rakuten'].includes(d.place)))),seen),unknown=readState!=='complete';badge.textContent=n?'✉':unknown?'·':'';badge.hidden=!n&&!unknown;b.dataset.unread=String(n);const message=n?'未読・更新 '+n+'件'+(unknown?'（残りの読取は確認中）':''):unknown?'原稿の読取を確認中':'未読の保存原稿なし';b.title=message;b.setAttribute('aria-label',(place==='choi'?'過去原稿':placeNames[place])+'に入る。'+message);}
   post.disabled=!current;later.disabled=!current;later.textContent=current&&items().some(x=>x.draft.id===current.id)?'あとで箱に保存済み':'あとで考える';post.hidden=!!current&&current.place==='shiire';
   if($('posting-dialog').open)renderPost();hall.refresh();
  }

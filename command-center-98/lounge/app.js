@@ -1,5 +1,5 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
-import {createMusicControls} from './music.js?v=20261022.26-audio';
+import {createMusicControls} from './music.js?v=20261030.4-accounts';
 import {createDesk} from './desk.js?v=20261030.4-accounts';
 import {createInteractionSound} from './interaction-sound.js?v=20261022.26-audio';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261021.4-touch';
@@ -7,7 +7,7 @@ const $ = (id) => document.getElementById(id);
 const app = $('app');
 const room = $('room');
 const reducedMedia = matchMedia('(prefers-reduced-motion: reduce)');
-let settings = {sound:true, ambient:!reducedMedia.matches, reduce:reducedMedia.matches, pace:'normal'};
+let settings = {sound:false, ambient:!reducedMedia.matches, reduce:reducedMedia.matches, pace:'normal'};
 try { settings = {...settings, ...JSON.parse(localStorage.getItem('shireito-courtyard-v1') || '{}')}; } catch {}
 if (!['quick','normal','slow'].includes(settings.pace)) settings.pace='normal';
 const rooms = [
@@ -19,7 +19,7 @@ const rooms = [
 let phase='town', current=null, world=null, audio=null, desk=null;
 let entrySound=null,entryAnimated=false,effectsGain=null,effectsVolume=.5,music=null,interactionSound=null,feedback=null;
 let nextContextRoom=null;
-function openContext(place){const id=({kyun:'red',choi:'purple',otoku:'purple',rakuten:'purple',fp:'silver',shiire:'orange'})[place];if(!id)return;if(phase==='town')enterRoom(id);else if(phase==='room'){nextContextRoom=id;goBack();}}
+function openContext(place){const id=({kyun:'red',choi:'purple',otoku:'purple',rakuten:'purple',fp:'silver',shiire:'orange'})[place];if(!id)return;if(phase==='town')enterRoom(id,true);else if(phase==='room'){nextContextRoom=id;goBack();}}
 let entryStart=0, roomTimer=0, replayAfterBack=null;
 const labels=new Map();
 for(const r of rooms){
@@ -105,7 +105,7 @@ document.querySelectorAll('[name=pace]').forEach(i=>i.addEventListener('change',
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.querySelector('dialog[open]'))goBack()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){world?.pause();silenceEffects();audio?.suspend().catch(()=>{})}else if(phase==='town'&&!$('settings').open)world?.resume()});
 desk=createDesk({onLounge:()=>initializeWorld(),onOpenRoom:openContext,onHome:()=>goBack(),onPause:()=>{world?.pause();silenceEffects();audio?.suspend().catch(()=>{});app.classList.add('is-away');},onResume:()=>{app.classList.remove('is-away');if(phase==='town'&&!$('settings').open)world?.resume();},onSettings:()=>$('settings-open').click(),onFeedback:playFeedback});
-music=createMusicControls({getEffects:()=>({enabled:settings.sound}),setEffects:change=>{if(typeof change.volume==='number'){effectsVolume=change.volume;if(effectsGain)effectsGain.gain.value=effectsVolume/.5;}if(typeof change.enabled==='boolean'){settings.sound=change.enabled;if(!settings.sound)silenceEffects();saveSettings();syncSettings();}if(change.preview&&settings.sound)playFeedback('latch');},onStatus:text=>$('bgmStatus').textContent=text});
+music=createMusicControls({autoplay:false,getEffects:()=>({enabled:settings.sound}),setEffects:change=>{if(typeof change.volume==='number'){effectsVolume=change.volume;if(effectsGain)effectsGain.gain.value=effectsVolume/.5;}if(typeof change.enabled==='boolean'){settings.sound=change.enabled;if(!settings.sound)silenceEffects();saveSettings();syncSettings();}if(change.preview&&settings.sound)playFeedback('latch');},onStatus:text=>$('bgmStatus').textContent=text});
 feedback=createInteractionFeedback({play:playFeedback,active:()=>!app.classList.contains('is-away'),reduced:()=>settings.reduce||reducedMedia.matches,room:()=>current?.id||'red'});
 document.querySelectorAll('[data-feedback-preview]').forEach(b=>b.addEventListener('click',()=>playFeedback(b.dataset.feedbackPreview)));
 syncSettings();app.dataset.phase='town';

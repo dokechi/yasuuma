@@ -13,8 +13,14 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  const notebook=createNotebook({seeds:{kyun:[],choi:[],otoku:[],rakuten:[],fp:[],shiire:[]},storage,onError:()=>{storageError=true;}});
  let place=null,active=null,query='',filter='all',pending=null,loading=false,complete=false,connected=false,autoReturn=false,manual=null,scrollTimer=0,externalNotes=false,nativeWork=null;
  const selections=new Map(),views=new Map();let requested=null;let returnToAccounts=false;
- const board=createAccountBoard({host:document.body,rows:()=>notebook.all(),open:(account,id)=>{returnToAccounts=true;requested={place:account.place,id};if(id)selections.set(account.place,id);onOpenRoom(account.place);},onLounge:()=>{returnToAccounts=false;onLounge();},onRefresh:()=>{if(embedded){setStatus('保存原稿を読み込み中…',{loading:true});send('refresh');}else window.top.location.href=productionURL;}});
+ const board=createAccountBoard({host:document.body,rows:()=>notebook.all(),open:(account,id)=>{returnToAccounts=true;requested={place:account.place,id};if(id)selections.set(account.place,id);onOpenRoom(account.place);},onLounge:()=>{returnToAccounts=false;onLounge();},onLegacy:showLegacy,onRefresh:()=>{if(embedded){setStatus('保存原稿を読み込み中…',{loading:true});send('refresh');}else window.top.location.href=productionURL;}});
  $('account-board-open').addEventListener('click',()=>board.show());
+ function showLegacy(){
+  const dialog=el('dialog',undefined,'legacy-account-archive'),header=el('header');header.append(el('h2','旧データの保管庫'),button('閉じる',()=>dialog.close()));dialog.append(header,el('p','過去のアカウント・投稿先未確定の保存記録です。現在の3アカウントには混ぜず、閲覧用として保持しています。'));
+  const records=notebook.legacySources();if(!records.length)dialog.append(el('p','この端末に保管された旧原稿はありません。'));
+  for(const d of records){const entry=el('details'),summary=el('summary',d.title||'名称未確認');entry.append(summary,el('p','元の区分: '+(d.source?.account||'未確定')+' / '+(d.checkedAt||'日付未確認')),el('pre',d.body||''));dialog.append(entry);}
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();
+ }
  const conveniences=createConveniences({notebook,open:context=>{requested=context;if(context.id)selections.set(context.place,context.id);onOpenRoom(context.place);},copy:(...args)=>copy(...args),native,onFeedback,send:(...args)=>send(...args)});
  const learningHost=el('div');$('draft-body').after(learningHost);let learningController=null,learningKey='',learningReady=false;
  const imageHost=el('div');learningHost.after(imageHost);let imageController=null,imageKey='';
