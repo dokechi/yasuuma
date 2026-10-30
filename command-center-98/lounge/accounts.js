@@ -10,6 +10,7 @@ export function draftsForAccount(rows,account){
  return rows.filter(d=>d.place===account.place&&d.source?.account===account.key)
   .sort((a,b)=>b.updatedAt-a.updatedAt);
 }
+export function copiesForAccount(rows,account,getDraft=()=>null){if(!account||account.pending)return [];return rows.filter(c=>c.place===account.place&&(c.source?.account||getDraft(c.draftId)?.source?.account)===account.key);}
 export function timeOfDay(date=new Date()){const hour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Tokyo',hour:'2-digit',hourCycle:'h23'}).format(date));return hour>=6&&hour<16?'day':hour>=16&&hour<19?'dusk':'night';}
 export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy}){
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
