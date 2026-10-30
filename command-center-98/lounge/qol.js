@@ -1,7 +1,7 @@
-import {createHallTools} from './hall-tools.js?v=20261030.6-history';
-import {placeNames} from './desk-model.js?v=20261030.6-history';
-import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261030.6-history';
-import {isLegacyPublishingDraft,postingAssets} from './notebook.js?v=20261030.6-history';
+import {createHallTools} from './hall-tools.js?v=20261030.8-integrated';
+import {placeNames} from './desk-model.js?v=20261030.8-integrated';
+import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261030.8-integrated';
+import {isLegacyPublishingDraft,postingAssets} from './notebook.js?v=20261030.8-integrated';
 
 export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},send=()=>{}}){
  const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};

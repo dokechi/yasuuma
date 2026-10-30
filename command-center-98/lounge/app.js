@@ -1,6 +1,6 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
-import {createMusicControls} from './music.js?v=20261030.6-history';
-import {createDesk} from './desk.js?v=20261030.6-history';
+import {createMusicControls} from './music.js?v=20261030.8-integrated';
+import {createDesk} from './desk.js?v=20261030.8-integrated';
 import {createInteractionSound} from './interaction-sound.js?v=20261022.26-audio';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261021.4-touch';
 const $ = (id) => document.getElementById(id);
@@ -116,7 +116,7 @@ if(history.state?.shireitoRoom)history.replaceState(null,'',location.pathname+lo
 let worldLoading=null;
 function initializeWorld(){if(worldLoading)return worldLoading;worldLoading=(async()=>{
 try{
- const {createHybridWorld}=await import('./hybrid-world.js?v=20261030.6-history');
+ const {createHybridWorld}=await import('./hybrid-world.js?v=20261030.8-integrated');
  world=await createHybridWorld({app,host:$('world'),rooms,labels,getPhase:()=>phase,getSettings:()=>settings,getWorkMarks:()=>desk?.workMarks()||[],onEnter:id=>{accountContext=null;enterRoom(id);}});
  $('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');
 }catch(error){console.error('司令塔の描画を開始できませんでした',error);app.classList.add('fallback-town');$('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');$('town-hint').textContent='看板を選んで、部屋へ'}

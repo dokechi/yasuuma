@@ -2,7 +2,7 @@ name: Eight panel home regression
 on:
   pull_request:
     branches: [main]
-    paths: ['command-center-98/**', 'scripts/six-account-board*', 'scripts/eight-panel-dom.test.mjs', 'scripts/legacy-account-isolation.test.mjs', '.github/workflows/eight-panel-home.yml']
+    paths: ['command-center-98/**', 'scripts/six-account-board*', 'scripts/eight-panel-dom.test.mjs', 'scripts/legacy-account-isolation.test.mjs', 'scripts/living-room.test.mjs', '.github/workflows/eight-panel-home.yml']
 permissions:
   contents: read
 jobs:
@@ -15,7 +15,7 @@ jobs:
           node-version: '24'
       - run: node --test scripts/six-account-board.test.mjs scripts/legacy-account-isolation.test.mjs command-center-98/tests/{lounge-workspace,otoku-account,rakuten-account,music,qol,hall}.test.mjs
       - run: npm install --prefix "$RUNNER_TEMP/ui" --ignore-scripts --no-audit --no-fund playwright-core@1.62.1 linkedom@0.18.13
-      - run: NODE_PATH="$RUNNER_TEMP/ui/node_modules" node --test scripts/eight-panel-dom.test.mjs
+      - run: NODE_PATH="$RUNNER_TEMP/ui/node_modules" node --test scripts/eight-panel-dom.test.mjs scripts/living-room.test.mjs
       - name: Japanese font for real screenshot review
         run: sudo apt-get update -qq && sudo apt-get install -y fonts-noto-cjk
       - run: NODE_PATH="$RUNNER_TEMP/ui/node_modules" node scripts/six-account-board-browser.cjs
