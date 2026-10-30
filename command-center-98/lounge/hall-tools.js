@@ -1,7 +1,7 @@
-import {isLegacyPublishingDraft} from './notebook.js?v=20261030.4-accounts';
+import {isLegacyPublishingDraft} from './notebook.js?v=20261030.6-history';
 import {searchRows,mergeIndex,rememberResearch,relatedRecords,priceChange,safeURL} from './hall-model.js?v=20261021.8-hall';
-import {workMarks} from './work-memory.js?v=20261030.4-accounts';
-import {placeNames} from './desk-model.js?v=20261030.4-accounts';
+import {workMarks} from './work-memory.js?v=20261030.6-history';
+import {placeNames} from './desk-model.js?v=20261030.6-history';
 
 export function createHallTools({notebook,open,copy,showTray,onFeedback=()=>{}}){
  const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;},button=(label,fn)=>{const b=el('button',label);b.type='button';b.addEventListener('click',fn);return b;};

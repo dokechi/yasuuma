@@ -45,3 +45,10 @@ test('new offline shell clears only superseded application caches, not account s
  vm.runInNewContext(code,{URL,Set,self:{location:{href:'https://example.test/command-center-98/castle-offline.js'},addEventListener:(name,fn)=>handlers[name]=fn,clients:{claim:async()=>{}}},caches:{keys:async()=>['cc-production-shell-69','cc-production-shell-70','user-backup'],delete:async key=>deleted.push(key)}});
  let task;handlers.activate({waitUntil:p=>task=p});await task;assert.deepEqual(deleted,['cc-production-shell-69']);assert.match(code,/await fetch\(r\)/,'online files are network-first, not an old cached account screen');
 });
+
+import {copiesForAccount} from '../command-center-98/lounge/accounts.js';
+test('copy history uses explicit source identity, preserves old records and survives source removal',()=>{
+ const book=createNotebook({seeds,storage:memory()});const old=draft('kyun'),current=draft('insurance');book.replaceSources([old,current]);book.copied(old,'body','old copy');book.copied(current,'body','current copy');book.replaceSources([],{complete:true});
+ assert.equal(book.copies().length,2,'old copy remains preserved');assert.deepEqual(copiesForAccount(book.copies(),publishingAccounts[0],id=>book.get(id)).map(c=>c.text),['current copy']);
+ assert.equal(copiesForAccount([{place:'kyun',draftId:'unknown',text:'unassigned'}],publishingAccounts[0],id=>book.get(id)).length,0);
+});

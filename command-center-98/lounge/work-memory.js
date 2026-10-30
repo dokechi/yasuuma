@@ -1,5 +1,5 @@
-import {isLegacyPublishingDraft} from './notebook.js?v=20261030.4-accounts';
-import {currentPosted} from './qol-model.js?v=20261030.4-accounts';
+import {isLegacyPublishingDraft} from './notebook.js?v=20261030.6-history';
+import {currentPosted} from './qol-model.js?v=20261030.6-history';
 const places=['kyun','choi','otoku','rakuten','fp','shiire'];
 const dayFormatter=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'});
 export function japanDay(time){return dayFormatter.format(new Date(time));}
