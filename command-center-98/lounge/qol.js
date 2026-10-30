@@ -1,7 +1,7 @@
-import {createHallTools} from './hall-tools.js?v=20261030.1-otoku';
-import {placeNames} from './desk-model.js?v=20261030.1-otoku';
-import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261030.1-otoku';
-import {postingAssets} from './notebook.js?v=20261030.1-otoku';
+import {createHallTools} from './hall-tools.js?v=20261030.2-otoku';
+import {placeNames} from './desk-model.js?v=20261030.2-otoku';
+import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261030.2-otoku';
+import {postingAssets} from './notebook.js?v=20261030.2-otoku';
 
 export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},send=()=>{}}){
  const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
@@ -44,8 +44,10 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
   const d=postDraft;if(!d)return;const scroll=$('posting-dialog').scrollTop;const host=$('posting-steps');host.replaceChildren();$('posting-title').textContent=d.title;
   const changed=notebook.get(d.id)&&revision(notebook.get(d.id))!==revision(d);$('posting-changed').hidden=!changed;
   const readiness=postingReadiness(d);$('posting-readiness').textContent=readiness.label;$('posting-copy-all').disabled=!!changed;
+  $('posting-native').textContent=d.place==='otoku'?'出典・確認記録へ':'本体の投稿結果へ';
+  $('posting-dialog').querySelector('p.qol-note:last-child').textContent=d.place==='otoku'?'完了はこの端末のメモです。コピーだけでは投稿済みになりません。':'完了はこの端末のメモです。本体の投稿結果は「本体の投稿結果へ」で記録できます。コピーだけでは投稿済みになりません。';
   const steps=postingSteps(d,notebook.copies());for(const [i,step]of steps.entries()){const row=el('div',undefined,'posting-step');row.append(el('span',step.copied?'✓':String(i+1),'step-number'),el('strong',step.label),button(step.copied?'もう一度コピー':'コピー',()=>copy(d,step.kind,step.text)));row.append(el(step.kind==='link'?'small':'pre',step.text));host.append(row);}
-  if(!savedLinks(d).length)host.append(el('p','この原稿には保存された商品リンクがありません。','qol-note'));
+  if(!savedLinks(d).length&&!/https:\/\//.test(d.posting?.reply||''))host.append(el('p','この原稿には保存された商品リンクがありません。','qol-note'));
   if(readiness.commercial&&!readiness.affiliate)host.append(el('p','収益リンクは未設定です。通常の商品URLは投稿用リンクへ置き換えません。','qol-note'));
   const references=savedLinks(d).filter(x=>readiness.commercial&&x.key!=='affiliate');if(references.length){const refs=el('details'),summary=el('summary','価格・在庫の確認用リンク');refs.append(summary);for(const link of references){const a=el('a',link.label+' ↗');a.href=link.url;a.target='_blank';a.rel='noopener noreferrer';refs.append(a);}host.append(refs);}
   const images=$('posting-images');let imageApi;try{imageApi=window.parent.CCThreadsImages||window.CCThreadsImages;}catch{}

@@ -1,7 +1,7 @@
-import {createConveniences} from './qol.js?v=20261030.1-otoku';
-import {resumeView,postingReadiness} from './qol-model.js?v=20261030.1-otoku';
-import {createNotebook,safeLink} from './notebook.js?v=20261030.1-otoku';
-import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261030.1-otoku';
+import {createConveniences} from './qol.js?v=20261030.2-otoku';
+import {resumeView,postingReadiness} from './qol-model.js?v=20261030.2-otoku';
+import {createNotebook,safeLink} from './notebook.js?v=20261030.2-otoku';
+import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261030.2-otoku';
 
 export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{},onOpenRoom=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;
