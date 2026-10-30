@@ -4,6 +4,8 @@ import {createDesk} from './desk.js?v=20261030.4-accounts';
 import {createInteractionSound} from './interaction-sound.js?v=20261022.26-audio';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261021.4-touch';
 const $ = (id) => document.getElementById(id);
+let accountContext=null;
+const accountRooms={kyun:{key:'insurance',name:'保険'},otoku:{key:'otoku',name:'まだ安く買えるはず'},rakuten:{key:'rakuten',name:'楽天犬'}};
 const app = $('app');
 const room = $('room');
 const reducedMedia = matchMedia('(prefers-reduced-motion: reduce)');
@@ -19,7 +21,7 @@ const rooms = [
 let phase='town', current=null, world=null, audio=null, desk=null;
 let entrySound=null,entryAnimated=false,effectsGain=null,effectsVolume=.5,music=null,interactionSound=null,feedback=null;
 let nextContextRoom=null;
-function openContext(place){const id=({kyun:'red',choi:'purple',otoku:'purple',rakuten:'purple',fp:'silver',shiire:'orange'})[place];if(!id)return;if(phase==='town')enterRoom(id,true);else if(phase==='room'){nextContextRoom=id;goBack();}}
+function openContext(place){accountContext=accountRooms[place]||null;const id=({kyun:'red',choi:'purple',otoku:'purple',rakuten:'purple',fp:'silver',shiire:'orange'})[place];if(!id)return;if(phase==='town')enterRoom(id,true);else if(phase==='room'){nextContextRoom=id;goBack();}}
 let entryStart=0, roomTimer=0, replayAfterBack=null;
 const labels=new Map();
 for(const r of rooms){
@@ -33,7 +35,7 @@ for(const r of rooms){
   b.addEventListener('pointerdown',()=>b.classList.add('pressed'));
   b.addEventListener('pointerup',()=>b.classList.remove('pressed'));
   b.addEventListener('pointercancel',()=>b.classList.remove('pressed'));
-  b.addEventListener('click',()=>enterRoom(r.id));
+  b.addEventListener('click',()=>{accountContext=null;enterRoom(r.id);});
   $('labels').append(b); labels.set(r.id,b);
 
 }
@@ -59,10 +61,10 @@ function silenceEffects(){entrySound?.cancel();interactionSound?.cancel();feedba
 function arrivalSound(){if(settings.sound&&!document.hidden){audioReady();entrySound?.arrive(current.id)}}
 function enterRoom(id,instant=false){
   if(phase!=='town')return;
-  current=rooms.find(r=>r.id===id);if(!current)return;
+  current=rooms.find(r=>r.id===id);if(!current)return;if(accountContext)current={...current,name:accountContext.name,sub:accountContext.name+'の作業部屋',en:'YOUR ACCOUNT ROOM',focus:'50% 35%'};
   const r=current; phase='entering';entryStart=performance.now();
   app.dataset.phase=phase;app.dataset.entering=id;app.classList.add('leaving');app.style.removeProperty('--entry-light');
-  $('room-art').src=`assets/${id}.webp`;$('room-art').alt=r.sub+'にいる'+r.name+'の案内役';$('room-art').style.objectPosition=r.focus;
+  $('room-art').src=accountContext?`assets/panel-${accountContext.key}.webp`:`assets/${id}.webp`;$('room-art').alt=r.sub+'にいる'+r.name+'の案内役';$('room-art').style.objectPosition=r.focus;
   $('room-title').textContent=r.name;$('room-location').textContent=r.en;
   $('announcer').textContent=r.name+'へ移動しています';
   const duration=instant||settings.reduce?0:({quick:650,normal:1000,slow:1400}[settings.pace]);
@@ -115,7 +117,7 @@ let worldLoading=null;
 function initializeWorld(){if(worldLoading)return worldLoading;worldLoading=(async()=>{
 try{
  const {createHybridWorld}=await import('./hybrid-world.js?v=20261030.4-accounts');
- world=await createHybridWorld({app,host:$('world'),rooms,labels,getPhase:()=>phase,getSettings:()=>settings,getWorkMarks:()=>desk?.workMarks()||[],onEnter:enterRoom});
+ world=await createHybridWorld({app,host:$('world'),rooms,labels,getPhase:()=>phase,getSettings:()=>settings,getWorkMarks:()=>desk?.workMarks()||[],onEnter:id=>{accountContext=null;enterRoom(id);}});
  $('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');
 }catch(error){console.error('司令塔の描画を開始できませんでした',error);app.classList.add('fallback-town');$('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');$('town-hint').textContent='看板を選んで、部屋へ'}
 })();return worldLoading;}
