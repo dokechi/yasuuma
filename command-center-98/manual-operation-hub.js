@@ -237,7 +237,7 @@
  
  async function insuranceDesk(key='insurance'){
  const savings=['otoku','rakuten'].includes(key),rakuten=key==='rakuten';
- const box=e('dialog',undefined,'manual-operation-review');box.append(e('h2',rakuten?'楽天犬｜@bonya0914':savings?'まだ安く買えるはず｜@thats_a_steal0601':'経理｜@sucker0508'));
+ const box=e('dialog',undefined,'manual-operation-review');box.append(e('h2',rakuten?'楽天犬｜@bonya0914':savings?'まだ安く買えるはず｜@thats_a_steal0601':'保険｜@sucker0508'));
  const imageControllers=[];const close=e('button','閉じる');close.onclick=()=>{imageControllers.forEach(c=>c?.destroy());box.close();box.remove();};box.append(close);
  const archive=e('a',savings?'Threadsアカウントを開く':'過去原稿を開く');archive.href=rakuten?'https://www.threads.com/@bonya0914':savings?'https://www.threads.com/@thats_a_steal0601':'https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit';archive.target='_blank';archive.rel='noopener';box.append(archive);
  const status=e('p','原稿を読み込んでいます…');box.append(status);doc.body.append(box);box.showModal();

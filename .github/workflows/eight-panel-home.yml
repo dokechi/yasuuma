@@ -1,0 +1,24 @@
+name: Eight panel home regression
+on:
+  pull_request:
+    branches: [main]
+    paths: ['command-center-98/**', 'scripts/six-account-board*', '.github/workflows/eight-panel-home.yml']
+permissions:
+  contents: read
+jobs:
+  account-home:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test scripts/six-account-board.test.mjs command-center-98/tests/rakuten-account.test.mjs
+      - run: npm install --prefix "$RUNNER_TEMP/ui" --ignore-scripts --no-audit --no-fund playwright-core@1.62.1 linkedom@0.18.13
+      - run: NODE_PATH="$RUNNER_TEMP/ui/node_modules" node --test scripts/eight-panel-dom.test.mjs
+      - run: NODE_PATH="$RUNNER_TEMP/ui/node_modules" node scripts/six-account-board-browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eight-panel-home-screenshots
+          path: artifacts/six-accounts
