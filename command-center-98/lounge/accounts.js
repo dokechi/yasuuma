@@ -14,14 +14,16 @@ export function timeOfDay(date=new Date()){const hour=Number(new Intl.DateTimeFo
 export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy}){
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const btn=(text,fn)=>{const b=el('button',text);b.type='button';b.onclick=fn;return b;};
+ let lastVisited=null;
  const panel=el('section',undefined,'account-board');panel.setAttribute('aria-label','司令塔の8パネル');
  const sky=el('div',undefined,'account-sky');sky.setAttribute('aria-hidden','true');panel.append(sky);
  const updateTime=()=>{panel.dataset.time=timeOfDay();panel.dataset.paused=String(document.hidden);};updateTime();const timer=setInterval(updateTime,60000);timer.unref?.();document.addEventListener('visibilitychange',updateTime);window.addEventListener('pagehide',()=>clearInterval(timer),{once:true});
  const header=el('header',undefined,'account-board-heading'),titles=el('div');
  titles.append(el('small','THE WANDERING ATELIER'),el('h1','ただいま、魔法の仕事部屋。'),el('p','扉の向こうは、あなたの持ち場。'));
- const atmosphere=el('div',undefined,'room-atmosphere');atmosphere.setAttribute('aria-hidden','true');atmosphere.innerHTML='<span class=hearth-glow></span><span class=window-sky></span><span class=room-motes>✧　·　　✦　　·</span>';panel.prepend(atmosphere);
- const threshold=el('div',undefined,'door-threshold');threshold.setAttribute('aria-hidden','true');document.body.append(threshold);let transitionTimer;
- function travel(a,id){threshold.dataset.tone=a.tone||'green';threshold.classList.remove('is-travelling');void threshold.offsetWidth;threshold.classList.add('is-travelling');clearTimeout(transitionTimer);transitionTimer=setTimeout(()=>threshold.classList.remove('is-travelling'),550);transitionTimer.unref?.();hide();open(a,id);}
+ const atmosphere=el('div',undefined,'room-atmosphere');atmosphere.setAttribute('aria-hidden','true');atmosphere.innerHTML='<span class=hearth-glow></span><span class=hearth-reflection></span><span class=brass-reflection></span><span class=window-sky><i class=window-cloud></i><i class=window-stars></i><i class=window-lamps></i></span><span class=room-motes>✧　·　　✦　　·</span>';panel.prepend(atmosphere);
+ const threshold=el('div',undefined,'door-threshold');threshold.setAttribute('aria-hidden','true');threshold.innerHTML='<span class=threshold-light></span><span class=threshold-sigil>✦</span>';document.body.append(threshold);let transitionTimer;document.addEventListener('visibilitychange',()=>{threshold.dataset.paused=String(document.hidden);});
+ function markVisited(){for(const tile of tiles.children){const selected=tile.dataset.destination===lastVisited;tile.dataset.lastVisited=String(selected);if(selected)tile.setAttribute('aria-label',tile.textContent+'、最後に開いた持ち場');else tile.removeAttribute('aria-label');}}
+ function travel(a,id){if(a.pending)return;lastVisited=a.key;const index=[...publishingAccounts.map(a=>a.key),'sourcing','reserve'].indexOf(a.key),angle=(index*45)+'deg',color={rose:'#ef9e87',violet:'#bc9fea',amber:'#ffd27c',green:'#9cd4b1'}[a.tone]||'#e7c88b';panel.dataset.destination=a.key;threshold.dataset.destination=a.key;panel.style.setProperty('--dial-angle',angle);panel.style.setProperty('--selected-light',color);threshold.style.setProperty('--dial-angle',angle);threshold.style.setProperty('--selected-light',color);foyer.querySelector('p').textContent=a.name+'の扉に、灯りをともしました。';markVisited();threshold.dataset.tone=a.tone||'green';threshold.classList.remove('is-travelling');void threshold.offsetWidth;threshold.classList.add('is-travelling');clearTimeout(transitionTimer);transitionTimer=setTimeout(()=>threshold.classList.remove('is-travelling'),550);transitionTimer.unref?.();hide();open(a,id);}
  const foyer=el('div',undefined,'room-foyer');foyer.innerHTML='<div class=magic-dial aria-hidden=true><i></i><span>✦</span></div><div><small>行き先を選ぶ、小さな魔法。</small><p>6つの手紙の部屋と、商人の扉。</p></div><span class=room-clock>日本時間の空と灯り</span>';
  const actions=el('nav');actions.setAttribute('aria-label','投稿一覧の操作');
  const refresh=btn('↻ 原稿を更新',onRefresh),lounge=btn('ラウンジ・管理へ',()=>{hide();onLounge();});const mode=btn('6アカウントの原稿一覧',()=>{tiles.hidden=!tiles.hidden;scroller.hidden=!tiles.hidden;mode.textContent=tiles.hidden?'← 8パネルへ':'6アカウントの原稿一覧';});actions.append(mode,refresh,lounge);if(onLegacy)actions.append(btn('旧データの保管庫',onLegacy));header.append(titles,actions);
@@ -61,7 +63,7 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
    }
    columns.append(column);
   }
-  scroller.scrollLeft=left;
+  markVisited();scroller.scrollLeft=left;
  }
  function show(){updateTime();panel.hidden=false;document.getElementById('app')?.classList.add('board-home');}
  function hide(){panel.hidden=true;document.getElementById('app')?.classList.remove('board-home');}

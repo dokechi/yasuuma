@@ -1,4 +1,4 @@
-import {publishingAccounts,draftsForAccount,createAccountBoard} from './accounts.js?v=20261030.4-accounts';
+import {publishingAccounts,draftsForAccount,createAccountBoard} from './accounts.js?v=20261030.7-living';
 import {createConveniences} from './qol.js?v=20261030.4-accounts';
 import {resumeView,postingReadiness} from './qol-model.js?v=20261030.4-accounts';
 import {createNotebook,safeLink} from './notebook.js?v=20261030.4-accounts';
