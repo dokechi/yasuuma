@@ -140,6 +140,10 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   // Read-only access to the actual fallback renderer; its normal packet action writes.
   // This test-only export is never written to or loaded from production source.
   if(relative==='command-center-98/binbo-neko.js')content=content.toString().replace('window.CCBinboNeko={','window.__rpgQA.openNekoCopy=copyFallback;window.CCBinboNeko={');
+  // v231 intentionally replaces the old ledger entry with the profit table.
+  // Preserve the real v130 renderer only for an explicitly labelled component
+  // check, without pretending that its retired drill trigger is current UI.
+  if(relative==='command-center-98/v130-ledger-patch.js')content=content.toString()+`\n;(()=>{const legacyHtml=purchaseLedgerHtml,legacyRender=renderSourcing;window.__rpgQA.openLegacyPurchaseDrill=()=>{const currentHtml=purchaseLedgerHtml;try{purchaseLedgerHtml=legacyHtml;legacyRender();const button=document.querySelector('[data-purchase-drill="orders"]');if(!button)throw Error('Legacy ledger component has no synthetic order trigger');button.click();}finally{purchaseLedgerHtml=currentHtml;}};})();`;
   // No visual banner: screenshots must represent the actual application layout.
   if(relative==='scripts/ui-fixtures.js')content=content.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
   const respond=()=>{res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':startupCache&&/\.(?:js|css)$/.test(file)?'private,max-age=60':'no-store'});res.end(content);};if((slowRpg&&relative==='command-center-98/rpg-home.js')||(slowCastle&&relative==='command-center-98/lounge/app.js'))setTimeout(respond,2000);else respond();
@@ -148,14 +152,26 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cc-rpg-browser-'));
  const proc=spawn(chrome,['--headless','--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--no-first-run','--disable-background-networking','--disable-component-update','--remote-debugging-port=0','--user-data-dir='+path.join(dir,'profile'),'about:blank'],{stdio:'ignore'});
  let ws,serial=0;const pending=new Map(),results=[],blocked=[],errors=[],cancelledInterceptions=[];
+ const rejectPending=reason=>{for(const p of pending.values()){clearTimeout(p.timer);p.reject(Error(reason+': '+p.context))}pending.clear()};
  try{
   const portFile=path.join(dir,'profile/DevToolsActivePort'),deadline=Date.now()+15000;
   while(!fs.existsSync(portFile)&&Date.now()<deadline&&proc.exitCode===null)await sleep(50);
   assert.ok(fs.existsSync(portFile),'headless Chrome did not start');
   const port=fs.readFileSync(portFile,'utf8').split('\n')[0],targets=await(await fetch('http://127.0.0.1:'+port+'/json/list')).json();
   ws=new WebSocket(targets.find(t=>t.type==='page').webSocketDebuggerUrl);await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j});
-  const send=(method,params={})=>new Promise((resolve,reject)=>{const id=++serial;pending.set(id,{resolve,reject});ws.send(JSON.stringify({id,method,params}))});
-  ws.onmessage=event=>{const m=JSON.parse(event.data);if(m.id&&pending.has(m.id)){const p=pending.get(m.id);pending.delete(m.id);m.error?p.reject(Error(m.error.message)):p.resolve(m.result)}
+  // Fail closed on an unanswered protocol command instead of hanging until the
+  // whole-suite deadline. Diagnostics identify the exact synthetic operation.
+  const send=(method,params={})=>new Promise((resolve,reject)=>{
+   const detail=params.expression!==undefined?' expression='+JSON.stringify(String(params.expression).slice(0,800)):params.url!==undefined?' url='+JSON.stringify(String(params.url).slice(0,800)):'';
+   const context=method+detail,id=++serial;
+   if(ws.readyState!==WebSocket.OPEN){reject(Error('CDP socket is not open: '+context));return}
+   const timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP command timed out after 30000ms: '+context))},30000);
+   pending.set(id,{resolve,reject,timer,context});
+   try{ws.send(JSON.stringify({id,method,params}))}catch(error){clearTimeout(timer);pending.delete(id);reject(Error('CDP send failed: '+context+'; '+error.message))}
+  });
+  ws.onclose=event=>rejectPending('CDP socket closed ('+event.code+')');
+  ws.onerror=()=>rejectPending('CDP socket error');
+  ws.onmessage=event=>{const m=JSON.parse(event.data);if(m.id&&pending.has(m.id)){const p=pending.get(m.id);clearTimeout(p.timer);pending.delete(m.id);m.error?p.reject(Error(m.error.message)):p.resolve(m.result)}
    // A navigation can cancel an intercepted request before CDP continues it.
    // Record only that exact transport race separately; runtime exceptions and
    // all other protocol failures still fail, and blocked requests remain blocked.
@@ -223,7 +239,9 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
    await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html?qa-boot=1'});await waitFor(`!!document.querySelector('.boot')&&!!window.__rpgQA`);await capture(prefix+'bootstrap',`!!document.querySelector('.boot .bar')`);
    await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});await waitFor('!!window.CCRpgHome && !!window.__rpgQA && !app.busy');await loungeReady();
    // Compare computed top geometry/paint with the new theme disabled, in the same browser.
-   const signature=`JSON.stringify([document.getElementById('ccCastleFrame'),...document.getElementById('ccCastleFrame').contentDocument.querySelectorAll('.account-board,.account-board *')].map(e=>{const s=e.ownerDocument.defaultView.getComputedStyle(e),r=e.getBoundingClientRect();return [e.tagName,e.className,r.x,r.y,r.width,r.height,s.color,s.backgroundColor,s.fontFamily,s.fontSize,s.border,s.padding,s.margin]}))`;
+   // An iframe's inherited font/color cannot paint its child document. Compare
+   // the embedding box itself plus every child's actual computed paint/type.
+   const signature=`(()=>{const frame=document.getElementById('ccCastleFrame');return JSON.stringify([frame,...frame.contentDocument.querySelectorAll('.account-board,.account-board *')].map(e=>{const s=e.ownerDocument.defaultView.getComputedStyle(e),r=e.getBoundingClientRect(),box=[e.tagName,e.className,r.x,r.y,r.width,r.height];return e===frame?[...box,s.backgroundColor,s.backgroundImage,s.borderWidth,s.borderStyle,s.padding,s.margin]:[...box,s.color,s.backgroundColor,s.fontFamily,s.fontSize,s.border,s.padding,s.margin]}))})()`;
    // Take both snapshots in one browser task. Between separate CDP calls,
    // an async home render or animation frame can change geometry independently
    // of the stylesheet being compared. Keep the same exact equality assertion.
@@ -252,7 +270,12 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
    await evaluate(`document.querySelector('[data-import]').click()`);await capture(prefix+'affiliate-import',`!!document.querySelector('.affiliate-import[open]')`);await evaluate(`document.querySelector('.affiliate-import [data-cancel]').click()`);
    await route('binbo-neko');await evaluate(`window.__rpgQA.openNekoCopy('検証用の制作セットです。\\n原稿・商品条件・注意点を確認します。')`);await capture(prefix+'neko-copy-dialog',`!!document.querySelector('#nekoCopyDialog[open]')`);await evaluate(`document.querySelector('#nekoCopyDialog button').click()`);
    await route('sourcing');for(const sub of ['queue','hold','purchases','suppliers','research','discoveries','success','close','miss']){await evaluate(`sourcingApp.sub='${sub}';renderSourcing()`);await capture(prefix+'sourcing-'+sub,sub==='purchases'?`!document.getElementById('sourcingHub').hidden&&!!document.querySelector('.ledger-month-tab.selected[aria-selected="true"]')?.getClientRects().length`:`!document.getElementById('sourcingHub').hidden`)}
-   await evaluate(`sourcingApp.sub='purchases';renderSourcing();document.querySelector('[data-purchase-drill]')?.click()`);await capture(prefix+'purchase-drill',`!!document.querySelector('#purchaseDrillModal.open')`);await evaluate(`document.getElementById('purchaseDrillClose')?.click()`);
+   await evaluate(`sourcingApp.sub='purchases';renderSourcing();document.querySelector('.purchase-profit-method summary').click()`);
+   await capture(prefix+'purchase-profit-method',`!!document.querySelector('.purchase-profit-method[open]')&&document.querySelector('[data-purchase-id="fixture-purchase"] .purchase-product').textContent==='検証用購入商品'&&document.querySelector('.purchase-profit-method').textContent.includes('金額未確認・査定なしは0円として扱いません')`);
+   await evaluate(`window.__rpgQA.openLegacyPurchaseDrill()`);
+   await capture(prefix+'legacy-component-purchase-drill',`(()=>{const m=document.querySelector('#purchaseDrillModal.open');return !!m&&m.getAttribute('aria-hidden')==='false'&&m.querySelector('[role="dialog"]')?.getAttribute('aria-modal')==='true'&&m.querySelector('.purchase-drill-table tbody').textContent.includes('fixture-order')})()`);
+   await evaluate(`document.getElementById('purchaseDrillClose').click();renderSourcing()`);
+   await waitFor(`!document.querySelector('#purchaseDrillModal.open')&&!!document.querySelector('.purchase-profit-ledger')`);
    await route('active');for(const [menu,button]of [['fileMenu','menuFile'],['viewMenu','menuView']]){await evaluate(`toggleMenu('${menu}','${button}')`);await capture(prefix+menu,`document.getElementById('${menu}').classList.contains('open')`);await evaluate('closeMenus()')}
    for(const [name,open,close]of [['help','openHelp()','helpClose'],['task','openTasks()','taskClose'],['review','openReview()','reviewClose']]){await evaluate(open);await capture(prefix+name+'-modal',`document.getElementById('${name}Modal').classList.contains('open')`);await evaluate(`document.getElementById('${close}').click()`);await waitFor(`!document.getElementById('${name}Modal').classList.contains('open')`)}
    for(const mode of ['empty','error']){await evaluate(`window.__rpgQA.mode='${mode}'`);await route('active');await capture(prefix+mode,`document.querySelector('#list .empty')!==null`)}
@@ -556,7 +579,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   await capture('classic-component-offline',`${C}.CCCastleApp.notebook.all().some(x=>x.id===window.__classicDraftId&&x.title==='クラシック部品・確認用の端末原稿')&&${C}.navigator.onLine===false`);
   await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
   results.push({name:'network-isolation',checks:[{name:'no attempted external network request',pass:blocked.length===0,detail:blocked},{name:'no uncaught browser exceptions',pass:errors.length===0,detail:errors}]});
- }catch(error){await diagnose(error.message);throw error;}finally{fs.writeFileSync(path.join(output,'results.json'),JSON.stringify({results,blocked,errors,cancelledInterceptions,requests},null,2));ws?.close();proc.kill();server.close();}
+ }catch(error){await diagnose(error.message);throw error;}finally{fs.writeFileSync(path.join(output,'results.json'),JSON.stringify({results,blocked,errors,cancelledInterceptions,requests},null,2));rejectPending('CDP session ended');ws?.close();proc.kill();server.close();}
  const failures=results.flatMap(r=>r.checks.filter(c=>!c.pass).map(c=>({route:r.name,...c})));
  assert.deepEqual(failures,[],'See artifacts/rpg-theme/results.json and per-route PNGs');
 });

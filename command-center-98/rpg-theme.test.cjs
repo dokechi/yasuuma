@@ -36,7 +36,7 @@ test('all dialog families, controls, feedback, and ledger wrappers are covered',
 function lum(hex){const a=hex.match(/[a-f\d]{2}/gi).map(s=>parseInt(s,16)/255).map(n=>n<=.04045?n/12.92:((n+.055)/1.055)**2.4);return a[0]*.2126+a[1]*.7152+a[2]*.0722;}
 function contrast(a,b){const x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
 test('declared reading, input, muted, selected, and feedback colors have readable contrast',()=>{
- for(const [fg,bg,label]of [['eee8da','202633','body'],['b6b8bc','202633','muted'],['e2c68c','293141','heading'],['f4eddc','151c28','input'],['171c26','d6bd88','selected'],['ffb8ac','3a252a','error'],['f1d293','383027','warning'],['a9ddba','23392f','success']])assert(contrast(fg,bg)>=4.5,label+' '+contrast(fg,bg));
+ for(const [fg,bg,label]of [['eee8da','202633','body'],['b6b8bc','202633','muted'],['62543c','f7f1e4','light workspace metadata'],['e2c68c','293141','heading'],['f4eddc','151c28','input'],['171c26','d6bd88','selected'],['ffb8ac','3a252a','error'],['f1d293','383027','warning'],['a9ddba','23392f','success']])assert(contrast(fg,bg)>=4.5,label+' '+contrast(fg,bg));
 });
 
 
