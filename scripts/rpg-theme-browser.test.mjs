@@ -89,6 +89,34 @@ const geometry=`(()=>{
  add('workflow initialization is fixture-only',true,window.__rpgQA.simulatedInitializations||[]);
  return checks;
 })()`;
+// Current publishing records plus the real retained Threads management-card entry.
+// This code is served only by this local fixture server, never written into app source.
+const fixtureExtension=`(()=>{
+ const qa=window.__rpgQA,events=qa.threads.events;
+ const choi=events.findIndex(row=>row.payload.account_name==='ちょい上等');
+ events.unshift(...events.splice(choi,1));
+ qa.retainedForeignOriginal=JSON.stringify(events.slice(1));
+ qa.openRetainedAccount=key=>{
+  if(key==='tiktok')return CCManualOperationHub.openAccount(key);
+  if(key!=='choi')throw Error('Unsupported retained component identity '+key);
+  const index=CCManualOperationHub.accounts.findIndex(a=>a.key==='choi');
+  const button=document.querySelector('.manual-operation-grid')?.children[index]?.querySelector('button');
+  if(!button)throw Error('Retained account management card is missing');
+  button.click();
+ };
+ qa.currentDrafts=['insurance','otoku','rakuten','lottery'].map((account,i)=>({id:990+i,taskId:account+'-threads-v1',eventKey:'rpg-'+account,title:'合成保存原稿 '+account,occurredAt:'2026-10-30T08:00:00Z',payload:{draft:account+'の合成本文です。保存された文章をそのまま確認します。\\n\\n'+('この文章は検証専用です。内容と条件を確認してください。\\n').repeat(24),date:'2026-10-30',review_status:'確認用下書き',sources_note:'合成データの出典記録'}}));
+ const original=window.fetch;
+ window.fetch=async(input,options={})=>{
+  const url=new URL(input instanceof URL?input.href:typeof input==='string'?input:input.url,location.href),method=(options.method||input?.method||'GET').toUpperCase();
+  const json=data=>new Response(JSON.stringify(data),{status:200,headers:{'Content-Type':'application/json'}});
+  if(method==='GET'&&url.searchParams.get('resource')==='task-events'&&qa.currentDrafts.some(x=>x.taskId===url.searchParams.get('taskId'))){const rows=qa.currentDrafts.filter(x=>x.taskId===url.searchParams.get('taskId'));return json({ok:true,events:rows,total:rows.length,nextOffset:null});}
+  if(method==='GET'&&url.searchParams.get('resource')==='threads-images')return json({ok:true,id:url.searchParams.get('id'),accountKey:url.searchParams.get('accountKey'),manifest:{contract:'threads-post-images-v1',revision:0,images:[]},assets:[]});
+  const response=await original(input,options);
+  if(method==='GET'&&url.searchParams.get('resource')==='castle-signals'&&response.ok){const data=await response.json();return json({...data,items:[...data.items,...qa.currentDrafts],total:data.items.length+qa.currentDrafts.length});}
+  return response;
+ };
+})();`;
+
 test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:900000},async()=>{
  const requests=[];let diagnose=async()=>{},slowRpg=false,startupCache=false,failRpg=false,failStyles=false,modernStartup=false,slowCastle=false;
  assert.ok(chrome,'Chrome is required; browser QA must not silently skip');fs.mkdirSync(output,{recursive:true});
@@ -101,7 +129,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   if(failStyles&&relative.endsWith('.css')){res.writeHead(503);res.end();return}
   if(failRpg&&relative==='command-center-98/rpg-home.js'){res.writeHead(503);res.end();return}
   let content=fs.readFileSync(file);
-  if(relative==='command-center-98/app.html')content=content.toString().replace('<head>','<head><script>localStorage.setItem("cc-castle-mode","'+(modernStartup?'castle':'classic')+'")</script><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script>');
+  if(relative==='command-center-98/app.html')content=content.toString().replace('<head>','<head><script>localStorage.setItem("cc-castle-mode","'+(modernStartup?'castle':'classic')+'")</script><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script><script>'+fixtureExtension+'</script>');
   if(relative==='command-center-98/index.html')content=content.toString().replace('<head>','<head><script>localStorage.removeItem("cc_retro_token");window.__rpgQA={writes:[]};'+(url.searchParams.has('qa-login')?'window.fetch=async()=>({ok:true,status:200,json:async()=>({ok:true,token:"synthetic-qa-only"})});':'')+'</script>');
   if(relative==='command-center-98/app-v130.html'&&url.searchParams.has('qa-boot'))content=content.toString().replace('<head>','<head><script>window.__rpgQA={writes:[]};window.fetch=()=>new Promise(()=>{});</script>');
   // Read-only access to the actual fallback renderer; its normal packet action writes.
@@ -109,7 +137,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   if(relative==='command-center-98/binbo-neko.js')content=content.toString().replace('window.CCBinboNeko={','window.__rpgQA.openNekoCopy=copyFallback;window.CCBinboNeko={');
   // No visual banner: screenshots must represent the actual application layout.
   if(relative==='scripts/ui-fixtures.js')content=content.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
-  const respond=()=>{res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':startupCache&&/\.(?:js|css)$/.test(file)?'private,max-age=60':'no-store'});res.end(content);};if((slowRpg&&relative==='command-center-98/rpg-home.js')||(slowCastle&&relative==='command-center-98/castle/app.js'))setTimeout(respond,2000);else respond();
+  const respond=()=>{res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':startupCache&&/\.(?:js|css)$/.test(file)?'private,max-age=60':'no-store'});res.end(content);};if((slowRpg&&relative==='command-center-98/rpg-home.js')||(slowCastle&&relative==='command-center-98/lounge/app.js'))setTimeout(respond,2000);else respond();
  });
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cc-rpg-browser-'));
@@ -180,15 +208,15 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
    await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html?qa-boot=1'});await waitFor(`!!document.querySelector('.boot')&&!!window.__rpgQA`);await capture(prefix+'bootstrap',`!!document.querySelector('.boot .bar')`);
    await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});await waitFor('!!window.CCRpgHome && !!window.__rpgQA && !app.busy');await evaluate('document.fonts.ready');await sleep(350);
    // Compare computed top geometry/paint with the new theme disabled, in the same browser.
-   const signature=`JSON.stringify(Array.from(document.querySelectorAll('#ccRpgHome,#ccRpgHome *')).map(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return [e.tagName,e.className,r.x,r.y,r.width,r.height,s.color,s.backgroundColor,s.fontFamily,s.fontSize,s.border,s.padding,s.margin]}))`;
+   const signature=`JSON.stringify([document.getElementById('ccCastleFrame'),...document.getElementById('ccCastleFrame').contentDocument.querySelectorAll('.account-board,.account-board *')].map(e=>{const s=e.ownerDocument.defaultView.getComputedStyle(e),r=e.getBoundingClientRect();return [e.tagName,e.className,r.x,r.y,r.width,r.height,s.color,s.backgroundColor,s.fontFamily,s.fontSize,s.border,s.padding,s.margin]}))`;
    // Take both snapshots in one browser task. Between separate CDP calls,
    // an async home render or animation frame can change geometry independently
    // of the stylesheet being compared. Keep the same exact equality assertion.
    const comparison=await evaluate(`(()=>{const snapshot=()=>${signature};const themed=snapshot();const links=[...document.querySelectorAll('link[href*="rpg-theme.css"]')];document.body.classList.remove('cc-rpg-theme');links.forEach(x=>x.disabled=true);try{const original=snapshot();return {pass:themed===original,themed:JSON.parse(themed),original:JSON.parse(original)};}finally{links.forEach(x=>x.disabled=false);document.body.classList.add('cc-rpg-theme');}})()`);
    const changed=comparison.themed.flatMap((row,i)=>JSON.stringify(row)===JSON.stringify(comparison.original[i])?[]:[{themed:row,original:comparison.original[i]}]);
-   results.push({name:prefix+'top-preserved',checks:[{name:'approved RPG top computed layout and paint unchanged',pass:comparison.pass,...(!comparison.pass?{detail:changed}: {})}]});
+   results.push({name:prefix+'top-preserved',checks:[{name:'current lounge layout and paint are independent of legacy management theme',pass:comparison.pass,...(!comparison.pass?{detail:changed}: {})}]});
    await capture(prefix+'top',`!!document.getElementById('ccCastleFrame')&&!document.getElementById('ccCastleFrame').hidden`);
-   for(const key of ['kyun','choi','tiktok']){await evaluate(`CCRpgHome.openAccount('${key}')`);await waitFor(`document.querySelector('dialog[open] article')!==null`);await capture(prefix+'account-'+key,`document.querySelector('dialog[open]').textContent.includes('合成')`);if(key!=='tiktok'){await evaluate(`document.querySelector('dialog[open] .rpg-account-product').scrollIntoView({block:'center'})`);await capture(prefix+'account-'+key+'-product-link',`(()=>{const a=document.querySelector('dialog[open] a.rpg-product-open');return a?.href==='https://example.com/product'&&a.target==='_blank'&&a.rel==='noopener noreferrer'&&a.getBoundingClientRect().height>=43.99&&document.querySelector('dialog[open] .rpg-product-note').textContent.includes('アフィリエイトリンクは未発行')&&!Array.from(document.querySelectorAll('dialog[open] button')).some(b=>b.textContent==='保存購入リンクをコピー')})()`);await evaluate(`document.querySelector('dialog[open] .rpg-account-mercari').scrollIntoView({block:'center'})`);await capture(prefix+'account-'+key+'-mercari-links',`(()=>{const d=document.querySelector('dialog[open]'),links=[...d.querySelectorAll('.rpg-mercari-open')],notes=[...d.querySelectorAll('.rpg-mercari-note')].map(n=>n.textContent).join(' '),caution=d.querySelector('.rpg-mercari-caution').textContent;return links.length===3&&['出品中 8,200円','成約 7,400円','成約 6,100円'].every((label,i)=>links[i].textContent===label&&links[i].href==='https://jp.mercari.com/item/m1000000000'+(i+1)&&links[i].target==='_blank'&&links[i].rel==='noopener noreferrer'&&links[i].getBoundingClientRect().height>=43.99)&&['色違い・1サイズ差','同色同サイズ','下振れ例'].every(n=>notes.includes(n))&&caution.includes('成約日は未確認です')&&caution.includes('市場全体の最安値を示すものではありません')&&d.querySelector('.rpg-account-copy pre').textContent==='本文案Aです。'&&[...d.querySelectorAll('.rpg-mercari-evidence')].every(e=>!e.open)&&[...d.querySelectorAll('.rpg-mercari-source-url')].every(e=>!e.checkVisibility())&&['新品未使用','色違い・1サイズ差','室内試着のみ','同色同サイズ','下振れ例'].every(text=>[...d.querySelectorAll('.rpg-mercari-overview')].some(e=>e.textContent.includes(text)))})()`);}await evaluate(`document.querySelector('dialog[open]').scrollTop=10000`);await capture(prefix+'account-'+key+'-scrolled',`(()=>{const d=document.querySelector('dialog[open]'),b=d.querySelector('.rpg-account-close'),r=b.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&!d.querySelector('.rpg-account-coverage-details').open})()`);await evaluate(`document.querySelector('dialog[open] button').click()`);await waitFor(`!document.querySelector('dialog[open]')&&!document.querySelector('.rpg-account-page')`)}
+   for(const key of ['choi','tiktok']){await evaluate(`__rpgQA.openRetainedAccount('${key}')`);await waitFor(`document.querySelector('dialog[open] article')!==null`);await capture(prefix+'account-'+key,`document.querySelector('dialog[open]').textContent.includes('合成')&&[...document.querySelectorAll('dialog[open] .rpg-account-card')].every(n=>n.dataset.recordId.includes('${key==="choi"?"account-1":"account-2"}'))`);if(key!=='tiktok'){await evaluate(`document.querySelector('dialog[open] .rpg-account-product').scrollIntoView({block:'center'})`);await capture(prefix+'account-'+key+'-product-link',`(()=>{const a=document.querySelector('dialog[open] a.rpg-product-open');return a?.href==='https://example.com/product'&&a.target==='_blank'&&a.rel==='noopener noreferrer'&&a.getBoundingClientRect().height>=43.99&&document.querySelector('dialog[open] .rpg-product-note').textContent.includes('アフィリエイトリンクは未発行')&&!Array.from(document.querySelectorAll('dialog[open] button')).some(b=>b.textContent==='保存購入リンクをコピー')})()`);await evaluate(`document.querySelector('dialog[open] .rpg-account-mercari').scrollIntoView({block:'center'})`);await capture(prefix+'account-'+key+'-mercari-links',`(()=>{const d=document.querySelector('dialog[open]'),links=[...d.querySelectorAll('.rpg-mercari-open')],notes=[...d.querySelectorAll('.rpg-mercari-note')].map(n=>n.textContent).join(' '),caution=d.querySelector('.rpg-mercari-caution').textContent;return links.length===3&&['出品中 8,200円','成約 7,400円','成約 6,100円'].every((label,i)=>links[i].textContent===label&&links[i].href==='https://jp.mercari.com/item/m1000000000'+(i+1)&&links[i].target==='_blank'&&links[i].rel==='noopener noreferrer'&&links[i].getBoundingClientRect().height>=43.99)&&['色違い・1サイズ差','同色同サイズ','下振れ例'].every(n=>notes.includes(n))&&caution.includes('成約日は未確認です')&&caution.includes('市場全体の最安値を示すものではありません')&&d.querySelector('.rpg-account-copy pre').textContent==='本文案Aです。'&&[...d.querySelectorAll('.rpg-mercari-evidence')].every(e=>!e.open)&&[...d.querySelectorAll('.rpg-mercari-source-url')].every(e=>!e.checkVisibility())&&['新品未使用','色違い・1サイズ差','室内試着のみ','同色同サイズ','下振れ例'].every(text=>[...d.querySelectorAll('.rpg-mercari-overview')].some(e=>e.textContent.includes(text)))})()`);}await evaluate(`document.querySelector('dialog[open]').scrollTop=10000`);await capture(prefix+'account-'+key+'-scrolled',`(()=>{const d=document.querySelector('dialog[open]'),b=d.querySelector('.rpg-account-close'),r=b.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&!d.querySelector('.rpg-account-coverage-details').open})()`);await evaluate(`document.querySelector('dialog[open] button').click()`);await waitFor(`!document.querySelector('dialog[open]')&&!document.querySelector('.rpg-account-page')`)}
    await evaluate('CCRpgWorkspaces.openSettings()');await capture(prefix+'workspace-settings',`!!document.querySelector('.rpg-workspace-dialog[open]')&&['作業日報','クーニー','仕入れ命','カード','海外時計'].every(x=>document.querySelector('.rpg-workspace-dialog[open]').textContent.includes(x))`);await evaluate('CCRpgWorkspaces.close()');
    await evaluate('CCRpgWorkspaces.openFp()');await waitFor('!app.busy&&app.view==="fp"');await capture(prefix+'workspace-fp',`document.getElementById('ccDestination').dataset.rpgDesk==='fp'`);
    await evaluate('CCRpgWorkspaces.openWatches()');await waitFor('!app.busy&&app.view==="reddit"');await capture(prefix+'workspace-watches',`app.view==='reddit'&&!document.getElementById('rpgSourcingAux').hidden`);
@@ -238,8 +266,8 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
     await key('Enter');await waitFor(`!document.querySelector('.fp-draft-dialog')`);
    }
    await evaluate('CCRpgHome.showRpg()');
-   for(const account of ['kyun','choi'])for(let repeat=1;repeat<=2;repeat++){
-    await evaluate(`CCRpgHome.openAccount('${account}')`);await waitFor(`!!document.querySelector('.rpg-account-copy')`);
+   for(const account of ['choi'])for(let repeat=1;repeat<=2;repeat++){
+    await evaluate(`__rpgQA.openRetainedAccount('${account}')`);await waitFor(`!!document.querySelector('.rpg-account-copy')`);
     await keyboardFocus('.rpg-account-back');await capture(prefix+account+'-focus-'+repeat,focusCheck('.rpg-account-back'));
     await key('Enter');await waitFor(`!document.querySelector('dialog[open]')&&!document.querySelector('.rpg-account-page')`);
    }
@@ -250,14 +278,17 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
    await key('Tab');await key('Tab');await startupCapture(prefix+'startup-no-css-focus-loop');
    failRpg=false;failStyles=false;await key('Enter');await waitFor(`!!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')`);await capture(prefix+'startup-retry-ready',`!!document.getElementById('ccCastleFrame')&&!document.getElementById('ccCastleFrame').hidden`);
   }
+  // Retained generic Threads component: use the real choi management card. The
+  // public kyun route is insurance and public choi is a Sheet, tested separately.
+  // Foreign retired kyun and TikTok source rows remain in the isolated read fixture.
   // Focused Galaxy-sized and desktop refinement journeys use the same isolated fixtures.
   for(const [width,height] of [[360,800],[412,915],[1440,900]]){
    const prefix=width+'x'+height+'-refined-';await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
    await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});await waitFor('!!window.CCRpgWorkspaces && !!window.__rpgQA && !app.busy');await evaluate('document.fonts.ready');
    await evaluate(`window.__rpgQA.copied=[];Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__rpgQA.copied.push(text)}}})`);
-   for(const key of ['kyun','choi']){
+   for(const key of ['choi']){
     for(let repeat=0;repeat<2;repeat++){
-     await evaluate(`CCRpgHome.openAccount('${key}')`);await waitFor(`!!document.querySelector('dialog[open] .rpg-account-copy button')`);
+     await evaluate(`__rpgQA.openRetainedAccount('${key}')`);await waitFor(`!!document.querySelector('dialog[open] .rpg-account-copy button')`);
      await evaluate(`window.__rpgQA.originalCopy=document.querySelector('dialog[open] .rpg-account-copy pre').textContent;document.querySelector('dialog[open] .rpg-account-copy button').click()`);
      await waitFor(`document.querySelector('dialog[open] .rpg-account-status').textContent.includes('原文をコピー')`);
      await capture(prefix+key+'-copy-'+repeat,`window.__rpgQA.copied.at(-1)===window.__rpgQA.originalCopy&&document.querySelector('dialog[open] .rpg-account-copy pre').textContent===window.__rpgQA.originalCopy`);
@@ -289,9 +320,9 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   for(const [width,height] of [[360,800],[412,915],[1440,900]]){
    const prefix=width+'x'+height+'-threads-';await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
    await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});await waitFor('!!window.CCRpgWorkspaces && !!window.__rpgQA && !app.busy');await evaluate('document.fonts.ready');
-   for(const key of ['kyun','choi']){
-    await evaluate(`CCRpgHome.openAccount('${key}')`);await waitFor(`!!document.querySelector('.rpg-threads-profile-open[href]')`);
-    await capture(prefix+key+'-header',`document.querySelector('.rpg-threads-profile-open').href==='https://www.threads.com/@${key}_fixture'&&window.__rpgQA.threads.simulatedWrites.length===${key==='kyun'?0:2}`);
+   for(const key of ['choi']){
+    await evaluate(`__rpgQA.openRetainedAccount('${key}')`);await waitFor(`!!document.querySelector('.rpg-threads-profile-open[href]')`);
+    await capture(prefix+key+'-header',`document.querySelector('.rpg-threads-profile-open').href==='https://www.threads.com/@${key}_fixture'&&window.__rpgQA.threads.simulatedWrites.length===0`);
     await evaluate(`document.querySelector('.rpg-thread-record').click()`);await waitFor(`!!document.querySelector('.rpg-thread-editor[open]')`);
     await capture(prefix+key+'-url-first',`(()=>{const e=document.querySelector('.rpg-thread-editor');return !e.querySelector('details').open&&e.textContent.includes('URLだけで保存')&&e.querySelector('[name=postUrl]').getBoundingClientRect().width<=innerWidth})()`);
     await evaluate(`document.querySelector('.rpg-thread-editor [name=postUrl]').value='https://evil.test/@${key}_fixture/post/one';document.querySelector('.rpg-thread-save').click()`);
@@ -303,28 +334,28 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
     await evaluate(`window.__rpgQA.threads.failSave=false;window.__rpgQA.threads.holdSave=true;document.querySelector('.rpg-thread-save').click();document.querySelector('.rpg-thread-save').click()`);
     await capture(prefix+key+'-saving',`document.querySelector('.rpg-thread-save').disabled&&document.querySelector('.rpg-thread-cancel').disabled`);
     await evaluate(`window.__rpgQA.threads.holdSave=false;window.__rpgQA.threads.releaseSave()`);await waitFor(`!document.querySelector('.rpg-thread-editor')`);
-    await capture(prefix+key+'-saved-url-only',`(()=>{const r=window.__rpgQA.threads.events[${key==='kyun'?0:1}].payload.threads_manual_result,w=window.__rpgQA.threads.simulatedWrites;return r.actual_text===null&&r.posted_at===null&&r.metrics===null&&w.at(-1).mutationId===w.at(-2).mutationId&&!('metrics' in w.at(-1))&&document.querySelector('[data-account-tab=history]').getAttribute('aria-pressed')==='true'})()`);
+    await capture(prefix+key+'-saved-url-only',`(()=>{const r=window.__rpgQA.threads.events[0].payload.threads_manual_result,w=window.__rpgQA.threads.simulatedWrites;return r.actual_text===null&&r.posted_at===null&&r.metrics===null&&w.at(-1).mutationId===w.at(-2).mutationId&&!('metrics' in w.at(-1))&&document.querySelector('[data-account-tab=history]').getAttribute('aria-pressed')==='true'})()`);
     await evaluate(`document.querySelector('.rpg-account-back').click()`);await waitFor(`!document.querySelector('dialog[open]')&&!document.querySelector('.rpg-account-page')`);
-    await evaluate(`CCRpgHome.openAccount('${key}')`);await waitFor(`!!document.querySelector('.rpg-account-page[open] .rpg-thread-record')&&!!document.querySelector('.rpg-account-page[open] .rpg-threads-profile-open[href]')`);await evaluate(`document.querySelector('[data-account-tab=history]').click();document.querySelector('.rpg-thread-record').click();document.querySelector('.rpg-thread-optional').open=true`);
+    await evaluate(`__rpgQA.openRetainedAccount('${key}')`);await waitFor(`!!document.querySelector('.rpg-account-page[open] .rpg-thread-record')&&!!document.querySelector('.rpg-account-page[open] .rpg-threads-profile-open[href]')`);await evaluate(`document.querySelector('[data-account-tab=history]').click();document.querySelector('.rpg-thread-record').click();document.querySelector('.rpg-thread-optional').open=true`);
     await capture(prefix+key+'-optional-fields',`document.querySelector('[name=postUrl]').readOnly&&document.querySelector('[name=likes]').value===''`);
     await evaluate(`document.querySelector('[name=likes]').scrollIntoView({block:'center'})`);await capture(prefix+key+'-optional-metrics',`(()=>{const b=document.querySelector('.rpg-thread-cancel').getBoundingClientRect(),e=document.querySelector('[name=likes]').getBoundingClientRect();return b.top>=0&&b.bottom<innerHeight&&e.width<innerWidth})()`);
     await evaluate(`document.querySelector('.rpg-thread-cancel').click();document.querySelector('.rpg-account-back').click()`);await waitFor(`!document.querySelector('dialog[open]')&&!document.querySelector('.rpg-account-page')`);
    }
-   await evaluate(`CCRpgHome.openAccount('kyun')`);await waitFor(`!!document.querySelector('.rpg-account-page[open] .rpg-thread-record')&&!!document.querySelector('.rpg-account-page[open] .rpg-threads-profile-open[href]')`);await evaluate(`document.querySelector('[data-account-tab=history]').click();document.querySelector('.rpg-thread-record').click();document.querySelector('.rpg-thread-optional').open=true;document.querySelector('[name=actualText]').value='本人が編集した合成本文。';document.querySelector('[name=likes]').value='0';document.querySelector('[name=confirmPosted]').checked=true;document.querySelector('.rpg-thread-save').click()`);await waitFor(`!document.querySelector('.rpg-thread-editor')`);
+   await evaluate(`__rpgQA.openRetainedAccount('choi')`);await waitFor(`!!document.querySelector('.rpg-account-page[open] .rpg-thread-record')&&!!document.querySelector('.rpg-account-page[open] .rpg-threads-profile-open[href]')`);await evaluate(`document.querySelector('[data-account-tab=history]').click();document.querySelector('.rpg-thread-record').click();document.querySelector('.rpg-thread-optional').open=true;document.querySelector('[name=actualText]').value='本人が編集した合成本文。';document.querySelector('[name=likes]').value='0';document.querySelector('[name=confirmPosted]').checked=true;document.querySelector('.rpg-thread-save').click()`);await waitFor(`!document.querySelector('.rpg-thread-editor')`);
    await evaluate(`document.querySelector('.rpg-thread-comparison').open=true;document.querySelector('.rpg-thread-comparison').scrollIntoView({block:'start'})`);
    await capture(prefix+'manual-comparison',`(()=>{const r=window.__rpgQA.threads.events[0].payload.threads_manual_result;return r.metrics.likes===0&&r.metrics.views===null&&r.actual_text==='本人が編集した合成本文。'&&document.querySelector('.rpg-thread-comparison').textContent.includes('未確認')&&document.querySelector('.rpg-thread-text-comparison').textContent.includes('本文案Aです。')})()`);
-   await evaluate(`document.querySelector('.rpg-account-back').click();window.__rpgQA.threads.accounts[1].profile_url=null;window.__rpgQA.threads.accounts[1].revision=0;CCRpgHome.openAccount('choi')`);await waitFor(`document.querySelector('.rpg-threads-profile-open')?.disabled`);
+   await evaluate(`document.querySelector('.rpg-account-back').click();window.__rpgQA.threads.accounts[1].profile_url=null;window.__rpgQA.threads.accounts[1].revision=0;__rpgQA.openRetainedAccount('choi')`);await waitFor(`document.querySelector('.rpg-threads-profile-open')?.disabled`);
    await capture(prefix+'unset-profile',`document.querySelector('.rpg-threads-account-note').textContent.includes('未登録')`);
    await evaluate(`document.querySelector('.rpg-threads-profile-setting').click()`);await capture(prefix+'profile-settings',`!!document.querySelector('.rpg-thread-editor [name=profileUrl]')`);
    await evaluate(`document.querySelector('[name=profileUrl]').value='https://threads.net/@choi_fixture';document.querySelector('.rpg-thread-confirm input').checked=true;document.querySelector('.rpg-thread-save').click()`);await waitFor(`!document.querySelector('.rpg-thread-editor')`);
-   await capture(prefix+'profile-saved',`document.querySelector('.rpg-threads-profile-open').href==='https://www.threads.com/@choi_fixture'`);
+   await capture(prefix+'profile-saved',`document.querySelector('.rpg-threads-profile-open').href==='https://www.threads.com/@choi_fixture'&&JSON.stringify(window.__rpgQA.threads.events.slice(1))===window.__rpgQA.retainedForeignOriginal`);
    await evaluate(`document.querySelector('.rpg-account-back').click()`);await waitFor(`!document.querySelector('dialog[open]')&&!document.querySelector('.rpg-account-page')`);
   }
   // Saved observations and read coverage are independent from operation notifications.
   for(const [width,height] of [[360,800],[412,915],[1440,900]]){
    const prefix=width+'x'+height+'-read-status-';await send('Emulation.setTimezoneOverride',{timezoneId:'UTC'});await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
    await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});await waitFor('!!window.CCRpgWorkspaces && !!window.__rpgQA && !app.busy');await evaluate('document.fonts.ready');
-   await evaluate(`window.__rpgQA.threads.readPages=true;window.__rpgQA.threads.failNextRead=true;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__rpgQA.lastCopy=text}}});CCRpgHome.openAccount('kyun')`);
+   await evaluate(`window.__rpgQA.threads.readPages=true;window.__rpgQA.threads.failNextRead=true;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__rpgQA.lastCopy=text}}});__rpgQA.openRetainedAccount('choi')`);
    await waitFor(`document.querySelector('.rpg-account-load-coverage')?.textContent.includes('続きあり')`);
    await capture(prefix+'partial-coverage',`(()=>{const s=document.querySelector('.rpg-account-read-summary');return s.checkVisibility()&&!s.closest('details')&&s.textContent.includes('保存先全体：読込 1件 / 全 3件')&&document.querySelector('.rpg-account-counts').textContent.includes('確認用 1件')})()`);
    await evaluate(`document.querySelector('.rpg-account-price-stock-check').scrollIntoView({block:'center'})`);
@@ -333,7 +364,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
    await waitFor(`!!document.querySelector('.rpg-account-read-warning')`);await evaluate(`document.querySelector('.rpg-account-copy button').click()`);await waitFor(`document.querySelector('.rpg-account-status').textContent.includes('原文をコピーしました')`);
    await evaluate(`document.querySelector('.rpg-account-read-summary').scrollIntoView({block:'center'})`);
    await capture(prefix+'copy-keeps-read-error',`document.querySelector('.rpg-account-read-warning').checkVisibility()&&document.querySelector('.rpg-account-load-coverage').textContent.includes('読込 1件 / 全 3件')&&document.querySelector('.rpg-account-copy pre').textContent===window.__rpgQA.lastCopy&&document.querySelectorAll('.rpg-account-card').length===1`);
-   await evaluate(`document.querySelector('.rpg-thread-record').click();document.querySelector('[name=postUrl]').value='https://www.threads.com/@kyun_fixture/post/ReadWarning';document.querySelector('[name=confirmPosted]').checked=true;document.querySelector('.rpg-thread-save').click()`);await waitFor(`!document.querySelector('.rpg-thread-editor')`);
+   await evaluate(`document.querySelector('.rpg-thread-record').click();document.querySelector('[name=postUrl]').value='https://www.threads.com/@choi_fixture/post/ReadWarning';document.querySelector('[name=confirmPosted]').checked=true;document.querySelector('.rpg-thread-save').click()`);await waitFor(`!document.querySelector('.rpg-thread-editor')`);
    await evaluate(`document.querySelector('.rpg-account-read-summary').scrollIntoView({block:'center'})`);
    await capture(prefix+'save-keeps-read-error',`document.querySelector('.rpg-account-read-warning').checkVisibility()&&document.querySelector('.rpg-account-status').textContent.includes('投稿結果を保存しました')&&document.querySelector('.rpg-account-counts').textContent.includes('履歴 1件')`);
    await evaluate(`window.__rpgQA.threads.failNextRead=false;window.__rpgQA.threads.holdRead=true;Array.from(document.querySelectorAll('dialog[open]>button')).find(b=>b.textContent.startsWith('保存原稿の続き')).click()`);await waitFor(`document.querySelector('.rpg-account-load-coverage').textContent.includes('読込中')`);
@@ -342,7 +373,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
    await capture(prefix+'retry-complete',`!document.querySelector('.rpg-account-read-warning')&&document.querySelector('.rpg-account-load-coverage').textContent.includes('読込 3件 / 全 3件')&&document.querySelector('.rpg-account-counts').textContent.includes('履歴 1件')&&document.querySelector('.rpg-account-copy pre').textContent===window.__rpgQA.lastCopy`);
    await evaluate(`document.querySelector('.rpg-account-back').click()`);await waitFor(`!document.querySelector('dialog[open]')&&!document.querySelector('.rpg-account-page')`);
    for(const [name,value] of [['invalid-time','2026-02-30T09:00:00Z'],['missing-time',null]]){
-    await evaluate(`window.__rpgQA.threads.events[0].payload.checked_at_price_stock=${JSON.stringify(value)};CCRpgHome.openAccount('kyun')`);await waitFor(`document.querySelector('.rpg-account-load-coverage')?.textContent.includes('続きあり')`);
+    await evaluate(`window.__rpgQA.threads.events[0].payload.checked_at_price_stock=${JSON.stringify(value)};__rpgQA.openRetainedAccount('choi')`);await waitFor(`document.querySelector('.rpg-account-load-coverage')?.textContent.includes('続きあり')`);
     await evaluate(`document.querySelector('[data-account-tab=history]').click();document.querySelector('.rpg-account-price-stock-check').scrollIntoView({block:'center'})`);
     await capture(prefix+name,`document.querySelector('.rpg-account-price-stock-time').textContent==='未確認'&&document.querySelector('.rpg-account-price-stock-check').checkVisibility()`);
     await evaluate(`document.querySelector('.rpg-account-back').click()`);await waitFor(`!document.querySelector('dialog[open]')&&!document.querySelector('.rpg-account-page')`);
@@ -350,26 +381,101 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   }
   for(const [width,height] of [[686,644],[834,900],[1440,900]]){
    await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
-   await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});await waitFor('!!window.CCCastle && !!window.__rpgQA && !app.busy && !document.getElementById("ccCastleFrame").hidden && !!document.getElementById("ccCastleFrame").contentWindow.CCCastleApp');await evaluate('document.fonts.ready');await capture(width+'x'+height+'-wide-home',`!!document.getElementById('ccCastleFrame')&&!document.getElementById('ccCastleFrame').hidden`);
+   await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});await waitFor('!!window.CCCastle && !!window.__rpgQA && !app.busy && !document.getElementById("ccCastleFrame").hidden && !!document.getElementById("ccCastleFrame").contentDocument.querySelector(".account-board")');await evaluate('document.fonts.ready');await capture(width+'x'+height+'-wide-home',`!!document.getElementById('ccCastleFrame')&&!document.getElementById('ccCastleFrame').hidden`);
   }
-  // Full production castle: real iframe modules, fixtures from the authenticated host,
-  // gestures and desk tools, then native write surfaces. No prototype samples.
+  // Current production host integration: real lounge modules and real supported routes.
+  // Records are synthetic API responses; no source record or remote service is mutated.
+  await send('Network.setBypassServiceWorker',{bypass:true});
+  await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});
+  const L=`document.getElementById('ccCastleFrame').contentWindow`;
+  await waitFor(`!!window.CCCastle&&!document.getElementById('ccCastleFrame').hidden&&${L}.document.querySelector('.account-board[data-state="ready"]')`);
+  for(const [width,height] of [[360,800],[834,900]]){
+   await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
+   await capture(width+'x'+height+'-lounge-home',`(()=>{const c=${L},f=document.getElementById('ccCastleFrame');return !f.hidden&&f.clientWidth===innerWidth&&c.location.pathname.endsWith('/lounge/index.html')&&c.document.querySelectorAll('.account-tile').length===8&&c.document.querySelectorAll('.account-tile:disabled').length===3&&c.document.documentElement.scrollWidth<=c.innerWidth+1})()`);
+   for(const account of ['insurance','otoku','rakuten','lottery']){
+    await evaluate(`${L}.document.querySelector('.account-tile[data-destination="${account}"]').click()`);
+    await waitFor(`${L}.document.getElementById('room').hidden===false&&${L}.document.getElementById('draft-body').textContent.startsWith('${account}')`);
+    if(width<=700)await evaluate(`${L}.document.getElementById('desk-read').click()`);
+    await capture(width+'x'+height+'-lounge-room-'+account,`(()=>{const c=${L},d=c.document,body=d.getElementById('draft-body'),expected=window.__rpgQA.currentDrafts.find(x=>x.taskId==='${account}-threads-v1').payload.draft;return d.getElementById('room').dataset.account==='${account}'&&body.textContent===expected&&d.getElementById('room-art').complete&&d.getElementById('room-art').naturalWidth>0&&d.getElementById('desk-scroll').clientHeight>=180&&c.document.documentElement.scrollWidth<=c.innerWidth+1&&parseFloat(c.getComputedStyle(body).fontSize)>=16&&d.getElementById('desk-copy').getBoundingClientRect().height>=44})()`);
+    await evaluate(`(()=>{const c=${L};Object.defineProperty(c.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__loungeCopied=text}}});c.document.getElementById('desk-copy').click()})()`);
+    await waitFor(`window.__loungeCopied===window.__rpgQA.currentDrafts.find(x=>x.taskId==='${account}-threads-v1').payload.draft`);
+    await capture(width+'x'+height+'-lounge-copy-'+account,`window.__loungeCopied===${L}.document.getElementById('draft-body').textContent&&window.__rpgQA.writes.length===0&&window.__rpgQA.threads.simulatedWrites.length===0`);
+    if(account==='insurance'){
+     await evaluate(`[...${L}.document.querySelectorAll('#desk-routes button')].find(n=>n.textContent==='出典・確認記録').click()`);
+     await waitFor(`!!document.querySelector('.manual-operation-review[open] article>pre')`);
+     await capture(width+'x'+height+'-lounge-native-insurance',`document.getElementById('ccCastleFrame').hidden&&document.querySelector('.manual-operation-review[open] h2').textContent==='保険｜@sucker0508'&&document.querySelector('.manual-operation-review[open] article>pre').textContent===window.__rpgQA.currentDrafts[0].payload.draft&&document.querySelectorAll('.daily-tools,.daily-card-tools').length===0`);
+     await evaluate(`document.querySelector('.manual-operation-review[open]>button').click()`);
+     await waitFor(`!document.getElementById('ccCastleFrame').hidden`);
+    }
+    await evaluate(`[...${L}.document.querySelectorAll('#desk-routes button')].find(n=>n.textContent==='← 6アカウント一覧').click()`);
+    await waitFor(`${L}.document.querySelector('.account-board').hidden===false`);
+   }
+  }
+  // Resizing never swaps the selected manuscript. Pinning remains a local note.
+  await evaluate(`${L}.document.querySelector('.account-tile[data-destination="insurance"]').click()`);
+  await waitFor(`${L}.document.getElementById('room').hidden===false`);
+  await evaluate(`${L}.document.getElementById('desk-pin').click();${L}.document.getElementById('desk-scroll').scrollTop=150;window.__loungeTitle=${L}.document.getElementById('draft-title').textContent;window.__loungeText=${L}.document.getElementById('draft-body').textContent;window.__loungeScroll=${L}.document.getElementById('desk-scroll').scrollTop`);
+  await send('Emulation.setDeviceMetricsOverride',{width:360,height:800,deviceScaleFactor:1,mobile:true});await sleep(250);
+  await capture('lounge-fold-preserves-reading',`${L}.document.getElementById('draft-title').textContent===window.__loungeTitle&&${L}.document.getElementById('draft-body').textContent===window.__loungeText&&${L}.document.getElementById('desk-scroll').scrollTop===window.__loungeScroll&&${L}.document.getElementById('desk-pin').getAttribute('aria-pressed')==='true'`);
+  await evaluate(`window.__rpgQA.mode='error';CCCastle.refresh()`);
+  await waitFor(`${L}.document.getElementById('desk-status').textContent.includes('未確認')`);
+  await capture('lounge-read-failure-keeps-manuscript',`${L}.document.getElementById('draft-body').textContent===window.__loungeText&&!${L}.document.getElementById('desk-copy').disabled`);
+  await evaluate(`window.__rpgQA.mode='normal';CCCastle.refresh()`);
+  await waitFor(`${L}.document.getElementById('desk-status').textContent.includes('読込完了')`);
+  await evaluate(`[...${L}.document.querySelectorAll('#desk-routes button')].find(n=>n.textContent==='← 6アカウント一覧').click()`);
+  await waitFor(`${L}.document.querySelector('.account-board').hidden===false`);
+  await evaluate(`${L}.document.querySelector('.account-tile[data-destination="sourcing"]').click()`);
+  await waitFor(`!app.busy&&app.view==='sourcing'&&document.getElementById('ccCastleFrame').hidden`);
+  await capture('lounge-native-sourcing',`sourcingApp.sub==='purchases'&&!document.getElementById('ccCastleReturn').hidden`);
+  await evaluate(`document.getElementById('ccCastleReturn').click()`);await waitFor(`!document.getElementById('ccCastleFrame').hidden&&${L}.document.querySelector('.account-board').hidden===false`);
+  await evaluate(`[...${L}.document.querySelectorAll('.account-board-heading button')].find(n=>n.textContent==='ラウンジ・管理へ').click()`);
+  await evaluate(`${L}.document.querySelector('.place-label[data-room="silver"]').click()`);
+  await waitFor(`${L}.document.getElementById('room').hidden===false&&${L}.document.getElementById('desk-routes').textContent.includes('FP 台本・画像')`);
+  await evaluate(`[...${L}.document.querySelectorAll('#desk-routes button')].find(n=>n.textContent==='FP 台本・画像').click()`);
+  await waitFor(`!app.busy&&app.view==='fp'&&document.getElementById('ccCastleFrame').hidden`);
+  await capture('lounge-native-fp',`!!document.querySelector('[data-fp-open]')&&!document.getElementById('ccCastleReturn').hidden`);
+  await evaluate(`document.getElementById('ccCastleReturn').click()`);await waitFor(`!document.getElementById('ccCastleFrame').hidden`);
+
+  // Retained classic reader COMPONENT fixture, not the current production host.
+  // Current lounge/native-host integration is tested by unified-castle-browser.cjs.
+  // This explicit same-origin child has a synthetic parent protocol. The original
+  // host retains its own frame identity and therefore cannot handle these messages.
   await send('Network.setBypassServiceWorker',{bypass:false});
-  await evaluate(`window.__rpgQA.threads.readPages=false;window.__rpgQA.threads.failNextRead=false;CCCastle.show()`);
-  const C=`document.getElementById('ccCastleFrame').contentWindow`;
-  await waitFor(`!!${C}.CCCastleApp`);
-  await waitFor(`${C}.CCCastleApp.notebook.sources().length>0`);
+  await evaluate(`(()=>{
+   document.querySelectorAll('dialog[open]').forEach(d=>d.close());
+   document.getElementById('ccCastleFrame')?.remove();
+   const f=document.createElement('iframe');f.id='classicComponentFrame';f.title='Retained classic reader · synthetic component fixture';f.allow='clipboard-write; autoplay';
+   f.style.cssText='position:fixed;inset:0;width:100%;height:100dvh;border:0;z-index:2147483000;background:#131725';
+   const source=(id,account,status='確認用の合成原稿')=>({id,account,label:'合成テスト原稿',status,taskId:'classic-component-fixture',recordId:id,readContract:'threads-active-v1'});
+   const row=(id,place,body,account=place,status)=>({id:'live-classic-'+id,place,title:'合成の保存原稿 '+id,body,kind:'本文',source:source(id,account,status),createdAt:1,updatedAt:1});
+   const drafts=[row('classic-kyun-a','kyun','一つ目の合成原稿。表示・コピー・比較を検証します。'),row('classic-kyun-b','kyun','二つ目の合成原稿。比較する内容は別の本文です。'),row('classic-choi','choi','合成の紹介文。別アカウントの原稿です。'),row('fixture-unselected-fp','fp','入口選択前の保存本文','fp','構成・制作条件は未確定'),row('fixture-saved-only','fp','保存先の最新台本本文','fp'),row('classic-sourcing','shiire','合成の保存候補。 / 仕入価格：1000円 / 想定売価：3000円','sourcing')];
+   window.__classicQA={messages:[],drafts,ready:false};
+   window.addEventListener('message',event=>{
+    if(event.origin!==location.origin||event.source!==f.contentWindow||event.data?.channel!=='cc-castle-v1')return;
+    const m=event.data;__classicQA.messages.push(m);
+    if(m.type==='ready'){
+     __classicQA.ready=true;
+     // Offline reload must not receive a newly fetched/constructed server snapshot.
+     if(navigator.onLine)f.contentWindow.postMessage({channel:'cc-castle-v1',type:'records',drafts:__classicQA.drafts,complete:true,loading:false,message:'合成の保存原稿を読込済み'},location.origin);
+    }
+   });
+   f.src='./castle/entry-v43.html?classic-component=1';document.body.append(f);
+  })()`);
+  const C=`document.getElementById('classicComponentFrame').contentWindow`;
+  await waitFor(`window.__classicQA.ready&&!!${C}.CCCastleApp&&${C}.CCCastleApp.notebook.sources().some(x=>x.source.id==='classic-sourcing')`);
+  // Deterministic selections in this isolated browser profile; no live-user data.
+  await evaluate(`for(const place of ['kyun','choi','fp','shiire']){const d=window.__classicQA.drafts.find(d=>d.place===place);${C}.CCCastleApp.notebook.remember(place,d.id,0)}`);
   for(const [width,height] of [[360,800],[834,900]]){
    await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
    await evaluate(`${C}.CCCastleApp.home()`);await sleep(350);
-   await capture(width+'x'+height+'-castle-home',`(()=>{const c=${C},f=document.getElementById('ccCastleFrame');return !f.hidden&&f.clientWidth===innerWidth&&c.document.querySelectorAll('.station').length===4&&!c.CCCastleApp.notebook.all().some(x=>x.sample)})()`);
+   await capture(width+'x'+height+'-classic-component-home',`(()=>{const c=${C},f=document.getElementById('classicComponentFrame');return !f.hidden&&f.clientWidth===innerWidth&&c.document.querySelectorAll('.station').length===4&&!c.CCCastleApp.notebook.all().some(x=>x.sample)})()`);
    await evaluate(`${C}.document.getElementById('homeMode').click()`);
-   await capture(width+'x'+height+'-castle-map',`${C}.document.getElementById('app').dataset.homeMode==='map'`);
+   await capture(width+'x'+height+'-classic-component-map',`${C}.document.getElementById('app').dataset.homeMode==='map'`);
    for(const place of ['kyun','choi','fp','shiire']){
     await evaluate(`${C}.document.querySelector('.station[data-place="${place}"]').click()`);await sleep(450);
-    await capture(width+'x'+height+'-castle-room-'+place,`(()=>{const c=${C},s=c.CCCastleApp.getState(),r=c.document.getElementById('copy').getBoundingClientRect();return s.place==='${place}'&&s.view==='work'&&s.draft?.place==='${place}'&&!!s.draft.body&&!c.document.getElementById('copy').disabled&&c.document.getElementById('draftBody').textContent===s.draft.body&&r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight&&c.document.documentElement.scrollWidth<=innerWidth+1})()`);
+    await capture(width+'x'+height+'-classic-component-room-'+place,`(()=>{const c=${C},s=c.CCCastleApp.getState(),r=c.document.getElementById('copy').getBoundingClientRect();return s.place==='${place}'&&s.view==='work'&&s.draft?.place==='${place}'&&!!s.draft.body&&!c.document.getElementById('copy').disabled&&c.document.getElementById('draftBody').textContent===s.draft.body&&r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight&&c.document.documentElement.scrollWidth<=innerWidth+1})()`);
     await evaluate(`${C}.document.getElementById('characterTouch').click()`);
-    await capture(width+'x'+height+'-castle-touch-'+place,`${C}.CCCastleApp.getState().place==='${place}'`);
+    await capture(width+'x'+height+'-classic-component-touch-'+place,`${C}.CCCastleApp.getState().place==='${place}'`);
     if(['kyun','choi','fp','shiire'].includes(place)){
      await waitFor(`${C}.document.getElementById('characterScenes').dataset.ready==='true'`);
      const before=await evaluate(`({id:${C}.CCCastleApp.getState().draft?.id,scroll:${C}.document.getElementById('paperScroll').scrollTop})`);
@@ -378,58 +484,61 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
       await waitFor(`${C}.document.getElementById('characterScenes').dataset.scene==='${scene}'&&${C}.document.getElementById('sceneImage').complete`);
       const original=place==='shiire'?({welcome:'19080',work:'19017',rest:'19016',tea:'19020',special:'19018'})[scene]:place==='fp'&&scene==='tea'?'19079':null;
       await waitFor(original?`${C}.document.getElementById('characterScenes').dataset.static==='true'&&${C}.document.getElementById('sceneImage').getAttribute('src')==='assets/user-${original}-display.webp'&&!${C}.document.getElementById('sceneCanvas').classList.contains('is-live')`:`${C}.document.getElementById('sceneCanvas').classList.contains('is-live')`);
-      await capture(width+'x'+height+'-scene-'+place+'-'+scene,`(()=>{const c=${C},d=c.document;return c.CCCastleApp.getState().draft?.id===${JSON.stringify(before.id)}&&d.getElementById('paperScroll').scrollTop===${before.scroll}&&d.getElementById('sceneImage').naturalWidth>0&&d.getElementById('sceneSelect').value==='${scene}'&&(d.getElementById('freshNotice').hidden||d.getElementById('freshNotice').getBoundingClientRect().top>=d.getElementById('sceneFrame').getBoundingClientRect().bottom||d.getElementById('freshNotice').getBoundingClientRect().left>=d.getElementById('sceneFrame').getBoundingClientRect().right)})()`);
+      await capture(width+'x'+height+'-classic-component-scene-'+place+'-'+scene,`(()=>{const c=${C},d=c.document;return c.CCCastleApp.getState().draft?.id===${JSON.stringify(before.id)}&&d.getElementById('paperScroll').scrollTop===${before.scroll}&&d.getElementById('sceneImage').naturalWidth>0&&d.getElementById('sceneSelect').value==='${scene}'&&(d.getElementById('freshNotice').hidden||d.getElementById('freshNotice').getBoundingClientRect().top>=d.getElementById('sceneFrame').getBoundingClientRect().bottom||d.getElementById('freshNotice').getBoundingClientRect().left>=d.getElementById('sceneFrame').getBoundingClientRect().right)})()`);
       await evaluate(`${C}.document.getElementById('sceneExpand').click()`);
       await waitFor(original?`${C}.document.getElementById('sceneDialog').dataset.static==='true'&&!${C}.document.getElementById('sceneFullCanvas').classList.contains('is-live')`:`${C}.document.getElementById('sceneFullCanvas').classList.contains('is-live')`);
-      await capture(width+'x'+height+'-scene-full-'+place+'-'+scene,`(()=>{const c=${C},d=c.document,r=d.getElementById('sceneDialog').getBoundingClientRect();return d.getElementById('sceneDialog').open&&c.getComputedStyle(d.getElementById('sceneFullImage')).objectFit==='contain'&&r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1})()`);
+      await capture(width+'x'+height+'-classic-component-scene-full-'+place+'-'+scene,`(()=>{const c=${C},d=c.document,r=d.getElementById('sceneDialog').getBoundingClientRect();return d.getElementById('sceneDialog').open&&c.getComputedStyle(d.getElementById('sceneFullImage')).objectFit==='contain'&&r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1})()`);
       await evaluate(`${C}.document.getElementById('sceneFullTouch').click();${C}.document.getElementById('sceneClose').click()`);
       await waitFor(`${C}.document.activeElement.id==='sceneExpand'`);
      }
      await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
-     await sleep(80);await capture(width+'x'+height+'-scene-quiet-'+place,`!${C}.document.getElementById('sceneCanvas').classList.contains('is-live')&&${C}.document.getElementById('sceneImage').naturalWidth>0`);
+     await sleep(80);await capture(width+'x'+height+'-classic-component-scene-quiet-'+place,`!${C}.document.getElementById('sceneCanvas').classList.contains('is-live')&&${C}.document.getElementById('sceneImage').naturalWidth>0`);
      await send('Emulation.setEmulatedMedia',{features:[]});
     }
     await evaluate(`${C}.document.getElementById('back').click()`);await sleep(80);
    }
    await evaluate(`${C}.document.getElementById('homeMode').click()`);
   }
-  await capture('castle-unselected-fp',`${C}.CCCastleApp.notebook.sources().some(x=>x.source.id==='fixture-unselected-fp'&&x.body.includes('入口選択前の保存本文')&&x.source.status.includes('未確定'))`);
-  await capture('castle-versioned-entry',`${C}.location.pathname.endsWith('/castle/entry-v43.html')`);
-  await capture('castle-saved-signal',`${C}.CCCastleApp.notebook.sources().some(x=>x.source.id==='fixture-saved-only'&&x.body.includes('保存先の最新台本本文'))`);
-  await evaluate(`${C}.CCCastleApp.open('kyun');Object.defineProperty(${C}.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__castleCopied=text}}});${C}.document.getElementById('copy').click()`);
-  await waitFor(`!!window.__castleCopied`);
-  await capture('castle-live-copy',`window.__castleCopied===${C}.CCCastleApp.getState().draft.body&&!${C}.document.getElementById('copySeal').hidden`);
-  await evaluate(`window.__castleSourceId=${C}.CCCastleApp.getState().draft.source.id;${C}.document.getElementById('productionNative').click()`);await waitFor(`!!document.querySelector('.rpg-account-page[open]')`);
-  await capture('castle-exact-original',`(()=>{const selected=document.querySelector('.rpg-account-page[open]').dataset.selectedRecordId;return selected&&selected.replace(/^(sns:)+/,'')===window.__castleSourceId.replace(/^(sns:)+/,'')})()`);
-  await evaluate(`document.querySelector('.rpg-account-back').click()`);await waitFor(`!document.getElementById('ccCastleFrame').hidden`);
+  await capture('classic-component-unselected-fp',`${C}.CCCastleApp.notebook.sources().some(x=>x.source.id==='fixture-unselected-fp'&&x.body.includes('入口選択前の保存本文')&&x.source.status.includes('未確定'))`);
+  await capture('classic-component-versioned-entry',`${C}.location.pathname.endsWith('/castle/entry-v43.html')`);
+  await capture('classic-component-normalized-saved-signal',`${C}.CCCastleApp.notebook.sources().some(x=>x.source.id==='fixture-saved-only'&&x.body.includes('保存先の最新台本本文'))`);
+  await evaluate(`${C}.CCCastleApp.open('kyun');Object.defineProperty(${C}.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__classicCopied=text}}});${C}.document.getElementById('copy').click()`);
+  await waitFor(`!!window.__classicCopied`);
+  await capture('classic-component-copy',`window.__classicCopied===${C}.CCCastleApp.getState().draft.body&&!${C}.document.getElementById('copySeal').hidden`);
+  await evaluate(`window.__classicSourceId=${C}.CCCastleApp.getState().draft.source.id;window.__classicQA.messages=[];${C}.document.getElementById('productionNative').click()`);
+  await waitFor(`window.__classicQA.messages.some(m=>m.type==='native')`);
+  await capture('classic-component-exact-original-message',`(()=>{const m=window.__classicQA.messages.find(m=>m.type==='native');return m.action==='kyun'&&m.recordId===window.__classicSourceId&&!('token' in m)&&!('headers' in m)})()`);
   await evaluate(`${C}.document.getElementById('pinDraft').click();${C}.document.getElementById('deskMenu').click();[...${C}.document.querySelectorAll('#drawerBody button')].find(b=>b.textContent==='2つの原稿を比較').click()`);
-  await capture('castle-comparison',`!${C}.document.getElementById('comparePane').hidden`);
+  await capture('classic-component-comparison',`!${C}.document.getElementById('comparePane').hidden`);
   await evaluate(`${C}.document.getElementById('closeCompare').click();${C}.document.getElementById('deskMenu').click();[...${C}.document.querySelectorAll('#drawerBody button')].find(b=>b.textContent==='作業中の仮置きに置く').click();${C}.document.getElementById('drawerClose').click();${C}.document.getElementById('deskMenu').click();[...${C}.document.querySelectorAll('#drawerBody button')].find(b=>b.textContent==='作業中の仮置き').click()`);
-  await capture('castle-fold-tray',`!${C}.document.getElementById('trayRail').hidden`);
-  await evaluate(`${C}.document.getElementById('closeTray').click();${C}.document.getElementById('deskMenu').click();[...${C}.document.querySelectorAll('#drawerBody button')].find(b=>b.textContent==='＋ 原稿を書く').click();(()=>{const f=${C}.document.querySelector('#drawerBody form');f.elements.title.value='本番統合・確認用の端末原稿';f.elements.body.value='保存する長い原稿。\\n'.repeat(80);f.requestSubmit()})()`);
-  await capture('castle-local-edit',`${C}.CCCastleApp.getState().draft.title==='本番統合・確認用の端末原稿'`);
-  await evaluate(`${C}.document.getElementById('paperScroll').scrollTop=150;window.__castlePosition=${C}.document.getElementById('paperScroll').scrollTop;window.__castleDraftId=${C}.CCCastleApp.getState().draft.id`);
+  await capture('classic-component-fold-tray',`!${C}.document.getElementById('trayRail').hidden`);
+  await evaluate(`${C}.document.getElementById('closeTray').click();${C}.document.getElementById('deskMenu').click();[...${C}.document.querySelectorAll('#drawerBody button')].find(b=>b.textContent==='＋ 原稿を書く').click();(()=>{const f=${C}.document.querySelector('#drawerBody form');f.elements.title.value='クラシック部品・確認用の端末原稿';f.elements.body.value='保存する長い原稿。\\n'.repeat(80);f.requestSubmit()})()`);
+  await capture('classic-component-local-edit',`${C}.CCCastleApp.getState().draft.title==='クラシック部品・確認用の端末原稿'`);
+  await evaluate(`${C}.document.getElementById('paperScroll').scrollTop=150;window.__classicPosition=${C}.document.getElementById('paperScroll').scrollTop;window.__classicDraftId=${C}.CCCastleApp.getState().draft.id`);
   await send('Emulation.setDeviceMetricsOverride',{width:360,height:800,deviceScaleFactor:1,mobile:true});await sleep(300);
-  await capture('castle-fold-preserves-reading',`${C}.CCCastleApp.getState().draft.id===window.__castleDraftId&&${C}.document.getElementById('paperScroll').scrollTop===window.__castlePosition`);
-  await evaluate(`${C}.document.querySelector('#productionNative').click()`);await waitFor(`!!document.querySelector('.rpg-account-page[open]')`);
-  await capture('castle-native-posting',`document.getElementById('ccCastleFrame').hidden&&!!document.querySelector('.rpg-thread-record')`);
-  await evaluate(`document.querySelector('.rpg-account-back').click()`);await waitFor(`!document.getElementById('ccCastleFrame').hidden`);
-  await evaluate(`${C}.CCCastleApp.open('shiire');${C}.document.querySelector('#productionNative').click()`);await waitFor(`!app.busy&&app.view==='sourcing'`);
-  await capture('castle-native-sourcing',`document.getElementById('ccCastleFrame').hidden&&!document.getElementById('ccCastleReturn').hidden&&sourcingApp.sub==='purchases'`);
-  await evaluate(`document.getElementById('ccCastleReturn').click()`);await waitFor(`!document.getElementById('ccCastleFrame').hidden`);
-  await evaluate(`${C}.CCCastleApp.open('fp');${C}.document.querySelector('#productionNative').click()`);await waitFor(`!app.busy&&app.view==='fp'`);
-  await capture('castle-native-fp',`document.getElementById('ccCastleFrame').hidden&&!!document.querySelector('[data-fp-open]')`);
-  await evaluate(`document.getElementById('ccCastleReturn').click()`);
-  // Reproduce the reported blank sourcing room while event history is stalled.
-  await evaluate(`CCCastle.refresh()`);
-  await evaluate(`${C}.CCCastleApp.notebook.replaceSources([],{complete:true});${C}.CCCastleApp.open('shiire');window.__rpgQA.holdCastleEvents=true;window.__progressRead=CCCastle.refresh();void 0`);
-  await waitFor(`!!window.__rpgQA.releaseCastleEvents&&${C}.CCCastleApp.getState().draft?.place==='shiire'`);
-  await capture('castle-sourcing-before-history',`(()=>{const c=${C};return !c.document.getElementById('copy').disabled&&c.document.getElementById('draftBody').textContent.includes('仕入価格')&&c.document.getElementById('productionStatus').textContent.includes('読込中')})()`);
-  await evaluate(`window.__rpgQA.holdCastleEvents=false;window.__rpgQA.releaseCastleEvents();window.__progressRead`);
-  await evaluate(`Promise.race([${C}.navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Castle offline shell did not install')),10000))])`);
+  await capture('classic-component-fold-preserves-reading',`${C}.CCCastleApp.getState().draft.id===window.__classicDraftId&&${C}.document.getElementById('paperScroll').scrollTop===window.__classicPosition`);
+  await evaluate(`window.__classicQA.messages=[];${C}.document.querySelector('#productionNative').click()`);
+  await waitFor(`window.__classicQA.messages.some(m=>m.type==='native')`);
+  await capture('classic-component-local-handoff-has-no-invented-source',`(()=>{const m=window.__classicQA.messages.find(m=>m.type==='native');return m.action==='kyun'&&!('recordId' in m)&&!document.querySelector('.rpg-account-page[open]')})()`);
+  for(const [place,action] of [['shiire','sourcing'],['fp','fp']]){
+   await evaluate(`${C}.CCCastleApp.open('${place}');window.__classicExpectedSource=${C}.CCCastleApp.getState().draft.source.id;window.__classicQA.messages=[];${C}.document.querySelector('#productionNative').click()`);
+   await waitFor(`window.__classicQA.messages.some(m=>m.type==='native')`);
+   await capture('classic-component-native-message-'+action,`(()=>{const m=window.__classicQA.messages.find(m=>m.type==='native');return m.action==='${action}'&&m.recordId===window.__classicExpectedSource})()`);
+  }
+  // A partial normalized packet must be usable before a complete history packet.
+  // Parent pagination/normalization is separately covered by host.test.cjs.
+  await evaluate(`${C}.CCCastleApp.home();${C}.CCCastleApp.notebook.replaceSources([],{complete:true});document.getElementById('classicComponentFrame').contentWindow.postMessage({channel:'cc-castle-v1',type:'records',drafts:window.__classicQA.drafts.filter(d=>d.place==='shiire'),complete:false,loading:true,message:'合成の保存履歴を読込中'},location.origin)`);
+  await waitFor(`${C}.CCCastleApp.notebook.sources().some(d=>d.place==='shiire')`);
+  await evaluate(`${C}.CCCastleApp.open('shiire')`);
+  await capture('classic-component-sourcing-before-complete-history',`(()=>{const c=${C};return !c.document.getElementById('copy').disabled&&c.document.getElementById('draftBody').textContent.includes('仕入価格')&&c.document.getElementById('productionStatus').textContent.includes('読込中')})()`);
+  await evaluate(`${C}.CCCastleApp.home();document.getElementById('classicComponentFrame').contentWindow.postMessage({channel:'cc-castle-v1',type:'records',drafts:window.__classicQA.drafts,complete:true,loading:false,message:'合成の保存原稿を読込済み'},location.origin)`);
+  await waitFor(`${C}.CCCastleApp.notebook.sources().length===window.__classicQA.drafts.length`);
+  await evaluate(`Promise.race([${C}.navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Classic component offline shell did not install')),10000))])`);
+  await waitFor(`!!${C}.navigator.serviceWorker.controller`);
   await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0});
-  await evaluate(`document.getElementById('ccCastleFrame').src='./castle/entry-v43.html?offline=1'`);await waitFor(`${C}.location.search==='?offline=1'&&!!${C}.CCCastleApp`);
-  await capture('castle-offline',`${C}.CCCastleApp.notebook.all().some(x=>x.title==='本番統合・確認用の端末原稿')&&${C}.navigator.onLine===false`);
+  await evaluate(`document.getElementById('classicComponentFrame').src='./castle/entry-v43.html?offline=1'`);
+  await waitFor(`${C}.location.search==='?offline=1'&&!!${C}.CCCastleApp`);
+  await capture('classic-component-offline',`${C}.CCCastleApp.notebook.all().some(x=>x.id===window.__classicDraftId&&x.title==='クラシック部品・確認用の端末原稿')&&${C}.navigator.onLine===false`);
   await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
   results.push({name:'network-isolation',checks:[{name:'no attempted external network request',pass:blocked.length===0,detail:blocked},{name:'no uncaught browser exceptions',pass:errors.length===0,detail:errors}]});
  }catch(error){await diagnose(error.message);throw error;}finally{fs.writeFileSync(path.join(output,'results.json'),JSON.stringify({results,blocked,errors,cancelledInterceptions,requests},null,2));ws?.close();proc.kill();server.close();}

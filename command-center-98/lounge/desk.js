@@ -1,4 +1,4 @@
-import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261031.5-world';
+import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261031.7-world';
 import {createConveniences} from './qol.js?v=20261031.1-lottery';
 import {resumeView,postingReadiness} from './qol-model.js?v=20261031.1-lottery';
 import {createNotebook,safeLink} from './notebook.js?v=20261031.1-lottery';
@@ -9,7 +9,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const button=(text,fn,cls)=>{const n=el('button',text,cls);n.type='button';n.addEventListener('click',fn);return n;};
  let storage;try{storage=window.localStorage;}catch{}
- let storageError=false;
+ let storageError=false,lastRenderedOperationContext=null;
  const notebook=createNotebook({seeds:{kyun:[],choi:[],otoku:[],rakuten:[],lottery:[],fp:[],shiire:[]},storage,onError:()=>{storageError=true;}});
  let place=null,active=null,query='',filter='all',pending=null,loading=false,complete=false,connected=false,autoReturn=false,manual=null,scrollTimer=0,externalNotes=false,nativeWork=null;
  const selections=new Map(),views=new Map();let requested=null;let returnToAccounts=false;
@@ -36,7 +36,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   const ref=d?.source?.label?.startsWith('日本語｜')?null:api?.draftBinding(d),key=ref?JSON.stringify([ref,d.body]):'';
   if(key!==learningKey){learningController?.destroy();learningController=null;learningReady=false;learningKey=key;learningHost.replaceChildren();
    if(ref){const id=d.id;learningController=api.mount(learningHost,ref,{showCopy:false,
-    onChange:value=>{if(active?.id===id){conveniences.update({...active,body:value});$('desk-copy').textContent='最終稿をコピー';}},
+    onChange:value=>{if(active?.id===id){operation('');conveniences.update({...active,body:value});$('desk-copy').textContent='最終稿をコピー';}},
     onCopied:value=>{notebook.copied({...d,body:value},'body',value);operation('最終稿をコピーしました。');onFeedback('copy');},
     onReady:ready=>{if(active?.id===id){learningReady=ready;$('draft-body').hidden=ready;}}
    });}
@@ -92,6 +92,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   return complete?'この持ち場に表示できる保存原稿はありません。上のボタンから本体も確認できます。':'保存原稿の読取状況を確認してください。「更新」で再試行できます。';
  }
  function renderReader({restore=false}={}){
+  const context=JSON.stringify([place,active?.id,active?.body]);if(context!==lastRenderedOperationContext){operation('');lastRenderedOperationContext=context;}
   $('desk-article').hidden=!active;$('desk-empty').hidden=!!active;$('desk-empty').textContent=emptyText();
   for(const id of ['desk-copy','desk-pin','desk-done'])$(id).disabled=!active;
   $('desk-variants').replaceChildren();$('draft-links').replaceChildren();
@@ -151,7 +152,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  }
  async function copy(d,kind='body',text=d.body){
   const snapshot={...d};
-  try{await navigator.clipboard.writeText(text);notebook.copied(snapshot,kind,text);if(active?.id===snapshot.id)renderReader();operation(kind==='body'?'本文をコピーしました。':kind==='posting-set'?'本文・返信・投稿用リンクをまとめてコピーしました。':kind==='reply'?'自己返信をコピーしました。':'URLをコピーしました。');onFeedback('copy');}
+  try{await navigator.clipboard.writeText(text);notebook.copied(snapshot,kind,text);const current=active?.id===snapshot.id&&active?.body===snapshot.body;if(current)renderReader();operation((current?'':'「'+snapshot.title+'」の')+(kind==='body'?'本文をコピーしました。':kind==='posting-set'?'本文・返信・投稿用リンクをまとめてコピーしました。':kind==='reply'?'自己返信をコピーしました。':'URLをコピーしました。'));onFeedback('copy');}
   catch{manual={draft:snapshot,kind,text};$('desk-copy-text').value=text;$('desk-copy-dialog').showModal();$('desk-copy-text').focus();$('desk-copy-text').select();}
  }
  function history(){
