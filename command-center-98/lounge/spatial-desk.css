@@ -10,6 +10,8 @@ body.spatial-prototype #room[data-account='insurance'] {
   color: var(--spatial-ink);
 }
 body.spatial-prototype #room[data-account='insurance'] :is(.room-architecture,#room-art,.room-shade) { display: none; }
+/* Moving a control must not override the reader's existing hidden contract. */
+body.spatial-prototype #room[data-account='insurance'] [hidden] { display: none!important; }
 body.spatial-prototype #room[data-account='insurance'] .spatial-study-scene {
   position: absolute;
   inset: 0;

@@ -33,6 +33,9 @@ export function installSpatialDesk({document: doc = globalThis.document} = {}) {
   const work = make('details', 'spatial-work');
   const summary = make('summary', '', '作業・状態');
   const workBody = make('div', 'spatial-work-body');
+  const metadata = make('div', 'spatial-draft-metadata');
+  const article = doc.getElementById('desk-article');
+  const status = doc.getElementById('desk-status');
   workBody.id = 'spatial-work-body';
   summary.setAttribute('aria-controls', workBody.id);
   work.append(summary, workBody);
@@ -52,7 +55,7 @@ export function installSpatialDesk({document: doc = globalThis.document} = {}) {
   dialog.append(heading, shelfHost);
 
   let active = false, destroyed = false, shelfAnchor = null, previousFocus = null;
-  let closeFocus = null;
+  let closeFocus = null, lastStatus = null;
   const moves = [];
   const move = (node, destination) => {
     if (!node?.parentNode) return;
@@ -68,6 +71,15 @@ export function installSpatialDesk({document: doc = globalThis.document} = {}) {
   };
   const isEligible = () => doc.body.classList.contains('spatial-prototype') &&
     room.dataset.account === 'insurance' && !room.hidden;
+  const syncState = () => {
+    if (!active) return;
+    metadata.hidden = !!article?.hidden;
+    const message = status?.textContent || '';
+    // Preserve the existing reader's automatic failure disclosure even though
+    // its original status details now lives inside the secondary-tools drawer.
+    if (message !== lastStatus && /失敗|未確認|できません|エラー/.test(message)) work.open = true;
+    lastStatus = message;
+  };
   const restoreShelf = () => {
     if (!shelfAnchor) return;
     shelfAnchor.replaceWith(shelf); shelfAnchor = null;
@@ -150,8 +162,11 @@ export function installSpatialDesk({document: doc = globalThis.document} = {}) {
       room.append(nav, dialog);
       room.dataset.spatialDesk = 'ready';
       for (const selector of ['.desk-toolbar', '#reader-qol', '.desk-footer', '#draft-kind', '#draft-meta', '#desk-connect']) {
-        move(desk.querySelector(selector), workBody);
+        move(desk.querySelector(selector), ['#draft-kind', '#draft-meta'].includes(selector) ? metadata : workBody);
       }
+      workBody.append(metadata);
+      lastStatus = null;
+      syncState();
       // Live copy/error feedback remains beside the paper, not in a closed drawer.
       move(doc.getElementById('desk-operation'), desk);
       resizeScene();
@@ -164,9 +179,11 @@ export function installSpatialDesk({document: doc = globalThis.document} = {}) {
       for (const node of [scene, surface, actor, nav, dialog]) node.remove();
     }
   };
-  const observer = new win.MutationObserver(sync);
+  const observer = new win.MutationObserver(() => { sync(); syncState(); });
   observer.observe(room, {attributes: true, attributeFilter: ['data-account', 'hidden']});
   observer.observe(doc.body, {attributes: true, attributeFilter: ['class']});
+  if (article) observer.observe(article, {attributes: true, attributeFilter: ['hidden']});
+  if (status) observer.observe(status, {childList: true, characterData: true, subtree: true});
   const api = {openShelf, closeShelf, destroy() {
     if (destroyed) return;
     observer.disconnect();

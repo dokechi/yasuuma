@@ -92,3 +92,9 @@ body.spatial-prototype .spatial-castle[data-art-failed=true] .castle-viewport:af
 @media(prefers-reduced-motion:reduce) {
  body.spatial-prototype .castle-stage,body.spatial-prototype .castle-room-hotspot {transition:none!important;animation:none!important}
 }
+
+/* Visible neighbouring architecture remains a genuine destination, not a dead picture. */
+body.spatial-prototype .castle-room-hotspot[data-neighbor=true] .castle-room-label {display:none}
+body.spatial-prototype .castle-room-hotspot[data-neighbor=true] .castle-room-marker {left:calc(50% - 28px);top:calc(50% - 22px);width:56px;height:44px;border-radius:4px;font-size:12px}
+body.spatial-prototype .castle-room-hotspot[data-neighbor=true] .castle-room-marker:after {display:none}
+@media(max-width:700px){body.spatial-prototype .spatial-castle[data-overview=true] .castle-room-marker{font-size:12px;border-radius:5px;background:#172335f2;color:#fff0cb}}
