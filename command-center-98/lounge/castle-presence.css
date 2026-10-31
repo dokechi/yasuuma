@@ -35,3 +35,6 @@ body.spatial-atelier #settings #settings-close{font-size:22px}
 body.spatial-atelier #settings .segmented label:has(input:checked) small{color:#f5ead4;opacity:1}
 body.spatial-atelier #settings .segmented small{opacity:1}
 body.spatial-atelier #settings .segmented label,body.spatial-atelier #settings .setting-line,body.spatial-atelier #settings legend{font-size:14px}
+
+/* Honor the existing view-sway preference independently of direct interactions. */
+.spatial-castle[data-ambient=off] .castle-depth-edge{transform:none!important;transition:none!important}

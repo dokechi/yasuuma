@@ -458,6 +458,31 @@ function installProbe() {
         const cameraAfterFallback=await f.locator('.castle-cutaway').boundingBox();
         check('legacy hidden-overflow guard restores the same camera origin',(legacyScroll.attempted.left>0||legacyScroll.attempted.top>0)&&legacyScroll.left===0&&legacyScroll.top===0&&['x','y','width','height'].every(k=>Math.abs(cameraAfterFallback[k]-cameraBeforeScroll[k])<1),{scroll:legacyScroll,before:cameraBeforeScroll,after:cameraAfterFallback});
       }
+      if(width===1440){
+        // The existing '視点のゆらぎ' preference controls passive parallax only;
+        // explicitly requested interaction must remain usable while it is off.
+        const moveToEdge=async()=>{const r=await f.locator('.castle-viewport').boundingBox();await page.mouse.move(r.x+r.width-16,r.y+16);};
+        const ambientState=()=>cf.evaluate(()=>{
+          const world=document.querySelector('.spatial-castle'),edge=document.querySelector('.castle-depth-edge'),style=getComputedStyle(world),transform=getComputedStyle(edge).transform;
+          const matrix=new DOMMatrixReadOnly(transform==='none'?undefined:transform);
+          return{mode:world.dataset.ambient,lookX:parseFloat(style.getPropertyValue('--look-x')),lookY:parseFloat(style.getPropertyValue('--look-y')),transform,identity:matrix.isIdentity,
+            fine:matchMedia('(hover:hover) and (pointer:fine)').matches,saved:JSON.parse(localStorage.getItem('shireito-courtyard-v1')).ambient};
+        });
+        const toggleAmbient=async()=>{await f.locator('.castle-experience-settings').click();await f.getByRole('dialog',{name:'システム',exact:true}).waitFor();await f.locator('#settings .setting-line:has(#ambient-setting)').click();await f.locator('#settings-close').click();};
+        await moveToEdge();
+        await cf.waitForFunction(()=>Math.abs(parseFloat(getComputedStyle(document.querySelector('.spatial-castle')).getPropertyValue('--look-x')))>1);
+        await toggleAmbient();await moveToEdge();
+        await cf.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+        const ambientOff=await ambientState();
+        check('ambient OFF persists and suppresses fine-pointer depth movement',ambientOff.fine&&ambientOff.saved===false&&ambientOff.mode==='off'&&ambientOff.lookX===0&&ambientOff.lookY===0&&ambientOff.identity,ambientOff);
+        await f.locator('.castle-orrery').click();
+        const manualOff=await ambientState();
+        check('manual orrery interaction remains available with ambient OFF',await f.locator('.castle-orrery').getAttribute('data-energy')==='lit'&&manualOff.mode==='off'&&manualOff.identity&&manualOff.saved===false,manualOff);
+        await toggleAmbient();await moveToEdge();
+        await cf.waitForFunction(()=>{const world=document.querySelector('.spatial-castle'),transform=getComputedStyle(document.querySelector('.castle-depth-edge')).transform,matrix=new DOMMatrixReadOnly(transform==='none'?undefined:transform);return Math.abs(parseFloat(getComputedStyle(world).getPropertyValue('--look-x')))>1&&!matrix.isIdentity;});
+        const ambientOn=await ambientState();
+        check('ambient ON restores optional fine-pointer depth movement',ambientOn.saved===true&&ambientOn.mode==='on'&&Math.abs(ambientOn.lookX)>1&&!ambientOn.identity,ambientOn);
+      }
       const orrery=f.locator('.castle-orrery');await orrery.waitFor();
       const o=await orrery.evaluate(n=>({tag:n.tagName,name:n.getAttribute('aria-label')||n.textContent,disabled:n.disabled,rect:{width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height},touchAction:getComputedStyle(n).touchAction}));
       check('orrery is optional, labelled and touch-sized',o.tag==='BUTTON'&&!!o.name&&!o.disabled&&o.rect.width>=44&&o.rect.height>=44,o);
