@@ -396,12 +396,21 @@ function installProbe() {
       await f.locator('#settings .setting-line:has(#reduce-setting)').click();
       await f.locator('#settings .segmented label:has(input[value=quick])').click();
       check('settings UI updates the existing preferences',await cf.evaluate(()=>{const s=JSON.parse(localStorage.getItem('shireito-courtyard-v1'));return s.reduce===true&&s.pace==='quick';}));
-      const selectedHint=await f.locator('#settings .segmented label:has(input:checked) small').evaluate(n=>{
-        const css=getComputedStyle(n),parent=getComputedStyle(n.closest('label'));
-        const luminance=value=>{const rgb=(value.match(/[\d.]+/g)||[]).slice(0,3).map(Number).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;};
-        const a=luminance(css.color),b=luminance(parent.backgroundColor);return{contrast:(Math.max(a,b)+.05)/(Math.min(a,b)+.05),opacity:Number(css.opacity),fontSize:parseFloat(css.fontSize)};
-      });
-      check('selected pace helper stays readable on its dark selected surface',selectedHint.contrast>=4.5&&selectedHint.opacity===1&&selectedHint.fontSize>=12,selectedHint);
+      const paceHints=await f.locator('#settings .segmented small').evaluateAll(ns=>ns.map(n=>{
+        const css=getComputedStyle(n),rgba=value=>{const values=(value.match(/[\d.]+/g)||[]).map(Number);return values.length===3?[...values,1]:values;};
+        const layers=[];let backgroundOwner=null,opaqueFound=false,effectiveOpacity=1;
+        for(let p=n;p;p=p.parentElement){
+          const style=getComputedStyle(p);effectiveOpacity*=Number(style.opacity);
+          if(!opaqueFound){const color=rgba(style.backgroundColor);layers.push(color);if(color[3]===1){opaqueFound=true;backgroundOwner=p.id||p.tagName;}}
+        }
+        let background=[255,255,255];
+        for(const color of layers.reverse())background=background.map((v,i)=>color[i]*color[3]+v*(1-color[3]));
+        const color=rgba(css.color),alpha=color[3]*effectiveOpacity,foreground=background.map((v,i)=>color[i]*alpha+v*(1-alpha));
+        const luminance=rgb=>rgb.map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;}).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+        const a=luminance(foreground),b=luminance(background);
+        return{text:n.textContent,selected:n.closest('label').querySelector('input').checked,color:css.color,background,backgroundOwner,contrast:(Math.max(a,b)+.05)/(Math.min(a,b)+.05),opacity:Number(css.opacity),effectiveOpacity,fontSize:parseFloat(css.fontSize),opaqueFound};
+      }));
+      check('selected and unselected pace helpers retain normal-text contrast',paceHints.length===3&&paceHints.every(n=>n.opaqueFound&&n.contrast>=4.5&&n.effectiveOpacity===1&&n.fontSize>=12),paceHints);
       await screenshot('experience-settings');await page.keyboard.press('Escape');
       await f.locator('#settings:not([open])').waitFor({state:'attached'});
       check('settings Escape restores its new visible opener',await f.locator('.castle-experience-settings').evaluate(n=>n===document.activeElement));
