@@ -59,3 +59,6 @@ test('refresh preserves stable record/update focus or falls back to visible dial
  const b=setup(t);b.api.showTools(true);b.$('[data-object=chest]').click();b.$('[data-living-draft=one]').focus();b.emit({favoriteDrafts:[]});assert.equal(b.doc.activeElement,b.$('.living-dialog-heading button'));
  b.api.closeRecords();b.emit({pendingUpdate:true});b.$('[data-object=notice]').click();b.$('.living-apply-update').focus();b.emit({notice:'さらに更新を預かっています。'});assert.equal(b.doc.activeElement,b.$('.living-apply-update'));b.emit({pendingUpdate:false});assert.equal(b.doc.activeElement,b.$('.living-dialog-heading button'));
 });
+test('shelf selection returns to paper even when the owner rerender detaches the clicked card',async t=>{
+ const b=setup(t);b.api.showTools(true);b.$('[data-object=shelf]').click();const card=b.doc.createElement('button');card.className='manuscript-card';card.textContent='Select';card.onclick=()=>{b.$('#desk-list').replaceChildren();};b.$('#desk-list').append(card);card.click();await flush();assert.equal(b.room.dataset.livingView,undefined);assert.equal(b.doc.activeElement,b.$('#desk-scroll'));assert.equal(b.$('#spatial-shelf-dialog').open,false);
+});

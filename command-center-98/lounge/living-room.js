@@ -25,6 +25,7 @@ export function installLivingRoom({document:doc=globalThis.document,controller,s
  const dh=make('header','living-dialog-heading'),dt=make('h2');dt.id='living-record-title';const close=button('','閉じる',()=>closeRecords());close.setAttribute('aria-label','部屋の記録を閉じる');dh.append(dt,close);
  const note=make('p','living-dialog-note'),records=make('div','living-records'),actions=make('div','living-dialog-actions');dialog.append(dh,note,records,actions);
  const current=()=>snapshot.rooms.find(r=>r.key===key);
+ const factualText=(node,text)=>{node.replaceChildren(...String(text).split(/(\d+本)/).filter(Boolean).map(part=>/^\d+本$/.test(part)?make('span','living-count-unit',part):doc.createTextNode(part)));};
  function restorePaper(){paper.inert=previousInert;if(previousAria===null)paper.removeAttribute('aria-hidden');else paper.setAttribute('aria-hidden',previousAria);}
  function showTools(show,{focusReader=false,focus=true}={}){
   if(destroyed||!key||room.hidden)return false;
@@ -68,9 +69,9 @@ export function installLivingRoom({document:doc=globalThis.document,controller,s
  function render(){
   scene?.setLivingStatus?.(snapshot);
   const data=current();if(!data)return;
-  heading.textContent=data.name;brief.textContent=data.briefing;scope.textContent=data.scopeNote;bench.dataset.state=data.state;bench.dataset.light=data.light;
+  heading.textContent=data.name;factualText(brief,data.briefing);scope.textContent=data.scopeNote;bench.dataset.state=data.state;bench.dataset.light=data.light;
   objectMap.get('desk').detail.textContent=data.current?.title||'原稿棚から、読む原稿を選べます';
-  objectMap.get('shelf').detail.textContent=data.labels.shelf;objectMap.get('chest').detail.textContent=data.labels.favorites;objectMap.get('notice').detail.textContent=data.labels.notice;
+  factualText(objectMap.get('shelf').detail,data.labels.shelf);factualText(objectMap.get('chest').detail,data.labels.favorites);factualText(objectMap.get('notice').detail,data.labels.notice);
   for(const [id,value]of objectMap)value.button.setAttribute('aria-label',value.button.querySelector('strong').textContent+'。'+value.detail.textContent);
   if(dialog.open)renderRecords();
  }
@@ -93,7 +94,7 @@ export function installLivingRoom({document:doc=globalThis.document,controller,s
  const onKey=event=>{if(event.key==='Escape'&&view==='tools'&&!doc.querySelector('dialog[open]')){event.preventDefault();event.stopImmediatePropagation();showTools(false);}};
  doc.addEventListener('keydown',onKey,true);
  // Existing shelf selection commits through its owner, then returns to paper.
- const shelfSelect=event=>{if(view==='tools'&&event.target.closest?.('#spatial-shelf-dialog .manuscript-card'))win.queueMicrotask(()=>showTools(false,{focusReader:true}));};doc.addEventListener('click',shelfSelect);
+ const shelfSelect=event=>{if(view==='tools'&&event.target.closest?.('#spatial-shelf-dialog .manuscript-card'))win.queueMicrotask(()=>showTools(false,{focusReader:true}));};doc.addEventListener('click',shelfSelect,true);
  const explicitRead=event=>{if(view==='tools'&&event.target.closest?.('#desk-read'))showTools(false,{focusReader:true});};doc.addEventListener('click',explicitRead);
- sync();return {showTools,closeRecords,destroy(){if(destroyed)return;destroyed=true;unsub();observer.disconnect();doc.removeEventListener('keydown',onKey,true);doc.removeEventListener('click',shelfSelect);doc.removeEventListener('click',explicitRead);cleanupRoom();}};
+ sync();return {showTools,closeRecords,destroy(){if(destroyed)return;destroyed=true;unsub();observer.disconnect();doc.removeEventListener('keydown',onKey,true);doc.removeEventListener('click',shelfSelect,true);doc.removeEventListener('click',explicitRead);cleanupRoom();}};
 }

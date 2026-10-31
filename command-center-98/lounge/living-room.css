@@ -296,3 +296,7 @@ body.spatial-atelier[data-motion='reduced'] .living-object .living-object-art { 
 /* Small steady delivery seal: data, not an invented room-wide activity. */
 body.spatial-atelier .castle-room-hotspot[data-living-light='notice'] .castle-room-marker { box-shadow: 0 0 0 2px #ffe4a0,0 0 16px #ffc56655; }
 body.spatial-atelier .castle-room-hotspot[data-living-light='waiting'] .castle-room-marker { border-style: dashed; }
+
+body.spatial-atelier .castle-room-count::after { display: block; content: attr(data-notice); color: #ffe1a2; font-size: 12px; line-height: 1.5; }
+
+body.spatial-atelier .living-count-unit { white-space: nowrap; }
