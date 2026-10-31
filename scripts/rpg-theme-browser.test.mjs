@@ -151,7 +151,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cc-rpg-browser-'));
  const proc=spawn(chrome,['--headless','--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--no-first-run','--disable-background-networking','--disable-component-update','--remote-debugging-port=0','--user-data-dir='+path.join(dir,'profile'),'about:blank'],{stdio:'ignore'});
- let ws,serial=0;const pending=new Map(),results=[],blocked=[],errors=[],cancelledInterceptions=[];
+ let ws,serial=0;const pending=new Map(),results=[],blocked=[],errors=[],cancelledInterceptions=[],navigationReadinessRetries=[];
  const rejectPending=reason=>{for(const p of pending.values()){clearTimeout(p.timer);p.reject(Error(reason+': '+p.context))}pending.clear()};
  try{
   const portFile=path.join(dir,'profile/DevToolsActivePort'),deadline=Date.now()+15000;
@@ -171,7 +171,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   });
   ws.onclose=event=>rejectPending('CDP socket closed ('+event.code+')');
   ws.onerror=()=>rejectPending('CDP socket error');
-  ws.onmessage=event=>{const m=JSON.parse(event.data);if(m.id&&pending.has(m.id)){const p=pending.get(m.id);clearTimeout(p.timer);pending.delete(m.id);m.error?p.reject(Error(m.error.message)):p.resolve(m.result)}
+  ws.onmessage=event=>{const m=JSON.parse(event.data);if(m.id&&pending.has(m.id)){const p=pending.get(m.id);clearTimeout(p.timer);pending.delete(m.id);m.error?p.reject(Object.assign(Error(m.error.message),{cdpContext:p.context})):p.resolve(m.result)}
    // A navigation can cancel an intercepted request before CDP continues it.
    // Record only that exact transport race separately; runtime exceptions and
    // all other protocol failures still fail, and blocked requests remain blocked.
@@ -181,7 +181,16 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   await send('Page.enable');await send('Runtime.enable');await send('Network.enable');await send('Network.setBypassServiceWorker',{bypass:true});await send('Fetch.enable',{patterns:[{urlPattern:'http*',requestStage:'Request'}]});
   const evaluate=async expression=>{const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result.value};
   diagnose=async(reason)=>{const label='failure-'+Date.now();const info={reason,requests,blocked,errors};try{info.page=await evaluate(`({url:location.href,readyState:document.readyState,title:document.title,body:document.body?.innerText?.slice(0,12000),html:document.documentElement.outerHTML.slice(0,25000),qa:window.__rpgQA?{writes:window.__rpgQA.writes,mode:window.__rpgQA.mode}:null})`)}catch(e){info.pageError=e.message}try{const png=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(output,label+'.png'),Buffer.from(png.data,'base64'))}catch(e){info.screenshotError=e.message}fs.writeFileSync(path.join(output,label+'.json'),JSON.stringify(info,null,2));console.error(JSON.stringify({reason,page:info.page?.url,title:info.page?.title,body:info.page?.body?.slice(0,1000),errors,blocked}));};
-  const waitFor=async expression=>{for(let i=0;i<100;i++){if(await evaluate(expression))return;await sleep(50)}throw Error('Timed out: '+expression)};
+  // The real entry intentionally redirects to its canonical version. Only
+  // idempotent readiness reads may retry that precise destroyed-context race;
+  // UI actions, runtime exceptions and persistent closed targets still fail.
+  const waitFor=async expression=>{for(let i=0;i<100;i++){
+   try{if(await evaluate(expression))return;}catch(error){
+    if(error.message!=='Inspected target navigated or closed'||!error.cdpContext?.startsWith('Runtime.evaluate '))throw error;
+    navigationReadinessRetries.push({expression,reason:error.message});
+   }
+   await sleep(50);
+  }throw Error('Timed out: '+expression)};
   // Startup completion is a host protocol event, not proof that child artwork has
   // decoded or its finite entrance transitions have painted. Final screenshots
   // await the actual embedded lounge; delayed/loading-gate captures do not.
@@ -581,7 +590,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   await capture('classic-component-offline',`${C}.CCCastleApp.notebook.all().some(x=>x.id===window.__classicDraftId&&x.title==='クラシック部品・確認用の端末原稿')&&${C}.navigator.onLine===false`);
   await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
   results.push({name:'network-isolation',checks:[{name:'no attempted external network request',pass:blocked.length===0,detail:blocked},{name:'no uncaught browser exceptions',pass:errors.length===0,detail:errors}]});
- }catch(error){await diagnose(error.message);throw error;}finally{fs.writeFileSync(path.join(output,'results.json'),JSON.stringify({results,blocked,errors,cancelledInterceptions,requests},null,2));rejectPending('CDP session ended');ws?.close();proc.kill();server.close();}
+ }catch(error){await diagnose(error.message+(error.cdpContext?' @ '+error.cdpContext:''));throw error;}finally{fs.writeFileSync(path.join(output,'results.json'),JSON.stringify({results,blocked,errors,cancelledInterceptions,navigationReadinessRetries,requests},null,2));rejectPending('CDP session ended');ws?.close();proc.kill();server.close();}
  const failures=results.flatMap(r=>r.checks.filter(c=>!c.pass).map(c=>({route:r.name,...c})));
  assert.deepEqual(failures,[],'See artifacts/rpg-theme/results.json and per-route PNGs');
 });
