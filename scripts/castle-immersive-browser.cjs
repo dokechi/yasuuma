@@ -83,7 +83,7 @@ function installProbe() {
   const results=[];
   let currentPage;
   try {
-    for(const [width,height] of [[1440,900],[800,648],[390,900],[320,640]]){
+    for(const [width,height] of [[390,900],[320,640],[800,648],[1440,900]]){
       const context=await browser.newContext({viewport:{width,height},reducedMotion:'no-preference',hasTouch:width<=800,
         serviceWorkers:'block',permissions:['clipboard-read','clipboard-write']});
       await context.addInitScript(installProbe);
@@ -117,17 +117,34 @@ function installProbe() {
       const home=async()=>{await f.locator('.account-board:not([hidden])').waitFor();};
       const quick=async key=>{await f.locator(`.castle-quick-open[data-room=${key}]`).click();if(key!=='sourcing')await waitRoom(key);};
       const returnHome=async()=>{await f.locator('#back').click();await home();};
+      let overviewCalls=0;
       const setOverview=async()=>{
+        const call=++overviewCalls;
         if(await f.locator('.spatial-castle').getAttribute('data-overview')!=='true')await f.locator('.castle-overview').click();
         // Layout observers may start a second CSS transition after the first
         // promise settles. Observe the actual centered overview, not a timer or
         // a stale animation list; real early-entry remains separately tested.
-        await cf.waitForFunction(()=>{
+        try{await cf.waitForFunction(()=>{
           const world=document.querySelector('.spatial-castle'),viewport=world?.querySelector('.castle-viewport'),stage=world?.querySelector('.castle-stage');
           if(!stage||world.dataset.overview!=='true'||stage.getAnimations().some(a=>a.pending||a.playState==='running'))return false;
           const v=viewport.getBoundingClientRect(),s=stage.getBoundingClientRect(),scale=Math.min(viewport.clientWidth/1536,viewport.clientHeight/1024);
           return Math.abs(s.width-1536*scale)<1&&Math.abs(s.height-1024*scale)<1&&Math.abs(s.left-(v.left+(viewport.clientWidth-1536*scale)/2))<1&&Math.abs(s.top-(v.top+(viewport.clientHeight-1024*scale)/2))<1;
-        },null,{polling:'raf'});
+        },null,{polling:'raf'});}catch(error){
+          const diagnostic=await cf.evaluate(()=>{
+            const world=document.querySelector('.spatial-castle'),viewport=world?.querySelector('.castle-viewport'),stage=world?.querySelector('.castle-stage'),board=document.querySelector('.account-board');
+            const rect=n=>{if(!n)return null;const r=n.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};};
+            const v=rect(viewport),s=rect(stage),scale=viewport?Math.min(viewport.clientWidth/1536,viewport.clientHeight/1024):0;
+            const expected=viewport?{x:v.x+(viewport.clientWidth-1536*scale)/2,y:v.y+(viewport.clientHeight-1024*scale)/2,width:1536*scale,height:1024*scale}:null;
+            return{window:{width:innerWidth,height:innerHeight,hidden:document.hidden},selected:world?.dataset.selected,overview:world?.dataset.overview,worldHidden:world?.hidden,boardHidden:board?.hidden,
+              viewport:{rect:v,clientWidth:viewport?.clientWidth,clientHeight:viewport?.clientHeight,overflow:getComputedStyle(viewport).overflow,padding:getComputedStyle(viewport).padding,border:getComputedStyle(viewport).border},
+              stage:{rect:s,inlineTransform:stage?.style.transform,paintedTransform:getComputedStyle(stage).transform},expected,delta:expected?Object.fromEntries(Object.keys(expected).map(k=>[k,s[k]-expected[k]])):null,
+              scroll:[viewport,world,board,document.body,document.documentElement].filter(Boolean).map(n=>({node:n.id||n.className||n.tagName,left:n.scrollLeft,top:n.scrollTop,width:n.scrollWidth,height:n.scrollHeight})),
+              animations:stage?.getAnimations().map(a=>({type:a.constructor.name,state:a.playState,pending:a.pending,time:a.currentTime,rate:a.playbackRate,target:a.effect?.target?.className,timing:a.effect?.getTiming()}))};
+          });
+          result.checks.push({name:'overview settles at its actual painted center',pass:false,detail:{call,...diagnostic}});
+          fs.writeFileSync(path.join(out,`${width}-${height}-overview-timeout.json`),JSON.stringify({call,...diagnostic},null,2));
+          error.message+='\nOverview geometry diagnostic: '+JSON.stringify({call,...diagnostic});throw error;
+        }
       };
       const pressRoom=async(key,{hold=false}={})=>{
         if(hold)await page.evaluate(()=>window.__immersiveQA.freezeNext=true);
