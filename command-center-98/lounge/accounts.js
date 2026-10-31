@@ -41,7 +41,7 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
  const tiles=el('nav',undefined,'account-tiles');tiles.setAttribute('aria-label','6アカウント・仕入れ・予備');
  panel.append(header,foyer,status,accountJump,tiles,scroller,footer);host.append(panel);isolate(true);
  function render({message,loading=false,complete=false}={}){
-  const focused=document.activeElement,focusAccount=focused?.closest?.('[data-account]')?.dataset.account,focusDraft=focused?.dataset?.draftId,focusTile=focused?.dataset?.destination,tilesTop=tiles.scrollTop;
+  const focused=document.activeElement,focusAccount=focused?.closest?.('[data-account]')?.dataset.account,focusDraft=focused?.dataset?.draftId,focusTile=focused?.dataset?.destination,focusKind=focused?.closest?.('.account-jump')?'jump':focused?.classList?.contains('account-handle')?'profile':focused?.parentElement?.classList?.contains('account-column')?'open':null,tilesTop=tiles.scrollTop;
   const left=scroller.scrollLeft,scrolls=new Map([...columns.children].map(c=>[c.dataset.account,c.querySelector('.account-drafts')?.scrollTop||0]));
   columns.replaceChildren();tiles.replaceChildren();accountJump.replaceChildren();refresh.disabled=loading;
   const allRows=rows(),attention=!loading&&!complete&&/失敗|未確認|できません|エラー|再試行/.test(message||'');panel.dataset.state=loading?'loading':attention?'attention':complete?'ready':'idle';refresh.textContent=loading?'更新しています…':attention?'↻ 再読み込み':'↻ 原稿を更新';
@@ -77,10 +77,10 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
    columns.append(column);
   }
   markVisited();scroller.scrollLeft=left;tiles.scrollTop=tilesTop;
-  if(!panel.hidden){const candidates=[...panel.querySelectorAll('button')];const restore=focusTile?candidates.find(b=>b.dataset.destination===focusTile):focusDraft?candidates.find(b=>b.dataset.draftId===focusDraft&&b.closest('[data-account]')?.dataset.account===focusAccount):null;restore?.focus?.({preventScroll:true});}
+  if(!panel.hidden){const candidates=[...panel.querySelectorAll('button,a')],column=[...columns.children].find(c=>c.dataset.account===focusAccount);const restore=focusTile?candidates.find(b=>b.dataset.destination===focusTile):focusDraft?candidates.find(b=>b.dataset.draftId===focusDraft&&b.closest('[data-account]')?.dataset.account===focusAccount):focusKind==='jump'?[...accountJump.children].find(b=>b.dataset.account===focusAccount):focusKind==='profile'?column?.querySelector('.account-handle'):focusKind==='open'?[...(column?.children||[])].find(b=>b.tagName==='BUTTON'):null;restore?.focus?.({preventScroll:true});}
  }
  function show(){updateTime();panel.hidden=false;isolate(true);document.getElementById('app')?.classList.add('board-home');
-  const preferred=returnFocus?.id&&!scroller.hidden?[...columns.querySelectorAll('[data-draft-id]')].find(b=>b.dataset.draftId===returnFocus.id&&b.closest('[data-account]')?.dataset.account===returnFocus.account):[...tiles.children].find(b=>b.dataset.destination===returnFocus?.account);(preferred||mode).focus?.({preventScroll:true});}
+  const column=[...columns.children].find(c=>c.dataset.account===returnFocus?.account);const preferred=!scroller.hidden?(returnFocus?.id?[...columns.querySelectorAll('[data-draft-id]')].find(b=>b.dataset.draftId===returnFocus.id&&b.closest('[data-account]')?.dataset.account===returnFocus.account):[...(column?.children||[])].find(b=>b.tagName==='BUTTON')):[...tiles.children].find(b=>b.dataset.destination===returnFocus?.account);(preferred||mode).focus?.({preventScroll:true});if(!scroller.hidden&&returnFocus?.id&&preferred){const list=preferred.closest('.account-drafts');if(list&&preferred.getBoundingClientRect&&list.getBoundingClientRect)list.scrollTop+=preferred.getBoundingClientRect().top-list.getBoundingClientRect().top;}}
  function hide(){panel.hidden=true;isolate(false);document.getElementById('app')?.classList.remove('board-home');}
  render();return {render,show,hide,element:panel};
 }

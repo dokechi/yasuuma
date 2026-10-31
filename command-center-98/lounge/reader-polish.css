@@ -142,7 +142,7 @@
   .room-mode .room-caption h2 { font-size: 20px; }
   .room-mode .back-button, .room-mode .desk-focused .back-button { left: 12px; top: 12px; padding: 10px 12px; font-size: 13px; }
   .room-mode .desk-toolbar { padding: 12px 14px 8px; gap: 6px 10px; }
-  .room-mode .desk-content { grid-template-columns: 174px minmax(0,1fr); }
+  .room-mode .desk-content { grid-template-columns: 192px minmax(0,1fr); }
   .room-mode .desk-routes strong { flex-basis: 150px; }
   .room-mode .reader-scroll { padding: 20px; }
   .room-mode #draft-title { font-size: 20px; }
@@ -206,3 +206,7 @@
 @media (prefers-reduced-motion:reduce) {
   .room-mode .reading-desk *, .room-mode .back-button { transition: none!important; }
 }
+
+/* Small-screen skip control keeps the manuscript one tap away. */
+#desk-read{display:none}
+@media(max-width:700px){.room-mode #desk-read{display:inline-flex;align-items:center;justify-content:center;margin-left:auto}.room-mode .desk-heading #desk-focus{flex-shrink:0}.room-mode .desk-heading h3{flex:1}.room-mode .desk-heading{flex-wrap:wrap}}

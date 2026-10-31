@@ -172,6 +172,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  $('desk-copy-dialog').addEventListener('close',()=>manual=null);
  $('desk-pending').addEventListener('click',applyPending);
  $('desk-refresh').addEventListener('click',()=>{if(!embedded){window.top.location.href=productionURL;return;}setStatus('保存原稿を読み込み中…',{loading:true});send('refresh');});
+ $('desk-read')?.addEventListener('click',()=>{$('desk-scroll').scrollIntoView({block:'start',behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?'instant':'smooth'});$('desk-scroll').focus({preventScroll:true});});
  $('desk-focus').addEventListener('click',()=>{const focused=$('room').classList.toggle('desk-focused');$('desk-focus').setAttribute('aria-pressed',String(focused));notebook.setPref('loungeFocus',focused);});
  $('room').classList.toggle('desk-focused',notebook.pref('loungeFocus',false));$('desk-focus').setAttribute('aria-pressed',String(notebook.pref('loungeFocus',false)));
  $('desk-font').value=notebook.pref('font','standard')==='large'?'large':'standard';document.body.dataset.readingFont=$('desk-font').value;
