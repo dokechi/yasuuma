@@ -32,3 +32,6 @@
 .board-voyage .board-summary{margin:0}.board-voyage .room-clock{position:static;font-size:11px;line-height:1.4;white-space:nowrap}
 @media(min-width:701px) and (max-width:1000px){.account-board-heading nav{max-width:none;flex-wrap:nowrap;gap:7px}.account-board-heading nav button{padding:9px 10px;white-space:nowrap}.room-foyer{min-height:93px}}
 @media(max-width:370px){.board-voyage .room-clock{font-size:10px}.room-foyer{gap:7px}.room-foyer>div:nth-child(2){padding:6px 4px}.room-foyer small{font-size:14px}}
+/* The production host reserves a 52px request bar. Keep all eight doors whole
+   in the remaining Fold viewport too, without reducing text or touch targets. */
+@media(min-width:701px) and (max-height:680px){.account-board-heading{padding:6px 9px 8px}.account-board-heading small,.account-board-heading p{display:none}.account-board-heading h1{margin:0;line-height:1.25}.room-foyer{min-height:65px;padding:7px}.account-board-heading nav{flex-wrap:nowrap;max-width:none}.account-board-heading nav button{white-space:nowrap}}
