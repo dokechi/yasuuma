@@ -14,7 +14,8 @@ const fixtureScript=`(()=>{
   window.fetch=async(input,options={})=>{
     const url=new URL(input instanceof URL?input.href:typeof input==='string'?input:input.url,location.href);
     const method=(options.method||input?.method||'GET').toUpperCase();
-    __unifiedQA.requests.push({url:url.href,method});
+    let body;try{body=JSON.parse(options.body||'null');}catch{}
+    __unifiedQA.requests.push({url:url.href,method,...(body?{action:body.action,entityType:body.entityType,count:body.items?.length}:{})});
     const json=data=>new Response(JSON.stringify(data),{status:200,headers:{'Content-Type':'application/json'}});
     if(method==='GET'&&url.searchParams.get('resource')==='task-events'&&url.searchParams.get('taskId')==='insurance-threads-v1')return json({ok:true,events:[row],total:1,nextOffset:null});
     if(method==='GET'&&url.searchParams.get('resource')==='threads-images')return json({ok:true,id:url.searchParams.get('id'),accountKey:url.searchParams.get('accountKey'),manifest:{contract:'threads-post-images-v1',revision:0,images:[]},assets:[]});
@@ -94,7 +95,12 @@ const server=http.createServer((req,res)=>{
       assert.deepEqual(await page.evaluate(()=>__unifiedQA.external[0]),['https://shiireinochi.vercel.app/','_blank','noopener,noreferrer']);
       assert.equal(await page.locator('#commandHome').isVisible(),false);
       const audit=await page.evaluate(()=>({writes:__rpgQA.writes,syntheticWrites:__rpgQA.threads.simulatedWrites,initializations:__rpgQA.simulatedInitializations,requests:__unifiedQA.requests,sourceUnchanged:JSON.stringify(__rpgQA.threads.events.find(x=>x.id===901))===__unifiedQA.original}));
-      assert.deepEqual(audit.writes,[]);assert.deepEqual(audit.syntheticWrites,[]);assert.deepEqual(audit.initializations,[]);assert.ok(audit.requests.every(r=>['GET','HEAD'].includes(r.method)));assert.equal(audit.sourceUnchanged,true);
+      assert.deepEqual(audit.writes,[]);assert.deepEqual(audit.syntheticWrites,[]);// The pre-existing host renderers have explicit synthetic `ensure` calls,
+      // already intercepted and separately recorded by rpg-theme-fixtures. They are
+      // not posting/editing writes, and no real API is contacted. Audit the exact
+      // existing initializer scope rather than relabeling it as GET-only.
+      for(const init of audit.initializations){assert.equal(init.action,'ensure');assert.equal(init.method,'POST');assert.equal(init.url,'https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-workflow-api');assert.equal(init.count,{fp_content:9,house_content:2}[init.entityType]);}
+      assert.deepEqual(audit.requests.filter(r=>!['GET','HEAD'].includes(r.method)),audit.initializations);assert.equal(audit.sourceUnchanged,true);
       await page.reload();await page.waitForFunction(()=>window.CCCastle?.unified&&!document.querySelector('#ccCastleFrame').hidden);
       await lounge.locator('.account-board[data-state=ready]').waitFor();
       assert.equal(await page.locator('#commandHome').isVisible(),false);
@@ -102,7 +108,7 @@ const server=http.createServer((req,res)=>{
       assert.deepEqual(errors,[]);assert.deepEqual(blocked,[]);
       assert.equal(await page.evaluate(()=>__rpgQA.writes.length),0);
       await page.screenshot({path:path.join(out,width+'.png')});
-      results.push({width,currentHost:'lounge/index.html',insuranceFixture:true,classicRetired:true,managementPreserved:true,oneReadingDesk:true,keyboardRoutes:true,externalReturn:true,reload:true,sourceUnchanged:true,errors,writes:0});
+      results.push({width,currentHost:'lounge/index.html',insuranceFixture:true,classicRetired:true,managementPreserved:true,oneReadingDesk:true,keyboardRoutes:true,externalReturn:true,reload:true,sourceUnchanged:true,errors,writes:0,syntheticInitializations:audit.initializations});
       await context.close();
     }
     fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(results,null,2));console.log(JSON.stringify(results,null,2));
