@@ -37,10 +37,21 @@ const server=http.createServer((req,res)=>{
  fs.mkdirSync(out,{recursive:true});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  const origin='http://127.0.0.1:'+server.address().port,browser=await chromium.launch({executablePath:process.env.CC_TEST_CHROME||['/usr/bin/google-chrome','/usr/bin/chromium'].find(p=>fs.existsSync(p)),headless:true,args:['--no-sandbox']}),results=[];
  try{for(const [width,height] of [[1440,900],[800,648],[390,900],[320,640]]){
-  const context=await browser.newContext({viewport:{width,height},reducedMotion:'reduce',serviceWorkers:'block'}),page=await context.newPage(),errors=[],blocked=[];
+  const context=await browser.newContext({viewport:{width,height},reducedMotion:'reduce',serviceWorkers:'block',permissions:['clipboard-read','clipboard-write']}),page=await context.newPage(),errors=[],blocked=[];
   page.on('pageerror',e=>errors.push(e.message));await context.route('**/*',r=>{if(new URL(r.request().url()).origin===origin&&['GET','HEAD'].includes(r.request().method()))return r.continue();blocked.push(r.request().url());return r.abort();});
   await page.goto(origin+'/command-center-98/app-v130.html');await page.waitForFunction(()=>window.CCCastle?.unified&&!document.querySelector('#ccCastleFrame').hidden);
   const lounge=page.frameLocator('#ccCastleFrame');await lounge.locator('.castle-quick-open[data-room=sourcing]').waitFor();
+  await page.screenshot({path:path.join(out,`${width}-${height}-host-home.png`)});
+  const frameRect=await page.locator('#ccCastleFrame').boundingBox(),barRect=await page.locator('#requestProgressShortcut').boundingBox();
+  assert.ok(frameRect.y>=barRect.y+barRect.height);assert.ok((await page.locator('#requestProgressOpen').boundingBox()).height>=44);
+  await lounge.locator('.castle-quick-open[data-room=insurance]').click();await lounge.locator('#room[data-spatial-scene=interior]').waitFor();await lounge.locator('.spatial-desk-actor').evaluate(n=>n.decode());
+  await lounge.locator('#draft-body').waitFor();assert.equal(await lounge.locator('#draft-body').textContent(),insuranceBody);
+  const reader=await lounge.locator('#desk-scroll').evaluate(n=>({height:n.clientHeight,bodyTop:document.getElementById('draft-body').getBoundingClientRect().top,viewport:innerHeight,overflow:document.documentElement.scrollWidth>innerWidth}));assert.ok(reader.height>=180&&reader.bodyTop<reader.viewport-80&&!reader.overflow,JSON.stringify(reader));
+  await page.screenshot({path:path.join(out,`${width}-${height}-host-study.png`)});
+  await lounge.locator('.spatial-work>summary').click();assert.ok(await lounge.locator('#desk-refresh').isVisible());
+  await page.screenshot({path:path.join(out,`${width}-${height}-host-tools.png`)});await lounge.locator('#desk-read').click();
+  assert.equal(await lounge.locator('#room').evaluate(n=>n.scrollTop),0);await lounge.locator('#desk-copy').click();assert.equal((await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n'),insuranceBody);
+  await lounge.locator('#back').click();await lounge.locator('.account-board:not([hidden])').waitFor();
   await lounge.locator('.castle-quick-open[data-room=sourcing]').click();await page.locator('body.lounge-workspace #loungeWorkspaceHeader:not([hidden])').waitFor();
   assert.equal(await page.locator('#ccCastleFrame').isVisible(),false);assert.equal(await page.locator('#mainWindow').getAttribute('data-cc-view'),'sourcing');
   await page.waitForFunction(()=>document.querySelector('#sourcingHub'));await page.evaluate(()=>document.fonts.ready);
