@@ -105,6 +105,7 @@ function installProbe() {
       await f.locator('.castle-stage img').evaluateAll(ns=>Promise.all(ns.map(n=>n.decode())));
       await cf.evaluate(async()=>{await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
       await f.locator('.castle-sound-toggle').waitFor();
+      await f.locator('.account-board[data-state=ready]').waitFor();
       await page.waitForFunction(()=>document.body.dataset.castleJourneyHost==='ready');
       await cf.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
       const waitRoom=async key=>{
@@ -116,7 +117,10 @@ function installProbe() {
       const home=async()=>{await f.locator('.account-board:not([hidden])').waitFor();};
       const quick=async key=>{await f.locator(`.castle-quick-open[data-room=${key}]`).click();if(key!=='sourcing')await waitRoom(key);};
       const returnHome=async()=>{await f.locator('#back').click();await home();};
-      const setOverview=async()=>{if(await f.locator('.spatial-castle').getAttribute('data-overview')!=='true')await f.locator('.castle-overview').click();};
+      const setOverview=async()=>{
+        if(await f.locator('.spatial-castle').getAttribute('data-overview')!=='true')await f.locator('.castle-overview').click();
+        await f.locator('.castle-stage').evaluate(async n=>{await Promise.all(n.getAnimations().map(a=>a.finished.catch(()=>{})));await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
+      };
       const pressRoom=async(key,{hold=false}={})=>{
         if(hold)await page.evaluate(()=>window.__immersiveQA.freezeNext=true);
         await f.locator(`.castle-room-hotspot[data-room=${key}]`).click();
@@ -133,9 +137,10 @@ function installProbe() {
           const animations=layer.getAnimations({subtree:true});if(!animations.length)throw Error('Journey has no inspectable animations');
           for(const a of animations){a.pause();a.currentTime=Number(a.effect.getTiming().duration)*fraction;}
           await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-          const inspect=selector=>{const n=layer.querySelector(selector);if(!n)return null;const r=n.getBoundingClientRect(),s=getComputedStyle(n);return{left:r.left,top:r.top,width:r.width,height:r.height,opacity:s.opacity,transform:s.transform,background:s.backgroundImage};};
+          const inspect=selector=>{const n=layer.querySelector(selector);if(!n)return null;const r=n.getBoundingClientRect(),s=getComputedStyle(n);let effectiveOpacity=1,p=n;while(p&&p!==layer.parentElement){effectiveOpacity*=Number(getComputedStyle(p).opacity);p=p.parentElement;}return{left:r.left,top:r.top,width:r.width,height:r.height,opacity:s.opacity,effectiveOpacity,transform:s.transform,background:s.backgroundImage,backgroundColor:s.backgroundColor};};
           return{room:layer.dataset.room,direction:layer.dataset.direction,phase:layer.dataset.phase,pointerEvents:getComputedStyle(layer).pointerEvents,ariaHidden:layer.getAttribute('aria-hidden'),
-            bounds:(()=>{const r=layer.getBoundingClientRect();return{left:r.left,top:r.top,width:r.width,height:r.height};})(),camera:inspect('.castle-journey-camera'),world:inspect('.castle-journey-world'),sky:inspect('.castle-journey-sky'),threshold:inspect('.castle-journey-threshold'),interior:inspect('.castle-journey-interior'),
+            bounds:(()=>{const r=layer.getBoundingClientRect();return{left:r.left,top:r.top,width:r.width,height:r.height};})(),camera:inspect('.castle-journey-camera'),world:inspect('.castle-journey-world'),sky:inspect('.castle-journey-sky'),threshold:inspect('.castle-journey-threshold'),interior:inspect('.castle-journey-interior'),actor:inspect('[data-journey-part=actor]'),
+            leaves:[...layer.querySelectorAll('.castle-journey-leaf')].map(n=>{const s=getComputedStyle(n),rgba=(s.backgroundColor.match(/[\d.]+/g)||[]).map(Number),m=new DOMMatrixReadOnly(s.transform==='none'?undefined:s.transform);return{side:n.dataset.side,opacity:Number(s.opacity),baseAlpha:rgba.length===4?rgba[3]:rgba.length===3?1:0,rotation:{m11:m.m11,m13:m.m13,m31:m.m31,m33:m.m33}};}),
             images:[...layer.querySelectorAll('img')].map(n=>({src:n.currentSrc||n.src,width:n.naturalWidth})),animations:animations.length,
             focusCaptured:layer.contains(document.activeElement),activeFrames:document.querySelectorAll('.castle-journey').length};
         },{fraction});
@@ -167,8 +172,12 @@ function installProbe() {
       const press=await seekJourney(.10,'01-press');
       check('journey is non-blocking and does not capture focus',press.pointerEvents==='none'&&press.ariaHidden==='true'&&!press.focusCaptured&&press.activeFrames===1,press);
       const approach=await seekJourney(.30,'02-approach');
+      const swap=await seekJourney(.50,'03-closed-swap');
       const threshold=await seekJourney(.56,'03-threshold');
       const reveal=await seekJourney(.84,'04-reveal');
+      check('approach and threshold use opaque physical wood',[approach,threshold].every(frame=>Math.abs(Number(frame.threshold.opacity)-1)<.005&&frame.leaves.length===2&&frame.leaves.every(leaf=>leaf.baseAlpha===1&&leaf.opacity===1)),{approach:{threshold:approach.threshold,leaves:approach.leaves},threshold:{threshold:threshold.threshold,leaves:threshold.leaves}});
+      check('both leaves remain closed during the room swap',swap.leaves.length===2&&swap.leaves.every(leaf=>Math.abs(leaf.rotation.m11-1)<.001&&Math.abs(leaf.rotation.m33-1)<.001&&Math.abs(leaf.rotation.m13)<.001&&Math.abs(leaf.rotation.m31)<.001),swap.leaves);
+      if(reveal.actor)check('revealed companion stays opaque rather than ghosting',Math.abs(reveal.actor.effectiveOpacity-1)<.005,reveal.actor);
       check('camera has real relative movement before threshold',press.camera?.transform!==approach.camera?.transform&&!!approach.world, {press:press.camera,approach:approach.camera});
       const [rx,ry,rw,rh]=roomRects.insurance;
       const approachedCenter={x:threshold.camera.left+threshold.camera.width*(rx+rw/2),y:threshold.camera.top+threshold.camera.height*(ry+rh/2)};
@@ -192,7 +201,7 @@ function installProbe() {
       check('destination Escape restores identity control',await f.locator('#room').isVisible()&&await f.locator('.spatial-room-name').evaluate(n=>n===document.activeElement));
       await page.evaluate(()=>window.__immersiveQA.freezeNext=true);await returnHome();
       await page.locator('.castle-journey[data-room=insurance][data-direction=out]').waitFor();
-      await seekJourney(0,'06-return-contact');await seekJourney(.03,'06-return-first-frame');await seekJourney(.2,'06-return-room');await seekJourney(.55,'07-return-threshold');await seekJourney(.94,'08-return-castle');await finishJourney();
+      await seekJourney(0,'06-return-contact');await seekJourney(.03,'06-return-first-frame');const returnRoom=await seekJourney(.2,'06-return-room');if(returnRoom.actor)check('departing companion stays opaque until door occlusion',Math.abs(returnRoom.actor.effectiveOpacity-1)<.005,returnRoom.actor);await seekJourney(.55,'07-return-threshold');await seekJourney(.94,'08-return-castle');await finishJourney();
       check('reverse returns focus to the exact physical door',await f.locator('.castle-room-hotspot[data-room=insurance]').evaluate(n=>n===document.activeElement));
       const afterCastle=await f.locator('.castle-cutaway').boundingBox();
       check('reverse preserves castle camera coordinates',Math.abs(afterCastle.x-originalCastle.x)<2&&Math.abs(afterCastle.y-originalCastle.y)<2&&Math.abs(afterCastle.width-originalCastle.width)<2,{before:originalCastle,after:afterCastle});
@@ -203,6 +212,35 @@ function installProbe() {
         await seekJourney(.84,key+'-reveal');await finishJourney();await assertReader(key);
         await returnHome();await noJourney();
       }
+
+      // A user may enter before a browse camera settles. The travel must start
+      // at the painted intermediate transform, not the pending CSS target.
+      await setOverview();await f.locator('.castle-overview').click();
+      await f.locator('.castle-stage').evaluate(async n=>{
+        const animations=n.getAnimations().filter(a=>a.effect?.target===n);
+        if(!animations.length)throw Error('No browse transform available to interrupt');
+        for(const a of animations){a.pause();a.currentTime=Number(a.effect.getTiming().duration)*.48;}
+        await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      });
+      const paintedBrowse=await f.locator('.castle-cutaway').boundingBox();
+      const browseViewport=await f.locator('.castle-viewport').boundingBox(),[lx,ly,lw,lh]=roomRects.lottery;
+      const visibleRoom={x:Math.max(browseViewport.x,paintedBrowse.x+paintedBrowse.width*lx),y:Math.max(browseViewport.y,paintedBrowse.y+paintedBrowse.height*ly)};
+      visibleRoom.width=Math.max(44,Math.min(browseViewport.x+browseViewport.width,paintedBrowse.x+paintedBrowse.width*(lx+lw))-visibleRoom.x);
+      visibleRoom.height=Math.max(44,Math.min(browseViewport.y+browseViewport.height,paintedBrowse.y+paintedBrowse.height*(ly+lh))-visibleRoom.y);
+      const paintedHitbox=await f.locator('.castle-room-hotspot[data-room=lottery]').boundingBox();
+      check('browse hit targets follow painted room geometry',!!paintedHitbox&&['x','y','width','height'].every(k=>Math.abs(paintedHitbox[k]-visibleRoom[k])<3),{paintedHitbox,visibleRoom});
+      const hitPoint={x:visibleRoom.x+visibleRoom.width/2,y:visibleRoom.y+visibleRoom.height/2};
+      const currentFrame=await page.locator('#ccCastleFrame').boundingBox();
+      const hitRoom=await cf.evaluate(({x,y})=>document.elementFromPoint(x,y)?.closest('.castle-room-hotspot')?.dataset.room,{x:hitPoint.x-currentFrame.x,y:hitPoint.y-currentFrame.y});
+      check('visible room under a mid-browse tap is the intended destination',hitRoom==='lottery',{hitPoint,hitRoom});
+      await page.evaluate(()=>window.__immersiveQA.freezeNext=true);
+      if(width<=800)await page.touchscreen.tap(hitPoint.x,hitPoint.y);else await page.mouse.click(hitPoint.x,hitPoint.y);
+      await waitRoom('lottery');
+      const interrupted=await seekJourney(0,'interrupted-overview-contact');
+      check('entry during browse starts at painted camera, not pending target',Math.abs(interrupted.camera.left-paintedBrowse.x)<2&&Math.abs(interrupted.camera.top-paintedBrowse.y)<2&&Math.abs(interrupted.camera.width-paintedBrowse.width)<2,{paintedBrowse,journey:interrupted.camera});
+      await finishJourney();await returnHome();await noJourney();
+      await f.locator('.castle-stage').evaluate(n=>{for(const a of n.getAnimations())a.finish();});
+      await setOverview();
 
       // Natural playback is checked separately from deterministic frame seeking.
       await setOverview();const naturalBefore=await page.evaluate(()=>__immersiveQA.journeys.length);
@@ -279,6 +317,22 @@ function installProbe() {
       await quick('insurance');await returnHome();await noJourney();
       check('turning effects off remains silent',await cf.evaluate(()=>__immersiveQA.audio.length)===muted);
 
+      // New visible settings control must expose the real, accessible modal and
+      // restore focus, rather than only changing the hidden legacy inputs.
+      await f.locator('.castle-experience-settings').click();
+      await f.getByRole('dialog',{name:'システム',exact:true}).waitFor();
+      const settingsTargets=await f.locator('#settings-close, #settings .segmented label, #settings .setting-line:has(#reduce-setting)').evaluateAll(ns=>ns.map(n=>{const r=n.getBoundingClientRect();return{text:n.textContent,width:r.width,height:r.height};}));
+      check('experience settings have real touch-sized controls',settingsTargets.every(n=>n.width>=44&&n.height>=44),settingsTargets);
+      await f.locator('#settings .setting-line:has(#reduce-setting)').click();
+      await f.locator('#settings .segmented label:has(input[value=quick])').click();
+      check('settings UI updates the existing preferences',await cf.evaluate(()=>{const s=JSON.parse(localStorage.getItem('shireito-courtyard-v1'));return s.reduce===true&&s.pace==='quick';}));
+      await screenshot('experience-settings');await page.keyboard.press('Escape');
+      await f.locator('#settings:not([open])').waitFor({state:'attached'});
+      check('settings Escape restores its new visible opener',await f.locator('.castle-experience-settings').evaluate(n=>n===document.activeElement));
+      await f.locator('.castle-experience-settings').click();await f.getByRole('dialog',{name:'システム',exact:true}).waitFor();
+      await f.locator('#settings .setting-line:has(#reduce-setting)').click();
+      await f.locator('#settings .segmented label:has(input[value=normal])').click();await f.locator('#settings-close').click();
+      check('settings close restores opener and normal mode',await f.locator('.castle-experience-settings').evaluate(n=>n===document.activeElement)&&await cf.evaluate(()=>!document.getElementById('reduce-setting').checked));
       await setOverview();
       const orrery=f.locator('.castle-orrery');await orrery.waitFor();
       const o=await orrery.evaluate(n=>({tag:n.tagName,name:n.getAttribute('aria-label')||n.textContent,disabled:n.disabled,rect:{width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height},touchAction:getComputedStyle(n).touchAction}));
@@ -289,6 +343,18 @@ function installProbe() {
       const ob=await orrery.boundingBox();await page.mouse.move(ob.x+ob.width/2,ob.y+ob.height/2);await page.mouse.down();await page.mouse.move(ob.x+ob.width/2+30,ob.y+ob.height/2,{steps:4});await page.mouse.up();
       check('playful details never navigate away from work',await f.locator('.account-board').isVisible()&&await f.locator('.spatial-castle').getAttribute('data-selected')===selectedBefore);
       check('touch exploration does not disable vertical page scrolling',o.touchAction!=='none',o.touchAction);
+      if(width<=800){
+        const session=await context.newCDPSession(page),rect=await orrery.boundingBox();
+        const touch={x:rect.x+rect.width/2,y:rect.y+rect.height/2,id:1,radiusX:2,radiusY:2,force:1};
+        await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch]});
+        for(const dx of [24,48,72,96])await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...touch,x:touch.x+dx}]});
+        await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await session.detach();
+        check('long coarse-pointer orrery drag never browses to another room',await f.locator('.spatial-castle').getAttribute('data-selected')===selectedBefore&&await f.locator('.account-board').isVisible());
+        const rotationAfterDrag=await f.locator('.spatial-castle').evaluate(n=>getComputedStyle(n).getPropertyValue('--orrery-turn').trim());
+        await orrery.click();
+        const rotationAfterClick=await f.locator('.spatial-castle').evaluate(n=>getComputedStyle(n).getPropertyValue('--orrery-turn').trim());
+        check('the next orrery activation is not swallowed after a drag',rotationAfterClick!==rotationAfterDrag&&await orrery.getAttribute('data-energy')==='lit',{rotationAfterDrag,rotationAfterClick});
+      }
       await f.locator('.castle-room-hotspot[data-room=insurance]').focus();await page.keyboard.press('ArrowRight');
       check('keyboard follows a real next destination',await f.locator('.castle-room-hotspot[data-room=otoku]').evaluate(n=>n===document.activeElement));
       check('no unexpected horizontal overflow',await cf.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));

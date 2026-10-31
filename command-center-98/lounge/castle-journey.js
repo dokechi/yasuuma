@@ -21,16 +21,19 @@ export function createCastleJourney({document: doc = globalThis.document, assetR
     throw new TypeError('Journey artwork must use a same-origin asset directory.');
   }
   let current = null, disposed = false, serial = 0;
+  const interiorCache = new Map();
   const quiet = win.matchMedia?.('(prefers-reduced-motion: reduce)');
   const make = (tag, name) => { const node = doc.createElement(tag); node.className = 'castle-journey-' + name; return node; };
   const image = (name, file) => {
-    const node = make('img', name); node.src = new URL(file, assets).href; node.alt = ''; node.draggable = false; node.decoding = 'async'; return node;
+    const node = make('img', name); node.decoding = 'sync'; node.src = new URL(file, assets).href; node.alt = ''; node.draggable = false; return node;
   };
   const canMove = () => { try { return !disposed && !doc.hidden && !quiet?.matches && !reducedMotion() && typeof win.Element?.prototype.animate === 'function'; } catch { return false; } };
   function release(record, cancelled = true) {
     if (!record) return;
     win.cancelAnimationFrame(record.raf); win.clearTimeout(record.watchdog);
     for (const animation of record.animations) { try { animation.cancel(); } catch {} }
+    // Keep only the decoded bitmap node, never its old paper/actor snapshot tree.
+    if (record.interior?.parentNode === record.layer && interiorCache.get(record.room) === record.interior) record.interior.remove();
     record.layer.remove();
     if (current === record) current = null;
     if (record.started) doc.dispatchEvent(new win.CustomEvent('castle:journey-end', {detail: {room: record.room, direction: record.direction, duration: record.duration, cancelled}}));
@@ -61,11 +64,19 @@ export function createCastleJourney({document: doc = globalThis.document, assetR
     const closeY = height / 2 - (ry + rh / 2) * HEIGHT * closeScale;
     const start = `translate(${startX}px,${startY}px) scale(${origin.scale})`;
     const near = `translate(${closeX}px,${closeY}px) scale(${closeScale})`;
+    // Preserve enough approach distance to recognize the same building. A
+    // phone already focused on the room must not zoom backwards to meet a ratio.
+    const middleScale = Math.max(origin.scale, Math.min(closeScale, width * .62 / (WIDTH * rw), height * .62 / (HEIGHT * rh)));
+    const startCenterX = startX + (rx + rw / 2) * WIDTH * origin.scale, startCenterY = startY + (ry + rh / 2) * HEIGHT * origin.scale;
+    const middleX = startCenterX + (width / 2 - startCenterX) * .65 - (rx + rw / 2) * WIDTH * middleScale;
+    const middleY = startCenterY + (height / 2 - startCenterY) * .65 - (ry + rh / 2) * HEIGHT * middleScale;
+    const middle = `translate(${middleX}px,${middleY}px) scale(${middleScale})`;
     const initialClip = `inset(${clamp(origin.top - top, 0, height)}px ${clamp(width - origin.left - origin.width, 0, width)}px ${clamp(height - (origin.top - top) - origin.height, 0, height)}px ${clamp(origin.left, 0, width)}px)`;
     const roomX = startX + WIDTH * rx * origin.scale, roomY = startY + HEIGHT * ry * origin.scale;
     const roomWidth = WIDTH * rw * origin.scale, roomHeight = HEIGHT * rh * origin.scale;
     const doorWidth = width * 1.12, doorHeight = height * 1.16;
     const portalStart = `translate(${roomX}px,${roomY}px) scale(${roomWidth / doorWidth},${roomHeight / doorHeight})`;
+    const portalMiddle = `translate(${middleX + WIDTH * rx * middleScale}px,${middleY + HEIGHT * ry * middleScale}px) scale(${WIDTH * rw * middleScale / doorWidth},${HEIGHT * rh * middleScale / doorHeight})`;
     const portalNear = `translate(${-width * .06}px,${-height * .08}px) scale(1)`;
     const portalPast = `translate(${-width * .2}px,${-height * .24}px) scale(1.25)`;
     const layer = doc.createElement('div'); layer.className = 'castle-journey'; layer.dataset.room = spec.room; layer.dataset.direction = spec.direction;
@@ -85,9 +96,13 @@ export function createCastleJourney({document: doc = globalThis.document, assetR
     // uses the castle bitmap already displayed on home and needs no decode wait.
     const fallback = make('div', 'fallback'), fallbackArt = image('fallback-art', 'castle-silhouette-v1.webp');
     fallbackArt.width = WIDTH; fallbackArt.height = HEIGHT; fallbackArt.style.transform = near; fallback.append(fallbackArt);
-    const interior = image('interior', 'castle-interior-' + spec.room + '-v1.webp');
-    interior.addEventListener('error', () => { interior.style.visibility = 'hidden'; }, {once: true});
-    interior.dataset.room = spec.room;
+    let interior = interiorCache.get(spec.room);
+    if (!interior?.complete || !interior.naturalWidth) {
+      interior = image('interior', 'castle-interior-' + spec.room + '-v1.webp');
+      const cachedRoom = spec.room, imageNode = interior;
+      interior.addEventListener('error', () => { imageNode.style.visibility = 'hidden'; if (interiorCache.get(cachedRoom) === imageNode) interiorCache.delete(cachedRoom); }, {once: true});
+      interior.dataset.room = spec.room; interiorCache.set(spec.room, interior);
+    }
     const source = spec.direction === 'switch' ? image('source-interior', 'castle-interior-' + sourceRoom + '-v1.webp') : null;
     // The caller supplies a sanitized, detached snapshot, never the live reader.
     // Refuse connected/foreign nodes rather than stealing application content.
@@ -99,7 +114,7 @@ export function createCastleJourney({document: doc = globalThis.document, assetR
     const light = make('div', 'light'), lintel = make('div', 'lintel'), postLeft = make('div', 'post'), postRight = make('div', 'post');
     postLeft.dataset.side = 'left'; postRight.dataset.side = 'right'; threshold.append(leafLeft, leafRight, light, lintel, postLeft, postRight);
     layer.append(sky, fallback, interior, world); if (source) layer.append(source); if (foreground) layer.append(foreground); layer.append(threshold);
-    const record = {id: intent, layer, room: spec.room, direction: spec.direction, duration, started: false, animations: [], primary: null, raf: null, watchdog: null};
+    const record = {id: intent, layer, interior, room: spec.room, direction: spec.direction, duration, started: false, animations: [], primary: null, raf: null, watchdog: null};
     current = record;
     try {
       doc.body.append(layer);
@@ -119,8 +134,8 @@ export function createCastleJourney({document: doc = globalThis.document, assetR
       };
       record.primary = animate(layer, reverse ? [
         {opacity: 1, clipPath: 'inset(0)', offset: 0},
-        {opacity: 1, clipPath: 'inset(0)', offset: .76},
-        {opacity: 1, clipPath: initialClip, offset: .9},
+        {opacity: 1, clipPath: 'inset(0)', offset: .87},
+        {opacity: .77, clipPath: 'inset(0)', offset: .9},
         {opacity: 0, clipPath: initialClip, offset: 1}
       ] : [
         {opacity: 1, clipPath: 'inset(0)', offset: 0},
@@ -128,32 +143,39 @@ export function createCastleJourney({document: doc = globalThis.document, assetR
         {opacity: 1, clipPath: 'inset(0)', offset: .87},
         {opacity: 0, clipPath: 'inset(0)', offset: 1}
       ], 'linear', false);
-      animate(camera, [{transform: start, offset: 0}, {transform: start, offset: .09, easing: 'cubic-bezier(.2,.68,.2,1)'}, {transform: near, offset: .45}, {transform: near, offset: 1}]);
+      animate(camera, [
+        {transform: start, offset: 0},
+        {transform: start, offset: .09, easing: 'cubic-bezier(.35,0,.65,1)'},
+        {transform: middle, offset: .30, easing: 'cubic-bezier(.2,.65,.25,1)'},
+        {transform: near, offset: .50}, {transform: near, offset: 1}
+      ]);
       // Sky travels at one fifth of the castle's camera delta, bounded so its
       // cover plate never uncovers an edge on a narrow/short viewport.
       const skyX = clamp((closeX - startX) * .2, -width * .035, width * .035), skyY = clamp((closeY - startY) * .2, -height * .035, height * .035);
       animate(sky, [{transform: 'translate(0,0) scale(1.08)', offset: 0}, {transform: `translate(${skyX}px,${skyY}px) scale(1.08)`, offset: .5}, {transform: `translate(${skyX}px,${skyY}px) scale(1.08)`, offset: 1}]);
-      animate(world, [{opacity: source ? 0 : 1, offset: 0}, {opacity: source ? 0 : 1, offset: .47}, {opacity: 0, offset: .55}, {opacity: 0, offset: 1}]);
-      animate(fallback, [{opacity: 0, offset: 0}, {opacity: 0, offset: .43}, {opacity: 1, offset: .51}, {opacity: 1, offset: 1}]);
-      animate(interior, [{opacity: 0, transform: 'scale(1.035)', offset: 0}, {opacity: 0, transform: 'scale(1.035)', offset: .43}, {opacity: 1, transform: 'scale(1.035)', offset: .51}, {opacity: 1, transform: 'scale(1)', offset: 1}]);
+      animate(world, [{opacity: source ? 0 : 1, offset: 0}, {opacity: source ? 0 : 1, offset: .49}, {opacity: 0, offset: .53}, {opacity: 0, offset: 1}]);
+      animate(fallback, [{opacity: 0, offset: 0}, {opacity: 0, offset: .49}, {opacity: 1, offset: .53}, {opacity: 1, offset: 1}]);
+      animate(interior, [{opacity: 0, transform: 'scale(1.035)', offset: 0}, {opacity: 0, transform: 'scale(1.035)', offset: .49}, {opacity: 1, transform: 'scale(1.035)', offset: .53}, {opacity: 1, transform: 'scale(1)', offset: 1}]);
       if (source) animate(source, [{opacity: 1, transform: 'scale(1)', offset: 0}, {opacity: 1, transform: 'scale(1.035)', offset: .46}, {opacity: 0, transform: 'scale(1.035)', offset: .54}, {opacity: 0, transform: 'scale(1.035)', offset: 1}]);
       animate(threshold, [
         {transform: source ? portalNear : portalStart, opacity: 0, offset: 0},
-        {transform: source ? portalNear : portalStart, opacity: .7, offset: .12, easing: 'cubic-bezier(.2,.68,.2,1)'},
-        {transform: portalNear, opacity: 1, offset: .45},
+        {transform: source ? portalNear : portalStart, opacity: 1, offset: .06},
+        {transform: source ? portalNear : portalStart, opacity: 1, offset: .09, easing: 'cubic-bezier(.35,0,.65,1)'},
+        {transform: source ? portalNear : portalMiddle, opacity: 1, offset: .30, easing: 'cubic-bezier(.2,.65,.25,1)'},
+        {transform: portalNear, opacity: 1, offset: .50},
         {transform: portalNear, opacity: 1, offset: .61},
         {transform: portalPast, opacity: 1, offset: 1}
       ]);
-      animate(leafLeft, [{transform: 'rotateY(0deg)', offset: 0}, {transform: 'rotateY(0deg)', offset: .52}, {transform: 'rotateY(-112deg)', offset: .84}, {transform: 'rotateY(-112deg)', offset: 1}]);
-      animate(leafRight, [{transform: 'rotateY(0deg)', offset: 0}, {transform: 'rotateY(0deg)', offset: .52}, {transform: 'rotateY(112deg)', offset: .84}, {transform: 'rotateY(112deg)', offset: 1}]);
+      animate(leafLeft, [{transform: 'rotateY(0deg)', offset: 0}, {transform: 'rotateY(0deg)', offset: .54}, {transform: 'rotateY(-112deg)', offset: .84}, {transform: 'rotateY(-112deg)', offset: 1}]);
+      animate(leafRight, [{transform: 'rotateY(0deg)', offset: 0}, {transform: 'rotateY(0deg)', offset: .54}, {transform: 'rotateY(112deg)', offset: .84}, {transform: 'rotateY(112deg)', offset: 1}]);
       animate(handle, [{transform: 'rotate(0deg)', offset: 0}, {transform: 'rotate(18deg)', offset: .1}, {transform: 'rotate(18deg)', offset: .52}, {transform: 'rotate(0deg)', offset: .7}, {transform: 'rotate(0deg)', offset: 1}]);
       animate(light, [{opacity: 0, transform: 'scaleX(1)', offset: 0}, {opacity: .6, transform: 'scaleX(1)', offset: .13}, {opacity: 1, transform: 'scaleX(1)', offset: .51}, {opacity: .8, transform: 'scaleX(18)', offset: .67}, {opacity: 0, transform: 'scaleX(22)', offset: .84}, {opacity: 0, transform: 'scaleX(22)', offset: 1}]);
       if (foreground) {
         for (const node of [foreground, ...foreground.querySelectorAll('[data-journey-part]')]) {
           if (node.dataset.journeyPart === 'actor') animate(node, reverse ? [
-            {opacity: 1, offset: 0}, {opacity: 0, offset: .35}, {opacity: 0, offset: 1}
+            {opacity: 1, offset: 0}, {opacity: 1, offset: .5}, {opacity: 0, offset: .501}, {opacity: 0, offset: 1}
           ] : [
-            {opacity: 0, offset: 0}, {opacity: 0, offset: .72}, {opacity: 1, offset: .9}, {opacity: 1, offset: 1}
+            {opacity: 0, offset: 0}, {opacity: 0, offset: .499}, {opacity: 1, offset: .5}, {opacity: 1, offset: 1}
           ], 'linear', false);
           if (node.dataset.journeyPart === 'paper') animate(node, reverse ? [
             {opacity: 1, transform: 'translateY(0px)', offset: 0},
@@ -190,5 +212,5 @@ export function createCastleJourney({document: doc = globalThis.document, assetR
   const visibility = () => { if (doc.hidden) cancel(); };
   const motion = () => { if (quiet?.matches) cancel(); };
   doc.addEventListener('keydown', key); doc.addEventListener('visibilitychange', visibility); quiet?.addEventListener?.('change', motion);
-  return {travel, cancel, state, destroy() { if (disposed) return; disposed = true; cancel(); doc.removeEventListener('keydown', key); doc.removeEventListener('visibilitychange', visibility); quiet?.removeEventListener?.('change', motion); }};
+  return {travel, cancel, state, destroy() { if (disposed) return; disposed = true; cancel(); interiorCache.clear(); doc.removeEventListener('keydown', key); doc.removeEventListener('visibilitychange', visibility); quiet?.removeEventListener?.('change', motion); }};
 }

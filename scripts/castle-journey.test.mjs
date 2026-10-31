@@ -34,7 +34,7 @@ test('selected room receives one inert physical doorway with the exact castle ge
   assert.equal(layer.querySelectorAll('.castle-journey-actor').length, 5); assert.equal(layer.querySelectorAll('.castle-journey-leaf').length, 2); assert.ok(layer.querySelector('.castle-journey-handle'));
   const camera = animations.find(a => a.node.className === 'castle-journey-camera');
   assert.equal(camera.frames[0].transform, 'translate(130px,68px) scale(0.35)');
-  const close = camera.frames[2].transform.match(/translate\(([-\d.]+)px,([-\d.]+)px\) scale\(([-\d.]+)\)/).slice(1).map(Number), [x, y, scale] = close;
+  const close = camera.frames.find(frame => frame.offset === .5).transform.match(/translate\(([-\d.]+)px,([-\d.]+)px\) scale\(([-\d.]+)\)/).slice(1).map(Number), [x, y, scale] = close;
   assert.ok(Math.abs(x + (.085 + .35 / 2) * 1536 * scale - 400) < .001); assert.ok(Math.abs(y + (.33 + .28 / 2) * 1024 * scale - 298) < .001);
   assert.ok(animations.every(a => a.timing.duration === 780 && a.startTime === 125));
   for (const [time, phase] of [[0, 'press'], [120, 'approach'], [450, 'threshold'], [650, 'reveal'], [750, 'settle']]) { seek(time); assert.equal(layer.dataset.phase, phase); assert.equal(renderer.state().phase, phase); }
@@ -105,7 +105,7 @@ test('detached actor/paper snapshots animate in sequence and restore scroll only
   Object.defineProperty(scroller, 'scrollTop', {get: () => scroll, set: value => { assert.equal(scroller.isConnected, true); scroll = value; }});
   assert.equal(renderer.travel(spec('insurance', {foreground})), true); assert.equal(scroll, 140); assert.equal(foreground.inert, true);
   const actor = animations.find(a => a.node.dataset.journeyPart === 'actor'), paper = animations.find(a => a.node.dataset.journeyPart === 'paper');
-  assert.equal(actor.frames[1].offset, .72); assert.equal(paper.frames[1].offset, .84); assert.equal(paper.frames.at(-1).transform, 'translateY(0px)'); assert.equal(paper.timing.duration, 780);
+  assert.equal(actor.frames[1].offset, .499); assert.equal(paper.frames[1].offset, .84); assert.equal(paper.frames.at(-1).transform, 'translateY(0px)'); assert.equal(paper.timing.duration, 780);
   renderer.cancel(); assert.equal(foreground.isConnected, false); assert.equal(doc.querySelector('#draft').textContent, 'Owner text');
 });
 test('reverse snapshots begin fully visible and leave without rotating or replacing owner text', t => {
@@ -126,8 +126,35 @@ test('late or failed interiors retain cached close-up architecture without await
   const {renderer, doc, win, animations} = setup(t); renderer.travel(spec('insurance'));
   const fallback = doc.querySelector('.castle-journey-fallback'), interior = doc.querySelector('.castle-journey-interior'), art = fallback.querySelector('img');
   assert.equal(fallback.nextElementSibling, interior); assert.match(art.src, /castle-silhouette-v1.webp$/);
-  const camera = animations.find(a => a.node.className === 'castle-journey-camera'); assert.equal(art.style.transform, camera.frames[2].transform);
+  const camera = animations.find(a => a.node.className === 'castle-journey-camera'); assert.equal(art.style.transform, camera.frames.find(frame => frame.offset === .5).transform);
   const backing = animations.find(a => a.node === fallback); assert.equal(backing.frames.at(-1).opacity, 1);
   interior.dispatchEvent(new win.Event('error')); assert.equal(interior.style.visibility, 'hidden'); assert.equal(fallback.isConnected, true); assert.equal(renderer.state().room, 'insurance');
   renderer.travel(spec('otoku')); interior.dispatchEvent(new win.Event('load')); assert.equal(renderer.state().room, 'otoku'); assert.equal(doc.querySelectorAll('.castle-journey').length, 1);
+});
+
+test('approach has a shared intermediate camera/door location before full threshold occlusion', t => {
+  const {renderer, animations} = setup(t); renderer.travel(spec());
+  const camera = animations.find(a => a.node.className === 'castle-journey-camera'), door = animations.find(a => a.node.className === 'castle-journey-threshold');
+  const middle = camera.frames.find(f => f.offset === .3), final = camera.frames.find(f => f.offset === .5); assert.ok(middle && final); assert.notEqual(middle.transform, final.transform);
+  const matrix = middle.transform.match(/translate\(([-\d.]+)px,([-\d.]+)px\) scale\(([-\d.]+)\)/).slice(1).map(Number), doorMatrix = door.frames.find(f => f.offset === .3).transform.match(/translate\(([-\d.]+)px,([-\d.]+)px\) scale\(([-\d.]+),([-\d.]+)\)/).slice(1).map(Number);
+  assert.ok(Math.abs(1536 * .35 * matrix[2] / 800 - .62) < .001); assert.ok(Math.abs(doorMatrix[0] - (matrix[0] + 1536 * .085 * matrix[2])) < .001); assert.ok(Math.abs(doorMatrix[1] - (matrix[1] + 1024 * .33 * matrix[2])) < .001);
+  assert.equal(door.frames.find(f => f.offset === .06).opacity, 1); assert.ok(door.frames.filter(f => f.offset >= .06).every(f => f.opacity === 1));
+  assert.equal(animations[0].frames[0].clipPath, 'inset(0)');
+});
+test('actor remains solid on both sides and changes visibility only behind the closed threshold', t => {
+  const {renderer, doc, animations} = setup(t), foreground = doc.createElement('div'); foreground.innerHTML = '<img data-journey-part="actor">'; renderer.travel(spec('insurance', {foreground}));
+  const inward = animations.find(a => a.node.dataset.journeyPart === 'actor'); assert.deepEqual(inward.frames.map(f => [f.offset, f.opacity]), [[0,0],[.499,0],[.5,1],[1,1]]);
+  const reverse = doc.createElement('div'); reverse.innerHTML = '<img data-journey-part="actor">'; renderer.travel(spec('insurance', {direction: 'out', foreground: reverse}));
+  const outward = animations.findLast(a => a.node.dataset.journeyPart === 'actor'); assert.deepEqual(outward.frames.map(f => [f.offset, f.opacity]), [[0,1],[.5,1],[.501,0],[1,0]]);
+});
+test('cached decoded interiors are reused on return instead of exposing an async first-frame master', t => {
+  const {renderer, doc, win, animations} = setup(t); renderer.travel(spec()); const interior = doc.querySelector('.castle-journey-interior');
+  assert.equal(interior.decoding, 'sync'); Object.defineProperties(interior, {complete: {value: true, configurable: true}, naturalWidth: {value: 1536, configurable: true}});
+  renderer.cancel(); assert.equal(interior.parentNode, null); assert.ok(animations.every(a => a.playState === 'idle')); renderer.travel(spec('insurance', {direction: 'out'})); assert.equal(doc.querySelector('.castle-journey-interior'), interior); assert.equal(renderer.state().direction, 'out');
+  renderer.cancel(); interior.dispatchEvent(new win.Event('error')); renderer.travel(spec()); assert.notEqual(doc.querySelector('.castle-journey-interior'), interior);
+});
+
+test('a same-room switch never moves one cached image into both source and destination layers', t => {
+  const {renderer, doc} = setup(t); renderer.travel(spec()); const interior = doc.querySelector('.castle-journey-interior'); Object.defineProperties(interior, {complete: {value: true}, naturalWidth: {value: 1536}}); renderer.cancel();
+  renderer.travel(spec('insurance', {direction: 'switch', sourceRoom: 'insurance'})); const source = doc.querySelector('.castle-journey-source-interior'); assert.ok(source); assert.notEqual(source, interior); assert.equal(source.src, interior.src); assert.equal(doc.querySelector('.castle-journey-interior'), interior);
 });

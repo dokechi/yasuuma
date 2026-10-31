@@ -38,3 +38,7 @@
 /* Cached close-up architecture remains behind a cold/failed room image. */
 .castle-journey-fallback{position:absolute;inset:0;overflow:hidden;pointer-events:none;will-change:opacity}
 .castle-journey-fallback-art{position:absolute;left:0;top:0;display:block;width:1536px;height:1024px;max-width:none;transform-origin:0 0;object-fit:contain}
+
+/* Wood is a physical occluder, not tinted glass. Gradients remain decorative
+   over this fully opaque material on both leaves. */
+.castle-journey-leaf,.castle-journey-leaf[data-side=right]{background-color:var(--journey-wood)}
