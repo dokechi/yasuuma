@@ -1,9 +1,9 @@
-import {createHallTools} from './hall-tools.js?v=20261031.1-lottery';
-import {placeNames} from './desk-model.js?v=20261031.1-lottery';
+import {createHallTools} from './hall-tools.js?v=20261101.1-living';
+import {placeNames} from './desk-model.js?v=20261101.1-living';
 import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261031.1-lottery';
 import {isLegacyPublishingDraft,postingAssets} from './notebook.js?v=20261031.1-lottery';
 
-export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},send=()=>{}}){
+export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},onChange=()=>{},send=()=>{}}){
  const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const button=(text,fn)=>{const b=el('button',text);b.type='button';b.addEventListener('click',fn);return b;};
  let current=null,selectedLater='',postDraft=null,latest=[],readState='unknown',install={state:'instructions'};
@@ -27,7 +27,7 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
   post.disabled=!current;later.disabled=!current;later.textContent=current&&items().some(x=>x.draft.id===current.id)?'あとで箱に保存済み':'あとで考える';post.hidden=!!current&&current.place==='shiire';
   if($('posting-dialog').open)renderPost();hall.refresh();
  }
- function update(d){current=d;hall.update(d);if(d){markSeen(d);}refresh();}
+ function update(d){current=d;hall.update(d);if(d){markSeen(d);}refresh();onChange();}
  function renderTray(){
   const rows=items(),list=$('later-list'),detail=$('later-detail');list.replaceChildren();detail.replaceChildren();$('later-empty').hidden=!!rows.length;$('later-undo').disabled=!notebook.canUndo();
   if(!rows.some(x=>x.draft.id===selectedLater))selectedLater=rows[0]?.draft.id||'';
@@ -59,7 +59,7 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
   $('posting-progress').textContent=posted?'✓ この本文を投稿済みとして端末に記録しました。':steps.filter(s=>s.copied).length+' / '+steps.length+' コピー済み。投稿後、下のボタンで完了を記録できます。';$('posting-dialog').scrollTop=scroll;
  }
  $('posting-copy-all').addEventListener('click',()=>{if(postDraft)copy(postDraft,'posting-set',postingText(postDraft));});
- $('posting-complete').addEventListener('click',()=>{if(!postDraft)return;const key='posted:'+postDraft.id,posted=currentPosted(postDraft,notebook.pref(key,null));notebook.changePref(key,posted?null:{revision:revision(postDraft),time:Date.now()});renderPost();onFeedback(posted?'unpin':'done');});
+ $('posting-complete').addEventListener('click',()=>{if(!postDraft)return;const key='posted:'+postDraft.id,posted=currentPosted(postDraft,notebook.pref(key,null));notebook.changePref(key,posted?null:{revision:revision(postDraft),time:Date.now()});renderPost();onChange();onFeedback(posted?'unpin':'done');});
  $('posting-native').addEventListener('click',()=>{if(!postDraft)return;$('posting-dialog').close();const d=postDraft;native(d.place==='fp'?(d.source?.account==='tiktok'?'tiktok':'fp'):d.place,d.source?.id);});
  $('later-undo').addEventListener('click',()=>{try{notebook.undo();$('later-status').textContent='直前の端末メモを元に戻しました。';}catch(e){$('later-status').textContent=e.message;}refresh();renderTray();});
  for(const name of ['later','posting'])$(name+'-close').addEventListener('click',()=>$(name+'-dialog').close());

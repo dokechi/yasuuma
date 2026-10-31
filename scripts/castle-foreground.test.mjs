@@ -53,3 +53,16 @@ test('forms, executable/embed nodes and editable fields never survive as live sn
   const {doc, paper} = setup(t); paper.innerHTML = '<p>Keep this text</p><form action="/write"><button name="submit">Visual button</button></form><script>window.unwanted=true</script><style>body{display:none}</style><iframe src="/other"></iframe><object data="/other"></object><embed src="/other"><link rel="stylesheet" href="/other"><meta http-equiv="refresh" content="0"><audio src="/other"></audio><video src="/other"></video><input value="private"><textarea>Private field</textarea><select><option>Private selection</option></select>';
   const snapshot = captureCastleForeground(doc); assert.equal(snapshot.querySelectorAll('form,script,style,iframe,object,embed,link,meta,audio,video,input,select,textarea').length, 0); assert.ok(snapshot.textContent.includes('Keep this text')); assert.equal(snapshot.querySelectorAll('[id],[name],[onclick],[action],[href],[contenteditable]').length, 0);
 });
+test('tools departure captures visible workbench and object reliefs, never hidden reader text',t=>{
+ const {doc,paper}=setup(t,'<main id="room" data-living-view="tools"><img class="spatial-desk-actor" src="/actor.webp"><section id="desk" style="visibility:hidden">Private hidden draft</section><section class="living-workbench"><button><span><i style="background:#a87f40">Bound book</i></span>原稿棚</button></section></main>');
+ const bench=doc.querySelector('.living-workbench');bench.getBoundingClientRect=()=>({left:40,top:160,width:300,height:400});bench.scrollTop=80;
+ const snapshot=captureCastleForeground(doc),copy=snapshot.querySelector('[data-journey-part=paper]');assert.match(copy.textContent,/原稿棚/);assert.ok(copy.querySelector('i'));assert.equal(copy.textContent.includes('Private hidden draft'),false);assert.equal(copy.dataset.journeyScrollTop,'80');assert.equal(paper.style.visibility,'hidden');assert.equal(bench.isConnected,true);
+});
+test('departure retains asymmetric material borders and independent child transforms without double-transforming the root',t=>{
+ const {doc,paper}=setup(t);paper.style.cssText='rotate:3deg;translate:2px 4px;scale:1.1';
+ const relief=doc.createElement('span');relief.style.cssText='border:6px solid rgb(40,30,20);border-top:9px solid rgb(120,90,50);border-bottom:9px solid rgb(100,70,40);rotate:-2deg;translate:1px 2px;scale:0.98';paper.append(relief);
+ const before=relief.outerHTML,copy=captureCastleForeground(doc).querySelector('[data-journey-part=paper]'),surface=copy.querySelector('span'),computed=doc.defaultView.getComputedStyle(relief);
+ for(const property of ['border-top','border-right','border-bottom','border-left','rotate','translate','scale'])assert.equal(surface.style.getPropertyValue(property),computed.getPropertyValue(property),property);
+ for(const property of ['rotate','translate','scale'])assert.equal(copy.style.getPropertyValue(property),'none',property+' root already uses painted geometry');
+ assert.equal(relief.outerHTML,before);
+});
