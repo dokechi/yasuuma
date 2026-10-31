@@ -109,6 +109,32 @@ async function reader(ctx,key){
  check(ctx.result,key+' original copy action works',(await ctx.page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n')===rows.find(row=>row.taskId===key+'-threads-v1').payload.draft);
 }
 async function back(ctx){await ctx.f.locator('#back').click();await ctx.f.locator('.account-board:not([hidden])').waitFor();}
+async function closeSettings(ctx){
+ // HTMLDialogElement queues its close event; wait for that actual lifecycle
+ // boundary, not an arbitrary delay or a predicate that could hide focus bugs.
+ await ctx.frame.evaluate(()=>{window.__courtSettingsClose=new Promise(resolve=>document.getElementById('settings').addEventListener('close',()=>resolve(true),{once:true}));});
+ await ctx.f.locator('#settings-close').click();await ctx.frame.evaluate(()=>window.__courtSettingsClose);
+}
+async function targetsUncovered(ctx,label){
+ const targets=await ctx.f.locator('.arrival-target:not([hidden]):not(:disabled)').evaluateAll(nodes=>nodes.map(node=>{const r=node.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {key:node.dataset.courtRoom,hit:hit?.closest('[data-court-room]')?.dataset.courtRoom||hit?.className||null};}));
+ check(ctx.result,label+' visible physical entrances are not covered by UI',targets.length>0&&targets.every(target=>target.hit===target.key),targets);
+}
+async function overviewContrast(ctx){
+ const contrast=await ctx.frame.evaluate(()=>{
+  const rgba=value=>{const values=value.match(/[\d.]+/g)?.map(Number);if(!values||values.length<3)throw Error('Unsupported computed color '+value);return [...values.slice(0,3),values[3]??1];};
+  const composite=(front,back)=>front.slice(0,3).map((value,index)=>value*front[3]+back[index]*(1-front[3]));
+  const luminance=color=>color.map(value=>{value/=255;return value<=.04045?value/12.92:((value+.055)/1.055)**2.4;}).reduce((sum,value,index)=>sum+value*[.2126,.7152,.0722][index],0);
+  const ratio=(a,b)=>{const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
+  return ['.arrival-identity h1','.arrival-detail h2','.arrival-kicker','.arrival-hint','.arrival-text-button'].map(selector=>{
+   const node=document.querySelector(selector),rect=node.getBoundingClientRect();if(!rect.width||!rect.height)return {selector,visible:false};
+   const text=rgba(getComputedStyle(node).color),surfaces=[];let opacity=1;
+   for(let current=node;current&&!current.matches('.arrival-court');current=current.parentElement){const style=getComputedStyle(current);opacity*=Number(style.opacity);if(style.backgroundImage!=='none')throw Error('Contrast surface requires explicit gradient handling: '+selector);surfaces.push(rgba(style.backgroundColor));}
+   const ratios=[[0,0,0],[255,255,255]].map(base=>{let background=base;for(const surface of [...surfaces].reverse())background=composite(surface,background);return ratio(composite(text,background),background);});
+   return {selector,visible:true,text,surfaces,opacity,ratios,minRatio:Math.min(...ratios)};
+  });
+ });
+ check(ctx.result,'overview ink remains AA against its alpha surfaces over both black and white scene extrema',contrast.filter(item=>item.visible).length>=3&&contrast.filter(item=>item.visible).every(item=>item.opacity===1&&item.minRatio>=4.5),contrast);
+}
 
 async function normalCase(browser,origin,width,height){
  let ctx;
@@ -118,6 +144,7 @@ async function normalCase(browser,origin,width,height){
   const first=await snapshot(frame),render=first.renderer;
   check(result,'genuine WebGL2 rendered real bounded geometry',render.webgl2===true&&render.frameCount>0&&render.meshTriangles>0&&render.meshTriangles<=60_000&&render.drawCalls>0&&render.renderedTriangles>0&&!render.contextLost,render);
   check(result,'materials, main-plus-shadow draw calls and decoded textures stay bounded',render.drawCalls<=128&&render.materialCount<=12&&render.assetTextureCount<=4&&render.assetTexels<=1_000_000,{drawCalls:render.drawCalls,materialCount:render.materialCount,assetTextureCount:render.assetTextureCount,assetTexels:render.assetTexels,gpuTextures:render.gpuTextures});
+  check(result,'generated runtime sky is one bounded texture, separate from authored asset textures',render.runtimeSkyTextures===1&&render.runtimeSkyTexels===32_768,{runtimeSkyTextures:render.runtimeSkyTextures,runtimeSkyTexels:render.runtimeSkyTexels,atmosphere:render.atmosphere});
   check(result,'drawing buffer is bounded',render.pixelRatio<=1.5&&render.physicalPixels<=1_800_000&&render.physicalWidth*render.physicalHeight<=1_800_000&&render.width>0&&render.height>0,render);
   const gl=await f.locator('.arrival-court canvas').evaluate(canvas=>{const gl=canvas.getContext('webgl2'),debug=gl.getExtension('WEBGL_debug_renderer_info');return {webgl2:gl instanceof WebGL2RenderingContext,version:gl.getParameter(gl.VERSION),renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),vendor:debug?gl.getParameter(debug.UNMASKED_VENDOR_WEBGL):gl.getParameter(gl.VENDOR)};});
   gl.backend=/swiftshader|software/i.test(gl.renderer)?'software':/angle|nvidia|intel|amd|adreno|mali/i.test(gl.renderer)?'hardware-or-unknown':'unknown';
@@ -125,6 +152,7 @@ async function normalCase(browser,origin,width,height){
   const pixels=await f.locator('.arrival-court canvas').screenshot();fs.writeFileSync(path.join(out,result.label+'-canvas.png'),pixels);const statistics=pixelStats(pixels);
   check(result,'canvas contains visibly varied rendered geometry, not a blank surface',statistics.colors>=24&&statistics.deviation>=8&&statistics.opaqueFraction>.8,statistics);
   await capture(ctx,'arrival');
+  await overviewContrast(ctx);await targetsUncovered(ctx,'overview');
   const host=await page.locator('#ccCastleFrame').boundingBox(),rail=await page.locator('#requestProgressShortcut').boundingBox();
   check(result,'actual host reserves its request rail',host.y>=rail.y+rail.height-.5,{host,rail});
   const controls=await f.locator('[data-court-room], [data-court-open]').evaluateAll(nodes=>nodes.filter(node=>!node.disabled&&node.getBoundingClientRect().width>0).map(node=>{const r=node.getBoundingClientRect();return {key:node.dataset.courtRoom||node.dataset.courtOpen,width:r.width,height:r.height,left:r.left,right:r.right,top:r.top,bottom:r.bottom,viewport:[innerWidth,innerHeight]};}));
@@ -161,7 +189,7 @@ async function normalCase(browser,origin,width,height){
    const observer=new MutationObserver(()=>{
     const state=window.__arrivalCourt.snapshot();if(!state.renderer?.pendingFrame||state.renderer.selected!==key)return;
     const root=document.querySelector('.arrival-court').getBoundingClientRect();
-    const targets=state.projection.map(point=>{const button=document.querySelector('[data-court-room="'+point.key+'"]'),rect=button.getBoundingClientRect();return {key:point.key,visible:!button.hidden,delta:Math.max(Math.abs(rect.left+rect.width/2-root.left-point.x),Math.abs(rect.top+rect.height/2-root.top-point.y))};});
+    const targets=state.projection.map(point=>{const button=document.querySelector('[data-court-room="'+point.key+'"]'),rect=button.getBoundingClientRect(),hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);return {key:point.key,visible:!button.hidden,disabled:button.disabled,hit:hit?.closest('[data-court-room]')?.dataset.courtRoom||hit?.className||null,delta:Math.max(Math.abs(rect.left+rect.width/2-root.left-point.x),Math.abs(rect.top+rect.height/2-root.top-point.y))};});
     window.__courtMotionProbe.record={pendingFrame:state.renderer.pendingFrame,selected:state.selected,camera:state.renderer.camera,targets};observer.disconnect();
    });observer.observe(document.querySelector('.arrival-targets'),{subtree:true,attributes:true,attributeFilter:['style']});
   },movingKey);
@@ -169,6 +197,7 @@ async function normalCase(browser,origin,width,height){
   await frame.waitForFunction(()=>window.__courtMotionProbe.record,null,{timeout:10_000});
   const moving=await frame.evaluate(()=>window.__courtMotionProbe.record);
   check(result,'during real motion all painted entrance targets share the same camera projection',moving.pendingFrame&&moving.targets.length===8&&moving.targets.filter(target=>target.visible).length>0&&moving.targets.filter(target=>target.visible).every(target=>target.delta<.6),moving);
+  check(result,'during real motion visible active entrances remain the actual pointer targets',moving.targets.filter(target=>target.visible&&!target.disabled).every(target=>target.hit===target.key),moving.targets);
   const latestKey=movingKey==='insurance'?'otoku':'insurance';await f.locator('[data-court-open="'+latestKey+'"]').focus();await page.keyboard.press('Enter');await reader(ctx,latestKey);await capture(ctx,'interrupted-camera-reader');
   await back(ctx);await f.locator('.arrival-court[data-state=ready]').waitFor();await settled(frame);
   check(result,'new direct intent wins over the old camera and Back restores that same destination',(await snapshot(frame)).selected===latestKey&&await f.locator('[data-court-open="'+latestKey+'"]').evaluate(node=>node===document.activeElement),{movingKey,latestKey,final:await snapshot(frame)});
@@ -182,6 +211,7 @@ async function normalCase(browser,origin,width,height){
    }
    await focus.click();await settled(frame);focusedCount++;
    const selected=await snapshot(frame);check(result,'camera focuses the requested visible '+key,selected.renderer.selected===key&&selected.projection.find(point=>point.key===key)?.visible===true,{selected:selected.selected,renderer:selected.renderer});
+   await targetsUncovered(ctx,key+' focused');
    await capture(ctx,key+'-focus');
    if(!enteredFromDoor&&keys.includes(key)){
     await f.locator('.arrival-enter').click();await reader(ctx,key);await capture(ctx,'door-enter-reader');await back(ctx);await f.locator('.arrival-court[data-state=ready]').waitFor();await settled(frame);
@@ -217,15 +247,15 @@ async function normalCase(browser,origin,width,height){
   check(result,'hidden host frame is inactive and renders no background frames',hiddenLater.renderer.active===false&&!hiddenLater.renderer.pendingFrame&&hidden.renderer.frameCount===hiddenLater.renderer.frameCount,{hidden,hiddenLater});
   await page.locator('[data-lounge-home]').click();await f.locator('.arrival-court[data-state=ready]').waitFor();await settled(frame);
   const openCourtSettings=async()=>{await f.locator('.arrival-menu summary').click();await f.locator('.arrival-menu').getByRole('button',{name:'音・演出',exact:true}).click();await f.locator('#settings[open]').waitFor();};
-  await openCourtSettings();await f.locator('#settings-close').click();
+  await openCourtSettings();await closeSettings(ctx);
   check(result,'normal settings close restores the visible court menu summary',await f.locator('.arrival-menu summary').evaluate(node=>node===document.activeElement));
   await openCourtSettings();await f.locator('#settings .setting-line:has(#reduce-setting)').click();
   check(result,'changing motion setting leaves focus inside the open original modal',await f.locator('#settings').evaluate(node=>node.open&&node.contains(document.activeElement)));
   const reduced=await snapshot(frame);check(result,'real reduce control immediately returns to the proven castle and stops 3D',!reduced.active&&reduced.renderer.active===false&&!reduced.renderer.pendingFrame,reduced.renderer);
-  await capture(ctx,'settings-reduced');await f.locator('#settings-close').click();
+  await capture(ctx,'settings-reduced');await closeSettings(ctx);
   check(result,'settings close after fallback restores a visible original settings control',await f.locator('.castle-experience-settings').evaluate(node=>node===document.activeElement)&&await f.locator('.castle-experience-settings').isVisible());
   await capture(ctx,'reduced-fallback');await f.locator('.castle-quick-open[data-room=insurance]').click();await reader(ctx,'insurance');await back(ctx);
-  await f.locator('.castle-experience-settings').click();await f.locator('#settings .setting-line:has(#reduce-setting)').click();await f.locator('#settings-close').click();
+  await f.locator('.castle-experience-settings').click();await f.locator('#settings .setting-line:has(#reduce-setting)').click();await closeSettings(ctx);
   await f.locator('.arrival-launch').click();await f.locator('.arrival-court[data-state=ready]').waitFor();await settled(frame);
   check(result,'explicit opt-in restores the same live renderer after reduced motion ends',(await snapshot(frame)).active===true);
   if(width===390){await page.emulateMedia({reducedMotion:'reduce'});await f.locator('.spatial-castle').waitFor({state:'visible'});check(result,'OS reduced-motion changes also stop the optional renderer',!(await snapshot(frame)).renderer.active);await page.emulateMedia({reducedMotion:'no-preference'});await f.locator('.arrival-launch').click();await settled(frame);}

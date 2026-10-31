@@ -80,7 +80,7 @@ function select(key){
 }
 function open(key,trigger){
  if(!rooms.some(r=>r.key===key&&!r.sealed))return;
- lastTrigger=trigger;selected=key;overview=false;menu.open=false;renderer?.setActive(false);
+ lastTrigger=trigger;selected=key;overview=false;menu.open=false;renderer?.select(key,{instant:true});renderer?.setActive(false);
  // The owner retains source identity, native routing, latest intent and Back.
  // First architectural slice intentionally keeps this work path truly instant.
  baseScene.open(key,trigger,{instant:true});sync();
@@ -103,9 +103,9 @@ function sync({force=false}={}){
  // A slow enhancement must not hide a keyboard user's in-progress old control.
  const focus=doc.activeElement;
  if(!force&&!active&&focus!==doc.body&&panel.contains(focus)&&!root.contains(focus)&&focus!==launch&&!lastTrigger){launch.hidden=false;return;}
- active=true;root.hidden=false;hideOriginal();launch.hidden=true;
+ const wasActive=active;active=true;root.hidden=false;hideOriginal();launch.hidden=true;
  const rect=root.getBoundingClientRect();renderer.resize(rect.width,rect.height);renderer.setActive(!doc.hidden&&!hostPaused);
- if(lastTrigger&&lastTrigger.isConnected&&panel.contains(lastTrigger))lastTrigger.focus({preventScroll:true});
+ if(!wasActive&&lastTrigger&&lastTrigger.isConnected&&panel.contains(lastTrigger))lastTrigger.focus({preventScroll:true});
  renderCopy();
 }
 function fail(reason){
@@ -138,13 +138,13 @@ if(reduced()||lowQuality()){
  root.dataset.state='fallback';
 }else{
  try{
-  await new Promise((resolve,reject)=>{const link=doc.createElement('link');link.rel='stylesheet';link.href=new URL('./arrival-court.css?v=20261101.2-arrival',import.meta.url);link.onload=resolve;link.onerror=()=>reject(Error('Arrival styles unavailable'));doc.head.append(link);loadTimer=setTimeout(()=>reject(Error('Arrival style timeout')),10000);});clearTimeout(loadTimer);
+  await new Promise((resolve,reject)=>{const link=doc.createElement('link');link.rel='stylesheet';link.href=new URL('./arrival-court.css?v=20261101.3-arrival',import.meta.url);link.onload=resolve;link.onerror=()=>reject(Error('Arrival styles unavailable'));doc.head.append(link);loadTimer=setTimeout(()=>reject(Error('Arrival style timeout')),10000);});clearTimeout(loadTimer);
   if(getComputedStyle(doc.body).getPropertyValue('--arrival-court-ready').trim()!=='1')throw Error('Arrival style contract unavailable');
   // Keep the original castle visible during loading and shader compilation.
   root.hidden=false;root.dataset.state='loading';const rect=panel.getBoundingClientRect();canvas.width=Math.max(1,rect.width);canvas.height=Math.max(1,rect.height);
   loadTimer=setTimeout(()=>fail(Error('Arrival model/compile timeout')),15000);
-  const {createCourtRenderer}=await import('./arrival-renderer.js?v=20261101.2-arrival');
-  const result=await createCourtRenderer({canvas,modelURL:new URL('./assets/arrival-court-v1.glb?v=20261101.2-arrival',import.meta.url).href,onFrame:project,onFailure:fail,signal:abort.signal});
+  const {createCourtRenderer}=await import('./arrival-renderer.js?v=20261101.3-arrival');
+  const result=await createCourtRenderer({canvas,modelURL:new URL('./assets/arrival-court-v1.glb?v=c6baebc2d517',import.meta.url).href,onFrame:project,onFailure:fail,signal:abort.signal});
   if(disposed||failed){result.dispose();}else{renderer=result;clearTimeout(loadTimer);ready=true;root.dataset.state='ready';root.hidden=true;sync();}
  }catch(error){if(disposed||reduced()||lowQuality()){clearTimeout(loadTimer);root.dataset.state='fallback';releaseOriginal();}else fail(error);}
 }

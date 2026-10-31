@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-import {COURT_KEYS,COURT_BUDGET,renderDimensions,validPose,copyPose,orbitPose,focusPose,interpolatePose,createCameraMotion,createDemandDriver,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from '../command-center-98/lounge/arrival-camera.js';
+import {COURT_KEYS,COURT_BUDGET,COURT_ATMOSPHERE,courtSkyPixels,renderDimensions,validPose,copyPose,orbitPose,focusPose,interpolatePose,createCameraMotion,createDemandDriver,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from '../command-center-98/lounge/arrival-camera.js';
 const home={position:[11,7.2,21],target:[0,3.2,-2],fov:43};
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-9,`${a} differs from ${b}`);
 function glb(json,binary=null){const raw=new TextEncoder().encode(JSON.stringify(json)),length=Math.ceil(raw.length/4)*4,binLength=binary?Math.ceil(binary.length/4)*4:0,buffer=new ArrayBuffer(20+length+(binary?8+binLength:0)),view=new DataView(buffer);view.setUint32(0,0x46546c67,true);view.setUint32(4,2,true);view.setUint32(8,buffer.byteLength,true);view.setUint32(12,length,true);view.setUint32(16,0x4e4f534a,true);const bytes=new Uint8Array(buffer,20,length);bytes.fill(32);bytes.set(raw);if(binary){view.setUint32(20+length,binLength,true);view.setUint32(24+length,0x004e4942,true);new Uint8Array(buffer,28+length,binLength).set(binary);}return buffer;}
@@ -10,6 +10,12 @@ function png(width=512,height=512){const bytes=new Uint8Array(33),v=new DataView
 function jpeg(width=512,height=512){const bytes=new Uint8Array([255,216,255,224,0,4,0,0,255,192,0,11,8,0,0,0,0,1,1,17,0,255,217]),v=new DataView(bytes.buffer);v.setUint16(13,height);v.setUint16(15,width);return bytes;}
 function imageGLB(images){const data=minimal();let offset=0;data.bufferViews=images.map(({bytes})=>{const result={buffer:0,byteOffset:offset,byteLength:bytes.length};offset+=bytes.length;return result;});const binary=new Uint8Array(offset);images.forEach(({bytes},i)=>binary.set(bytes,data.bufferViews[i].byteOffset));data.buffers=[{byteLength:offset}];data.images=images.map(({mime='image/png'},i)=>({bufferView:i,mimeType:mime}));data.textures=images.map((_,i)=>({source:i}));return {data,binary,buffer:glb(data,binary)};}
 const minimal=()=>({asset:{version:'2.0'},buffers:[{byteLength:36}],accessors:[{count:36}],meshes:[{primitives:[{indices:0}]}],nodes:[{mesh:0}],materials:[{}]});
+test('dusk atmosphere is bounded and the original static sky has quiet latitude depth',()=>{
+ const sky=courtSkyPixels();assert.equal(sky.width,256);assert.equal(sky.height,128);assert.equal(sky.data.length,256*128*4);assert.equal(COURT_ATMOSPHERE.shadowNormalBias,.012);assert.equal(COURT_ATMOSPHERE.exposure,.85);
+ const at=(x,y)=>[...sky.data.slice((y*sky.width+x)*4,(y*sky.width+x)*4+4)];assert.deepEqual(at(0,0),[50,71,82,255]);assert.deepEqual(at(0,127),[36,56,77,255]);assert.ok(at(0,64)[0]>at(0,127)[0]);
+ for(let y=0;y<sky.height;y++)assert.deepEqual(at(0,y),at(sky.width-1,y),'seamless longitude');
+ assert.notEqual(courtSkyPixels().data,sky.data,'renderer owns each disposable texture payload');
+});
 test('device ratio and drawing buffer are independently capped at actual screen sizes',()=>{
  for(const [width,height]of[[320,588],[390,848],[800,596],[1440,848],[4096,2160]]){const value=renderDimensions(width,height,3);assert.ok(value.pixelRatio<=1.5);assert.ok(value.physicalPixels<=COURT_BUDGET.pixels);assert.ok(value.physicalWidth<=4096&&value.physicalHeight<=4096);assert.equal(value.width,width);assert.equal(value.height,height);}
  assert.equal(renderDimensions(320,588,3).pixelRatio,1.5);assert.equal(renderDimensions(320,588,.8).pixelRatio,.8);

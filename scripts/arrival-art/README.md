@@ -1,9 +1,9 @@
-# Original castle arrival court — approved v3 integration candidate
+# Original castle arrival court — v3.1 integration candidate
 
 This is original, purpose-built geometry, not an imported/copy of Igloo's site or models. The user-supplied reference screenshots informed scale, material, quiet composition and contact-lighting goals only. It is an integration prototype; no claim of equivalent final visual quality.
 
 Runtime files:
-- `arrival-court-v1.glb` — canonical runtime filename; authored revision v3.
+- `arrival-court-v1.glb` — canonical runtime filename; authored revision v3.1.
 - `arrival-court-v1-layout.json` — metre units, glTF Y-up cameras/targets, room/focus/approach anchors.
 - `arrival-court-v1-provenance.json` — source/material provenance and exact SHA256.
 
@@ -22,3 +22,5 @@ The quantizer preserves topology, uses millimetre SHORT positions, signed normal
 Five `room-*` meshes own their doorway frames/mullions/latches; three `closed-*` meshes are sealed wings. `focus-*` and `approach-*` are authored spatial anchors. Renderer must perform actual occlusion raycasts, preserve original room/reader/auth/data controllers, retain immediate DOM routes, and fall back to the existing painted castle if 3D is unavailable. Phone focuses the burgundy study entrance instead of shrinking all destinations into a miniature.
 
 Do not ship the intermediate raw GLB, `.blend` source caches, or inspection PNGs as application assets. Keep this source directory and the three small maps for future maintenance. Actual WebGL lighting, focus views, quality/fallback and device QA remain the integration owner's release gate.
+
+Revision v3.1 changes only the existing five textile and hanging-rail clusters by 0.46 m toward the court. Actual WebGL showed them embedded behind the pier faces. Mesh counts, materials, camera composition, portal targets and functions are unchanged; native source carries the corrected placements.

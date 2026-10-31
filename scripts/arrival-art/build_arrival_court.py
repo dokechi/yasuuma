@@ -93,8 +93,8 @@ def door(key,x,y,z,r=1.1,spring=2.05,accent='cloth_burgundy',closed=False):
  else:
   # Restrained textile / seal identity, not five differently coloured floodlights.
   bx=x-r-.46
-  box(prefix+' identity textile',(bx,y-.02,z+spring-.18),(.23,.055,1.26),accent,.008)
-  rod(prefix+' brass hanging rail',(bx-.20,y-.06,z+spring+.48),(bx+.20,y-.06,z+spring+.48),.025,'brass_aged')
+  box(prefix+' identity textile',(bx,y-.48,z+spring-.18),(.23,.055,1.26),accent,.008)
+  rod(prefix+' brass hanging rail',(bx-.20,y-.52,z+spring+.48),(bx+.20,y-.52,z+spring+.48),.025,'brass_aged')
   # Upper focus targets sit on visible room-owned fanlights, not the lower roof.
   focus_lift={'otoku':1.50,'lottery':1.00}.get(key,0)
   anchor('focus-'+key,(x+.14,back-.10,z+spring*.72+focus_lift),{'destination':key})

@@ -12,7 +12,10 @@ The first slice evaluates real three-dimensional architecture, physically based
 materials, grounded light and quieter composition, inspired by the user's actual
 Igloo screenshots. No Igloo assets/code are copied. It is **not** a claim of visual
 equivalence, a complete 3D castle, or a finished continuous entry/return journey.
-Existing characters/interiors and the original manuscript DOM are unchanged.
+Existing characters/interiors and the original manuscript DOM are unchanged. The
+first phone camera intentionally frames the study and upper gallery; other rooms
+remain available through the immediate five-destination rail. This slice does not
+claim full three-dimensional exploration of every room from that narrow view.
 
 ## Ownership and progressive failure
 
@@ -46,7 +49,9 @@ Initial budgets: 2,000,000-byte self-contained GLB, 60,000 scene triangles,
 12 materials, DPR at most 1.5 and at most 1,800,000 drawing-buffer pixels.
 Embedded material images, if adopted, are inspected before decoding (at most
 512 pixels per side and 1M total texels). A bounded environment reflection and
-one shadow light replace heavy post-processing. Idle, hidden and reading states
+one shadow light replace heavy post-processing. A static, original 256×128
+gradient sky uses one standard texture (32,768 runtime texels), separately counted
+from the three embedded material maps and disposed with the renderer. Idle, hidden and reading states
 have no continuous rendering loop. Diagnostics report actual draw calls and
 rendered triangles separately from source geometry counts.
 

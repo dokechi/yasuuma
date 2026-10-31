@@ -1,7 +1,7 @@
 /* Optional real geometry and light. The existing application owns all routes,
    records and accessible controls. This module never reads user storage. */
-import * as T from './vendor/three-r187/court-three.js';
-import {COURT_KEYS,COURT_BUDGET,renderDimensions,createCameraMotion,createDemandDriver,copyPose,orbitPose,focusPose,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from './arrival-camera.js';
+import * as T from './vendor/three-r187/court-three.js?v=20261101.3-arrival';
+import {COURT_KEYS,COURT_BUDGET,COURT_ATMOSPHERE,courtSkyPixels,renderDimensions,createCameraMotion,createDemandDriver,copyPose,orbitPose,focusPose,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from './arrival-camera.js?v=20261101.3-arrival';
 
 export class CourtRendererError extends Error{constructor(code,message,cause){super(message,{cause});this.name='CourtRendererError';this.code=code;}}
 const abortError=()=>new DOMException('Court initialization cancelled','AbortError');
@@ -18,7 +18,7 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
  if(signal?.aborted)throw abortError();
  const win=canvas.ownerDocument?.defaultView||globalThis,now=()=>win.performance.now();
  const url=new URL(modelURL,import.meta.url);if(!['http:','https:'].includes(url.protocol)||url.origin!==new URL(import.meta.url).origin)throw new CourtRendererError('asset-origin','Court assets must stay on this application origin');
- let renderer=null,model=null,scene=null,environment=null,environmentTarget=null,pmrem=null,driver=null,motion=null,camera=null,ready=false,disposed=false,contextLost=false,active=true,failureNotified=false,frameCount=0,selected=null,yaw=0,dimensions=null,projected=[];
+ let renderer=null,model=null,scene=null,sky=null,environment=null,environmentTarget=null,pmrem=null,driver=null,motion=null,camera=null,ready=false,disposed=false,contextLost=false,active=true,failureNotified=false,frameCount=0,selected=null,yaw=0,dimensions=null,projected=[];
  let deadline=0,stopReject;const stopped=new Promise((_,reject)=>{stopReject=reject;});stopped.catch(()=>{});
  const loadAbort=new AbortController(),anchors=new Map(),homePoses=new Map(),roomPoses=new Map();
  const raycaster=new T.Raycaster(),point=new T.Vector3(),bufferSize=new T.Vector2();
@@ -26,8 +26,8 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
  function release(reason=abortError()){
   if(disposed)return;disposed=true;active=false;ready=false;clearTimeout(deadline);loadAbort.abort();driver?.dispose();
   canvas.removeEventListener('webglcontextlost',lost,true);signal?.removeEventListener('abort',aborted);stopReject(reason);
-  disposeCourtResources(model);environment?.dispose();environment=null;environmentTarget?.dispose();environmentTarget=null;pmrem?.dispose();pmrem=null;
-  if(scene){scene.traverse(object=>{object.shadow?.map?.dispose();object.shadow?.mapPass?.dispose();});scene.environment=null;scene.clear();}
+  disposeCourtResources(model);model=null;anchors.clear();homePoses.clear();roomPoses.clear();sky?.dispose();sky=null;environment?.dispose();environment=null;environmentTarget?.dispose();environmentTarget=null;pmrem?.dispose();pmrem=null;
+  if(scene){scene.traverse(object=>{object.shadow?.map?.dispose();object.shadow?.mapPass?.dispose();});scene.environment=null;scene.background=null;scene.clear();}
   renderer?.dispose();if(renderer&&!contextLost)renderer.forceContextLoss();
  }
  const dispose=()=>release();
@@ -66,15 +66,15 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
  try{
   renderer=new T.WebGLRenderer({canvas,alpha:false,antialias:true,powerPreference:'low-power',preserveDrawingBuffer:false});
   const gl=renderer.getContext();if(!String(gl.getParameter(gl.VERSION)).includes('WebGL 2'))throw new CourtRendererError('webgl2','WebGL2 is unavailable');
-  renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
+  renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=COURT_ATMOSPHERE.exposure;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
   renderer.debug.onShaderError=()=>{throw new CourtRendererError('shader','A court material shader could not compile');};
   const box=canvas.getBoundingClientRect();resize(Math.max(1,box.width||canvas.clientWidth||canvas.width),Math.max(1,box.height||canvas.clientHeight||canvas.height));
-  scene=new T.Scene();scene.background=new T.Color('#858d98');scene.fog=new T.FogExp2('#858d98',.018);
-  const hemi=new T.HemisphereLight('#bcc9de','#44342b',1.5);scene.add(hemi);
-  const sun=new T.DirectionalLight('#ffe0b5',3.2);sun.position.set(-10,18,12);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-19,right:19,top:19,bottom:-19,near:.5,far:70});sun.shadow.normalBias=.035;sun.shadow.bias=-.00012;sun.shadow.radius=2;sun.target.position.set(0,1,-2);scene.add(sun,sun.target);
-  const fill=new T.DirectionalLight('#9eafce',.8);fill.position.set(12,8,-14);scene.add(fill);
-  environment=new T.RoomEnvironment();pmrem=new T.PMREMGenerator(renderer);environmentTarget=pmrem.fromScene(environment,.04,.1,80,{size:256});scene.environment=environmentTarget.texture;scene.environmentIntensity=.38;environment.dispose();environment=null;pmrem.dispose();pmrem=null;
+  scene=new T.Scene();const skyPixels=courtSkyPixels();sky=new T.DataTexture(skyPixels.data,skyPixels.width,skyPixels.height,T.RGBAFormat,T.UnsignedByteType);sky.mapping=T.EquirectangularReflectionMapping;sky.colorSpace=T.SRGBColorSpace;sky.magFilter=T.LinearFilter;sky.minFilter=T.LinearFilter;sky.generateMipmaps=false;sky.needsUpdate=true;scene.background=sky;scene.fog=new T.FogExp2(COURT_ATMOSPHERE.fogColor,COURT_ATMOSPHERE.fogDensity);
+  const hemi=new T.HemisphereLight('#bcc9de','#44342b',COURT_ATMOSPHERE.hemisphere);scene.add(hemi);
+  const sun=new T.DirectionalLight('#ffe0b5',COURT_ATMOSPHERE.sun);sun.position.set(-10,18,12);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-19,right:19,top:19,bottom:-19,near:.5,far:70});sun.shadow.normalBias=COURT_ATMOSPHERE.shadowNormalBias;sun.shadow.bias=-.00012;sun.shadow.radius=2;sun.target.position.set(0,1,-2);scene.add(sun,sun.target);
+  const fill=new T.DirectionalLight('#9eafce',COURT_ATMOSPHERE.fill);fill.position.set(12,8,-14);scene.add(fill);
+  environment=new T.RoomEnvironment();pmrem=new T.PMREMGenerator(renderer);environmentTarget=pmrem.fromScene(environment,.04,.1,80,{size:256});scene.environment=environmentTarget.texture;scene.environmentIntensity=COURT_ATMOSPHERE.environment;environment.dispose();environment=null;pmrem.dispose();pmrem=null;
   const response=await wait(fetch(url,{credentials:'omit',signal:loadAbort.signal,cache:'force-cache'}));alive();if(!response.ok)throw new CourtRendererError('asset-load','Court model could not be loaded');
   const buffer=await wait(boundedRead(response));alive();assetInfo=inspectCourtGLB(buffer);
   const manager=new T.LoadingManager();manager.setURLModifier(value=>{try{return embeddedCourtURL(value,url.origin);}catch(error){throw new CourtRendererError('asset-reference','Court model may not load secondary resources',error);}});
@@ -106,7 +106,7 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
    nudge(deltaX){if(disposed||!Number.isFinite(deltaX))return false;yaw=Math.max(-.3,Math.min(.3,yaw+deltaX*.002));driver.invalidate();return true;},
    setActive(value){if(disposed)return;active=!!value;if(!active)motion.settle();driver.setActive(active);},
    pick(x,y){if(disposed||!active||!Number.isFinite(x)||!Number.isFinite(y)||Math.abs(x)>1||Math.abs(y)>1)return null;return roomAt(x,y);},
-   diagnostics(){const size=renderer?.getDrawingBufferSize(bufferSize);return {webgl2:true,ready,disposed,contextLost,active,frameCount,meshTriangles,materialCount,drawCalls,renderedTriangles,assetTextureCount:assetInfo?.textureCount||0,assetTexels:assetInfo?.texels||0,gpuTextures:renderer?.info.memory.textures||0,assetBytes:assetInfo?.bytes||0,physicalPixels:dimensions?.physicalPixels||0,physicalWidth:size?.x||0,physicalHeight:size?.y||0,pixelRatio:dimensions?.pixelRatio||0,width:dimensions?.width||0,height:dimensions?.height||0,pendingFrame:driver?.state().pendingFrame||false,selected,camera:pose?copyPose(pose):null,projectedRooms:projected.map(value=>({...value}))};},
+   diagnostics(){const size=renderer?.getDrawingBufferSize(bufferSize);return {webgl2:true,ready,disposed,contextLost,active,frameCount,meshTriangles,materialCount,atmosphere:{...COURT_ATMOSPHERE},runtimeSkyTextures:sky?1:0,runtimeSkyTexels:sky?COURT_ATMOSPHERE.skyWidth*COURT_ATMOSPHERE.skyHeight:0,drawCalls,renderedTriangles,assetTextureCount:assetInfo?.textureCount||0,assetTexels:assetInfo?.texels||0,gpuTextures:renderer?.info.memory.textures||0,assetBytes:assetInfo?.bytes||0,physicalPixels:dimensions?.physicalPixels||0,physicalWidth:size?.x||0,physicalHeight:size?.y||0,pixelRatio:dimensions?.pixelRatio||0,width:dimensions?.width||0,height:dimensions?.height||0,pendingFrame:driver?.state().pendingFrame||false,selected,camera:pose?copyPose(pose):null,projectedRooms:projected.map(value=>({...value}))};},
    dispose
   };
  }catch(error){fail(error,false);throw error;}

@@ -31,3 +31,23 @@ body{--arrival-court-ready:1}
 .account-board .arrival-target.feedback-down{filter:none}
 .arrival-target-mark{transition:transform 100ms ease-out,background 100ms ease-out,box-shadow 100ms ease-out}
 .arrival-target.feedback-down .arrival-target-mark,.arrival-target:active .arrival-target-mark{transform:scale(.91);background:#e9d3a9;color:#30291f;box-shadow:0 0 0 5px #f4dda32b}
+/* Quiet reading surfaces keep essential words legible independently of the
+   architectural light. They do not place an opaque veil across the world. */
+.arrival-identity{padding:7px 11px;background:#f3f0e9f5;color:#26343c;text-shadow:none}
+.account-board .arrival-identity h1{color:inherit;text-shadow:none}
+.account-board .arrival-court .arrival-text-button{background:#f3f0e9f5;border-color:#eee3c880;color:#26343c;box-shadow:0 1px 0 #fff7}
+.arrival-court[data-overview=true] .arrival-detail{width:max-content;max-width:min(460px,calc(100% - 56px));padding:12px 16px;background:#f3f0e9f5;color:#26343c;text-shadow:none;border:0;box-shadow:none}
+.arrival-court[data-overview=true] .arrival-kicker{color:#4e5b61}
+.arrival-footer{width:max-content;max-width:calc(100% - 56px);padding:7px 9px;background:#f3f0e9f5;border:1px solid #fff8}
+.arrival-hint{color:#4e5b61;text-shadow:none;letter-spacing:0;margin:0 4px 3px;font-size:12px}
+.arrival-quick{background:none;border:0;box-shadow:none;padding:0;gap:5px}
+.arrival-quick-label{position:static;color:#4e5b61;text-shadow:none;font-size:11px}
+@media(max-width:700px){
+ .arrival-identity{padding:5px 8px}
+ .arrival-footer{width:auto;max-width:none;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));padding:6px}
+ .arrival-hint{font-size:11px;margin:0 4px 3px}
+ .arrival-quick{width:100%;gap:0}
+ .arrival-quick-label{position:static;font-size:10px;padding:0 2px;color:#4e5b61;text-shadow:none}
+ .arrival-court[data-overview=true] .arrival-detail{max-width:calc(100% - 32px);padding:10px 13px}
+ .arrival-court[data-overview=true] .arrival-detail h2{font-size:18px}
+}

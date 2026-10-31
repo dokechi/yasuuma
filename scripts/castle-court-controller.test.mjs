@@ -87,6 +87,14 @@ test('owner routes remain immediate and Back restores the latest matching visibl
  assert.deepEqual(h.opened.map(item=>item.key),['insurance','otoku']);assert.equal(h.sourceUnchanged(),true);
 });
 
+test('reopening the same last-visited manuscript after exploring another facade restores its own physical camera',async t=>{
+ const h=await setup(t);await h.finished;
+ const trigger=h.doc.querySelector('[data-court-open=insurance]');trigger.click();await h.back();
+ h.doc.querySelector('[data-court-room=sourcing]').click();assert.equal(h.graphics.selected,'sourcing');
+ trigger.click();await h.back();
+ assert.equal(h.snapshot().selected,'insurance');assert.equal(h.graphics.selected,'insurance');assert.equal(h.doc.activeElement,trigger);assert.equal(h.sourceUnchanged(),true);
+});
+
 test('context-loss callback retires only graphics and returns focus to the corresponding original room',async t=>{
  const h=await setup(t);await h.finished;h.doc.querySelector('[data-court-open=rakuten]').click();await h.back();
  h.init.onFailure(Error('synthetic context-loss callback, real extension is tested in browser CI'));await flush();
@@ -140,4 +148,13 @@ for(const reduce of [false,true])test('settings close restores a visible '+(redu
  const dialog=h.doc.getElementById('settings'),inside=h.doc.activeElement;assert.equal(dialog.open,true);assert.equal(dialog.contains(inside),true);
  if(reduce){h.doc.getElementById('reduce-setting').checked=true;h.doc.getElementById('reduce-setting').dispatchEvent(new h.win.Event('change'));await flush();assert.equal(h.doc.activeElement,inside,'changing motion settings does not pull focus out of the modal');}
  dialog.close();await flush();assert.equal(h.doc.activeElement,h.doc.querySelector(reduce?'.castle-experience-settings':'.arrival-menu summary'));
+});
+
+test('redundant owner view mutations while court is already active do not steal modal or returned menu focus',async t=>{
+ const h=await setup(t);await h.finished;h.doc.querySelector('[data-court-open=insurance]').click();await h.back();
+ [...h.doc.querySelectorAll('.arrival-menu-items button')].find(button=>button.textContent==='音・演出').click();
+ const dialog=h.doc.getElementById('settings'),inside=h.doc.activeElement;
+ h.panel.dataset.view='rooms';await flush();assert.equal(h.doc.activeElement,inside);
+ dialog.close();await flush();const summary=h.doc.querySelector('.arrival-menu summary');assert.equal(h.doc.activeElement,summary);
+ h.panel.dataset.view='rooms';await flush();assert.equal(h.doc.activeElement,summary);assert.equal(h.snapshot().active,true);
 });

@@ -2,6 +2,18 @@
    No browser state, routes, data requests or global animation loop. */
 export const COURT_KEYS=Object.freeze(['insurance','otoku','rakuten','lottery','sourcing','planned-5','planned-6','reserve']);
 export const COURT_BUDGET=Object.freeze({bytes:2_000_000,triangles:60_000,materials:12,pixels:1_800_000,dpr:1.5,dimension:4096,textureSide:512,texels:1_000_000,images:4});
+export const COURT_ATMOSPHERE=Object.freeze({exposure:.85,hemisphere:.45,fill:.2,sun:2.2,environment:.25,shadowNormalBias:.012,fogDensity:.022,fogColor:'#586774',skyWidth:256,skyHeight:128});
+// An original, quiet latitude gradient. No asset fetch, time loop or custom PBR
+// shader: the standard Three equirectangular background follows the camera.
+export function courtSkyPixels(){
+ const width=COURT_ATMOSPHERE.skyWidth,height=COURT_ATMOSPHERE.skyHeight,data=new Uint8Array(width*height*4);
+ const horizon=[88,103,116],zenith=[36,56,77],nadir=[50,71,82];
+ for(let y=0;y<height;y++){
+  const latitude=y/(height-1)*2-1,other=latitude>=0?zenith:nadir,mix=Math.pow(Math.abs(latitude),.65);
+  for(let x=0;x<width;x++){const at=(y*width+x)*4;for(let c=0;c<3;c++)data[at+c]=Math.round(horizon[c]+(other[c]-horizon[c])*mix);data[at+3]=255;}
+ }
+ return {width,height,data};
+}
 const finite=value=>Number.isFinite(value);
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 export function renderDimensions(width,height,dpr=1){
