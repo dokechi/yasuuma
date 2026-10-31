@@ -19,7 +19,7 @@ export function mountCastleScene({accountBoard,castleImage='assets/castle-cutawa
  const node=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
  const button=(cls,text,fn)=>{const b=node('button',cls,text);b.type='button';b.addEventListener('click',fn);return b;};
  const activeRooms=castleRooms.filter(r=>!r.sealed),mobile=matchMedia('(max-width:700px)');
- let selected='insurance',overview=!mobile.matches,lastTrigger=null,lastHidden=board.hidden,geometry=null,ignoreClickUntil=0,queuedRoom=null,returning=false,observedVisit=null,observedVisitVersion=-1,viewportMobile=null,hitboxFrame=0,sceneDisposed=false;
+ let selected='insurance',overview=!mobile.matches,lastTrigger=null,lastHidden=board.hidden,geometry=null,ignoreClickUntil=0,queuedRoom=null,returning=false,observedVisit=null,observedVisitVersion=-1,viewportMobile=null,hitboxFrame=0,sceneDisposed=false,cameraTarget='';
  if(skyImage)document.body.style.setProperty('--castle-sky',`url("${skyImage}")`);
  board.setAttribute('aria-label','司令塔の部屋と持ち場');
  const world=node('section','spatial-castle');world.setAttribute('aria-label','つながった城の持ち場');
@@ -121,13 +121,28 @@ export function mountCastleScene({accountBoard,castleImage='assets/castle-cutawa
  function layout(){
   keepCameraOrigin();
   world.dataset.selected=selected;for(const [key,b]of quickButtons)b.setAttribute('aria-current',key===selected?'location':'false');
-  if(world.hidden||board.hidden){cancelAnimationFrame(hitboxFrame);hitboxFrame=0;return;}const w=viewport.clientWidth,h=viewport.clientHeight;if(!w||!h)return;
+  if(world.hidden||board.hidden){cancelAnimationFrame(hitboxFrame);hitboxFrame=0;return;}
+  if(!viewport.clientWidth||!viewport.clientHeight)return;
   const currentMobile=innerWidth<=700;if(viewportMobile!==currentMobile){viewportMobile=currentMobile;overview=!currentMobile;}
-  const r=castleRooms.find(r=>r.key===selected),scale=overview?Math.min(w/1536,h/1024):Math.min(w*.96/(1536*r.w),h*.82/(1024*r.h));
+  const r=castleRooms.find(r=>r.key===selected);
+  // Resolve responsive chrome before measuring the aperture. A wrapped phone
+  // hint can change its height; measuring first would restart our own camera
+  // transition on the next ResizeObserver delivery.
+  world.dataset.overview=String(overview);
+  const title=overview?'ひとつの城、あなたの持ち場':r.name;
+  const help=overview?'部屋から入室 · 天球儀は長押し／横に回せます':`${activeRooms.findIndex(x=>x.key===selected)+1} / ${activeRooms.length} · 部屋を押すと持ち場が開きます`;
+  const viewTitle=overview?'部屋を近くで見る':'城の全景';
+  if(location.textContent!==title)location.textContent=title;
+  if(hint.textContent!==help)hint.textContent=help;
+  if(view.textContent!==viewTitle)view.textContent=viewTitle;
+  view.setAttribute('aria-pressed',String(overview));
+  const w=viewport.clientWidth,h=viewport.clientHeight;
+  const scale=overview?Math.min(w/1536,h/1024):Math.min(w*.96/(1536*r.w),h*.82/(1024*r.h));
   const cx=overview?.5:r.x+r.w/2,cy=overview?.5:r.y+r.h*.55,left=w/2-cx*1536*scale,top=h/2-cy*1024*scale;
-  geometry={width:w,height:h,scale,left,top};stage.style.transform=`translate(${left}px,${top}px) scale(${scale})`;world.dataset.overview=String(overview);world.dataset.selected=selected;
+  geometry={width:w,height:h,scale,left,top};
+  const target=`translate(${left}px,${top}px) scale(${scale})`;
+  if(cameraTarget!==target){cameraTarget=target;stage.style.transform=target;}
   followPaintedStage();
-  location.textContent=overview?'ひとつの城、あなたの持ち場':r.name;hint.textContent=overview?'部屋から入室 · 天球儀は長押し／横に回せます':`${activeRooms.findIndex(x=>x.key===selected)+1} / ${activeRooms.length} · 部屋を押すと持ち場が開きます`;view.textContent=overview?'部屋を近くで見る':'城の全景';view.setAttribute('aria-pressed',String(overview));for(const [key,b]of quickButtons)b.setAttribute('aria-current',key===selected?'location':'false');
  }
  let pointer=null;viewport.addEventListener('pointerdown',e=>{pointer=e.pointerType==='touch'&&!e.target.closest('.castle-orrery,.castle-experience-controls')?{x:e.clientX,y:e.clientY}:null;});viewport.addEventListener('pointerup',e=>{if(!pointer)return;const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer=null;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){ignoreClickUntil=performance.now()+250;browse(dx<0?1:-1);}});viewport.addEventListener('pointercancel',()=>pointer=null);
  viewport.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();browse(e.key==='ArrowRight'?1:-1);controls.get(selected).button.focus({preventScroll:true});}});

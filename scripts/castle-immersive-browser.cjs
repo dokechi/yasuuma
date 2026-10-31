@@ -253,14 +253,33 @@ function installProbe() {
 
       // A user may enter before a browse camera settles. The travel must start
       // at the painted intermediate transform, not the pending CSS target.
-      await setOverview();await f.locator('.castle-overview').click();
+      await setOverview();
       const browseSample=await cf.evaluate(async rects=>{
         const stage=document.querySelector('.castle-stage'),viewport=document.querySelector('.castle-viewport'),world=document.querySelector('.spatial-castle');
-        const animations=stage.getAnimations().filter(a=>a.effect?.target===stage);
-        if(!animations.length)throw Error('No browse transform available to interrupt');
-        for(const a of animations)a.pause();
-        await Promise.all(animations.map(a=>a.ready));
-        for(const a of animations)a.currentTime=Number(a.effect.getTiming().duration)*.48;
+        const describe=a=>({state:a.playState,pending:a.pending,time:a.currentTime,rate:a.playbackRate,timing:a.effect?.getTiming()});
+        // The route caption can rewrap on narrow screens and legitimately
+        // replace the first transition via ResizeObserver. Observe stable target
+        // layout, not elapsed camera motion, then hold the latest transform.
+        const layoutSample=()=>({width:viewport.clientWidth,height:viewport.clientHeight,routebarHeight:document.querySelector('.castle-routebar').getBoundingClientRect().height,inline:stage.style.transform});
+        const preparation={before:{...layoutSample(),painted:getComputedStyle(stage).transform},layoutFrames:[]};
+        document.querySelector('.castle-overview').click();
+        preparation.after={...layoutSample(),painted:getComputedStyle(stage).transform};
+        let animations=[];
+        try{
+          let previous=null,stable=0;
+          for(let frame=0;frame<12&&stable<2;frame++){
+            await new Promise(requestAnimationFrame);
+            const layout=layoutSample(),signature=JSON.stringify(layout);preparation.layoutFrames.push(layout);
+            stable=signature===previous?stable+1:0;previous=signature;
+          }
+          if(stable<2)throw Error('Browse target layout did not stabilize across render frames');
+          animations=stage.getAnimations().filter(a=>a.effect?.target===stage);
+          preparation.initialAnimations=animations.map(describe);
+          if(!animations.length)throw Error('No browse transform available to interrupt after target layout stabilized');
+          for(const a of animations)a.pause();
+          await Promise.all(animations.map(a=>a.ready));
+          for(const a of animations)a.currentTime=Number(a.effect.getTiming().duration)*.48;
+        }catch(error){preparation.error={name:error.name,message:error.message,heldAnimations:animations.map(describe),layout:layoutSample()};}
         await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
         // All architecture, aperture, targets and hit testing belong to one
         // paint. Separate protocol tasks could mix a replaced CSS transition.
@@ -273,13 +292,14 @@ function installProbe() {
           return{room:n.dataset.room,hidden:n.hidden,actual:rect(n),expected,inline:{left:n.style.left,top:n.style.top,width:n.style.width,height:n.style.height}};
         });
         const lottery=targets.find(n=>n.room==='lottery'),hitPoint={x:lottery.expected.x+lottery.expected.width/2,y:lottery.expected.y+lottery.expected.height/2};
-        return{castle,viewport:bounds,targets,hitPoint,hitRoom:document.elementFromPoint(hitPoint.x-frame.x,hitPoint.y-frame.y)?.closest('.castle-room-hotspot')?.dataset.room,
+        return{preparation,castle,viewport:bounds,targets,hitPoint,hitRoom:document.elementFromPoint(hitPoint.x-frame.x,hitPoint.y-frame.y)?.closest('.castle-room-hotspot')?.dataset.room,
           selected:world.dataset.selected,overview:world.dataset.overview,scroll:{left:viewport.scrollLeft,top:viewport.scrollTop},
           stage:{inline:stage.style.transform,painted:getComputedStyle(stage).transform,rect:rect(stage)},
-          animations:stage.getAnimations().map(a=>({state:a.playState,pending:a.pending,time:a.currentTime,rate:a.playbackRate,timing:a.effect?.getTiming()}))};
+          animations:stage.getAnimations().map(describe)};
       },roomRects);
       result.interruptedBrowse=browseSample;
       fs.writeFileSync(path.join(out,`${width}-${height}-interrupted-browse.json`),JSON.stringify(browseSample,null,2));
+      check('early-entry capture holds the real browse transform',!browseSample.preparation.error,browseSample);
       const paintedBrowse=browseSample.castle;
       const visibleTargets=browseSample.targets.filter(n=>!n.hidden);
       check('browse hit targets follow painted room geometry',visibleTargets.length>0&&visibleTargets.every(n=>['x','y','width','height'].every(k=>Math.abs(n.actual[k]-n.expected[k])<3)),browseSample);
