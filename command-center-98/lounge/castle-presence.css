@@ -25,3 +25,6 @@ body.spatial-atelier .spatial-shelf-dialog[open],body.spatial-atelier .spatial-r
 body:has(#reduce-setting:checked) :is(.spatial-shelf-dialog,.spatial-room-dialog){animation:none!important}
 @media(prefers-reduced-motion:reduce){.castle-depth-edge,.castle-room-light,.castle-orrery-orbit,.castle-door-handle,.spatial-shelf-dialog,.spatial-room-dialog{transition:none!important;animation:none!important}.castle-depth-edge,.castle-orrery-orbit{transform:none!important}}
 @media(max-width:700px){body.spatial-atelier .castle-experience-controls{top:9px;left:9px}.castle-door-handle{right:23%;bottom:42%}.castle-depth-edge:before,.castle-depth-edge:after{width:5px}}
+/* The visible world-settings entry uses the existing modal. Its close control
+   must remain a full touch target on the new mobile path as well. */
+body.spatial-atelier #settings-close{width:44px;height:44px;min-width:44px;min-height:44px;flex-shrink:0}
