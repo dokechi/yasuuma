@@ -35,3 +35,4 @@
 /* The production host reserves a 52px request bar. Keep all eight doors whole
    in the remaining Fold viewport too, without reducing text or touch targets. */
 @media(min-width:701px) and (max-height:680px){.account-board-heading{padding:6px 9px 8px}.account-board-heading small,.account-board-heading p{display:none}.account-board-heading h1{margin:0;line-height:1.25}.room-foyer{min-height:65px;padding:7px}.account-board-heading nav{flex-wrap:nowrap;max-width:none}.account-board-heading nav button{white-space:nowrap}}
+@media(min-width:701px) and (max-height:680px){.room-foyer{min-height:58px;padding:4px 7px}.room-foyer .magic-dial{width:50px;height:50px;flex-basis:50px}.room-foyer .magic-dial i{left:18px}}
