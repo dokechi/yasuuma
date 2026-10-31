@@ -34,7 +34,7 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
  const actions=el('nav');actions.setAttribute('aria-label','投稿一覧の操作');
  const refresh=btn('↻ 原稿を更新',()=>{if(!refresh.disabled)onRefresh();}),lounge=btn('ラウンジ・管理へ',()=>{hide();onLounge();});const mode=btn('6アカウントの原稿一覧',()=>{tiles.hidden=!tiles.hidden;scroller.hidden=!tiles.hidden;mode.textContent=tiles.hidden?'← 8パネルへ':'6アカウントの原稿一覧';mode.setAttribute('aria-pressed',String(tiles.hidden));panel.dataset.view=tiles.hidden?'list':'tiles';hint.hidden=!tiles.hidden;accountJump.hidden=!tiles.hidden;});mode.className='board-primary';mode.setAttribute('aria-pressed','false');refresh.className='board-refresh';lounge.className='board-lounge';actions.append(mode,refresh,lounge);header.append(titles,actions);
  const status=el('p','本体の保存原稿を確認しています…','account-board-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.setAttribute('aria-atomic','true');
- const summary=el('span','','board-summary');foyer.append(summary);
+ const summary=el('span','','board-summary');const voyage=el('div',undefined,'board-voyage');voyage.append(summary,roomClock);foyer.append(voyage);
  const accountJump=el('nav',undefined,'account-jump');accountJump.setAttribute('aria-label','一覧のアカウントへ移動');accountJump.hidden=true;
  const footer=el('footer',undefined,'board-footer'),hint=el('span','横にスクロールして、ほかのアカウントへ','board-scroll-hint');hint.hidden=true;footer.append(hint);if(onLegacy)footer.append(btn('旧データの保管庫',onLegacy));
  const scroller=el('div',undefined,'account-columns-scroll');scroller.tabIndex=0;scroller.setAttribute('aria-label','アカウント一覧。横にスクロールできます');

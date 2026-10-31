@@ -26,3 +26,9 @@
 @media(max-height:740px) and (min-width:701px){.room-foyer{min-height:79px}.room-clock{top:154px}.account-board-heading h1{font-size:26px}.account-tile-caption strong{font-size:17px}}
 @media(max-height:720px) and (max-width:700px){.room-foyer{min-height:74px}.room-foyer small{font-size:15px}.board-summary{margin-bottom:18px}.account-board[data-view=list] .account-board-heading small{display:none}}
 @media(prefers-reduced-motion:reduce){.account-board *,.account-board *:before,.account-board *:after{animation:none!important;transition:none!important}.door-threshold{display:none!important}}
+
+/* The voyage readout is one physical plate: no viewport-positioned collisions. */
+.room-foyer .board-voyage{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:0 0 auto;background:none;border:0;padding:0}
+.board-voyage .board-summary{margin:0}.board-voyage .room-clock{position:static;font-size:11px;line-height:1.4;white-space:nowrap}
+@media(min-width:701px) and (max-width:1000px){.account-board-heading nav{max-width:none;flex-wrap:nowrap;gap:7px}.account-board-heading nav button{padding:9px 10px;white-space:nowrap}.room-foyer{min-height:93px}}
+@media(max-width:370px){.board-voyage .room-clock{font-size:10px}.room-foyer{gap:7px}.room-foyer>div:nth-child(2){padding:6px 4px}.room-foyer small{font-size:14px}}

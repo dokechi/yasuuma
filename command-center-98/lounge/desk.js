@@ -1,4 +1,4 @@
-import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261031.4-world';
+import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261031.5-world';
 import {createConveniences} from './qol.js?v=20261031.1-lottery';
 import {resumeView,postingReadiness} from './qol-model.js?v=20261031.1-lottery';
 import {createNotebook,safeLink} from './notebook.js?v=20261031.1-lottery';
@@ -178,6 +178,13 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  $('desk-font').value=notebook.pref('font','standard')==='large'?'large':'standard';document.body.dataset.readingFont=$('desk-font').value;
  $('desk-font').addEventListener('change',()=>{document.body.dataset.readingFont=$('desk-font').value;notebook.setPref('font',$('desk-font').value);});
  $('desk-scroll').addEventListener('scroll',()=>{clearTimeout(scrollTimer);scrollTimer=setTimeout(savePosition,180);},{passive:true});
+ // Preserve the host's established shortcuts when focus is inside this iframe.
+ // Text fields keep their own editing keys; native() uses the existing trusted bridge.
+ window.addEventListener('keydown',event=>{
+  const target=event.target;if(target?.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(target?.tagName||''))return;
+  const key=String(event.key).toLowerCase();if(key!=='f1'&&!(event.altKey&&['f','v','a','j','h','r','c'].includes(key)))return;
+  event.preventDefault();event.stopImmediatePropagation();if(key==='h')onHome();else native(({r:'daily',c:'cooney'})[key]||'settings');
+ },true);
  $('manage').addEventListener('click',()=>{$('settings').close();native('settings');});
  for(const [action,label] of [['daily','作業日報'],['cooney','クーニー'],['shiire','仕入れ命'],['watches','海外時計'],['cards','カード']])$('service-links').append(button(label,()=>{$('settings').close();native(action);}));
  window.addEventListener('message',event=>{
