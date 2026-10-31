@@ -17,6 +17,9 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const btn=(text,fn)=>{const b=el('button',text);b.type='button';b.onclick=fn;return b;};
  let lastVisited=null,returnFocus=null,roomClock=null;
+ const spatialLayout=document.body.classList.contains('spatial-prototype')||document.body.classList.contains('spatial-atelier');
+ const subscribers=new Set();let snapshot={destinations:[],message:'',loading:false,complete:false};
+ const destinations=()=>[...publishingAccounts,{key:'sourcing',place:'shiire',name:'仕入れ',tone:'green'},{key:'reserve',name:'予備の持ち場',pending:true}];
  const underlying=document.getElementById('app');let priorInert=false;
  function isolate(active){if(!underlying)return;if(active&&!underlying.hasAttribute('inert')){priorInert=false;underlying.setAttribute('inert','');}else if(!active&&!priorInert)underlying.removeAttribute('inert');}
  priorInert=!!underlying?.hasAttribute('inert');
@@ -47,15 +50,15 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
   columns.replaceChildren();tiles.replaceChildren();accountJump.replaceChildren();refresh.disabled=loading;
   const allRows=rows(),attention=!loading&&!complete&&/失敗|未確認|できません|エラー|再試行/.test(message||'');panel.dataset.state=loading?'loading':attention?'attention':complete?'ready':'idle';refresh.textContent=loading?'更新しています…':attention?'↻ 再読み込み':'↻ 原稿を更新';
   const total=new Set(publishingAccounts.flatMap(a=>draftsForAccount(allRows,a).map(d=>a.key+':'+d.source.id))).size;summary.textContent=complete?'保存原稿 '+total+'本':'保存原稿の状態を確認';
-  const destinations=[...publishingAccounts,{key:'sourcing',place:'shiire',name:'仕入れ',tone:'green'},{key:'reserve',name:'予備の持ち場',pending:true}];
-  for(const [i,a] of destinations.entries()){
+  const nextDestinations=[];
+  for(const [i,a] of destinations().entries()){
    const tile=btn('',()=>travel(a));tile.className='account-tile';tile.dataset.destination=a.key;tile.dataset.tone=a.tone||'sealed';tile.disabled=!!a.pending;
    const frame=el('span',undefined,'portal-frame');frame.setAttribute('aria-hidden','true');frame.innerHTML='<i class=portal-corner></i><i class=portal-hinge></i>';
    const crest=el('span',undefined,'portal-crest');crest.setAttribute('aria-hidden','true');const symbols={insurance:'M12 3 5 6v6c0 4 7 8 7 8s7-4 7-8V6Z M8 11h8 M12 7v8',otoku:'m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z M12 8v8 M8 12h8',rakuten:'M3 11 12 3l9 8 M6 9v12h12V9 M10 21v-7h4v7',lottery:'m12 2 3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z',sourcing:'M12 3v18 M4 7h16 M5 7l-3 7h6Z M19 7l-3 7h6Z M7 21h10'};crest.innerHTML='<svg viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.2 stroke-linejoin=round><path d="'+(symbols[a.key]||'M8 11V7a4 4 0 0 1 8 0v4 M6 11h12v10H6Z M12 15v3')+'"/></svg>';
    tile.append(frame,crest);
-   const art=el('img');art.src='assets/panel-'+(a.artKey||a.key)+'.webp';art.alt='';art.loading='eager';art.onerror=()=>{art.onerror=null;art.src='assets/'+(['red','purple','orange','silver','purple','red','orange','silver'][i])+'-face.webp';};
+   const art=el('img');if(!spatialLayout)art.src='assets/panel-'+(a.artKey||a.key)+'.webp';art.alt='';art.loading='eager';art.onerror=()=>{art.onerror=null;art.src='assets/'+(['red','purple','orange','silver','purple','red','orange','silver'][i])+'-face.webp';};
    const caption=el('span',undefined,'account-tile-caption');caption.append(el('small',String(i+1).padStart(2,'0')+' / '+(a.pending?'封印された扉':({insurance:'手紙の書斎',otoku:'宵色の回廊',rakuten:'陽だまりの食卓',lottery:'星巡りの観測室',sourcing:'商人の工房'})[a.key])),el('strong',a.name),el('span',a.handle|| (a.pending?'名前・用途は未設定':a.key==='sourcing'?'購入・在庫・売却':'投稿先未登録')));
-   const count=a.pending?'未設定':a.key==='sourcing'?'管理画面へ':complete?'保存原稿 '+new Set(draftsForAccount(allRows,a).map(d=>d.source.id)).size+'本':loading?'読込中':'原稿を確認';const meta=el('span',count,'account-tile-state');caption.append(meta);
+   const count=a.pending?'未設定':a.key==='sourcing'?'管理画面へ':complete?'保存原稿 '+new Set(draftsForAccount(allRows,a).map(d=>d.source.id)).size+'本':loading?'読込中':'原稿を確認';nextDestinations.push({...a,status:count});const meta=el('span',count,'account-tile-state');caption.append(meta);
    const arrow=el('span',a.pending?'—':'↗','account-tile-arrow');arrow.setAttribute('aria-hidden','true');tile.append(art,caption,arrow);tiles.append(tile);
   }
   status.textContent=message||(loading?'保存原稿を読み込んでいます…':complete?'保存原稿を読込済み。追加2枠は未設定です。':'保存原稿はまだ確認できていません。更新して再試行できます。');
@@ -80,11 +83,12 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
    }
    columns.append(column);
   }
+  snapshot={destinations:nextDestinations,message:status.textContent,loading,complete};for(const subscriber of subscribers)subscriber(snapshot);
   markVisited();scroller.scrollLeft=left;tiles.scrollTop=tilesTop;for(const column of columns.children){const list=column.querySelector('.account-drafts');if(list)list.scrollTop=scrolls.get(column.dataset.account)||0;}
   if(!panel.hidden){const candidates=[...panel.querySelectorAll('button,a')],column=[...columns.children].find(c=>c.dataset.account===focusAccount);const restore=focusTile?candidates.find(b=>b.dataset.destination===focusTile):focusDraft?candidates.find(b=>b.dataset.draftId===focusDraft&&b.closest('[data-account]')?.dataset.account===focusAccount):focusKind==='jump'?[...accountJump.children].find(b=>b.dataset.account===focusAccount):focusKind==='profile'?column?.querySelector('.account-handle'):focusKind==='open'?[...(column?.children||[])].find(b=>b.tagName==='BUTTON'):null;restore?.focus?.({preventScroll:true});}
  }
  function show(){updateTime();panel.hidden=false;isolate(true);document.getElementById('app')?.classList.add('board-home');
   const column=[...columns.children].find(c=>c.dataset.account===returnFocus?.account);const preferred=!scroller.hidden?(returnFocus?.id?[...columns.querySelectorAll('[data-draft-id]')].find(b=>b.dataset.draftId===returnFocus.id&&b.closest('[data-account]')?.dataset.account===returnFocus.account):[...(column?.children||[])].find(b=>b.tagName==='BUTTON')):[...tiles.children].find(b=>b.dataset.destination===returnFocus?.account);(preferred||mode).focus?.({preventScroll:true});if(!scroller.hidden&&returnFocus?.id&&preferred){const list=preferred.closest('.account-drafts');if(list&&preferred.getBoundingClientRect&&list.getBoundingClientRect)list.scrollTop+=preferred.getBoundingClientRect().top-list.getBoundingClientRect().top;}}
  function hide(){panel.hidden=true;isolate(false);document.getElementById('app')?.classList.remove('board-home');}
- render();return {render,show,hide,element:panel};
+ render();return {render,show,hide,element:panel,get state(){return snapshot;},subscribe(fn){subscribers.add(fn);fn(snapshot);return()=>subscribers.delete(fn);},open(key,id){const account=destinations().find(a=>a.key===key);if(account&&!account.pending)travel(account,id);}};
 }

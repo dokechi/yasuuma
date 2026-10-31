@@ -6,7 +6,7 @@ body.spatial-prototype .account-board {
 }
 body.spatial-prototype .account-board>.room-atmosphere,
 body.spatial-prototype .account-board>.room-foyer,
-body.spatial-prototype .account-board>.account-tiles,
+body.spatial-prototype .account-board[data-spatial-ready=true]>.account-tiles,
 body.spatial-prototype .door-threshold { display:none!important; }
 body.spatial-prototype .account-board-heading {
   display:grid; grid-template-columns:auto 1fr; gap:16px; padding:0 0 8px;
@@ -98,3 +98,31 @@ body.spatial-prototype .castle-room-hotspot[data-neighbor=true] .castle-room-lab
 body.spatial-prototype .castle-room-hotspot[data-neighbor=true] .castle-room-marker {left:calc(50% - 28px);top:calc(50% - 22px);width:56px;height:44px;border-radius:4px;font-size:12px}
 body.spatial-prototype .castle-room-hotspot[data-neighbor=true] .castle-room-marker:after {display:none}
 @media(max-width:700px){body.spatial-prototype .spatial-castle[data-overview=true] .castle-room-marker{font-size:12px;border-radius:5px;background:#172335f2;color:#fff0cb}}
+
+/* Screen-space travel follows the selected room's actual architectural bounds.
+   It never intercepts input or delays the route; reduced motion has no layer. */
+body.spatial-prototype .castle-travel-view{position:fixed;inset:0;z-index:250;overflow:hidden;pointer-events:none;background:#172233;contain:strict}
+body.spatial-prototype .castle-travel-view .castle-stage{transition:none!important}
+@media(prefers-reduced-motion:reduce){body.spatial-prototype .castle-travel-view{display:none!important}}
+
+/* Navigation belongs to the castle's brass-and-timber rail, not a blue app frame. */
+body.spatial-prototype .account-board{background-image:linear-gradient(#10182744,#0c142542),var(--castle-sky,none);background-size:cover;background-position:center}
+body.spatial-prototype .castle-viewport{background:transparent}
+body.spatial-prototype .account-board-heading{padding:7px 10px;background:linear-gradient(90deg,#24241dee,#172128bb);border:1px solid #b9a16b55;border-bottom-color:#d9bd7b88;box-shadow:inset 0 1px #e4cc8f22}
+body.spatial-prototype .account-board-status{text-shadow:0 1px 3px #08111b,0 0 5px #08111b}
+body.spatial-prototype .castle-routebar{padding:7px 8px;background:linear-gradient(90deg,#24271fe8,#19212bc9);border-top:1px solid #bd9f6466}
+body.spatial-prototype .castle-quick{gap:0;padding:3px 8px 7px;background:linear-gradient(#20291feb,#17232aee);border-bottom:1px solid #bd9f6466}
+body.spatial-prototype .account-board .castle-quick-open{border:0;border-left:1px solid #b79e6b44;border-radius:0;background:transparent;color:#f5e5c4;font-family:'Yu Mincho','Hiragino Mincho ProN',serif;font-size:15px;position:relative}
+body.spatial-prototype .account-board .castle-quick-open[aria-current=location]{color:#ffe2a0;background:#c9af6c11}
+body.spatial-prototype .account-board .castle-quick-open[aria-current=location]:after{content:'';position:absolute;bottom:3px;left:25%;right:25%;height:2px;background:#c9ad70}
+body.spatial-prototype .board-footer{background:#14202bc9;border-top:0}
+body.spatial-prototype .castle-travel-view{background-image:var(--castle-sky,none);background-size:cover;background-position:center}
+@media(max-width:700px){body.spatial-prototype .account-board-heading{padding:6px 7px}body.spatial-prototype .account-board .castle-quick-open{font-size:13px}body.spatial-prototype .castle-quick{padding:3px 0 7px}body.spatial-prototype .castle-routebar{padding:5px}}
+
+/* Companions inhabit the same floor coordinates as their working room. */
+body.spatial-prototype .castle-room-actor{position:absolute;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 4px 5px #18111266);pointer-events:none}
+body.spatial-prototype .castle-room-actor[data-actor=insurance]{left:24%;top:45%;width:14%;height:15%;clip-path:inset(0 0 2% 0)}
+body.spatial-prototype .castle-room-actor[data-actor=otoku]{left:31%;top:14%;width:7.5%;height:17%}
+body.spatial-prototype .castle-room-actor[data-actor=rakuten]{left:65%;top:43%;width:16%;height:16%}
+body.spatial-prototype .castle-room-actor[data-actor=lottery]{left:69%;top:18%;width:12%;height:14%}
+body.spatial-prototype .castle-room-actor[data-actor=sourcing]{left:57%;top:76%;width:13%;height:16%}

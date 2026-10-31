@@ -1,31 +1,39 @@
 /* Prototype only. A paper on a physical desk, inside the cutaway's study.
-   Every selector is limited to the opted-in insurance room. */
-body.spatial-prototype #room[data-account='insurance'] {
+   Every selector is limited to an opted-in, mounted publishing room. */
+body.spatial-prototype #room[data-spatial-desk='ready'] {
   --spatial-paper: #fff9e9;
   --spatial-ink: #352d24;
   --spatial-muted: #6c5842;
+  --spatial-title: #493427;
+  --spatial-accent: #694036;
+  --spatial-rail: #efe1bd;
+  --spatial-wood-dark: #44291d;
+  --spatial-wood-mid: #815733;
   overflow: hidden;
   padding: 0;
   background: #392a24;
   color: var(--spatial-ink);
 }
-body.spatial-prototype #room[data-account='insurance'] :is(.room-architecture,#room-art,.room-shade) { display: none; }
+body.spatial-prototype #room[data-spatial-desk='ready'][data-account='otoku'] { --spatial-paper: #fdf8f1; --spatial-ink: #3c3244; --spatial-title: #4d365d; --spatial-accent: #5c416e; --spatial-rail: #e9dceb; --spatial-wood-dark: #302336; --spatial-wood-mid: #70516f; }
+body.spatial-prototype #room[data-spatial-desk='ready'][data-account='rakuten'] { --spatial-paper: #fffae8; --spatial-ink: #433323; --spatial-title: #69471f; --spatial-accent: #79501e; --spatial-rail: #efdfb5; --spatial-wood-dark: #51311d; --spatial-wood-mid: #a07137; }
+body.spatial-prototype #room[data-spatial-desk='ready'][data-account='lottery'] { --spatial-paper: #f7faed; --spatial-ink: #2c4038; --spatial-title: #2f5146; --spatial-accent: #315d4f; --spatial-rail: #dce5d1; --spatial-wood-dark: #243b35; --spatial-wood-mid: #5b7560; }
+body.spatial-prototype #room[data-spatial-desk='ready'] :is(.room-architecture,#room-art,.room-shade) { display: none; }
 /* Moving a control must not override the reader's existing hidden contract. */
-body.spatial-prototype #room[data-account='insurance'] [hidden] { display: none!important; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-study-scene {
+body.spatial-prototype #room[data-spatial-desk='ready'] [hidden] { display: none!important; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-study-scene {
   position: absolute;
   inset: 0;
   z-index: -3;
   pointer-events: none;
   background: url('./assets/castle-cutaway-v1.webp') 13.0769% 45.8333% / 285.7143% 357.1429% no-repeat;
 }
-body.spatial-prototype #room[data-account='insurance'] .spatial-study-scene::after {
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-study-scene::after {
   content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg,#241c2466,transparent 36%,#2c1c2470),linear-gradient(90deg,transparent 65%,#291d2426);
 }
-body.spatial-prototype #room[data-account='insurance'] .spatial-writing-surface {
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-writing-surface {
   position: absolute;
   z-index: -1;
   left: 27%;
@@ -35,11 +43,13 @@ body.spatial-prototype #room[data-account='insurance'] .spatial-writing-surface 
   transform: skewY(-3deg);
   border: 3px solid #41271b;
   border-radius: 8px 4px 0 0;
-  background: repeating-linear-gradient(3deg,transparent 0 44px,#e8b5680c 45px 46px,transparent 47px 79px),linear-gradient(100deg,#44291d,#815733 42%,#4a2e20);
+  background: repeating-linear-gradient(3deg,transparent 0 44px,#e8b5680c 45px 46px,transparent 47px 79px),linear-gradient(100deg,var(--spatial-wood-dark),var(--spatial-wood-mid) 42%,var(--spatial-wood-dark));
   box-shadow: inset 0 5px #bd965d66,inset 0 8px #281c1966,0 -8px 36px #1d151a75;
   pointer-events: none;
 }
-body.spatial-prototype #room[data-account='insurance'] .spatial-desk-actor {
+/* High-resolution interiors include a real horizontal foreground table. */
+body.spatial-prototype #room[data-spatial-desk='ready'][data-spatial-scene='interior'] .spatial-writing-surface { display: none; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-desk-actor {
   position: absolute;
   left: -3%;
   bottom: -2%;
@@ -52,7 +62,7 @@ body.spatial-prototype #room[data-account='insurance'] .spatial-desk-actor {
   pointer-events: none;
   user-select: none;
 }
-body.spatial-prototype #room[data-account='insurance'] .back-button {
+body.spatial-prototype #room[data-spatial-desk='ready'] .back-button {
   top: max(16px,env(safe-area-inset-top));
   left: 20px;
   z-index: 5;
@@ -65,7 +75,7 @@ body.spatial-prototype #room[data-account='insurance'] .back-button {
   color: #423021;
   font: 600 14px/1.5 system-ui,sans-serif;
 }
-body.spatial-prototype #room[data-account='insurance'] .room-caption {
+body.spatial-prototype #room[data-spatial-desk='ready'] .room-caption {
   display: block;
   left: 28px;
   right: auto;
@@ -76,27 +86,34 @@ body.spatial-prototype #room[data-account='insurance'] .room-caption {
   text-align: left;
   text-shadow: 0 2px 7px #1f1328;
 }
-body.spatial-prototype #room[data-account='insurance'] .room-caption .eyebrow { display: none; }
-body.spatial-prototype #room[data-account='insurance'] .room-caption h2 { margin: 0; color: #fff5db; font: 500 25px/1.5 'Yu Mincho',serif; letter-spacing: .08em; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-desk-nav { position: absolute; z-index: 6; top: max(16px,env(safe-area-inset-top)); right: 22px; display: flex; align-items: flex-start; gap: 8px; }
-body.spatial-prototype #room[data-account='insurance'] :is(.spatial-desk-nav button,.spatial-work>summary,.spatial-shelf-dialog button) { min-height: 44px; min-width: 44px; padding: 10px 14px; border: 1px solid #bb965a; border-radius: 5px; color: #3e3026; background: #f9edd1; font: 600 14px/1.5 system-ui,sans-serif; cursor: pointer; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work>summary { display: flex; align-items: center; justify-content: center; gap: 8px; list-style: none; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work>summary::-webkit-details-marker { display: none; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work>summary::after { content: '⌄'; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work[open]>summary::after { content: '⌃'; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work-body { position: absolute; top: 52px; right: 0; width: min(380px,calc(100vw - 24px)); max-height: calc(100dvh - 92px); overflow: auto; overscroll-behavior: contain; padding: 16px; border: 1px solid #b2935a; border-radius: 7px; background: #fff8e9; box-shadow: 0 12px 50px #1c112475; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work-body :is(.desk-toolbar,.desk-footer,.reader-qol) { display: flex; flex-direction: column; align-items: stretch; margin: 0; padding: 0 0 14px; border: 0; background: none; gap: 10px; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work-body .desk-heading { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; background: none; color: #443126; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work-body .desk-heading>div { flex: 1 0 100%; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work-body #desk-read { display: inline-flex; margin: 0; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work-body .desk-routes { display: flex; flex-wrap: wrap; padding: 0; gap: 8px; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work-body .desk-routes strong { flex: 1 0 100%; font-size: 14px; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work-body .desk-state { display: flex; margin: 0; width: 100%; max-width: none; color: #62503a; font-size: 13px; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work-body .desk-state summary { min-height: 44px; white-space: normal; padding: 10px 0; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work-body :is(button,a) { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 12px; font-size: 14px; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work-body :is(#draft-kind,#draft-meta) { display: block; padding: 8px 0; font-size: 13px; color: #66523c; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-work-body #again { display: inline-flex; margin: 0; }
-body.spatial-prototype #room[data-account='insurance'] .reading-desk {
+body.spatial-prototype #room[data-spatial-desk='ready'] .room-caption .eyebrow { display: none; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .room-caption h2 { display: none; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-room-name { display: block; min-height: 44px; max-width: 100%; padding: 8px 10px; border: 1px solid #e3c89691; border-radius: 4px; background: #2b211bd6; color: #fff3d6; font: 500 19px/1.4 'Yu Mincho',serif; text-align: left; overflow-wrap: anywhere; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-desk-nav { position: absolute; z-index: 6; top: max(16px,env(safe-area-inset-top)); right: 22px; display: flex; align-items: flex-start; gap: 8px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] :is(.spatial-desk-nav button,.spatial-work>summary,.spatial-shelf-dialog button) { min-height: 44px; min-width: 44px; padding: 10px 14px; border: 1px solid #bb965a; border-radius: 5px; color: #3e3026; background: var(--spatial-rail); font: 600 14px/1.5 system-ui,sans-serif; cursor: pointer; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work>summary { display: flex; align-items: center; justify-content: center; gap: 8px; list-style: none; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work>summary::-webkit-details-marker { display: none; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work>summary::after { content: '⌄'; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work[open]>summary::after { content: '⌃'; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body { position: absolute; top: 52px; right: 0; width: min(380px,calc(100vw - 24px)); max-height: calc(100dvh - 92px); overflow: auto; overscroll-behavior: contain; padding: 16px; border: 1px solid #b2935a; border-radius: 7px; background: #fff8e9; box-shadow: 0 12px 50px #1c112475; }
+/* These nodes used to sit on a dark wood toolbar. Reset their explicit light
+   foregrounds, not only their parent color, on this light secondary drawer. */
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body :is(h3,strong,p,span,small,label,summary,button,input,select,textarea) { color: #4b3828; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body a { color: #315b52; text-decoration: underline; text-underline-offset: 3px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body .desk-toolbar::before,
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body .desk-toolbar::after { display: none; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body :is(.desk-toolbar,.desk-footer,.reader-qol) { display: flex; flex-direction: column; align-items: stretch; margin: 0; padding: 0 0 14px; border: 0; background: none; gap: 10px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body .desk-heading { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; background: none; color: #443126; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body .desk-heading>div { flex: 1 0 100%; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body #desk-read { display: inline-flex; margin: 0; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body .desk-routes { display: flex; flex-wrap: wrap; padding: 0; gap: 8px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body .desk-routes strong { flex: 1 0 100%; font-size: 14px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body .desk-state { display: flex; margin: 0; width: 100%; max-width: none; color: #62503a; font-size: 13px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body .desk-state summary { min-height: 44px; white-space: normal; padding: 10px 0; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body :is(button,a) { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 12px; font-size: 14px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body :is(#draft-kind,#draft-meta) { display: block; padding: 8px 0; font-size: 13px; color: #66523c; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body #again { display: inline-flex; margin: 0; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .reading-desk {
   position: absolute;
   inset: 92px 5% 38px 39%;
   z-index: 2;
@@ -112,87 +129,104 @@ body.spatial-prototype #room[data-account='insurance'] .reading-desk {
   backdrop-filter: none;
   color: var(--spatial-ink);
 }
-body.spatial-prototype #room[data-account='insurance'] .reading-desk::before,
-body.spatial-prototype #room[data-account='insurance'] .reading-desk::after,
-body.spatial-prototype #room[data-account='insurance'] #desk-article::before { display: none; }
-body.spatial-prototype #room[data-account='insurance'] .desk-content { display: flex; flex: 1 1 auto; min-height: 0; border: 0; overflow: hidden; }
-body.spatial-prototype #room[data-account='insurance'] .manuscript-shelf { display: none; }
-body.spatial-prototype #room[data-account='insurance'] .manuscript-reader { display: flex; flex: 1 1 auto; min-height: 0; background: linear-gradient(90deg,#ead8ae24,transparent 20px),var(--spatial-paper); }
-body.spatial-prototype #room[data-account='insurance'] .desk-variants { padding: 10px 24px 0; gap: 6px; }
-body.spatial-prototype #room[data-account='insurance'] .desk-variants:empty { padding: 0; }
-body.spatial-prototype #room[data-account='insurance'] .reader-scroll { flex: 1 1 auto; min-height: 0; height: auto; padding: 28px 32px 32px; overflow: auto; scrollbar-gutter: stable; }
-body.spatial-prototype #room[data-account='insurance'] #desk-article { width: 100%; max-width: 680px; margin: 0 auto; }
-body.spatial-prototype #room[data-account='insurance'] #draft-title { margin: 0 0 18px; color: #493427; font: 600 25px/1.55 'Yu Mincho','Hiragino Mincho ProN',serif; letter-spacing: .03em; }
-body.spatial-prototype #room[data-account='insurance'] #draft-body { font-size: 16px; line-height: 1.95; color: #3c342b; }
-body.spatial-prototype #room[data-account='insurance'] .reader-actions { display: grid; grid-template-columns: minmax(0,1fr) 44px minmax(115px,.8fr); align-items: stretch; flex: 0 0 auto; margin: 0; padding: 12px 18px; gap: 8px; border-top: 1px solid #d6c29c; background: #efe1bd; }
-body.spatial-prototype #room[data-account='insurance'] .reader-actions button { min-height: 44px; min-width: 44px; margin: 0; padding: 8px 10px; border: 1px solid #bda16c; border-radius: 4px; background: #fbf4df; color: #453526; font: 600 13px/1.5 system-ui,sans-serif; }
-body.spatial-prototype #room[data-account='insurance'] .reader-actions #desk-copy { background: #694036; border-color: #694036; color: #fff6de; }
-body.spatial-prototype #room[data-account='insurance'] .reader-actions #desk-pin { padding: 6px; font-size: 23px; }
-body.spatial-prototype #room[data-account='insurance'] #desk-operation { flex: 0 0 auto; margin: 0; padding: 9px 18px; color: #5d4832; background: #f4e8cb; font: 13px/1.6 system-ui,sans-serif; }
-body.spatial-prototype #room[data-account='insurance'] #desk-operation:empty { display: none; }
-body.spatial-prototype #room[data-account='insurance'] .desk-pending { flex: 0 0 auto; margin: 10px 14px 0; min-height: 44px; }
-body.spatial-prototype #room[data-account='insurance'] .desk-empty { margin: 16px 0; padding: 18px; color: #68533a; font-size: 16px; }
-body.spatial-prototype #room[data-account='insurance'].desk-focused .spatial-desk-actor { opacity: .18; }
-body.spatial-prototype #room[data-account='insurance'].desk-focused .reading-desk { left: 18%; }
-body.spatial-prototype #room[data-account='insurance'] :is(button,a,input,summary,#desk-scroll):focus-visible { outline: 3px solid #295f67; outline-offset: 3px; box-shadow: 0 0 0 5px #fff8e6; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .reading-desk::before,
+body.spatial-prototype #room[data-spatial-desk='ready'] .reading-desk::after,
+body.spatial-prototype #room[data-spatial-desk='ready'] #desk-article::before { display: none; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .desk-content { display: flex; flex: 1 1 auto; min-height: 0; border: 0; overflow: hidden; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .manuscript-shelf { display: none; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .manuscript-reader { display: flex; flex: 1 1 auto; min-height: 0; background: linear-gradient(90deg,#ead8ae24,transparent 20px),var(--spatial-paper); }
+body.spatial-prototype #room[data-spatial-desk='ready'] .desk-variants { padding: 10px 24px 0; gap: 6px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .desk-variants:empty { padding: 0; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .reader-scroll { flex: 1 1 auto; min-height: 0; height: auto; padding: 28px 32px 32px; overflow: auto; scrollbar-gutter: stable; }
+body.spatial-prototype #room[data-spatial-desk='ready'] #desk-article { width: 100%; max-width: 680px; margin: 0 auto; }
+body.spatial-prototype #room[data-spatial-desk='ready'] #draft-title { margin: 0 0 18px; color: var(--spatial-title); font: 600 25px/1.55 'Yu Mincho','Hiragino Mincho ProN',serif; letter-spacing: .03em; }
+body.spatial-prototype #room[data-spatial-desk='ready'] #draft-body { font-size: 16px; line-height: 1.95; color: var(--spatial-ink); }
+body.spatial-prototype #room[data-spatial-desk='ready'] .reader-actions { display: grid; grid-template-columns: minmax(0,1fr) 44px minmax(115px,.8fr); align-items: stretch; flex: 0 0 auto; margin: 0; padding: 12px 18px; gap: 8px; border-top: 1px solid #d6c29c; background: var(--spatial-rail); }
+body.spatial-prototype #room[data-spatial-desk='ready'] .reader-actions button { min-height: 44px; min-width: 44px; margin: 0; padding: 8px 10px; border: 1px solid #bda16c; border-radius: 4px; background: #fbf4df; color: #453526; font: 600 13px/1.5 system-ui,sans-serif; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .reader-actions #desk-copy { background: var(--spatial-accent); border-color: var(--spatial-accent); color: #fff6de; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .reader-actions #desk-pin { padding: 6px; font-size: 23px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] #desk-operation { flex: 0 0 auto; margin: 0; padding: 9px 18px; color: #5d4832; background: #f4e8cb; font: 13px/1.6 system-ui,sans-serif; }
+body.spatial-prototype #room[data-spatial-desk='ready'] #desk-operation:empty { display: none; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .desk-pending { flex: 0 0 auto; margin: 10px 14px 0; min-height: 44px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .desk-empty { margin: 16px 0; padding: 18px; color: #68533a; font-size: 16px; }
+body.spatial-prototype #room[data-spatial-desk='ready'].desk-focused .spatial-desk-actor { opacity: .18; }
+body.spatial-prototype #room[data-spatial-desk='ready'].desk-focused .reading-desk { left: 18%; }
+body.spatial-prototype #room[data-spatial-desk='ready'] :is(button,a,input,summary,#desk-scroll):focus-visible { outline: 3px solid #295f67; outline-offset: 3px; box-shadow: 0 0 0 5px #fff8e6; }
 
 /* The shelf is the same live DOM, moved temporarily into native top-layer UI. */
-body.spatial-prototype #room[data-account='insurance'] .spatial-shelf-dialog { width: min(620px,calc(100vw - 24px)); max-width: none; max-height: calc(100dvh - 32px); margin: auto; padding: 0; overflow: hidden; border: 2px solid #967244; border-radius: 6px; color: var(--spatial-ink); background: #fbf2db; box-shadow: 0 24px 80px #180c2299; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-shelf-dialog::backdrop { background: #211724a6; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-shelf-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 18px; border-bottom: 1px solid #c6ab79; background: #ead9b5; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-shelf-heading h2 { margin: 0; font: 600 22px/1.4 'Yu Mincho',serif; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-shelf-host { min-height: 0; max-height: calc(100dvh - 110px); overflow: auto; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-shelf-dialog .manuscript-shelf { display: flex; max-height: none; min-height: 0; padding: 16px; border: 0; background: #f7ecd2; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-shelf-dialog .desk-search { width: 100%; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-shelf-dialog .desk-search input { min-height: 44px; width: 100%; padding: 10px 12px; font-size: 16px; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-shelf-dialog .desk-filters { position: static; display: flex; flex-wrap: wrap; width: auto; margin-top: 10px; gap: 6px; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-shelf-dialog .desk-filters button { font-size: 13px; padding: 9px 8px; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-shelf-dialog .desk-count { display: block; padding: 12px 2px; font-size: 13px; color: #6c5842; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-shelf-dialog .manuscript-list { display: block; height: auto; max-height: none; overflow: visible; padding: 0; margin: 0; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-shelf-dialog .manuscript-card { display: flex; width: 100%; min-width: 0; max-width: none; max-height: none; margin: 0 0 10px; padding: 14px!important; gap: 7px; border-radius: 4px; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-shelf-dialog .manuscript-card strong { font-size: 16px; line-height: 1.6; -webkit-line-clamp: 3; }
-body.spatial-prototype #room[data-account='insurance'] .spatial-shelf-dialog .manuscript-card :is(small,span) { display: block; color: #6c5842; font-size: 13px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-shelf-dialog { width: min(620px,calc(100vw - 24px)); max-width: none; max-height: calc(100dvh - 32px); margin: auto; padding: 0; overflow: hidden; border: 2px solid #967244; border-radius: 6px; color: var(--spatial-ink); background: #fbf2db; box-shadow: 0 24px 80px #180c2299; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-shelf-dialog::backdrop { background: #211724a6; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-shelf-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 18px; border-bottom: 1px solid #c6ab79; background: #ead9b5; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-shelf-heading h2 { margin: 0; font: 600 22px/1.4 'Yu Mincho',serif; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-shelf-host { min-height: 0; max-height: calc(100dvh - 110px); overflow: auto; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-shelf-dialog .manuscript-shelf { display: flex; max-height: none; min-height: 0; padding: 16px; border: 0; background: #f7ecd2; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-shelf-dialog .desk-search { width: 100%; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-shelf-dialog .desk-search input { min-height: 44px; width: 100%; padding: 10px 12px; font-size: 16px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-shelf-dialog .desk-filters { position: static; display: flex; flex-wrap: wrap; width: auto; margin-top: 10px; gap: 6px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-shelf-dialog .desk-filters button { font-size: 13px; padding: 9px 8px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-shelf-dialog .desk-count { display: block; padding: 12px 2px; font-size: 13px; color: #6c5842; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-shelf-dialog .manuscript-list { display: block; height: auto; max-height: none; overflow: visible; padding: 0; margin: 0; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-shelf-dialog .manuscript-card { display: flex; width: 100%; min-width: 0; max-width: none; max-height: none; margin: 0 0 10px; padding: 14px!important; gap: 7px; border-radius: 4px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-shelf-dialog .manuscript-card strong { font-size: 16px; line-height: 1.6; -webkit-line-clamp: 3; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-shelf-dialog .manuscript-card :is(small,span) { display: block; color: #6c5842; font-size: 13px; }
+
+/* Compact identity opens the complete current name/handle and five safe routes. */
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-room-dialog { width: min(560px,calc(100vw - 24px)); max-width: none; max-height: calc(100dvh - 32px); margin: auto; padding: 0; overflow: auto; overscroll-behavior: contain; border: 2px solid #967244; border-radius: 6px; color: var(--spatial-ink); background: var(--spatial-paper); box-shadow: 0 24px 80px #180c2299; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-room-dialog::backdrop { background: #211724a6; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-room-dialog .spatial-shelf-heading { position: sticky; top: 0; z-index: 1; padding: 12px 16px; background: var(--spatial-rail); }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-room-dialog .spatial-shelf-heading h2 { font-size: 19px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-room-dialog button { min-height: 44px; min-width: 44px; padding: 10px 12px; border: 1px solid #b49b73; border-radius: 4px; color: var(--spatial-ink); background: var(--spatial-paper); font: 500 14px/1.5 system-ui,sans-serif; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-account-identity { padding: 18px 20px; border-bottom: 1px solid #d8c8a8; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-account-identity h3 { margin: 0 0 6px; font: 600 22px/1.5 'Yu Mincho',serif; overflow-wrap: anywhere; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-account-identity p { margin: 0; color: #594d40; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-account-identity .spatial-room-description { margin-top: 8px; font-size: 13px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-quick-destinations { display: grid; gap: 8px; padding: 16px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-quick-destinations button { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; min-height: 64px; text-align: left; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-quick-destinations button strong { font-size: 16px; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-quick-destinations button span { color: #605242; font-size: 13px; overflow-wrap: anywhere; }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-quick-destinations button[aria-current='page'] { border: 2px solid var(--spatial-accent); background: var(--spatial-rail); }
+body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-quick-destinations button:disabled { opacity: .55; cursor: default; }
 
 @media (max-width:1000px) and (min-width:601px) {
-  body.spatial-prototype #room[data-account='insurance'] .reading-desk { inset: 82px 24px 24px 30%; }
-  body.spatial-prototype #room[data-account='insurance'] .spatial-desk-actor { left: -8%; width: 46%; height: 75%; }
-  body.spatial-prototype #room[data-account='insurance'] .room-caption { left: 18px; top: 86px; max-width: 24%; }
-  body.spatial-prototype #room[data-account='insurance'] .room-caption h2 { font-size: 21px; }
-  body.spatial-prototype #room[data-account='insurance'] .reader-scroll { padding: 22px; }
-  body.spatial-prototype #room[data-account='insurance'] #draft-title { font-size: 22px; }
-  body.spatial-prototype #room[data-account='insurance'] .reader-actions { grid-template-columns: minmax(0,1fr) 44px minmax(112px,.9fr); padding: 10px; gap: 6px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .reading-desk { inset: 82px 24px 24px 30%; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-desk-actor { left: -8%; width: 46%; height: 75%; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .room-caption { left: 18px; top: 86px; max-width: 24%; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-room-name { font-size: 17px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .reader-scroll { padding: 22px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] #draft-title { font-size: 22px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .reader-actions { grid-template-columns: minmax(0,1fr) 44px minmax(112px,.9fr); padding: 10px; gap: 6px; }
 }
 @media (max-width:600px) {
-  body.spatial-prototype #room[data-account='insurance'] .back-button { top: max(8px,env(safe-area-inset-top)); left: 8px; padding: 10px 8px; font-size: 12px; }
-  body.spatial-prototype #room[data-account='insurance'] .spatial-desk-nav { top: max(8px,env(safe-area-inset-top)); right: 8px; gap: 5px; }
-  body.spatial-prototype #room[data-account='insurance'] .spatial-desk-nav>button { min-width: 64px; padding: 10px 9px; font-size: 12px; }
-  body.spatial-prototype #room[data-account='insurance'] .spatial-work>summary { min-width: 91px; padding: 10px 8px; font-size: 12px; gap: 4px; }
-  body.spatial-prototype #room[data-account='insurance'] .spatial-work-body { right: 0; top: 50px; width: min(380px,calc(100vw - 16px)); }
-  body.spatial-prototype #room[data-account='insurance'] .room-caption { left: 18px; top: 78px; width: 48%; max-width: none; }
-  body.spatial-prototype #room[data-account='insurance'] .room-caption h2 { font-size: 21px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .back-button { top: max(8px,env(safe-area-inset-top)); left: 8px; padding: 10px 8px; font-size: 12px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-desk-nav { top: max(8px,env(safe-area-inset-top)); right: 8px; gap: 5px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-desk-nav>button { min-width: 64px; padding: 10px 9px; font-size: 12px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work>summary { min-width: 91px; padding: 10px 8px; font-size: 12px; gap: 4px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-work-body { right: 0; top: 50px; width: min(380px,calc(100vw - 16px)); }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .room-caption { left: 18px; top: 78px; width: 48%; max-width: none; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-room-name { font-size: 16px; padding: 7px 9px; }
   /* The cutout's lower edge meets/disappears behind the foreground paper. */
-  body.spatial-prototype #room[data-account='insurance'] .spatial-desk-actor { left: auto; right: 8px; top: 64px; bottom: auto; width: 39%; height: auto; object-position: right top; }
-  body.spatial-prototype #room[data-account='insurance'] .spatial-writing-surface { left: -12%; right: -18%; top: 128px; bottom: -12%; transform: skewY(-4deg); }
-  body.spatial-prototype #room[data-account='insurance'] .reading-desk,
-  body.spatial-prototype #room[data-account='insurance'].desk-focused .reading-desk { position: absolute; inset: 147px 12px max(14px,env(safe-area-inset-bottom)); margin: 0; min-height: 0; border-radius: 2px; }
-  body.spatial-prototype #room[data-account='insurance'] .desk-content,
-  body.spatial-prototype #room[data-account='insurance'] .manuscript-reader { flex: 1 1 auto; min-height: 0; }
-  body.spatial-prototype #room[data-account='insurance'] .reader-scroll { flex: 1 1 auto; height: auto; min-height: 0; padding: 20px 18px 26px; }
-  body.spatial-prototype #room[data-account='insurance'] #draft-title { font-size: 20px; line-height: 1.5; margin-bottom: 16px; }
-  body.spatial-prototype #room[data-account='insurance'] #draft-body { font-size: 16px; line-height: 1.9; }
-  body.spatial-prototype #room[data-account='insurance'] .desk-variants { padding: 8px 12px 0; }
-  body.spatial-prototype #room[data-account='insurance'] .desk-variants:empty { padding: 0; }
-  body.spatial-prototype #room[data-account='insurance'] .reader-actions { grid-template-columns: minmax(0,1fr) 44px minmax(106px,.9fr); padding: 9px; gap: 6px; }
-  body.spatial-prototype #room[data-account='insurance'] .reader-actions button { padding: 8px 7px; font-size: 12px; }
-  body.spatial-prototype #room[data-account='insurance'] .reader-actions #desk-done { font-size: 12px; }
-  body.spatial-prototype #room[data-account='insurance'] #desk-operation { padding: 8px 12px; font-size: 12px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-desk-actor { left: auto; right: 8px; top: 64px; bottom: auto; width: 39%; height: auto; object-position: right top; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .spatial-writing-surface { left: -12%; right: -18%; top: 128px; bottom: -12%; transform: skewY(-4deg); }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .reading-desk,
+  body.spatial-prototype #room[data-spatial-desk='ready'].desk-focused .reading-desk { position: absolute; inset: 147px 12px max(14px,env(safe-area-inset-bottom)); margin: 0; min-height: 0; border-radius: 2px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .desk-content,
+  body.spatial-prototype #room[data-spatial-desk='ready'] .manuscript-reader { flex: 1 1 auto; min-height: 0; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .reader-scroll { flex: 1 1 auto; height: auto; min-height: 0; padding: 20px 18px 26px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] #draft-title { font-size: 20px; line-height: 1.5; margin-bottom: 16px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] #draft-body { font-size: 16px; line-height: 1.9; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .desk-variants { padding: 8px 12px 0; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .desk-variants:empty { padding: 0; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .reader-actions { grid-template-columns: minmax(0,1fr) 44px minmax(106px,.9fr); padding: 9px; gap: 6px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .reader-actions button { padding: 8px 7px; font-size: 12px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .reader-actions #desk-done { font-size: 12px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] #desk-operation { padding: 8px 12px; font-size: 12px; }
 }
 @media (max-width:380px) {
-  body.spatial-prototype #room[data-account='insurance'] .reader-actions { grid-template-columns: minmax(0,1fr) 44px; }
-  body.spatial-prototype #room[data-account='insurance'] .reader-actions #desk-done { grid-column: 1 / -1; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .reader-actions { grid-template-columns: minmax(0,1fr) 44px; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] .reader-actions #desk-done { grid-column: 1 / -1; }
 }
 @media (prefers-reduced-motion:reduce) {
-  body.spatial-prototype #room[data-account='insurance'] *,
-  body.spatial-prototype #room[data-account='insurance'] *::before,
-  body.spatial-prototype #room[data-account='insurance'] *::after { animation: none!important; transition: none!important; scroll-behavior: auto!important; }
+  body.spatial-prototype #room[data-spatial-desk='ready'] *,
+  body.spatial-prototype #room[data-spatial-desk='ready'] *::before,
+  body.spatial-prototype #room[data-spatial-desk='ready'] *::after { animation: none!important; transition: none!important; scroll-behavior: auto!important; }
 }

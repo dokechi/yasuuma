@@ -1,0 +1,82 @@
+[
+  {
+    "key": "otoku",
+    "sourceDimensions": [
+      1054,
+      1492
+    ],
+    "optimizedDimensions": [
+      723,
+      1024
+    ],
+    "quality": 76,
+    "bytes": 190286,
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "fullyTransparentFraction": 0.29369728290929203,
+    "mostlyOpaqueFraction": 0.634882293971239,
+    "mode": "built-in image_gen.imagegen background-extraction; source PNG preserved; optimized WebP alpha retained; max edge 1024 for alpha budget"
+  },
+  {
+    "key": "rakuten",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "optimizedDimensions": [
+      1254,
+      1254
+    ],
+    "quality": 74,
+    "bytes": 185044,
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "fullyTransparentFraction": 0.41089184466167594,
+    "mostlyOpaqueFraction": 0.5607879347491536,
+    "mode": "built-in image_gen.imagegen background-extraction; source PNG preserved; optimized WebP alpha retained; max edge 1280"
+  },
+  {
+    "key": "lottery",
+    "sourceDimensions": [
+      1254,
+      1254
+    ],
+    "optimizedDimensions": [
+      1254,
+      1254
+    ],
+    "quality": 74,
+    "bytes": 195822,
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "fullyTransparentFraction": 0.4158437815577075,
+    "mostlyOpaqueFraction": 0.5590524993068433,
+    "mode": "built-in image_gen.imagegen background-extraction; source PNG preserved; optimized WebP alpha retained; max edge 1280"
+  },
+  {
+    "key": "sourcing",
+    "sourceDimensions": [
+      1536,
+      1024
+    ],
+    "optimizedDimensions": [
+      1280,
+      853
+    ],
+    "quality": 82,
+    "bytes": 197392,
+    "alphaExtrema": [
+      0,
+      255
+    ],
+    "fullyTransparentFraction": 0.4738578912661196,
+    "mostlyOpaqueFraction": 0.46337924970691674,
+    "mode": "built-in image_gen.imagegen background-extraction; source PNG preserved; optimized WebP alpha retained; max edge 1280"
+  }
+]

@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "generator": "built-in image_gen.imagegen",
+  "created_date_utc": "2026-10-31",
+  "master_reference": "/workspace/scratch/fb34ce625558/generated_images/command-castle-cutaway-v1.webp",
+  "style_reference_for_otoku_rakuten_lottery_sourcing": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-insurance-v1.webp",
+  "processing": "PNG originals retained; WebP encoding only with Pillow method=6. No resizing or artificial upscale. Generation is interpretive, not a pixel-identical interior reconstruction.",
+  "integration": "Use full image as background cover; do not reuse normalized master crop coordinates. Horizontal writing surfaces are already painted; avoid an additional vertical CSS wood slab. Load only selected room, not all five in initial scene.",
+  "total_webp_bytes": 1664874,
+  "assets": [
+    {
+      "room": "insurance",
+      "path": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-insurance-v1.webp",
+      "original_path": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-insurance-v1.png",
+      "prompt_path": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-insurance-v1-prompt.txt",
+      "bytes": 342340,
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGB",
+      "webp_quality": 82,
+      "sha256": "ba8e7a6033ce7f66126b80350811abde485ad6d08cf33754459e936b1a5ac77f",
+      "composition_notes": "Burgundy curtains, violet leaded lattice windows left, bookcases and fireplace right; horizontal foreground writing surface. Reserve lower-left for seated figure/desk alpha. No foreground chair added."
+    },
+    {
+      "room": "otoku",
+      "path": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-otoku-v1.webp",
+      "original_path": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-otoku-v1.png",
+      "prompt_path": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-otoku-v1-prompt.txt",
+      "bytes": 327900,
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGB",
+      "webp_quality": 78,
+      "sha256": "18c35055f4eb6f5b109567cbbacc8d7ae5f8549cba75f76008fcbff23d5bf218",
+      "composition_notes": "Violet rib-vault archive with pointed windows, cabinet specimens, brass instruments and scrolls. Open lower-left aisle for standing, extended-hand figure; foreground counter is lower-right."
+    },
+    {
+      "room": "rakuten",
+      "path": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-rakuten-v1.webp",
+      "original_path": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-rakuten-v1.png",
+      "prompt_path": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-rakuten-v1-prompt.txt",
+      "bytes": 325962,
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGB",
+      "webp_quality": 80,
+      "sha256": "70e5abb06b208591079fa54041655208ef45767808e2b7d44353b6b2734406a1",
+      "composition_notes": "Amber oak pantry/dining room with sunlit arched windows, ceramics, copper and herbs. Broad horizontal foreground table for woman/Shiba/gift/table cluster; background dining furniture remains part of room."
+    },
+    {
+      "room": "lottery",
+      "path": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-lottery-v1.webp",
+      "original_path": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-lottery-v1.png",
+      "prompt_path": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-lottery-v1-prompt.txt",
+      "bytes": 329502,
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGB",
+      "webp_quality": 78,
+      "sha256": "2aa89c4cdea5d13fea7cd95ccad6f96dba9a626154203bd4cd5fa92bb2e10e1d",
+      "composition_notes": "Teal/silver ribbed dome, star windows, brass telescope and left constellation slate. Horizontal star-map work surface in foreground; clear left zone for map-reading figure and blue chair."
+    },
+    {
+      "room": "sourcing",
+      "path": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-sourcing-v1.webp",
+      "original_path": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-sourcing-v1.png",
+      "prompt_path": "/workspace/scratch/fb34ce625558/generated_images/castle-interior-sourcing-v1-prompt.txt",
+      "bytes": 339170,
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGB",
+      "webp_quality": 78,
+      "sha256": "645037a3d6ffbbe24fe42e3cf49f09309c63d4c368322d361af1f69eea7bb2f3",
+      "composition_notes": "Teal cabinet workshop under broad stone arch, brass scales and copper furnace. Right-edge shelf contact zone for book-holding actor; horizontal foreground workbench and quiet center for native ledger."
+    }
+  ]
+}

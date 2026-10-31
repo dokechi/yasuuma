@@ -124,3 +124,6 @@ try{
 })();return worldLoading;}
 $('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');
 desk.ready();
+
+// The spatial presentation consumes the same account controller, not copied data.
+export const getAccountBoard=()=>desk?.accountBoard;
