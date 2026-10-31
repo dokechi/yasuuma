@@ -102,41 +102,55 @@ body.spatial-atelier #room[data-spatial-desk='ready'] .living-object-art > .livi
 body.spatial-atelier #room[data-spatial-desk='ready'] .living-object-art > .living-art-detail {
   position: absolute; display: block; box-sizing: border-box; font-style: normal;
 }
-body.spatial-atelier #room[data-spatial-desk='ready'] .living-object-art > .living-art-back { display: none; }
+/* Actual DOM shadow participates in the return snapshot. Light comes from
+   upper left in every object; contact remains tight, cast shadow falls right. */
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-object-art > .living-art-back {
+  position: absolute; display: block; left: 4%; right: -8%; bottom: -13px;
+  height: 18px; z-index: -1; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(ellipse at 43% 35%,#130e15a3 0 24%,#130e154d 46%,transparent 74%);
+  filter: blur(2px); transform: skewX(-14deg); font-style: normal;
+}
 /* Archive: bound spines sit on the same shelf, rather than an icon in a tile. */
 body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='shelf'] .living-object-art {
   width: min(100%,178px); height: 120px; border: 6px solid #69472d;
   border-top: 9px solid #9a7045; border-bottom: 9px solid #946a40;
   border-radius: 38% 38% 2px 2px / 12% 12% 2px 2px;
-  background: linear-gradient(90deg,#2d2420,#433127 50%,#2a211e);
-  box-shadow: inset 0 0 0 2px #ba925645,0 3px 0 #33251f;
+  background:
+    repeating-linear-gradient(91deg,transparent 0 6px,#ad865a0a 7px 8px,transparent 9px 23px),
+    linear-gradient(125deg,#5d4030,#382a22 42%,#211b1b);
+  box-shadow: inset 2px 2px #d7ad716b,inset -3px 0 #1e171b66,3px 2px 0 #4b3325,5px 5px 0 #281e1c,0 3px 0 #33251f;
 }
 body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='shelf'] .living-object-art > .living-art-front {
   left: 7%; right: 7%; top: 12%; height: 80%; border-radius: 3px 2px 0 0;
   background:
+    linear-gradient(110deg,#fff5cf29,transparent 35%,#17111b40),
+    repeating-linear-gradient(90deg,#f6ddb221 0 1px,transparent 2px 11px,#130d182e 12px 14px,transparent 15px 22px),
     linear-gradient(180deg,transparent 0 13%,#dfc58b 13% 15%,transparent 15% 83%,#dfc58b 83% 86%,transparent 86%),
     linear-gradient(90deg,var(--living-cloth) 0 16%,#d5b97a 16% 18%,#30241f 18% 21%,#807750 21% 35%,#c0a86f 35% 37%,#33271e 37% 40%,#a27b45 40% 57%,#dbbe85 57% 59%,#2d231f 59% 62%,var(--living-cloth-light) 62% 75%,#dfc89a 75% 77%,#30241f 77% 80%,var(--living-cloth) 80% 100%);
+  clip-path: polygon(0 6%,18% 6%,18% 0,37% 0,37% 12%,60% 12%,60% 4%,78% 4%,78% 10%,100% 10%,100% 100%,0 100%);
   box-shadow: inset 0 2px #e0cc9959,inset -3px 0 #0c10154d;
 }
 body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='shelf'] .living-object-art > .living-art-detail {
   left: -7%; right: -7%; bottom: -7px; height: 12px;
   border: 1px solid #b28a52; border-bottom: 4px solid #3d2b21;
-  border-radius: 1px; background: linear-gradient(#a77a48,#7a5432);
+  border-radius: 1px; background: linear-gradient(#cfaa70 0 16%,#9b7147 22%,#67472f 100%);
 }
 /* Notice: pinned parchment, with abstract rules only. Actual words stay HTML. */
 body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='notice'] .living-object-art {
   width: min(100%,128px); height: 110px; margin-bottom: 8px;
   border: 7px solid #714e33; border-radius: 2px;
-  background: repeating-linear-gradient(5deg,#6d533c 0 3px,#72583e 4px 6px);
-  box-shadow: inset 0 0 0 1px #b98e56,0 2px 0 #33241f;
+  background: linear-gradient(125deg,#ffffff0d,transparent 42%,#130e1c36),repeating-linear-gradient(5deg,#6d533c 0 3px,#72583e 4px 6px);
+  box-shadow: inset 1px 1px #dfbd8070,inset -2px -1px #251c2159,3px 3px 0 #39271f,5px 5px 1px #1d161c80;
+  rotate: 1deg;
 }
 body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='notice'] .living-object-art > .living-art-front {
   inset: 10px 10px 8px; border: 1px solid #cfb789;
   background:
     linear-gradient(#8d7857,#8d7857) 12px 24px / 62% 2px no-repeat,
     linear-gradient(#b6a383,#b6a383) 12px 35px / 50% 2px no-repeat,
-    linear-gradient(#b6a383,#b6a383) 12px 46px / 59% 2px no-repeat,#f5e9c9;
-  box-shadow: 2px 4px 2px #23171f59;
+    linear-gradient(#b6a383,#b6a383) 12px 46px / 59% 2px no-repeat,
+    linear-gradient(115deg,#fff7df,#f3e5c4 65%,#e1cba3);
+  box-shadow: 1px 1px 0 #fff9e2,2px 4px 2px #23171f59;
 }
 body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='notice'] .living-object-art > .living-art-detail {
   left: calc(50% - 5px); top: 7px; width: 10px; height: 10px; border-radius: 50%;
@@ -152,8 +166,9 @@ body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='desk'] .livi
     linear-gradient(#b7a07a,#b7a07a) 17px 33px / 73% 2px no-repeat,
     linear-gradient(#b7a07a,#b7a07a) 17px 44px / 68% 2px no-repeat,
     linear-gradient(#b7a07a,#b7a07a) 17px 55px / 46% 2px no-repeat,
-    linear-gradient(100deg,#e9d8b4,#fbf1d8 20%,#f2e3c1);
-  box-shadow: 2px 3px 0 #a68b5e,3px 5px 0 #edddba,4px 7px 0 #bca271;
+    linear-gradient(100deg,#e9d8b4,#fff7e2 18%,#f2e3c1 76%,#dcc397);
+  box-shadow: inset 0 1px #fffdf0,2px 3px 0 #a68b5e,3px 5px 0 #edddba,4px 7px 0 #bca271,5px 9px 1px #34231e80;
+  rotate: -2deg;
 }
 body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='desk'] .living-object-art > .living-art-front {
   right: 12px; top: -5px; width: 16px; height: 52px;
@@ -171,10 +186,12 @@ body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='chest'] .liv
   border: 2px solid #b8945d; border-bottom: 5px solid #39281f;
   border-radius: 28px 28px 4px 4px;
   background:
+    linear-gradient(180deg,#fff1bf3b 0 3%,#fff3ca16 9%,transparent 23%,#24182457 40%,transparent 48%,#160e173b 100%),
     linear-gradient(90deg,transparent 0 14%,#6d512f 14% 15%,var(--living-metal) 15% 20%,#e1c58b 20% 21%,transparent 21% 79%,#6d512f 79% 80%,var(--living-metal) 80% 85%,#e1c58b 85% 86%,transparent 86%),
+    repeating-linear-gradient(3deg,transparent 0 3px,#d3b17a17 4px 5px,transparent 6px 12px),
     repeating-linear-gradient(0deg,transparent 0 15px,#211b1a80 16px 17px),
     linear-gradient(90deg,#583923,#9b7041 45%,#4c3524);
-  box-shadow: inset 0 2px #dec18c80,inset 0 -5px #241b1d66,0 3px 0 #c2a16b;
+  box-shadow: inset 1px 2px #f2d399a3,inset -3px 0 #22171e70,inset 0 -5px #241b1d66,3px 2px 0 #6f502e,5px 4px 0 #2c201d,0 3px 0 #c2a16b;
 }
 body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='chest'] .living-object-art > .living-art-front {
   left: 0; right: 0; top: 41%; height: 8px;

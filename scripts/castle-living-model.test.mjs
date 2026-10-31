@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {summarizeLivingRooms} from '../command-center-98/lounge/living-room-model.js';
 import {createNotebook} from '../command-center-98/lounge/notebook.js';
 import {seenRevision,revision} from '../command-center-98/lounge/qol-model.js';
+import {holdsActiveText} from '../command-center-98/lounge/desk-model.js';
 
 const now = Date.parse('2026-11-01T00:30:00+09:00');
 const earlier = Date.parse('2026-10-31T23:59:00+09:00');
@@ -189,4 +190,50 @@ test('current foreground metadata uses its own text revision, not newer or older
   const room=by(ready(notebook,{place:'kyun',active:{...a,body:a.body+'手元の編集'}}));
   assert.equal(room.current.id,'a');assert.equal(room.current.read,false);assert.equal(room.current.posted,false);assert.equal(room.current.unread,true);
   assert.equal(room.readCount,1,'aggregate remains explicitly about saved records');
+});
+
+
+test('raw host posting defaults and normalized notebook assets are semantically equal',()=>{
+  const incoming=row('active',{posting:{main:'保存本文',reply:''}});
+  const notebook=createNotebook({seeds:{kyun:[]},now:()=>now});notebook.replaceSources([incoming]);
+  const active=notebook.get(incoming.id),before=JSON.stringify({active,incoming});
+  assert.deepEqual(active.posting,{images:[],main:'保存本文',reply:''});
+  assert.equal(holdsActiveText(active,[incoming],true),false);
+  assert.equal(holdsActiveText({...active,posting:undefined},[{...incoming,posting:{images:[],reply:''}}],true),false);
+  assert.equal(holdsActiveText({...active,posting:{images:[]}},[{...incoming,posting:{reply:''}}],true),false);
+  assert.equal(JSON.stringify({active,incoming}),before);
+});
+
+test('supported product links compare by normalized key and URL, not incoming order or labels',()=>{
+  const active=row('active',{productLinks:[{key:'yahoo',url:'https://store.shopping.yahoo.co.jp/shop/item.html',label:'保存ページ'},{key:'official',url:'https://example.test/',label:'公式'},{key:'affiliate',url:''}]});
+  const next={...active,productLinks:[{key:'official',url:'https://example.test',label:'別の表示名'},{key:'yahoo',url:'https://store.shopping.yahoo.co.jp/shop/item.html'}]};
+  const before=JSON.stringify({active,next});
+  assert.equal(holdsActiveText(active,[next],true),false);
+  assert.equal(holdsActiveText({...active,productLinks:undefined},[{...active,productLinks:[]}],true),false);
+  assert.equal(holdsActiveText(active,[{...next,productLinks:[...next.productLinks,{key:'affiliate',url:'https://example.test/revenue'}]}],true),true);
+  assert.equal(JSON.stringify({active,next}),before);
+});
+
+test('real posting text, ordered images, asset identity and source status still hold the current paper',()=>{
+  const image={url:'https://example.test/image.png',label:'一枚目',assetKey:'threads:12:'+ 'a'.repeat(64)};
+  const active=row('active',{link:'https://example.test/reference',posting:{main:'本文',reply:'返信',images:[image,{url:'https://example.test/two.png',label:'二枚目'}]},source:{account:'insurance',id:'source-one',status:'確認用下書き'}});
+  const changes=[
+    {posting:{...active.posting,main:'新しい本文'}},{posting:{...active.posting,reply:'新しい返信'}},
+    {posting:{...active.posting,images:[]}},{posting:{...active.posting,images:[...active.posting.images].reverse()}},
+    {posting:{...active.posting,images:[{...image,assetKey:'threads:12:'+'b'.repeat(64)},active.posting.images[1]]}},
+    {source:{...active.source,status:'保存済みの別状態'}},{link:'https://example.test/other'},
+    {title:'別の見出し'},{body:'別の本文'},{kind:'別の本文種別'},{checkedAt:'別の確認日'}
+  ];
+  for(const change of changes)assert.equal(holdsActiveText(active,[{...active,...change}],true),true,JSON.stringify(change));
+});
+
+test('canonical comparison keeps complete removal protection and does not treat a partial absence as removal',()=>{
+  const active=row('active',{posting:{main:'保存本文',reply:''}});
+  assert.equal(holdsActiveText(active,[],true),true);
+  assert.equal(holdsActiveText(active,[],false),false);
+  assert.equal(holdsActiveText({...active,source:null},[],true),false);
+  const notebook=createNotebook({seeds:{kyun:[]},now:()=>now});notebook.replaceSources([active]);
+  const normalized=notebook.get(active.id);
+  const snapshot=ready(notebook,{place:'kyun',active:normalized,pending:{drafts:[active],complete:true}});
+  assert.equal(by(snapshot).pendingUpdate,false,'equivalent raw defaults are not a changed manuscript');
 });

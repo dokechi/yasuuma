@@ -1,7 +1,7 @@
 /* The established application boots independently. Spatial presentation is an
    optional enhancement: a failed asset/module never strands saved manuscripts. */
-import {getAccountBoard,getLivingDesk} from './app.js?v=20261101.1-living';
-const board=getAccountBoard();let scene,desk;
+import * as application from './app.js?v=20261101.1-living';
+const board=application.getAccountBoard();let scene,desk;
 try{
  const styles=getComputedStyle(document.body);
  if(styles.getPropertyValue('--spatial-castle-ready').trim()!=='1'||styles.getPropertyValue('--spatial-reader-ready').trim()!=='1')throw new Error('Spatial styles unavailable');
@@ -12,7 +12,7 @@ try{
  document.body.dataset.spatial='ready';
  // Living objects are independently optional. Their failure cannot remove the
  // proven castle or reader, and they never own data requests.
- try{if(getComputedStyle(document.body).getPropertyValue('--living-room-ready').trim()!=='1')throw Error('Room tool styles unavailable');const [{installLivingRoom},{summarizeLivingRooms}]=await Promise.all([import('./living-room.js?v=20261101.1-living'),import('./living-room-model.js?v=20261101.1-living')]);const controller=getLivingDesk();controller.setSummarizer(summarizeLivingRooms);installLivingRoom({controller,spatialDesk:desk,scene});}catch(error){console.warn('Room tools unavailable; the original reader remains ready.',error);}
+ try{if(getComputedStyle(document.body).getPropertyValue('--living-room-ready').trim()!=='1')throw Error('Room tool styles unavailable');const [{installLivingRoom},{summarizeLivingRooms}]=await Promise.all([import('./living-room.js?v=20261101.1-living'),import('./living-room-model.js?v=20261101.1-living')]);const controller=application.getLivingDesk?.();if(!controller?.setSummarizer)throw Error('Living reader adapter unavailable');controller.setSummarizer(summarizeLivingRooms);installLivingRoom({controller,spatialDesk:desk,scene});}catch(error){console.warn('Room tools unavailable; the original reader remains ready.',error);}
 
 }catch(error){
  desk?.destroy();scene?.destroy();document.body.classList.remove('spatial-atelier');document.body.dataset.spatial='fallback';

@@ -1,4 +1,4 @@
-import {groupDrafts} from './notebook.js?v=20261031.1-lottery';
+import {groupDrafts,productLinks,postingAssets} from './notebook.js?v=20261031.1-lottery';
 
 export const placeForRoom={red:'kyun',purple:'choi',silver:'fp',orange:'shiire'};
 export const placeNames={kyun:'保険',choi:'以前の原稿',otoku:'まだ安く買えるはず',rakuten:'楽天犬',lottery:'抽選',fp:'FP・TikTok',shiire:'仕入れ'};
@@ -12,8 +12,11 @@ export function visibleGroups(rows,{query='',filter='all',isPinned=()=>false,isD
 export function holdsActiveText(active,rows,complete){
  if(!active?.source)return false;
  const next=rows.find(d=>d.id===active.id);
+ // Compare the same canonical shapes that notebook.normalize stores. The host
+ // may omit default images/reply fields or send link keys in another order;
+ // those are not edits and must not manufacture a held update on every read.
  if(!next)return complete===true;
- return ['title','body','link','kind','checkedAt'].some(k=>(active[k]||'')!==(next[k]||''))||JSON.stringify(active.productLinks||[])!==JSON.stringify(next.productLinks||[])||JSON.stringify(active.posting||{})!==JSON.stringify(next.posting||{})||(active.source.status||'')!==(next.source?.status||'');
+ return ['title','body','link','kind','checkedAt'].some(k=>(active[k]||'')!==(next[k]||''))||JSON.stringify(productLinks(active.productLinks))!==JSON.stringify(productLinks(next.productLinks))||JSON.stringify(postingAssets(active.posting))!==JSON.stringify(postingAssets(next.posting))||(active.source.status||'')!==(next.source?.status||'');
 }
 export function nativeForDraft(place,draft){
  const action=place==='shiire'?'sourcing':place==='fp'?(draft?.source?.account==='tiktok'?'tiktok':'fp'):place;

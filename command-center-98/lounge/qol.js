@@ -1,5 +1,5 @@
-import {createHallTools} from './hall-tools.js?v=20261031.1-lottery';
-import {placeNames} from './desk-model.js?v=20261031.1-lottery';
+import {createHallTools} from './hall-tools.js?v=20261101.1-living';
+import {placeNames} from './desk-model.js?v=20261101.1-living';
 import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261031.1-lottery';
 import {isLegacyPublishingDraft,postingAssets} from './notebook.js?v=20261031.1-lottery';
 
