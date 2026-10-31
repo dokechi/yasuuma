@@ -321,7 +321,7 @@ function installProbe() {
       // restore focus, rather than only changing the hidden legacy inputs.
       await f.locator('.castle-experience-settings').click();
       await f.getByRole('dialog',{name:'システム',exact:true}).waitFor();
-      const settingsTargets=await f.locator('#settings-close, #settings .segmented label, #settings .setting-line:has(#reduce-setting)').evaluateAll(ns=>ns.map(n=>{const r=n.getBoundingClientRect();return{text:n.textContent,width:r.width,height:r.height};}));
+      const settingsTargets=await f.locator('#settings button, #settings select, #settings summary, #settings .segmented label, #settings .setting-line').evaluateAll(ns=>ns.map(n=>{const r=n.getBoundingClientRect();return{text:n.textContent,width:r.width,height:r.height,visible:getComputedStyle(n).visibility!=='hidden'};}).filter(n=>n.visible&&n.width>0&&n.height>0));
       check('experience settings have real touch-sized controls',settingsTargets.every(n=>n.width>=44&&n.height>=44),settingsTargets);
       await f.locator('#settings .setting-line:has(#reduce-setting)').click();
       await f.locator('#settings .segmented label:has(input[value=quick])').click();

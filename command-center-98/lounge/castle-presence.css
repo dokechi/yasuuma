@@ -28,3 +28,7 @@ body:has(#reduce-setting:checked) :is(.spatial-shelf-dialog,.spatial-room-dialog
 /* The visible world-settings entry uses the existing modal. Its close control
    must remain a full touch target on the new mobile path as well. */
 body.spatial-atelier #settings-close{width:44px;height:44px;min-width:44px;min-height:44px;flex-shrink:0}
+body.spatial-atelier #settings button,body.spatial-atelier #settings select,body.spatial-atelier #settings summary{min-width:44px;min-height:44px;font-size:14px}
+body.spatial-atelier #settings small,body.spatial-atelier #settings .settings-note{font-size:12px;line-height:1.5;color:#62543c}
+body.spatial-atelier #settings .setting-line{min-height:56px}
+body.spatial-atelier #settings #settings-close{font-size:22px}
