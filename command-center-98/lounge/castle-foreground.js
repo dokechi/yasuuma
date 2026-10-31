@@ -14,7 +14,8 @@ export function captureCastleForeground(sourceDocument,{document:target=sourceDo
   if(node.scrollTop)clone.dataset.journeyScrollTop=String(node.scrollTop);
   for(const child of node.childNodes){const next=copy(child);if(next)clone.append(next);}return clone;
  }
- for(const [selector,part]of [['.spatial-desk-actor','actor'],['#desk','paper']]){
+ const paperSelector=sourceDocument.querySelector('#room')?.dataset.livingView==='tools'?'.living-workbench':'#desk';
+ for(const [selector,part]of [['.spatial-desk-actor','actor'],[paperSelector,'paper']]){
   const source=sourceDocument.querySelector(selector),rect=source?.getBoundingClientRect();if(!source||!rect?.width||!rect.height)continue;
   const clone=copy(source);if(!clone)continue;clone.dataset.journeyPart=part;
   Object.assign(clone.style,{position:'absolute',left:(rect.left+offsetX)+'px',top:(rect.top+offsetY-surfaceTop)+'px',right:'auto',bottom:'auto',width:rect.width+'px',height:rect.height+'px',margin:'0',transform:'none',pointerEvents:'none'});root.append(clone);

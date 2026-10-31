@@ -1,5 +1,5 @@
-import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261031.11-immersive';
-import {createConveniences} from './qol.js?v=20261031.1-lottery';
+import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261101.1-living';
+import {createConveniences} from './qol.js?v=20261101.1-living';
 import {resumeView,postingReadiness} from './qol-model.js?v=20261031.1-lottery';
 import {createNotebook,safeLink} from './notebook.js?v=20261031.1-lottery';
 import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261031.1-lottery';
@@ -13,6 +13,12 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  const notebook=createNotebook({seeds:{kyun:[],choi:[],otoku:[],rakuten:[],lottery:[],fp:[],shiire:[]},storage,onError:()=>{storageError=true;}});
  let place=null,active=null,query='',filter='all',pending=null,loading=false,complete=false,connected=false,autoReturn=false,manual=null,scrollTimer=0,externalNotes=false,nativeWork=null;
  const selections=new Map(),views=new Map();let requested=null;let returnToAccounts=false;
+ const livingSubscribers=new Set();let livingQueued=false,livingSignature='',statusMessage='',sourceIssue='',recordsAccepted=false,summarizeLivingRooms=null;
+ const livingSnapshot=()=>summarizeLivingRooms?summarizeLivingRooms({notebook,loading,complete:complete&&recordsAccepted,connected,message:sourceIssue||statusMessage,active,place,pending,externalNotes}):{rooms:[],complete:false};
+ // Coalesce only synchronous UI changes, never poll or fetch. Emission follows
+ // the owner render so held revisions and seen marks describe the shown paper.
+ function emitLiving(){if(!summarizeLivingRooms||livingQueued)return;livingQueued=true;queueMicrotask(()=>{livingQueued=false;const value=livingSnapshot(),signature=JSON.stringify(value);if(signature===livingSignature)return;livingSignature=signature;for(const listener of livingSubscribers)listener(value);});}
+
  const board=createAccountBoard({host:document.body,rows:()=>notebook.all(),open:(account,id)=>{returnToAccounts=true;requested={place:account.place,id};if(id)selections.set(account.place,id);onOpenRoom(account.place);},onLounge:()=>{returnToAccounts=false;onLounge();},onLegacy:showLegacy,onRefresh:()=>{if(embedded){setStatus('保存原稿を読み込み中…',{loading:true});send('refresh');}else window.top.location.href=productionURL;}});
  $('account-board-open').addEventListener('click',()=>board.show());
  function showLegacy(){
@@ -22,7 +28,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   const oldCopies=notebook.copies().filter(c=>['kyun','choi','otoku','rakuten','lottery'].includes(c.place)&&!publishingAccounts.some(a=>copiesForAccount([c],a,id=>notebook.get(id)).length));if(oldCopies.length)dialog.append(el('h3','旧・投稿先未確定のコピー履歴'));for(const c of oldCopies){const item=el('details');item.append(el('summary',c.title||'以前のコピー'),el('pre',c.text));dialog.append(item);}
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();
  }
- const conveniences=createConveniences({notebook,open:context=>{requested=context;if(context.id)selections.set(context.place,context.id);onOpenRoom(context.place);},copy:(...args)=>copy(...args),native,onFeedback,send:(...args)=>send(...args)});
+ const conveniences=createConveniences({notebook,open:context=>{requested=context;if(context.id)selections.set(context.place,context.id);onOpenRoom(context.place);},copy:(...args)=>copy(...args),native,onFeedback,onChange:emitLiving,send:(...args)=>send(...args)});
  const learningHost=el('div');$('draft-body').after(learningHost);let learningController=null,learningKey='',learningReady=false;
  const imageHost=el('div');learningHost.after(imageHost);let imageController=null,imageKey='';
  function attachments(d){
@@ -51,7 +57,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   savePosition();autoReturn=returnHome;if(place==='shiire'&&['sourcing','watches','cards'].includes(action))nativeWork=action;if(['sourcing','watches','cards','fp','tiktok'].includes(action)){const p=['fp','tiktok'].includes(action)?'fp':'shiire';notebook.setPref('lastWork',{place:p,title:({sourcing:'仕入れ帳',watches:'海外時計・価格差',cards:'カード',fp:'FP 台本・画像',tiktok:'TikTok 投稿結果'})[action],native:action,recordId,section});conveniences.refresh();}send('native',{action,...(['purchases','research','queue'].includes(section)?{section}:{}),...(typeof recordId==='string'&&recordId.length<=500?{recordId}:{})});
  }
  function setStatus(message,{loading:busy=false,complete:done=false}={}){
-  loading=busy;complete=done&&!busy;
+  loading=busy;complete=done&&!busy;if(busy)recordsAccepted=false;statusMessage=message||'';emitLiving();
   $('desk-status').textContent=message||'';
   $('desk-status-label').textContent=busy?'保存原稿を読み込み中…':complete?'保存原稿を読込済み':connected?'保存原稿の状態':'本体との接続';
   $('desk-refresh').disabled=busy;
@@ -92,6 +98,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   return complete?'この持ち場に表示できる保存原稿はありません。上のボタンから本体も確認できます。':'保存原稿の読取状況を確認してください。「更新」で再試行できます。';
  }
  function renderReader({restore=false}={}){
+  emitLiving();
   const context=JSON.stringify([place,active?.id,active?.body]);if(context!==lastRenderedOperationContext){operation('');lastRenderedOperationContext=context;}
   $('desk-article').hidden=!active;$('desk-empty').hidden=!!active;$('desk-empty').textContent=emptyText();
   for(const id of ['desk-copy','desk-pin','desk-done'])$(id).disabled=!active;
@@ -131,24 +138,24 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   if(requested?.native&&embedded&&(['sourcing','watches','cards'].includes(requested.native)&&place==='shiire'||['fp','tiktok'].includes(requested.native)&&place==='fp'))native(requested.native,requested.recordId,true,requested.section);else if(place==='shiire'&&embedded)native('sourcing',undefined,true);requested=null;
  }
  function receive(payload){
-  connected=true;$('desk-connect').hidden=true;
+  recordsAccepted=false;sourceIssue='';connected=true;$('desk-connect').hidden=true;
   setStatus(payload.message,payload);
   if(!Array.isArray(payload.drafts))return;
   const rows=payload.drafts.filter(d=>(!window.CCThreadsArchive?.enabled||window.CCThreadsArchive.acceptsSource(d))&&!window.CCSourcingArchive?.isArchivedDraft(d));
   const next={...payload,drafts:rows};conveniences.status(next);
   if(place&&holdsActiveText(active,rows,next.complete)){
    pending=next;$('desk-pending').hidden=false;
-   try{notebook.replaceSources(rows.filter(d=>d.id!==active.id),{complete:false});renderList();}catch{operation('取得した原稿の形式を確認できませんでした。');}
+   try{notebook.replaceSources(rows.filter(d=>d.id!==active.id),{complete:false});recordsAccepted=true;renderList();}catch{sourceIssue='取得した原稿の形式を確認できませんでした。';operation(sourceIssue);}
   }else{
    pending=null;$('desk-pending').hidden=true;
    const oldId=active?.id,scroll=$('desk-scroll').scrollTop;
-   try{notebook.replaceSources(rows,{complete:next.complete===true});if(oldId)active=notebook.get(oldId);render();if(active?.id===oldId)$('desk-scroll').scrollTop=scroll;}catch{operation('取得した原稿の形式を確認できませんでした。保存済みの本文を保持しています。');}
+   try{notebook.replaceSources(rows,{complete:next.complete===true});recordsAccepted=true;if(oldId)active=notebook.get(oldId);render();if(active?.id===oldId)$('desk-scroll').scrollTop=scroll;}catch{sourceIssue='取得した原稿の形式を確認できませんでした。保存済みの本文を保持しています。';operation(sourceIssue);}
   }
-  board.render({message:payload.message,loading:payload.loading,complete:payload.complete});
+  board.render({message:payload.message,loading:payload.loading,complete:payload.complete});emitLiving();
  }
  function applyPending(){
   if(!pending)return;const next=pending;pending=null;$('desk-pending').hidden=true;const id=active?.id;
-  try{notebook.replaceSources(next.drafts,{complete:next.complete===true});active=id?notebook.get(id):null;render({restore:true});operation('届いた原稿を反映しました。');}catch{operation('更新を反映できませんでした。保存済みの原稿を確認できます。');}
+  try{notebook.replaceSources(next.drafts,{complete:next.complete===true});recordsAccepted=true;sourceIssue='';active=id?notebook.get(id):null;render({restore:true});operation('届いた原稿を反映しました。');}catch{recordsAccepted=false;sourceIssue='更新を反映できませんでした。保存済みの原稿を確認できます。';operation(sourceIssue);}emitLiving();
  }
  async function copy(d,kind='body',text=d.body){
   const snapshot={...d};
@@ -204,7 +211,11 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  });
  window.addEventListener('pagehide',savePosition);
  document.addEventListener('visibilitychange',()=>{if(document.hidden)savePosition();});
- window.addEventListener('storage',e=>{if(e.key?.startsWith('castle-production.v1.')){externalNotes=true;operation('別の画面で読書メモが更新されました。部屋に入り直すと反映します。');}});
+ window.addEventListener('storage',e=>{if(e.key?.startsWith('castle-production.v1.')){externalNotes=true;emitLiving();operation('別の画面で読書メモが更新されました。部屋に入り直すと反映します。');}});
  if(!embedded){$('desk-connect').hidden=false;setStatus('本体から開くと、ログイン中の保存原稿・履歴・仕入れ管理を使えます。');}
- return {accountBoard:board,enter,leave:()=>{send('reading-room',{active:false});savePosition();rememberView();place=null;active=null;nativeWork=null;conveniences.update(null);if(pending)applyPending();if(returnToAccounts)board.show();},native,ready:()=>{if(embedded){setStatus('本体の保存原稿に接続しています…',{loading:true});send('ready');}},receive,notebook,workMarks:conveniences.workMarks};
+ const living={setSummarizer(fn){if(typeof fn!=='function')throw TypeError('A room summarizer is required');summarizeLivingRooms=fn;emitLiving();},snapshot:livingSnapshot,subscribe(listener){livingSubscribers.add(listener);listener(livingSnapshot());return()=>livingSubscribers.delete(listener);},
+  openDraft(id){const account=publishingAccounts.find(a=>a.place===place),row=account&&draftsForAccount(notebook.all(),account).find(d=>d.id===id);if(!row)return false;if(active?.id===id)return true;query='';filter='all';$('desk-query').value='';rememberView();select(id);return true;},
+  history,read:()=>$('desk-read').click(),applyPending:()=>{if(!pending)return false;applyPending();return true;},hasPending:()=>!!pending
+ };
+ return {living,accountBoard:board,enter,leave:()=>{send('reading-room',{active:false});savePosition();rememberView();place=null;active=null;nativeWork=null;conveniences.update(null);emitLiving();if(pending)applyPending();if(returnToAccounts)board.show();},native,ready:()=>{if(embedded){setStatus('本体の保存原稿に接続しています…',{loading:true});send('ready');}},receive,notebook,workMarks:conveniences.workMarks};
 }

@@ -1,8 +1,8 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
 import {createMusicControls} from './music.js?v=20261030.8-integrated';
-import {createDesk} from './desk.js?v=20261031.11-immersive';
+import {createDesk} from './desk.js?v=20261101.1-living';
 import {createInteractionSound} from './interaction-sound.js?v=20261022.26-audio';
-import {createInteractionFeedback} from './interaction-feedback.js?v=20261031.11-immersive';
+import {createInteractionFeedback} from './interaction-feedback.js?v=20261101.1-living';
 const $ = (id) => document.getElementById(id);
 let accountContext=null;
 const accountRooms={kyun:{key:'insurance',name:'保険'},otoku:{key:'otoku',name:'まだ安く買えるはず'},rakuten:{key:'rakuten',name:'楽天犬'},lottery:{key:'lottery',name:'抽選',artKey:'planned-4'}};
@@ -127,3 +127,6 @@ desk.ready();
 
 // The spatial presentation consumes the same account controller, not copied data.
 export const getAccountBoard=()=>desk?.accountBoard;
+
+// Read-only room summaries and existing owner actions for optional living tools.
+export const getLivingDesk=()=>desk?.living;

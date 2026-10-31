@@ -1,0 +1,298 @@
+body.spatial-atelier { --living-room-ready: 1; }
+/* Original code-drawn room tools. No bitmap, third-party art, or source data.
+   The controller owns visibility, inert/focus and real tool operations.
+   A solid surface keeps the companion's original crop behind the same edge
+   as the reader, including the compact PR93 foreground composition. */
+body.spatial-atelier #room[data-spatial-desk='ready'] {
+  --living-room-ready: 1;
+  --living-cloth: #6e3544;
+  --living-cloth-light: #b2787b;
+  --living-metal: #bea16b;
+  --living-metal-light: #ead5a2;
+}
+body.spatial-atelier #room[data-account='otoku'] { --living-cloth: #584267; --living-cloth-light: #a08bb9; }
+body.spatial-atelier #room[data-account='rakuten'] { --living-cloth: #8b5529; --living-cloth-light: #d7ae63; }
+body.spatial-atelier #room[data-account='lottery'] { --living-cloth: #345d55; --living-cloth-light: #83a79c; --living-metal: #adb8b0; --living-metal-light: #e3e4ca; }
+body.spatial-atelier #room[data-account='sourcing'] { --living-cloth: #285b5a; --living-cloth-light: #80aaa2; }
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px; margin-top: 9px; padding: 9px 12px;
+  border: 1px solid #c7ab75; border-radius: 4px;
+  color: #fff2d7; background: #32251ff2;
+  font: 600 14px/1.5 system-ui,sans-serif; text-shadow: none; cursor: pointer;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-toggle[aria-expanded='true'] {
+  background: #f2e5c7; color: #3e3027; border-color: #ead3a1;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-workbench { display: none; }
+body.spatial-atelier #room[data-spatial-desk='ready'][data-living-view='tools'] #desk { visibility: hidden; }
+body.spatial-atelier #room[data-spatial-desk='ready'][data-living-view='tools'] .living-workbench {
+  position: absolute; inset: 92px 5% 38px 39%; z-index: 2;
+  display: flex; flex-direction: column; min-width: 0; min-height: 0;
+  padding: 23px 27px 18px; overflow: auto; overscroll-behavior: contain;
+  scrollbar-gutter: stable; scrollbar-color: #a58a61 #32271f;
+  color: #f7ead0; border: 1px solid #b38f58; border-radius: 5px 5px 3px 3px;
+  background:
+    linear-gradient(180deg,#e4bb6f0f,transparent 30%),
+    repeating-linear-gradient(2deg,transparent 0 49px,#b38b4e0c 50px 51px,transparent 52px 87px),
+    linear-gradient(105deg,#382a22,#49352a 38%,#30261f);
+  box-shadow: inset 0 2px #e1c08b60,inset 0 0 0 6px #1c171a45,0 5px 0 #241b18,7px 18px 30px #160f1b61;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing {
+  position: relative; display: grid; grid-template-columns: minmax(0,1fr) auto;
+  column-gap: 12px; flex: 0 0 auto; margin: 0 0 16px; padding: 17px 22px 16px;
+  border: 1px solid #ccb487; border-left: 4px solid var(--living-cloth);
+  border-radius: 1px 4px 2px 1px; background: #f7ecd5; color: #443329;
+  box-shadow: 2px 3px 0 #beaa80,0 6px 15px #1c131c36;
+  text-shadow: none; overflow-wrap: anywhere;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing small {
+  display: block; grid-column: 1; grid-row: 1; margin: 0 0 5px; color: #715b43;
+  font: 600 12px/1.5 system-ui,sans-serif; letter-spacing: .09em;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing h3 {
+  grid-column: 1; grid-row: 2; margin: 0 0 7px; color: #47372c;
+  font: 600 clamp(18px,1.7vw,23px)/1.45 'Yu Mincho','Hiragino Mincho ProN',serif;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing .live-summary {
+  grid-column: 1 / -1; grid-row: 3; margin: 0; color: #4e3d30; font: 500 14px/1.8 system-ui,sans-serif;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing .live-scope {
+  grid-column: 1 / -1; grid-row: 4; margin: 7px 0 0; color: #6f5943; font: 400 12px/1.65 system-ui,sans-serif;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-reader-return {
+  grid-column: 2; grid-row: 1 / 3; align-self: start;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px; margin: 0; padding: 9px 12px;
+  border: 1px solid #92734a; border-radius: 3px; background: #fef8e9;
+  color: #49372c; font: 600 13px/1.5 system-ui,sans-serif; cursor: pointer;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-objects {
+  display: grid; grid-template-columns: 1.15fr .85fr; gap: 14px 20px;
+  flex: 1 0 auto; align-content: center; min-width: 0; padding: 5px 2px 14px;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-object {
+  position: relative; isolation: isolate; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end; gap: 6px;
+  min-width: 0; min-height: 174px; margin: 0; padding: 9px 8px 11px;
+  border: 1px solid transparent; border-radius: 5px; background: transparent;
+  color: #f5e6c9; text-align: center; text-shadow: none; cursor: pointer;
+  transform: none; transition: background-color 120ms ease,border-color 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-object strong {
+  position: relative; z-index: 1; display: block; max-width: 100%;
+  padding: 5px 11px; border: 1px solid #b69b6b; border-radius: 2px;
+  color: #382c24; background: #eee0bd;
+  font: 600 15px/1.5 system-ui,sans-serif; overflow-wrap: anywhere;
+  box-shadow: 0 2px 2px #1c17194d,inset 0 1px #fff9df;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-object-detail {
+  display: block; max-width: 100%; color: #e6d5b6;
+  font: 400 12px/1.6 system-ui,sans-serif; overflow-wrap: anywhere;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-object-art {
+  position: relative; display: block; flex: 0 0 auto;
+  width: min(100%,168px); height: 105px; margin: 0 auto 3px;
+  pointer-events: none; transform: translateY(0);
+  filter: drop-shadow(0 9px 5px #130f184a);
+  transition: transform 120ms ease,filter 120ms ease;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-object-art > .living-art-front,
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-object-art > .living-art-detail {
+  position: absolute; display: block; box-sizing: border-box; font-style: normal;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-object-art > .living-art-back { display: none; }
+/* Archive: bound spines sit on the same shelf, rather than an icon in a tile. */
+body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='shelf'] .living-object-art {
+  width: min(100%,178px); height: 120px; border: 6px solid #69472d;
+  border-top: 9px solid #9a7045; border-bottom: 9px solid #946a40;
+  border-radius: 38% 38% 2px 2px / 12% 12% 2px 2px;
+  background: linear-gradient(90deg,#2d2420,#433127 50%,#2a211e);
+  box-shadow: inset 0 0 0 2px #ba925645,0 3px 0 #33251f;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='shelf'] .living-object-art > .living-art-front {
+  left: 7%; right: 7%; top: 12%; height: 80%; border-radius: 3px 2px 0 0;
+  background:
+    linear-gradient(180deg,transparent 0 13%,#dfc58b 13% 15%,transparent 15% 83%,#dfc58b 83% 86%,transparent 86%),
+    linear-gradient(90deg,var(--living-cloth) 0 16%,#d5b97a 16% 18%,#30241f 18% 21%,#807750 21% 35%,#c0a86f 35% 37%,#33271e 37% 40%,#a27b45 40% 57%,#dbbe85 57% 59%,#2d231f 59% 62%,var(--living-cloth-light) 62% 75%,#dfc89a 75% 77%,#30241f 77% 80%,var(--living-cloth) 80% 100%);
+  box-shadow: inset 0 2px #e0cc9959,inset -3px 0 #0c10154d;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='shelf'] .living-object-art > .living-art-detail {
+  left: -7%; right: -7%; bottom: -7px; height: 12px;
+  border: 1px solid #b28a52; border-bottom: 4px solid #3d2b21;
+  border-radius: 1px; background: linear-gradient(#a77a48,#7a5432);
+}
+/* Notice: pinned parchment, with abstract rules only. Actual words stay HTML. */
+body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='notice'] .living-object-art {
+  width: min(100%,128px); height: 110px; margin-bottom: 8px;
+  border: 7px solid #714e33; border-radius: 2px;
+  background: repeating-linear-gradient(5deg,#6d533c 0 3px,#72583e 4px 6px);
+  box-shadow: inset 0 0 0 1px #b98e56,0 2px 0 #33241f;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='notice'] .living-object-art > .living-art-front {
+  inset: 10px 10px 8px; border: 1px solid #cfb789;
+  background:
+    linear-gradient(#8d7857,#8d7857) 12px 24px / 62% 2px no-repeat,
+    linear-gradient(#b6a383,#b6a383) 12px 35px / 50% 2px no-repeat,
+    linear-gradient(#b6a383,#b6a383) 12px 46px / 59% 2px no-repeat,#f5e9c9;
+  box-shadow: 2px 4px 2px #23171f59;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='notice'] .living-object-art > .living-art-detail {
+  left: calc(50% - 5px); top: 7px; width: 10px; height: 10px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%,#f5dfae,var(--living-metal) 55%,#6a4b2f 85%);
+  box-shadow: 1px 2px 1px #3523196b;
+}
+/* Current manuscript: a broad low stack, not a distorted clone of live text. */
+body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='desk'] .living-object-art {
+  width: min(100%,190px); height: 82px; margin: 16px auto 11px;
+  border: 1px solid #bfa371; border-radius: 2px 4px 2px 2px;
+  background:
+    linear-gradient(#8e7252,#8e7252) 17px 21px / 54% 3px no-repeat,
+    linear-gradient(#b7a07a,#b7a07a) 17px 33px / 73% 2px no-repeat,
+    linear-gradient(#b7a07a,#b7a07a) 17px 44px / 68% 2px no-repeat,
+    linear-gradient(#b7a07a,#b7a07a) 17px 55px / 46% 2px no-repeat,
+    linear-gradient(100deg,#e9d8b4,#fbf1d8 20%,#f2e3c1);
+  box-shadow: 2px 3px 0 #a68b5e,3px 5px 0 #edddba,4px 7px 0 #bca271;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='desk'] .living-object-art > .living-art-front {
+  right: 12px; top: -5px; width: 16px; height: 52px;
+  border-left: 1px solid #dfc58c; border-right: 1px solid #321d2d5c;
+  background: linear-gradient(90deg,var(--living-cloth),var(--living-cloth-light) 48%,var(--living-cloth));
+  clip-path: polygon(0 0,100% 0,100% 100%,50% 85%,0 100%);
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='desk'] .living-object-art > .living-art-detail {
+  left: 7%; right: 7%; bottom: -11px; height: 4px; z-index: -1;
+  border-radius: 50%; background: #160f18; opacity: .35; filter: blur(3px);
+}
+/* Keepsake chest: rounded lid, brass bands and a single lock. */
+body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='chest'] .living-object-art {
+  width: min(100%,136px); height: 89px; margin: 12px auto 8px;
+  border: 2px solid #b8945d; border-bottom: 5px solid #39281f;
+  border-radius: 28px 28px 4px 4px;
+  background:
+    linear-gradient(90deg,transparent 0 14%,#6d512f 14% 15%,var(--living-metal) 15% 20%,#e1c58b 20% 21%,transparent 21% 79%,#6d512f 79% 80%,var(--living-metal) 80% 85%,#e1c58b 85% 86%,transparent 86%),
+    repeating-linear-gradient(0deg,transparent 0 15px,#211b1a80 16px 17px),
+    linear-gradient(90deg,#583923,#9b7041 45%,#4c3524);
+  box-shadow: inset 0 2px #dec18c80,inset 0 -5px #241b1d66,0 3px 0 #c2a16b;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='chest'] .living-object-art > .living-art-front {
+  left: 0; right: 0; top: 41%; height: 8px;
+  border-top: 2px solid #251b19; border-bottom: 1px solid #e3bf7e;
+  background: linear-gradient(var(--living-metal-light),var(--living-metal) 45%,#725331);
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='chest'] .living-object-art > .living-art-detail {
+  left: calc(50% - 10px); top: 34%; width: 20px; height: 29px;
+  border: 1px solid #70512e; border-radius: 4px 4px 7px 7px;
+  background: radial-gradient(circle at 50% 41%,#33241f 0 3px,transparent 3.5px),linear-gradient(90deg,#a17c44,var(--living-metal-light) 45%,#ac874c);
+  box-shadow: 0 2px 1px #2117196b;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-object:disabled { cursor: default; }
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-object:disabled .living-object-art { filter: saturate(.55) drop-shadow(0 6px 5px #130f184a); }
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-object:disabled strong { color: #655846; background: #ddcfb2; }
+@media (hover:hover) and (pointer:fine) {
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-object:not(:disabled):hover { background: #dbc2920b; border-color: #bd9b5f5c; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-object:not(:disabled):hover .living-object-art { transform: translateY(-2px); filter: drop-shadow(0 11px 6px #130f1859); }
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-object:not(:disabled):active .living-object-art,
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-object.feedback-down .living-object-art { transform: translateY(1px); }
+/* One tactile response only: the drawing contacts the table, while its HTML
+   label and live count stay stationary instead of inheriting a button bounce. */
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-object.feedback-down { translate: none; scale: none; filter: none; }
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-object.feedback-release { animation: none!important; }
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-bench-footer {
+  display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: space-between;
+  align-items: center; gap: 8px 14px; margin-top: auto; padding-top: 12px;
+  border-top: 1px solid #a78b5c70;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-bench-footer button {
+  min-width: 44px; min-height: 44px; padding: 9px 12px;
+  border: 1px solid #c4aa79; border-radius: 3px; background: #ede0c0;
+  color: #3e3027; font: 600 13px/1.5 system-ui,sans-serif; cursor: pointer;
+}
+body.spatial-atelier #room[data-spatial-desk='ready'] .living-bench-footer p {
+  margin: 0; color: #dfcfaf; font: 400 12px/1.6 system-ui,sans-serif;
+}
+/* Native dialog stays editorial: honest scope, real records, no ornamental UI
+   obscures the content. Works when mounted under body or inside the room. */
+body.spatial-atelier .living-dialog {
+  width: min(640px,calc(100vw - 24px)); max-width: none;
+  max-height: calc(100dvh - 32px); margin: auto; padding: 0;
+  overflow: auto; overscroll-behavior: contain;
+  border: 2px solid #aa8954; border-radius: 5px;
+  background: #fbf2dd; color: #44372c; box-shadow: 0 24px 80px #180c2299;
+}
+body.spatial-atelier .living-dialog::backdrop { background: #211724a6; }
+body.spatial-atelier .living-dialog-heading {
+  position: sticky; top: 0; z-index: 1; display: flex;
+  justify-content: space-between; align-items: center; gap: 16px;
+  margin: 0; padding: 13px 18px; border-bottom: 1px solid #c6ab79; background: #eddfbd;
+}
+body.spatial-atelier .living-dialog-heading h2 {
+  margin: 0; color: #45362b; font: 600 21px/1.5 'Yu Mincho','Hiragino Mincho ProN',serif;
+}
+body.spatial-atelier .living-dialog button {
+  min-width: 44px; min-height: 44px; padding: 10px 13px;
+  border: 1px solid #b49b73; border-radius: 3px; color: #49392c;
+  background: #fff9e9; font: 500 14px/1.5 system-ui,sans-serif; cursor: pointer;
+}
+body.spatial-atelier .living-dialog-heading>button { flex: 0 0 auto; }
+body.spatial-atelier .living-dialog-note {
+  margin: 17px 20px; color: #66523e; font: 400 14px/1.75 system-ui,sans-serif;
+  overflow-wrap: anywhere;
+}
+body.spatial-atelier .living-records { display: grid; gap: 10px; margin: 0 18px 18px; }
+body.spatial-atelier .living-records>button { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; padding: 15px 17px; text-align: left; }
+body.spatial-atelier .living-records strong { color: #46362a; font: 600 16px/1.6 system-ui,sans-serif; overflow-wrap: anywhere; }
+body.spatial-atelier .living-records span,
+body.spatial-atelier .living-records>p { color: #6c5740; font: 400 13px/1.7 system-ui,sans-serif; overflow-wrap: anywhere; }
+body.spatial-atelier .living-dialog-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px 18px; }
+body.spatial-atelier .living-dialog-actions p { margin: 0; color: #66523e; font: 400 13px/1.7 system-ui,sans-serif; }
+body.spatial-atelier :is(.living-toggle,.living-reader-return,.living-object,.living-bench-footer button,.living-dialog button):focus-visible {
+  outline: 3px solid #295f67; outline-offset: 3px; box-shadow: 0 0 0 5px #fff8e6;
+}
+@media (max-width:1000px) and (min-width:601px) {
+  body.spatial-atelier #room[data-spatial-desk='ready'][data-living-view='tools'] .living-workbench { inset: 82px 24px 24px 30%; padding: 18px 18px 14px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing { padding: 14px 17px; margin-bottom: 10px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-objects { gap: 10px 12px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-object { min-height: 165px; }
+}
+@media (max-width:600px) {
+  body.spatial-atelier #room[data-spatial-desk='ready'] .room-caption:has(.living-toggle) { display: grid; grid-template-columns: minmax(0,1fr) 44px; align-items: start; gap: 6px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .room-caption:has(.living-toggle) .spatial-room-name { min-width: 0; padding: 6px; font-size: 14px; line-height: 1.45; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-toggle { min-width: 44px; margin: 0; padding: 9px 4px; font-size: 12px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'][data-living-view='tools'] .living-workbench { inset: 147px 12px max(14px,env(safe-area-inset-bottom)); padding: 15px 11px 13px; border-radius: 2px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing { padding: 13px 14px; margin-bottom: 11px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing small { align-self: center; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing h3 { grid-column: 1 / -1; margin-top: 8px; font-size: 19px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-reader-return { grid-row: 1; padding: 9px; font-size: 12px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing .live-summary { font-size: 14px; line-height: 1.7; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-objects { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px 4px; padding: 4px 0 14px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-object { min-height: 175px; padding: 9px 5px; gap: 6px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-object strong { padding: 5px 6px; font-size: 14px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-object-detail { font-size: 12px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='shelf'] .living-object-art { width: min(100%,128px); height: 102px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='notice'] .living-object-art { width: min(100%,110px); height: 103px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='desk'] .living-object-art { width: min(100%,136px); height: 77px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] [data-object='chest'] .living-object-art { width: min(100%,118px); height: 83px; }
+  body.spatial-atelier #room[data-spatial-desk='ready'] .living-bench-footer { gap: 7px; padding-top: 11px; }
+  body.spatial-atelier .living-dialog-heading { padding: 11px 13px; gap: 10px; }
+  body.spatial-atelier .living-dialog-heading h2 { font-size: 19px; }
+  body.spatial-atelier .living-dialog-note { margin: 14px; }
+  body.spatial-atelier .living-records { margin: 0 12px 14px; }
+  body.spatial-atelier .living-records>button { padding: 13px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  body.spatial-atelier :is(.living-object,.living-object-art,.living-toggle) { animation: none!important; transition: none!important; }
+  body.spatial-atelier .living-object .living-object-art { transform: none!important; }
+}
+body.spatial-atelier #app[data-feedback-motion='reduced'] :is(.living-object,.living-object-art,.living-toggle),
+body.spatial-atelier.reduced :is(.living-object,.living-object-art,.living-toggle),
+body.spatial-atelier[data-motion='reduced'] :is(.living-object,.living-object-art,.living-toggle) { animation: none!important; transition: none!important; }
+body.spatial-atelier #app[data-feedback-motion='reduced'] .living-object .living-object-art,
+body.spatial-atelier.reduced .living-object .living-object-art,
+body.spatial-atelier[data-motion='reduced'] .living-object .living-object-art { transform: none!important; }
+
+/* Small steady delivery seal: data, not an invented room-wide activity. */
+body.spatial-atelier .castle-room-hotspot[data-living-light='notice'] .castle-room-marker { box-shadow: 0 0 0 2px #ffe4a0,0 0 16px #ffc56655; }
+body.spatial-atelier .castle-room-hotspot[data-living-light='waiting'] .castle-room-marker { border-style: dashed; }
