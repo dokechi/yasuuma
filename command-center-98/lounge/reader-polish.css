@@ -1,0 +1,208 @@
+/* The reading room: quiet surfaces, clear hierarchy, and usable touch targets.
+   Loaded after the original lounge styles; data, routes and artwork are unchanged. */
+:root {
+  --reader-paper: #fffdf7;
+  --reader-surface: #f5f0e5;
+  --reader-ink: #293b34;
+  --reader-muted: #637068;
+  --reader-line: #d8d9cd;
+  --reader-accent: #294f43;
+  --reader-brass: #977243;
+}
+.room-mode { --desk-art-width: clamp(240px, 25vw, 370px); }
+.room-mode .reading-desk {
+  inset: 18px 18px 18px var(--desk-art-width);
+  border: 1px solid #d5c8af;
+  border-radius: 16px;
+  background: var(--reader-surface);
+  box-shadow: 0 18px 64px #101b2038;
+  backdrop-filter: none;
+  color: var(--reader-ink);
+  font: 14px/1.6 system-ui, -apple-system, "Yu Gothic", sans-serif;
+}
+.room-mode .desk-focused .reading-desk { left: var(--desk-art-width); }
+.room-mode .back-button, .room-mode .desk-focused .back-button {
+  top: max(18px, env(safe-area-inset-top));
+  left: 18px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #fffaf0f2;
+  color: var(--reader-accent);
+  font-size: 14px;
+  font-weight: 600;
+}
+.room-mode .room-caption, .room-mode .desk-focused .room-caption {
+  top: 82px;
+  left: 20px;
+  max-width: calc(var(--desk-art-width) - 40px);
+}
+.room-mode .room-caption h2 { font-size: 24px; line-height: 1.5; letter-spacing: .06em; }
+.room-mode .room-caption .eyebrow { font-size: 10px; letter-spacing: .14em; }
+.room-mode .room-shade { background: linear-gradient(90deg,#112a2980,transparent 45%),linear-gradient(#0f262d44,transparent 40%); }
+
+/* Touch sizes and focus treatment are shared by all reader tools. */
+.room-mode .reading-desk button,
+.room-mode .reading-desk .desk-routes a,
+.desk-dialog button,
+.qol-dialog button,
+.legacy-account-archive button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--reader-line);
+  border-radius: 8px;
+  font: 500 13px/1.5 system-ui, -apple-system, "Yu Gothic", sans-serif;
+  color: var(--reader-ink);
+  background: var(--reader-paper);
+}
+.room-mode .reading-desk :is(button,a,input,select,textarea,summary):focus-visible,
+.desk-dialog :is(button,a,input,select,textarea,summary):focus-visible,
+.qol-dialog :is(button,a,input,select,textarea,summary):focus-visible {
+  outline: 3px solid var(--reader-accent);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px #fffdf7;
+}
+.room-mode .reading-desk button:hover:not(:disabled) { background: #e9efe7; border-color: #8caa98; }
+.room-mode .reading-desk button:active:not(:disabled) { transform: translateY(1px); }
+.room-mode .reading-desk button:disabled { opacity: .52; cursor: default; }
+.room-mode .reading-desk button[aria-pressed=true] { background: #e4ede4; border-color: #769683; color: #234a3c; }
+.room-mode .reading-desk input::placeholder { color: #737c73; opacity: 1; }
+
+/* Identity, destinations, and connection status have separate rows. */
+.room-mode .desk-toolbar { grid-template-columns: minmax(0,1fr) auto; gap: 10px 12px; padding: 16px 18px 12px; background: #f6f3eb; }
+.room-mode .desk-toolbar .desk-heading { justify-content: space-between; gap: 12px; grid-column: 1 / -1; }
+.room-mode .desk-toolbar .desk-heading h3 { font: 600 18px/1.4 system-ui, -apple-system, "Yu Gothic", sans-serif; letter-spacing: .02em; }
+.room-mode .desk-toolbar .desk-routes { grid-column: 1 / -1; justify-content: flex-start; align-items: center; gap: 8px; min-width: 0; }
+.room-mode .desk-routes strong { flex: 1 1 200px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.room-mode .desk-routes a { display: inline-flex; align-items: center; text-decoration: none; }
+.room-mode .desk-routes a:hover { text-decoration: underline; }
+.room-mode .desk-toolbar .desk-routes button { background: transparent; }
+.room-mode .desk-toolbar .desk-state { grid-column: 1 / -1; max-width: none; width: 100%; gap: 12px; font-size: 12px; color: var(--reader-muted); }
+.room-mode .desk-toolbar .desk-state details { min-width: 0; }
+.room-mode .desk-toolbar .desk-state summary { min-height: 44px; max-width: none; padding: 12px 0; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.6; }
+.room-mode .desk-state details p { padding: 0 0 8px; margin: 0; }
+.room-mode .desk-state button { background: transparent; }
+.room-mode .desk-pending { margin: 0 18px 12px; font-size: 13px!important; background: #fff0ce!important; border-color: #b79753!important; }
+.room-mode .desk-connect { margin: 0 18px 12px; padding: 12px; font-size: 13px; border-radius: 8px; }
+
+.room-mode .desk-content { grid-template-columns: minmax(180px,24%) minmax(0,1fr); border-color: var(--reader-line); }
+.room-mode .manuscript-shelf { padding: 14px 12px 0; background: #eef0e8; border-color: var(--reader-line); }
+.room-mode .desk-search { width: 100%; }
+.room-mode .desk-search input { min-height: 44px; padding: 10px 12px; border-color: #c8d1c5; border-radius: 8px; background: var(--reader-paper); color: var(--reader-ink); font-size: 14px; }
+.room-mode .desk-filters { position: static; width: auto; gap: 4px; margin-top: 8px; }
+.room-mode .desk-filters button { flex: 1; padding: 8px 3px; font-size: 12px; border-color: transparent; background: transparent; }
+.room-mode .desk-count { padding: 12px 2px; color: var(--reader-muted); font-size: 12px; }
+.room-mode .manuscript-list { padding: 3px 3px 12px; scrollbar-gutter: stable; }
+.room-mode .manuscript-card { gap: 8px; margin-bottom: 10px; padding: 14px!important; border-color: #d1d8cb!important; border-radius: 10px; background: var(--reader-paper)!important; }
+.room-mode .manuscript-card[aria-pressed=true] { background: #f8fbf5!important; border-color: #658673!important; box-shadow: inset 3px 0 #456b55; }
+.room-mode .manuscript-card small { color: #63715d; font-size: 12px; }
+.room-mode .manuscript-card strong { font-size: 14px; line-height: 1.65; font-weight: 600; }
+.room-mode .manuscript-card span { font-size: 12px; line-height: 1.75; color: var(--reader-muted); }
+.room-mode .manuscript-reader { background: var(--reader-paper); }
+.room-mode .desk-variants { padding: 12px 24px 0; gap: 8px; }
+.room-mode .desk-variants:empty { padding: 0; }
+.room-mode .reader-scroll { padding: 24px 28px 32px; scrollbar-gutter: stable; }
+.room-mode #draft-title { font: 600 23px/1.6 "Yu Mincho", "Hiragino Mincho ProN", serif; margin: 0 0 12px; }
+.room-mode .draft-meta { padding-bottom: 22px; font-size: 12px; line-height: 1.8; color: var(--reader-muted); }
+.room-mode .draft-body { font-size: 16px; line-height: 2; color: #303c33; letter-spacing: .015em; }
+.room-mode #desk-article { max-width: 760px; margin: 0 auto; }
+.room-mode .draft-links { margin-top: 28px; border-color: var(--reader-line); }
+.room-mode .draft-links a { color: #305a47; font-size: 14px; text-underline-offset: 3px; }
+.room-mode .draft-links small { font-size: 12px; color: var(--reader-muted); }
+.room-mode .product-link { gap: 12px; }
+.room-mode .desk-empty { margin: 20px auto; padding: 24px; max-width: 520px; border: 1px dashed #c6cfbf; border-radius: 12px; background: #f5f7f0; color: #596951; font-size: 14px; line-height: 1.9; }
+.room-mode .reading-desk .cc-post-learning { margin: 12px 0; padding: 16px; border-radius: 10px; }
+.room-mode .reading-desk .cc-post-learning>label { font-size: 13px; line-height: 1.8; }
+.room-mode .reading-desk .cc-post-learning textarea { min-height: 300px; font-size: 16px; line-height: 1.9; border-radius: 8px; }
+
+.room-mode .reader-qol { flex-shrink: 0; flex-wrap: wrap; padding: 10px 18px; gap: 8px; background: #f6f3eb; border-color: var(--reader-line); }
+.room-mode .reader-actions { flex-shrink: 0; padding: 12px 18px; gap: 8px; background: #f0f2e9; border-color: var(--reader-line); }
+.room-mode .reader-actions .desk-primary { background: var(--reader-accent); border-color: var(--reader-accent); color: #fffdf4; font-weight: 600; }
+.room-mode .reader-actions .desk-primary:hover { background: #1f4035!important; }
+.room-mode .reader-actions #desk-pin { min-width: 44px; padding: 7px; font-size: 22px; }
+.room-mode .reader-actions #desk-done { font-size: 13px; }
+.room-mode .desk-footer { flex-shrink: 0; flex-wrap: wrap; gap: 8px; padding: 10px 16px; border-color: var(--reader-line); background: #f6f3eb; }
+.room-mode .desk-footer button { background: transparent; }
+.room-mode .desk-footer #desk-operation { min-width: 160px; margin: 0; color: #596c56; font-size: 12px; line-height: 1.7; }
+.room-mode .desk-footer #desk-operation:empty { display: none; }
+.room-mode .desk-footer #again { font-size: 12px; }
+.desk-dialog, .qol-dialog, .legacy-account-archive { background: var(--reader-paper); color: var(--reader-ink); border: 1px solid #b5bea9; border-radius: 16px; padding: 24px; }
+.desk-dialog p, .qol-dialog p { font-size: 14px; }
+.desk-dialog small, .qol-dialog .qol-note { font-size: 12px; color: var(--reader-muted); }
+.desk-dialog textarea, .qol-dialog textarea, .qol-dialog input { font-size: 16px; }
+.desk-dialog header button, .qol-dialog header>button { width: 44px; height: 44px; padding: 0; }
+
+/* Fold unfolded: retain the companion, but give the manuscript most of the width. */
+@media (min-width:701px) and (max-width:1000px) {
+  .room-mode { --desk-art-width: 176px; }
+  .room-mode #room-art { width: 196px; height: 100%; object-position: 50% 30%!important; }
+  .room-mode .reading-desk, .room-mode .desk-focused .reading-desk { inset: 12px 12px 12px var(--desk-art-width); }
+  .room-mode .room-caption, .room-mode .desk-focused .room-caption { top: 82px; left: 14px; max-width: 146px; }
+  .room-mode .room-caption h2 { font-size: 20px; }
+  .room-mode .back-button, .room-mode .desk-focused .back-button { left: 12px; top: 12px; padding: 10px 12px; font-size: 13px; }
+  .room-mode .desk-toolbar { padding: 12px 14px 8px; gap: 6px 10px; }
+  .room-mode .desk-content { grid-template-columns: 174px minmax(0,1fr); }
+  .room-mode .desk-routes strong { flex-basis: 150px; }
+  .room-mode .reader-scroll { padding: 20px; }
+  .room-mode #draft-title { font-size: 20px; }
+  .room-mode .reader-actions, .room-mode .reader-qol { padding: 10px 12px; }
+  .room-mode .desk-footer { padding: 8px 12px; }
+}
+
+/* Cover-screen phones: never squash the manuscript between fixed toolbars.
+   The room can scroll to the reading area; its manuscript keeps the same
+   scroll element used for saved reading positions and keyboard navigation. */
+@media (max-width:700px) {
+  .room-mode #room { overflow-y: auto; overflow-x: hidden; overscroll-behavior-y: contain; padding-bottom: max(12px,env(safe-area-inset-bottom)); }
+  .room-mode #room-art { width: 100%; height: 148px; object-position: 50% 28%!important; transform: none; }
+  .room-mode .room-shade { height: 152px; background: linear-gradient(90deg,#122a29b8,transparent 85%),linear-gradient(transparent,#25352980); }
+  .room-mode .back-button, .room-mode .desk-focused .back-button { top: max(12px,env(safe-area-inset-top)); left: 12px; padding: 10px 14px; }
+  .room-mode .room-caption, .room-mode .desk-focused .room-caption { top: 76px; left: 16px; max-width: calc(100% - 32px); }
+  .room-mode .room-caption h2 { font-size: 22px; }
+  .room-mode .room-caption .eyebrow { display: none; }
+  .room-mode .reading-desk, .room-mode .desk-focused .reading-desk { position: relative; inset: auto; margin: 132px 8px 0; min-height: calc(100svh - 148px); border-radius: 12px; overflow: hidden; }
+  .room-mode .desk-toolbar { padding: 12px; grid-template-columns: minmax(0,1fr); gap: 6px; }
+  .room-mode .desk-toolbar .desk-heading { grid-column: 1; }
+  .room-mode .desk-toolbar .desk-heading h3 { font-size: 17px; }
+  .room-mode .desk-toolbar .desk-routes { display: flex; flex-wrap: wrap; grid-column: 1; gap: 6px; justify-content: flex-start; }
+  .room-mode .desk-routes strong { flex: 1 0 100%; order: -1; padding: 2px 0; font-size: 13px; }
+  .room-mode .desk-routes button, .room-mode .desk-routes a { flex: 1 1 auto; font-size: 12px; padding: 10px 8px; justify-content: center; }
+  .room-mode .desk-toolbar .desk-state { grid-column: 1; gap: 8px; }
+  .room-mode .desk-pending, .room-mode .desk-connect { margin: 0 12px 12px; }
+  .room-mode .desk-content { display: flex; flex-direction: column; flex: 0 0 auto; overflow: visible; min-height: 0; }
+  .room-mode .manuscript-shelf { padding: 12px; max-height: none; border-right: 0; border-bottom: 1px solid var(--reader-line); flex: 0 0 auto; }
+  .room-mode .desk-search { width: 100%; }
+  .room-mode .desk-search input { font-size: 16px; }
+  .room-mode .desk-filters { position: static; width: auto; margin-top: 8px; }
+  .room-mode .desk-filters button { font-size: 12px; }
+  .room-mode .desk-count { display: none; }
+  .room-mode .manuscript-list { display: flex; gap: 8px; min-height: 0; height: auto; max-height: 104px; margin-top: 8px; padding: 3px 2px 6px; overflow-x: auto; overflow-y: hidden; scrollbar-gutter: auto; scroll-snap-type: x proximity; }
+  .room-mode .manuscript-list:empty { display: none; }
+  .room-mode .manuscript-card { min-width: 210px; max-width: 240px; width: 70%; max-height: 88px; flex: 0 0 auto; padding: 10px 12px!important; margin: 0; gap: 4px; scroll-snap-align: start; }
+  .room-mode .manuscript-card small { font-size: 12px; }
+  .room-mode .manuscript-card strong { font-size: 14px; -webkit-line-clamp: 1; }
+  .room-mode .manuscript-card span { font-size: 12px; -webkit-line-clamp: 1; }
+  .room-mode .manuscript-card small:last-child:not(:first-child) { display: none; }
+  .room-mode .manuscript-reader { flex: 0 0 auto; min-height: 0; }
+  .room-mode .reader-scroll { flex: 0 0 auto; min-height: 280px; height: clamp(320px,54svh,560px); padding: 20px 18px 28px; overflow-y: auto; }
+  .room-mode .desk-variants { padding: 10px 16px 0; }
+  .room-mode .desk-variants:empty { padding: 0; }
+  .room-mode #draft-title { font-size: 21px; line-height: 1.65; }
+  .room-mode .draft-meta { font-size: 12px; padding-bottom: 18px; }
+  .room-mode .draft-body { font-size: 16px; line-height: 1.95; }
+  .room-mode .reader-qol, .room-mode .reader-actions { padding: 10px 12px; gap: 8px; }
+  .room-mode .reader-actions .desk-primary { flex-basis: calc(100% - 56px); }
+  .room-mode .reader-actions #desk-done { flex: 1 0 100%; }
+  .room-mode .desk-footer { padding: 10px 12px; }
+  .room-mode .desk-footer #desk-operation { flex: 1 0 100%; max-height: none; overflow: visible; }
+  .room-mode .desk-focused .manuscript-shelf { display: none; }
+  .room-mode .desk-focused .reader-scroll { height: clamp(360px,62svh,680px); }
+  .room-mode .reading-desk .cc-post-learning { padding: 12px; }
+  .room-mode .reading-desk .cc-post-learning textarea { min-height: 280px; }
+  .room-mode .product-link { align-items: flex-start; flex-direction: column; }
+  .desk-dialog, .qol-dialog, .legacy-account-archive { padding: 20px; border-radius: 12px; max-height: 88dvh; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .room-mode .reading-desk *, .room-mode .back-button { transition: none!important; }
+}
