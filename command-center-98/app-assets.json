@@ -21,7 +21,7 @@
     "./rpg-account-pages.css?v=20261019.links1",
     "./rpg-workspaces.css?v=20261013.9-detail",
     "./rpg-daily-desk.css?v=20261015.1",
-    "./lounge-workspace.css?v=20261021.8-hall",
+    "./lounge-workspace.css?v=20261031.9-world",
     "./lounge-feedback.css?v=20261021.5-boot",
     "./overseas-profit-readiness.css?v=20261023.1-profit-route"
   ],
@@ -96,7 +96,7 @@
     "./rpg-workspaces.js?v=20261017.33-unified",
     "./rpg-daily-store.js?v=20261015.1",
     "./rpg-daily-desk.js?v=20261017.33-unified",
-    "./castle-parent.js?v=20261031.2-lottery-account",
+    "./castle-parent.js?v=20261031.9-world",
     "./lounge-workspace.js?v=20261021.8-hall"
   ]
 }

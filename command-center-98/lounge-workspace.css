@@ -1,5 +1,5 @@
 /* The original ledger keeps its handlers and data; only its room changes. */
-body.lounge-workspace{--rpg-bg:#29241d;--rpg-panel:#f7f1e4;--rpg-raised:#eee3ce;--rpg-sunken:#eee4d2;--rpg-line:#cbb995;--rpg-line-soft:#dfd1b7;--rpg-text:#493e2e;--rpg-muted:#82745c;--rpg-gold:#795e2e;--rpg-link:#616a3c;--rpg-good:#466146;--rpg-bad:#9e4439;--rpg-warning:#8b6626;color-scheme:light;background:#29241d!important;background-image:linear-gradient(#191b1970,#191b19b3),url('./lounge/assets/orange.webp')!important;background-position:center,center 28%!important;background-size:cover!important;background-attachment:fixed!important;color:#493e2e!important;font-family:system-ui,-apple-system,'Noto Sans JP',sans-serif!important;overflow:auto!important}
+body.lounge-workspace{--rpg-bg:#29241d;--rpg-panel:#f7f1e4;--rpg-raised:#eee3ce;--rpg-sunken:#eee4d2;--rpg-line:#cbb995;--rpg-line-soft:#dfd1b7;--rpg-text:#493e2e;--rpg-muted:#62543c;--rpg-gold:#795e2e;--rpg-link:#616a3c;--rpg-good:#466146;--rpg-bad:#9e4439;--rpg-warning:#8b6626;color-scheme:light;background:#29241d!important;background-image:linear-gradient(#191b1970,#191b19b3),url('./lounge/assets/orange.webp')!important;background-position:center,center 28%!important;background-size:cover!important;background-attachment:fixed!important;color:#493e2e!important;font-family:system-ui,-apple-system,'Noto Sans JP',sans-serif!important;overflow:auto!important}
 body.lounge-workspace::before,body.lounge-workspace::after{display:none!important}
 body.lounge-workspace .desktop{padding:0 20px 40px!important;background:none!important;min-height:100dvh}
 body.lounge-workspace #mainWindow{max-width:1180px!important;width:100%!important;margin:0 auto!important;padding:0!important;border:0!important;box-shadow:none!important;background:transparent!important;overflow:visible!important}
@@ -26,7 +26,7 @@ body.lounge-workspace :is(table,thead,tbody,tr,td,th){border-color:#dbceb5!impor
 body.lounge-workspace table{background:#fffcf3!important;font-size:12px!important;line-height:1.7!important}
 body.lounge-workspace th{background:#ece1cc!important;color:#6b5735!important;font-weight:600!important}
 body.lounge-workspace td{background:#fffcf3!important}
-body.lounge-workspace :is(.purchase-note,.sourcing-note,.ledger-note,.empty,small){color:#82745c!important}
+body.lounge-workspace :is(.purchase-note,.sourcing-note,.ledger-note,.empty,small){color:#62543c!important}
 body.lounge-workspace :is(input,textarea,select){background:#fffcf5!important;color:#493e2e!important;border:1px solid #cbb995!important;box-shadow:none!important;border-radius:4px!important}
 body.lounge-workspace a{color:#616a3c!important}
 body.lounge-workspace .sourcing-meta .profit{color:#466146!important}
@@ -39,3 +39,8 @@ body.lounge-workspace #mainWindow :is(.trade-table,.purchase-table,.supplier-tab
 @media(max-width:600px){body.lounge-workspace #loungeWorkspaceHeader h1{font-size:26px!important}body.lounge-workspace #mainWindow table{font-size:12px!important}}
 
 #loungeWorkspaceHeader nav>div{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}#loungeWorkspaceHeader nav{gap:8px;flex-wrap:wrap}
+
+/* Native ledger cards share the same light paper; legacy dark-detail tokens
+   must not sit behind the lounge's dark reading text. No data or handlers change. */
+body.lounge-workspace #mainWindow{--rpg-detail-surface:#fffcf3;--rpg-detail-border:#d9c8a7}
+body.lounge-workspace .purchase-profit-total:not(.forecast)>small{color:#fff4d5!important}

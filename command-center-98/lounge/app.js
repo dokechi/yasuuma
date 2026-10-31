@@ -1,6 +1,6 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
 import {createMusicControls} from './music.js?v=20261030.8-integrated';
-import {createDesk} from './desk.js?v=20261031.2-lottery-account';
+import {createDesk} from './desk.js?v=20261031.9-world';
 import {createInteractionSound} from './interaction-sound.js?v=20261022.26-audio';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261021.4-touch';
 const $ = (id) => document.getElementById(id);
@@ -64,6 +64,7 @@ function enterRoom(id,instant=false){
   current=rooms.find(r=>r.id===id);if(!current)return;if(accountContext)current={...current,name:accountContext.name,sub:accountContext.name+'の作業部屋',en:'YOUR ACCOUNT ROOM',focus:'50% 35%'};
   const r=current; phase='entering';entryStart=performance.now();
   app.dataset.phase=phase;app.dataset.entering=id;app.classList.add('leaving');app.style.removeProperty('--entry-light');
+  room.dataset.account=accountContext?.key||({orange:'sourcing',silver:'fp',red:'insurance',purple:'otoku'})[id];
   $('room-art').src=accountContext?`assets/panel-${accountContext.artKey||accountContext.key}.webp`:`assets/${id}.webp`;$('room-art').alt=r.sub+'にいる'+r.name+'の案内役';$('room-art').style.objectPosition=r.focus;
   $('room-title').textContent=r.name;$('room-location').textContent=r.en;
   $('announcer').textContent=r.name+'へ移動しています';

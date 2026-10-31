@@ -1,0 +1,253 @@
+/* Rooms, not interchangeable dashboards.
+   Architecture → a cabinet frame → an untextured, readable sheet of paper.
+   All decoration is CSS-only and non-interactive; reader-polish owns geometry
+   and touch sizes. The existing account illustrations remain the portraits. */
+#room {
+  --room-scene: url('assets/red.webp');
+  --room-wood: #462d2b;
+  --room-wood-edge: #241918;
+  --room-accent: #753f45;
+  --room-brass: #bd9a5b;
+  --room-cabinet: #eee5d5;
+  --room-paper: #fffcf4;
+  --room-inscription: '書簡の書斎\A確かめることから、始めよう。';
+  --room-emblem: '✉';
+  background: #201c1b;
+}
+#room[data-account='insurance'] {
+  --room-scene: url('assets/red.webp');
+  --room-wood: #4d2c2e;
+  --room-wood-edge: #26171c;
+  --room-accent: #763e48;
+  --room-cabinet: #eee3d9;
+  --room-inscription: '書簡の書斎\A大切な備えを、一つずつ。';
+}
+#room[data-account='otoku'] {
+  --room-scene: url('assets/purple.webp');
+  --room-wood: #39304b;
+  --room-wood-edge: #201c2e;
+  --room-accent: #59456e;
+  --room-brass: #b8a16f;
+  --room-cabinet: #e9e5ee;
+  --room-paper: #fffcf8;
+  --room-inscription: '路地裏の商い棚\A小さな発見を、持ち帰る。';
+  --room-emblem: '◇';
+}
+#room[data-account='rakuten'] {
+  --room-scene: url('assets/orange.webp');
+  --room-wood: #634221;
+  --room-wood-edge: #322313;
+  --room-accent: #76501f;
+  --room-brass: #d3ac60;
+  --room-cabinet: #f0e4cb;
+  --room-paper: #fffcf1;
+  --room-inscription: '琥珀の贈りもの室\Aいいものは、分かち合おう。';
+  --room-emblem: '❦';
+}
+#room[data-account='lottery'] {
+  --room-scene: url('assets/silver.webp');
+  --room-wood: #253f36;
+  --room-wood-edge: #15271f;
+  --room-accent: #315c48;
+  --room-brass: #bca974;
+  --room-cabinet: #e3e9df;
+  --room-paper: #fdfcf4;
+  --room-inscription: '緑青の天文室\Aまだ見ぬ幸運を、見つけよう。';
+  --room-emblem: '✦';
+}
+#room[data-account='sourcing'] {
+  --room-scene: url('assets/orange.webp');
+  --room-wood: #264748;
+  --room-wood-edge: #152b2d;
+  --room-accent: #285c5b;
+  --room-brass: #c1a16a;
+  --room-cabinet: #e0e9e2;
+  --room-paper: #fcfcf2;
+  --room-inscription: '商人の工房\A目利きの記録を、積み重ねる。';
+  --room-emblem: '⌖';
+}
+.room-mode #room .room-architecture {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  overflow: hidden;
+  background-image: linear-gradient(90deg,#10191938,#1b1719bf 52%,#1b1719e8),var(--room-scene);
+  background-position: center,left center;
+  background-size: cover,auto 100%;
+  background-repeat: no-repeat;
+}
+/* The left bay is an architectural alcove, not a full-height face crop. */
+.room-mode .room-architecture::before {
+  content: '';
+  position: absolute;
+  inset: 10px auto 12px 10px;
+  width: calc(var(--desk-art-width) - 22px);
+  border: 1px solid #d2b57a70;
+  border-radius: 70px 70px 5px 5px;
+  box-shadow: inset 0 0 0 7px #1b171b42,inset 0 0 0 8px #d2b57a30,inset 0 -180px 100px -70px var(--room-wood-edge);
+  background: linear-gradient(180deg,#ffffff08,transparent 30%,#15171845);
+}
+.room-mode .room-architecture::after {
+  content: var(--room-emblem) '\A' var(--room-inscription);
+  position: absolute;
+  top: calc(var(--desk-art-width) + 152px);
+  left: 28px;
+  width: calc(var(--desk-art-width) - 56px);
+  padding: 18px 8px;
+  border-top: 1px solid #dec38b88;
+  border-bottom: 1px solid #dec38b44;
+  background: linear-gradient(90deg,transparent,#151b1ac9 20%,#151b1ac9 80%,transparent);
+  color: #f6e5bb;
+  text-align: center;
+  white-space: pre-line;
+  font: 13px/2 "Yu Mincho","Hiragino Mincho ProN",serif;
+  letter-spacing: .06em;
+  text-shadow: 0 1px 6px #000;
+}
+.room-mode #room-art {
+  inset: 174px auto auto 24px;
+  width: calc(var(--desk-art-width) - 48px);
+  height: auto;
+  max-height: calc(100% - 270px);
+  aspect-ratio: 1;
+  object-fit: contain;
+  object-position: center!important;
+  transform: none;
+  padding: 5px;
+  border: 1px solid var(--room-brass);
+  border-radius: 44% 44% 4px 4px;
+  background: var(--room-wood-edge);
+  box-shadow: 0 0 0 4px var(--room-wood),0 0 0 5px #b8996255,0 12px 28px #0007;
+}
+.room-mode .room-shade { pointer-events: none; background: linear-gradient(180deg,#15191b50,transparent 25%); }
+.room-mode .room-caption, .room-mode .desk-focused .room-caption { top: 88px; }
+.room-mode .room-caption h2 { color: #fff0d4; text-shadow: 0 2px 10px #0c1414; }
+.room-mode .room-caption .eyebrow { color: #e7cf9d; }
+.room-mode .back-button, .room-mode .desk-focused .back-button {
+  border-color: var(--room-brass);
+  border-radius: 4px;
+  box-shadow: 0 3px 0 var(--room-wood-edge),inset 0 0 0 2px #bb9c5e22;
+}
+/* A brass-bound writing cabinet supports the clean working sheet. */
+.room-mode .reading-desk {
+  --reader-paper: var(--room-paper);
+  --reader-accent: var(--room-accent);
+  border: 6px solid var(--room-wood);
+  border-radius: 10px 10px 5px 5px;
+  outline: 1px solid var(--room-brass);
+  outline-offset: 0;
+  background: var(--room-wood);
+  box-shadow: 0 14px 50px #10101766,0 0 0 2px #1c1917,inset 0 0 0 1px #dcc38e77;
+}
+.room-mode .desk-toolbar {
+  position: relative;
+  color: #fff1d3;
+  padding-top: 16px;
+  border-bottom: 3px double var(--room-brass);
+  background: linear-gradient(#ffffff07,#00000019),repeating-linear-gradient(0deg,transparent 0 7px,#00000008 7px 8px),var(--room-wood);
+}
+/* Corner metalwork occupies the frame only, never an input or label. */
+.room-mode .desk-toolbar::before,.room-mode .desk-toolbar::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  width: 17px;
+  height: 17px;
+  pointer-events: none;
+  border-top: 2px solid var(--room-brass);
+  opacity: .9;
+}
+.room-mode .desk-toolbar::before { left: 5px; border-left: 2px solid var(--room-brass); }
+.room-mode .desk-toolbar::after { right: 5px; border-right: 2px solid var(--room-brass); }
+.room-mode .desk-toolbar .desk-heading h3 { font-family: "Yu Mincho","Hiragino Mincho ProN",serif; color: #fff1d3; letter-spacing: .08em; }
+.room-mode .desk-toolbar .desk-routes strong { color: #fff1d3; }
+.room-mode .desk-toolbar .desk-state, .room-mode .desk-toolbar .desk-state summary, .room-mode .desk-toolbar .desk-state p { color: #eee0c2; }
+.room-mode .reading-desk .desk-toolbar button,
+.room-mode .reading-desk .desk-toolbar .desk-routes a {
+  color: #343c31;
+  border-color: #d8c9a6;
+  border-radius: 5px;
+  background: #fff9e8;
+  box-shadow: 0 2px 0 #0002,inset 0 1px #fff;
+}
+.room-mode .reading-desk .desk-toolbar button:hover:not(:disabled),
+.room-mode .reading-desk .desk-toolbar a:hover { background: #fffdf5; border-color: var(--room-brass); }
+.room-mode .desk-content { border-top: 0; background: var(--room-paper); }
+.room-mode .manuscript-shelf {
+  border-right: 4px double #aa916a;
+  background: linear-gradient(90deg,#57391314,transparent 8%,transparent 94%,#57391320),var(--room-cabinet);
+}
+.room-mode .desk-search input { border-color: #b6a78c; background: #fffdf5; border-radius: 5px; }
+.room-mode .desk-count { color: #505c51; border-bottom: 1px solid #a9906638; margin-bottom: 8px; }
+.room-mode .desk-filters button[aria-pressed=true] { background: var(--room-paper); color: var(--room-accent); border-color: #9a8c73; box-shadow: 0 2px 3px #54402514; }
+.room-mode .manuscript-card { border-radius: 3px 8px 8px 3px; border-left: 4px solid #b6a385!important; box-shadow: 0 2px 0 #b9a9925c,0 4px 8px #463b2510; }
+.room-mode .manuscript-card[aria-pressed=true] { border-left-color: var(--room-accent)!important; border-color: var(--room-accent)!important; background: var(--room-paper)!important; box-shadow: 0 2px 0 #b9a9925c,inset 3px 0 var(--room-accent); }
+.room-mode .manuscript-reader {
+  background: var(--room-paper);
+  box-shadow: inset 8px 0 10px -10px #745536;
+  border-bottom: 4px double #c9bda2;
+}
+.room-mode .reader-scroll { background: linear-gradient(90deg,#8f735410,transparent 22px),var(--room-paper); }
+.room-mode #desk-article { position: relative; }
+.room-mode #desk-article::before {
+  content: '';
+  display: block;
+  height: 5px;
+  width: 58px;
+  margin-bottom: 18px;
+  border-top: 1px solid var(--room-brass);
+  border-bottom: 1px solid var(--room-brass);
+}
+.room-mode #draft-title { color: var(--room-accent); }
+.room-mode .draft-body { color: #30392f; }
+.room-mode .draft-meta { color: #646b5f; }
+.room-mode .reader-qol { background: #f6efdd; border-color: #d5c7a7; }
+.room-mode .reader-actions { background: #ede4cd; border-top: 1px solid #cbbb95; }
+.room-mode .reader-actions .desk-primary { background: var(--room-accent); border-color: var(--room-accent); color: #fffbed; box-shadow: 0 2px 0 var(--room-wood-edge); }
+.room-mode .reader-actions .desk-primary:hover { background: var(--room-wood)!important; }
+.room-mode .desk-footer {
+  background: linear-gradient(#ffffff05,#0000001c),var(--room-wood);
+  border-top: 1px solid var(--room-brass);
+}
+.room-mode .reading-desk .desk-footer button { background: #fff8e5; color: #343b30; border-color: #d4c49d; border-radius: 5px; }
+.room-mode .desk-footer #desk-operation { color: #fff0cb; }
+/* Room signatures: pressed florals, a ledger rail, and an observatory arch. */
+.room-mode #room[data-account='insurance'] .manuscript-shelf { border-right-style: double; box-shadow: inset 0 5px 0 #7c405122; }
+.room-mode #room[data-account='otoku'] .manuscript-shelf { background-image: repeating-linear-gradient(0deg,transparent 0 135px,#6c557b1a 135px 137px),linear-gradient(90deg,#59426914,transparent 10%,transparent 94%,#59426914); }
+.room-mode #room[data-account='rakuten'] .desk-toolbar { background-image: linear-gradient(100deg,#d99f2a14,transparent 65%),repeating-linear-gradient(90deg,transparent 0 18px,#00000008 18px 19px); }
+.room-mode #room[data-account='lottery'] .room-architecture::before { border-radius: 50% 50% 5px 5px; background-image: radial-gradient(circle at 50% 25%,transparent 0 70px,#d8bd7b36 71px 72px,transparent 73px 88px,#d8bd7b26 89px 90px,transparent 91px),linear-gradient(180deg,#1f514d10,transparent 55%,#0f2a28aa); }
+.room-mode #room[data-account='lottery'] .manuscript-shelf { border-right-color: #899a80; }
+.room-mode #room[data-account='sourcing'] .manuscript-shelf { border-right-color: #879a84; background-image: linear-gradient(90deg,#1e514c14,transparent 12%),repeating-linear-gradient(0deg,transparent 0 35px,#3c746b0d 35px 36px); }
+.room-mode #room[data-account='sourcing'] #desk-article::before { width: 84px; border-top-style: double; border-top-width: 3px; }
+
+@media (min-width:701px) and (max-width:1000px) {
+  .room-mode #room-art { inset: 180px auto auto 18px; width: calc(var(--desk-art-width) - 36px); height: auto; max-height: none; border-radius: 40% 40% 4px 4px; }
+  .room-mode .room-architecture::before { left: 7px; width: calc(var(--desk-art-width) - 15px); }
+  .room-mode .room-architecture::after { top: 348px; left: 18px; width: calc(var(--desk-art-width) - 36px); font-size: 12px; padding: 16px 4px; }
+  .room-mode .reading-desk { border-width: 4px; }
+  .room-mode .desk-content { grid-template-columns: 192px minmax(0,1fr); }
+  .room-mode .room-caption,.room-mode .desk-focused .room-caption { top: 84px; }
+  .room-mode .manuscript-shelf { padding-right: 10px; padding-left: 10px; }
+}
+@media (max-width:700px) {
+  .room-mode #room .room-architecture { min-height: 100%; background-size: cover,auto 420px; background-position: center,38% top; background-color: var(--room-wood-edge); }
+  .room-mode .room-architecture::before { inset: 6px 6px auto; width: auto; height: 130px; border-radius: 16px 16px 3px 3px; box-shadow: inset 0 0 0 4px #20182066; background: linear-gradient(90deg,#101b1ad9,transparent); }
+  .room-mode .room-architecture::after { display: none; }
+  .room-mode #room-art { inset: 22px 18px auto auto; width: 88px; height: 88px; max-height: none; object-fit: contain; border-radius: 50% 50% 4px 4px; padding: 3px; }
+  .room-mode .room-shade { height: 145px; background: linear-gradient(90deg,#12262255,transparent 70%); }
+  .room-mode .room-caption,.room-mode .desk-focused .room-caption { top: 76px; left: 17px; max-width: calc(100% - 132px); }
+  .room-mode .room-caption h2 { font-size: 20px; line-height: 1.4; }
+  .room-mode .reading-desk,.room-mode .desk-focused .reading-desk { margin-top: 132px; border-width: 4px; border-radius: 7px; }
+  .room-mode .desk-toolbar { padding-top: 13px; }
+  .room-mode .manuscript-shelf { border-right: 0; border-bottom: 3px double #b7a27e; }
+  .room-mode .manuscript-reader { border-bottom: 0; }
+  .room-mode #desk-article::before { margin-bottom: 14px; }
+  .room-mode #draft-title { font-size: 21px; }
+}
+@media (max-width:360px) { .room-mode .room-caption h2 { font-size: 18px; } }
+@media (prefers-reduced-motion:reduce) {
+  .room-mode .room-architecture,.room-mode .room-architecture::before,.room-mode .room-architecture::after,.room-mode #room-art { animation: none!important; transition: none!important; }
+}
+/* The existing FP/TikTok route remains a separate silver library. */
+#room[data-account='fp']{--room-scene:url('assets/silver.webp');--room-wood:#344450;--room-wood-edge:#1b2833;--room-accent:#365970;--room-brass:#b6b3a2;--room-cabinet:#e4e9ec;--room-paper:#fffef8;--room-inscription:'銀青の王立書庫\A知識を、一枚の物語に。';--room-emblem:'◇'}

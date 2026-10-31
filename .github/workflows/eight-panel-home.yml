@@ -2,7 +2,7 @@ name: Eight panel home regression
 on:
   pull_request:
     branches: [main]
-    paths: ['command-center-98/**', 'scripts/six-account-board*', 'scripts/eight-panel-dom.test.mjs', 'scripts/legacy-account-isolation.test.mjs', 'scripts/living-room.test.mjs', '.github/workflows/eight-panel-home.yml']
+    paths: ['command-center-98/**', 'scripts/six-account-board*', 'scripts/eight-panel-dom.test.mjs', 'scripts/legacy-account-isolation.test.mjs', 'scripts/living-room.test.mjs', 'scripts/enterprise-atelier-browser.cjs', '.github/workflows/eight-panel-home.yml']
 permissions:
   contents: read
 jobs:
@@ -19,8 +19,11 @@ jobs:
       - name: Japanese font for real screenshot review
         run: sudo apt-get update -qq && sudo apt-get install -y fonts-noto-cjk
       - run: NODE_PATH="$RUNNER_TEMP/ui/node_modules" node scripts/six-account-board-browser.cjs
+      - run: NODE_PATH="$RUNNER_TEMP/ui/node_modules" node scripts/enterprise-atelier-browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: eight-panel-home-screenshots
-          path: artifacts/six-accounts
+          path: |
+            artifacts/six-accounts
+            artifacts/enterprise-atelier
