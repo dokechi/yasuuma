@@ -1,0 +1,32 @@
+name: Arrival court prototype
+on:
+  push:
+    branches: ['codex/castle-arrival-court-20261031']
+  pull_request:
+    branches: [main]
+    paths: ['command-center-98/lounge/arrival-*', 'command-center-98/lounge/index.html', 'command-center-98/lounge/spatial-atelier.js', 'command-center-98/castle-parent.js', 'command-center-98/lounge/vendor/three-r187/**', 'command-center-98/lounge/assets/*court*', 'scripts/castle-court*', 'scripts/build-castle-court-vendor.mjs', 'scripts/arrival-art/**', '.github/workflows/castle-court-prototype.yml']
+permissions:
+  contents: read
+jobs:
+  software-webgl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --check scripts/castle-court-browser.cjs
+      - run: npm install --prefix "$RUNNER_TEMP/ui" --ignore-scripts --no-audit --no-fund playwright-core@1.62.1 pngjs@7.0.0 jsdom@26.1.0
+      - run: NODE_PATH="$RUNNER_TEMP/ui/node_modules" node --test scripts/castle-court-assets.test.mjs scripts/castle-court-renderer.test.mjs scripts/castle-court-controller.test.mjs
+      # Version-matched full Chromium/new headless, not the runner's rolling Chrome.
+      - run: node "$RUNNER_TEMP/ui/node_modules/playwright-core/cli.js" install --with-deps --no-shell chromium
+      - run: sudo apt-get update -qq && sudo apt-get install -y fonts-noto-cjk
+      # SwiftShader flags apply only to this owned, local synthetic fixture.
+      # The fixture rejects remote traffic and never loads production credentials.
+      - run: NODE_PATH="$RUNNER_TEMP/ui/node_modules" node scripts/castle-court-browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: castle-arrival-court
+          path: artifacts/castle-court

@@ -1,0 +1,53 @@
+{
+  "three": "0.187.0",
+  "esbuild": "0.25.12",
+  "source": "https://github.com/mrdoob/three.js/tree/r187",
+  "license": "MIT",
+  "packages": [
+    {
+      "name": "three",
+      "version": "0.187.0",
+      "url": "https://registry.npmjs.org/three/-/three-0.187.0.tgz",
+      "integrity": "sha512-Qiu7R+Cmh8CstZsY1uJOSWnVlfo7ZtNLV7mF8Jltk3LB3AtDu9cRZlcnRKkAk8Y4z6KKw35z7Y7Urd7jWY8etA=="
+    },
+    {
+      "name": "esbuild",
+      "version": "0.25.12",
+      "url": "https://registry.npmjs.org/esbuild/-/esbuild-0.25.12.tgz",
+      "integrity": "sha512-bbPBYYrtZbkt6Os6FiTLCTFxvq4tt3JKall1vRwshA3fdVztsLAatFaZobhkBC8/BrPetoa0oksYoKXoG4ryJg=="
+    }
+  ],
+  "entry": "export {WebGLRenderer,Scene,PerspectiveCamera,Vector2,Vector3,Raycaster,Box3,Color,FogExp2,HemisphereLight,DirectionalLight,PointLight,PMREMGenerator,ACESFilmicToneMapping,SRGBColorSpace,PCFSoftShadowMap,LoadingManager} from 'three';\nexport {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';\nexport {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';\n",
+  "bundle": {
+    "file": "court-three.js",
+    "bytes": 626851,
+    "sha256": "82c61cfe649482ac9a8d570e916a7a465e8229fdcf161cfae7d428aef5f9ec5c"
+  },
+  "inputs": [
+    {
+      "path": "three/build/three.core.js",
+      "sha256": "613e370f76638fdef83926642bf256dc9615684922de1ce1f63a8583e5d78578"
+    },
+    {
+      "path": "three/build/three.module.js",
+      "sha256": "104f56145899722094556490d787aae0617cc2fc3382f31df02d724ea1aee341"
+    },
+    {
+      "path": "three/examples/jsm/environments/RoomEnvironment.js",
+      "sha256": "55f466192cc84298755a424c5e040345006b2ee1455589b3b54126c2ea4123f4"
+    },
+    {
+      "path": "three/examples/jsm/loaders/GLTFLoader.js",
+      "sha256": "532ac726e120039acbcd6cf54328c57acbf7b438176afaa6951257126d11bff1"
+    },
+    {
+      "path": "three/examples/jsm/utils/BufferGeometryUtils.js",
+      "sha256": "7bda2a8ba836b2bcf67cb938d4b9e1bb5d1b1bc616817103ed858c0b58296ce7"
+    },
+    {
+      "path": "three/examples/jsm/utils/SkeletonUtils.js",
+      "sha256": "b1632a703206c3d830de9fcbe515696770d04b71a15ee6b50afa6d2c3298c86f"
+    }
+  ],
+  "build": "COURT_VENDOR_DEPS=<exact-version install> node scripts/build-castle-court-vendor.mjs"
+}
