@@ -50,7 +50,7 @@ const server=http.createServer((req,res)=>{
   await page.screenshot({path:path.join(out,`${width}-${height}-host-study.png`)});
   await lounge.locator('.spatial-work>summary').click();assert.ok(await lounge.locator('#desk-refresh').isVisible());
   await page.screenshot({path:path.join(out,`${width}-${height}-host-tools.png`)});await lounge.locator('#desk-read').click();
-  assert.equal(await lounge.locator('#room').evaluate(n=>n.scrollTop),0);await lounge.locator('#desk-copy').click();assert.equal((await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n'),insuranceBody);
+  assert.equal(await lounge.locator('#room').evaluate(n=>n.scrollTop),0);await lounge.locator('#desk-copy').click();await lounge.locator('#desk-operation').getByText('本文をコピーしました。',{exact:true}).waitFor();assert.equal((await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n'),insuranceBody);
   await lounge.locator('#back').click();await lounge.locator('.account-board:not([hidden])').waitFor();
   await lounge.locator('.castle-quick-open[data-room=sourcing]').click();await page.locator('body.lounge-workspace #loungeWorkspaceHeader:not([hidden])').waitFor();
   assert.equal(await page.locator('#ccCastleFrame').isVisible(),false);assert.equal(await page.locator('#mainWindow').getAttribute('data-cc-view'),'sourcing');

@@ -67,7 +67,7 @@ const server=http.createServer((req,res)=>{
       assert.equal(await page.evaluate(()=>localStorage.getItem('cc-castle-mode')),'castle');
       assert.equal(await page.locator('#ccRpgHome').textContent(),'');
       assert.equal(await page.locator('#commandHome').isVisible(),false);
-      await lounge.locator('#desk-copy').click();
+      await lounge.locator('#desk-copy').click();await lounge.locator('#desk-operation').getByText('本文をコピーしました。',{exact:true}).waitFor();
       assert.equal((await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n'),insuranceBody);
       // Open the supported native insurance review, not the retired kyun reader.
       await lounge.locator('.spatial-work > summary').click();
