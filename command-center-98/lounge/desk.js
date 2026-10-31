@@ -1,4 +1,4 @@
-import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261031.10-spatial';
+import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261031.11-immersive';
 import {createConveniences} from './qol.js?v=20261031.1-lottery';
 import {resumeView,postingReadiness} from './qol-model.js?v=20261031.1-lottery';
 import {createNotebook,safeLink} from './notebook.js?v=20261031.1-lottery';

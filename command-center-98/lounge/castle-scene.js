@@ -1,3 +1,6 @@
+import {captureCastleForeground} from './castle-foreground.js?v=20261031.11-immersive';
+import {createCastleJourney} from './castle-journey.js?v=20261031.11-immersive';
+import {mountCastlePresence} from './castle-presence.js?v=20261031.11-immersive';
 /* Presentation-only spatial adapter. The existing account controller owns routing,
    records and permissions. Enhancement failure leaves the original manuscript/account view available. */
 export const castleRooms=Object.freeze([
@@ -29,22 +32,42 @@ export function mountCastleScene({accountBoard,castleImage='assets/castle-cutawa
  const quick=node('nav','castle-quick');quick.setAttribute('aria-label','持ち場をすぐ開く');quick.append(node('span','castle-quick-label','すぐ開く'));
  const controls=new Map(),quickButtons=new Map();
  function source(key){return accountBoard.state.destinations.find(n=>n.key===key);}
- let journey=null;
- function cancelJourney(){if(!journey)return;for(const animation of journey.animations)animation.cancel();journey.layer.remove();journey=null;}
- const reduced=matchMedia('(prefers-reduced-motion: reduce)');
- function embark(key){
-  cancelJourney();if(typeof Element.prototype.animate!=='function'||reduced.matches||document.getElementById('reduce-setting')?.checked||document.hidden||!geometry)return;
-  const r=castleRooms.find(room=>room.key===key),rect=viewport.getBoundingClientRect();if(!r||!rect.width||!rect.height)return;
-  const layer=node('div','castle-travel-view');layer.setAttribute('aria-hidden','true');const moving=stage.cloneNode(true);moving.style.transition='none';layer.append(moving);document.body.append(layer);
-  const scale=Math.max(innerWidth/(1536*r.w),innerHeight/(1024*r.h)),left=(innerWidth-1536*r.w*scale)/2-1536*r.x*scale,top=(innerHeight-1024*r.h*scale)/2-1024*r.y*scale;
-  const start=`translate(${rect.left+geometry.left}px,${rect.top+geometry.top}px) scale(${geometry.scale})`,end=`translate(${left}px,${top}px) scale(${scale})`;
-  const animations=[moving.animate([{transform:start},{transform:end}],{duration:220,easing:'cubic-bezier(.2,.7,.2,1)',fill:'both'}),layer.animate([{clipPath:`inset(${rect.top}px ${Math.max(0,innerWidth-rect.right)}px ${Math.max(0,innerHeight-rect.bottom)}px ${rect.left}px)`,opacity:1},{clipPath:'inset(0)',opacity:1,offset:.68},{clipPath:'inset(0)',opacity:0}],{duration:220,easing:'ease-out',fill:'both'})];
-  const current={layer,animations};journey=current;Promise.all(animations.map(a=>a.finished)).then(()=>{if(journey===current){layer.remove();journey=null;}}).catch(()=>{});
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)'),reduceControl=document.getElementById('reduce-setting');
+ const quiet=()=>reduced.matches||!!reduceControl?.checked;
+ const localJourney=getComputedStyle(document.documentElement).getPropertyValue('--castle-journey-ready').trim()==='1'?createCastleJourney({document,assetRoot:new URL('./assets/',import.meta.url).href,reducedMotion:quiet}):{travel:()=>false,cancel(){},destroy(){}};
+ let hostJourney=false,travelTimer=0,travelSerial=0,lastTrip=null,presence=null,departure=null;
+ const hosted=window.parent!==window,post=(type,data={})=>{if(hosted)window.parent.postMessage({channel:'cc-castle-v1',type,...data},location.origin);};
+ function markTravel(active,duration=800){const serial=++travelSerial;clearTimeout(travelTimer);if(active){world.dataset.journey='active';document.body.dataset.castleJourney='active';travelTimer=setTimeout(()=>{if(serial===travelSerial){delete world.dataset.journey;delete document.body.dataset.castleJourney;}},duration+100);}else{delete world.dataset.journey;delete document.body.dataset.castleJourney;}}
+ function cancelJourney(){localJourney.cancel();post('journey-cancel');markTravel(false);}
+ function originGeometry(){const rect=viewport.getBoundingClientRect();return geometry&&{left:rect.left,top:rect.top,width:rect.width,height:rect.height,stageLeft:geometry.left,stageTop:geometry.top,scale:geometry.scale};}
+ function embark(key,{direction='in',instant=false,sourceRoom}={}){
+  cancelJourney();const origin=originGeometry();if(!origin)return;
+  const pace=document.querySelector('input[name=pace]:checked')?.value||'normal',duration=({quick:520,normal:780,slow:1050})[pace]||780;
+  const spec={room:key,direction,origin,quick:instant||quiet(),duration,...(sourceRoom?{sourceRoom}:{})};
+  markTravel(!spec.quick&&!document.hidden,duration);const intent=travelSerial;
+  if(hostJourney)post('journey', {spec});else {const saved=direction==='out'?departure:null;departure=null;if(direction==='out')localJourney.travel({...spec,foreground:saved});else queueMicrotask(()=>{if(intent===travelSerial&&document.body.dataset.spatialRoom===key)localJourney.travel({...spec,foreground:captureCastleForeground(document)});});}
+  return spec;
  }
- const reduceControl=document.getElementById('reduce-setting');
- const motionChanged=()=>{const quiet=reduced.matches||!!reduceControl?.checked;world.dataset.motion=quiet?'reduced':'normal';if(quiet)cancelJourney();};reduced.addEventListener('change',motionChanged);reduceControl?.addEventListener('change',motionChanged);motionChanged();
- const visibilityChanged=()=>{if(document.hidden)cancelJourney();};document.addEventListener('visibilitychange',visibilityChanged);
- function open(key,trigger){if(performance.now()<ignoreClickUntil&&trigger?.closest?.('.castle-viewport'))return;const destination=source(key);if(!destination||destination.pending)return;if(board.hidden){queuedRoom={key,trigger};if(!returning){returning=true;document.getElementById('back').click();}return;}embark(key);selected=key;lastTrigger=trigger?.isConnected?trigger:quickButtons.get(key);board.dataset.spatialDestination=key;document.body.dataset.spatialRoom=key;layout();accountBoard.open(key);}
+ const fromHost=e=>{if(e.source!==window.parent||e.origin!==location.origin||e.data?.channel!=='cc-castle-v1')return;if(e.data.type==='journey-capability')hostJourney=e.data.ready===true;if(e.data.type==='journey-state')markTravel(e.data.active===true,e.data.duration||800);if(e.data.type==='journey-return'){layout();embark(e.data.room,{direction:'out',instant:e.data.instant===true});}};
+ window.addEventListener('message',fromHost);post('journey-capability');
+ const localEnd=()=>{if(!hostJourney)markTravel(false);};document.addEventListener('castle:journey-end',localEnd);
+ const motionChanged=()=>{world.dataset.motion=quiet()?'reduced':'normal';if(quiet())cancelJourney();presence?.sync();post('journey-preferences',{reduced:quiet()});};
+ reduced.addEventListener('change',motionChanged);reduceControl?.addEventListener('change',motionChanged);motionChanged();
+ const visibilityChanged=()=>{if(document.hidden){cancelJourney();presence?.reset();}};document.addEventListener('visibilitychange',visibilityChanged);
+ const captureDeparture=()=>{if(document.getElementById('room')?.hidden)return;if(hostJourney){try{window.parent.CCCastleJourneyCapture?.();}catch{}}else departure=captureCastleForeground(document);};
+ const beforeExit=e=>{if(e.type==='popstate'||e.type==='click'&&e.target.closest?.('#back,#again')||e.type==='keydown'&&e.key==='Escape'&&!document.querySelector('dialog[open]')&&document.body.dataset.castleJourney!=='active')captureDeparture();};
+ document.addEventListener('click',beforeExit,true);document.addEventListener('keydown',beforeExit,true);window.addEventListener('popstate',beforeExit,true);
+ const escapeJourney=e=>{if(e.key==='Escape'&&document.body.dataset.castleJourney==='active'&&!document.querySelector('dialog[open]')){e.preventDefault();e.stopImmediatePropagation();cancelJourney();}};
+ document.addEventListener('keydown',escapeJourney,true);
+ const interruptWork=e=>{if(document.body.dataset.castleJourney==='active'&&(e.type==='pointerdown'||e.key==='Tab'))cancelJourney();};document.addEventListener('pointerdown',interruptWork,true);document.addEventListener('keydown',interruptWork,true);
+ function open(key,trigger,options={}){
+  if(performance.now()<ignoreClickUntil&&trigger?.closest?.('.castle-viewport'))return;
+  const destination=source(key);if(!destination||destination.pending)return;
+  const instant=options.instant??!!trigger?.matches?.('.castle-quick-open');
+  if(board.hidden){cancelJourney();queuedRoom={key,trigger,options:{instant,sourceRoom:options.sourceRoom||selected,direction:'switch'}};if(!returning){returning=true;document.getElementById('back').click();}return;}
+  const spec=embark(key,{instant,direction:options.direction||'in',sourceRoom:options.sourceRoom});
+  lastTrip={key,instant:instant||quiet(),origin:spec?.origin};selected=key;lastTrigger=trigger?.isConnected?trigger:quickButtons.get(key);board.dataset.spatialDestination=key;document.body.dataset.spatialRoom=key;layout();accountBoard.open(key);
+ }
  for(const [index,r] of castleRooms.entries()){
   const b=button('castle-room-hotspot','',()=>open(r.key,b));b.dataset.room=r.key;b.dataset.tone=r.tone||'sealed';b.disabled=!!r.sealed;
   const marker=node('span','castle-room-marker',String(index+1).padStart(2,'0')),label=node('span','castle-room-label'),title=node('strong',null,r.short),count=node('span','castle-room-count','確認中');label.append(title,count);b.append(marker,label);hotspots.append(b);controls.set(r.key,{button:b,title,count,marker});
@@ -52,6 +75,7 @@ export function mountCastleScene({accountBoard,castleImage='assets/castle-cutawa
  }
  const announcement=node('p','sr-only');announcement.setAttribute('aria-live','polite');announcement.setAttribute('aria-atomic','true');
  world.append(viewport,routebar,quick,announcement);tiles.before(world);
+ presence=mountCastlePresence({world,viewport,stage,controls,rooms:castleRooms,reduced:quiet});
  // The stable list remains intact as the immediate manuscript-first view.
  const mode=board.querySelector('.board-primary');const syncMode=()=>{world.hidden=board.dataset.view==='list';mode.textContent=world.hidden?'← 城の全景へ':'原稿一覧';layout();};
  function update(){
@@ -66,15 +90,15 @@ export function mountCastleScene({accountBoard,castleImage='assets/castle-cutawa
   const currentMobile=innerWidth<=700;if(viewportMobile!==currentMobile){viewportMobile=currentMobile;overview=!currentMobile;}
   const r=castleRooms.find(r=>r.key===selected),scale=overview?Math.min(w/1536,h/1024):Math.min(w*.96/(1536*r.w),h*.82/(1024*r.h));
   const cx=overview?.5:r.x+r.w/2,cy=overview?.5:r.y+r.h*.55,left=w/2-cx*1536*scale,top=h/2-cy*1024*scale;
-  geometry={width:w,height:h,scale,left,top};stage.style.transform=`translate(${left}px,${top}px) scale(${scale})`;world.dataset.overview=String(overview);world.dataset.selected=selected;
+  geometry={width:w,height:h,scale,left,top};presence?.layout(geometry);stage.style.transform=`translate(${left}px,${top}px) scale(${scale})`;world.dataset.overview=String(overview);world.dataset.selected=selected;
   for(const [index,room] of castleRooms.entries()){const c=controls.get(room.key),b=c.button,x=left+room.x*1536*scale,y=top+room.y*1024*scale,rw=room.w*1536*scale,rh=room.h*1024*scale,vx=Math.max(0,x),vy=Math.max(0,y),vw=Math.min(w,x+rw)-vx,vh=Math.min(h,y+rh)-vy;const neighbor=!overview&&room.key!==selected;b.hidden=!overview&&(vw<44||vh<44);b.dataset.neighbor=String(neighbor);b.style.left=(overview?x:vx)+'px';b.style.top=(overview?y:vy)+'px';b.style.width=Math.max(44,overview?rw:vw)+'px';b.style.height=Math.max(44,overview?rh:vh)+'px';b.setAttribute('aria-current',room.key===selected?'location':'false');c.marker.textContent=(mobile.matches&&overview)||neighbor?(room.sealed?'未設定':room.short):String(index+1).padStart(2,'0');}
   location.textContent=overview?'ひとつの城、あなたの持ち場':r.name;hint.textContent=overview?'灯りのついた部屋から、そのまま仕事へ。':`${activeRooms.findIndex(x=>x.key===selected)+1} / ${activeRooms.length} · 部屋を押すと持ち場が開きます`;view.textContent=overview?'部屋を近くで見る':'城の全景';view.setAttribute('aria-pressed',String(overview));for(const [key,b]of quickButtons)b.setAttribute('aria-current',key===selected?'location':'false');
  }
  let pointer=null;viewport.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')pointer={x:e.clientX,y:e.clientY};});viewport.addEventListener('pointerup',e=>{if(!pointer)return;const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer=null;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){ignoreClickUntil=performance.now()+250;browse(dx<0?1:-1);}});viewport.addEventListener('pointercancel',()=>pointer=null);
  viewport.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();browse(e.key==='ArrowRight'?1:-1);controls.get(selected).button.focus({preventScroll:true});}});
  const unsubscribe=accountBoard.subscribe(update);board.dataset.spatialReady='true';
- const boardObserver=new MutationObserver(()=>{syncMode();if(!board.hidden&&queuedRoom){const next=queuedRoom;queuedRoom=null;returning=false;open(next.key,next.trigger);lastHidden=board.hidden;return;}if(lastHidden&&!board.hidden){cancelJourney();layout();if(board.dataset.view!=='list'&&lastTrigger?.isConnected)lastTrigger.focus({preventScroll:true});}lastHidden=board.hidden;});boardObserver.observe(board,{attributes:true,attributeFilter:['hidden','data-view']});
+ const boardObserver=new MutationObserver(()=>{syncMode();if(!board.hidden&&queuedRoom){const next=queuedRoom;queuedRoom=null;returning=false;open(next.key,next.trigger,next.options);lastHidden=board.hidden;return;}if(lastHidden&&!board.hidden){layout();if(board.dataset.view!=='list'&&lastTrip?.key===selected)embark(selected,{direction:'out',instant:lastTrip.instant});else cancelJourney();if(board.dataset.view!=='list'&&lastTrigger?.isConnected)lastTrigger.focus({preventScroll:true});}lastHidden=board.hidden;});boardObserver.observe(board,{attributes:true,attributeFilter:['hidden','data-view']});
  const resize=new ResizeObserver(layout);resize.observe(viewport);const mobileChanged=()=>{overview=!mobile.matches;layout();};mobile.addEventListener('change',mobileChanged);art.addEventListener('load',layout);art.addEventListener('error',()=>{world.dataset.artFailed='true';announcement.textContent='城の絵を読み込めませんでした。持ち場は下の「すぐ開く」と原稿一覧から開けます。';});
  board.querySelector('.board-footer').prepend(board.querySelector('.board-lounge'));board.querySelector('h1').textContent='司令塔';board.querySelector('.account-board-heading small').textContent='THE CASTLE ATELIER';
- update();return {open,layout,geometry:()=>geometry,destroy(){cancelJourney();reduced.removeEventListener('change',motionChanged);reduceControl?.removeEventListener('change',motionChanged);document.removeEventListener('visibilitychange',visibilityChanged);unsubscribe();mobile.removeEventListener('change',mobileChanged);boardObserver.disconnect();resize.disconnect();delete board.dataset.spatialReady;world.remove();}};
+ update();return {open,layout,geometry:()=>geometry,destroy(){document.removeEventListener('click',beforeExit,true);document.removeEventListener('keydown',beforeExit,true);window.removeEventListener('popstate',beforeExit,true);cancelJourney();localJourney.destroy();presence?.destroy();window.removeEventListener('message',fromHost);document.removeEventListener('castle:journey-end',localEnd);document.removeEventListener('keydown',escapeJourney,true);document.removeEventListener('pointerdown',interruptWork,true);document.removeEventListener('keydown',interruptWork,true);reduced.removeEventListener('change',motionChanged);reduceControl?.removeEventListener('change',motionChanged);document.removeEventListener('visibilitychange',visibilityChanged);unsubscribe();mobile.removeEventListener('change',mobileChanged);boardObserver.disconnect();resize.disconnect();delete board.dataset.spatialReady;world.remove();}};
 }

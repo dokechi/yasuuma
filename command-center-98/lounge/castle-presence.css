@@ -1,0 +1,27 @@
+/* Physical light/material response surrounds the work, never moves manuscript text. */
+.spatial-castle{--look-x:0px;--look-y:0px;--orrery-turn:0deg}
+.castle-room-lights{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.castle-room-light{position:absolute;border-radius:45%;background:radial-gradient(ellipse at 50% 65%,#ffd49380,transparent 68%);opacity:0;mix-blend-mode:screen;transition:opacity 220ms}
+.spatial-castle[data-reacting=insurance] .castle-room-light[data-room=insurance],.spatial-castle[data-reacting=otoku] .castle-room-light[data-room=otoku],.spatial-castle[data-reacting=rakuten] .castle-room-light[data-room=rakuten],.spatial-castle[data-reacting=lottery] .castle-room-light[data-room=lottery],.spatial-castle[data-reacting=sourcing] .castle-room-light[data-room=sourcing],.spatial-castle[data-orrery=lit] .castle-room-light{opacity:.85}
+.castle-depth-edge{position:absolute;inset:-8px;pointer-events:none;z-index:1;transform:translate(calc(var(--look-x)*-1),calc(var(--look-y)*-1));transition:transform 200ms ease-out;box-shadow:inset 0 10px 25px #10111b22,inset 0 -15px 32px #11182255;border:1px solid #edcb8422;border-radius:8px}
+.castle-depth-edge:before,.castle-depth-edge:after{content:'';position:absolute;top:0;bottom:0;width:8px;background:linear-gradient(90deg,#181d1caa,#74512b55,#1a222533);border-right:1px solid #debb6d30}
+.castle-depth-edge:before{left:0}.castle-depth-edge:after{right:0;transform:rotate(180deg)}
+body.spatial-atelier .castle-experience-controls{position:absolute;z-index:4;top:8px;left:8px;display:flex;gap:5px;align-items:center}
+body.spatial-atelier .account-board .castle-experience-controls button{min-width:44px;min-height:44px;padding:6px 9px;border:1px solid #c5ac7766;border-radius:5px;background:linear-gradient(#26322df2,#151e24f2);color:#f7e5be;font:12px/1.4 system-ui;box-shadow:inset 0 1px #ffe2a41a,0 3px 7px #07101833}
+body.spatial-atelier .account-board .castle-experience-controls button:active{transform:translateY(1px);box-shadow:inset 0 2px 6px #0006}
+body.spatial-atelier .account-board .castle-sound-toggle[aria-pressed=true]{border-color:#e3c486;color:#ffe6a4}
+body.spatial-atelier .account-board .castle-orrery{position:absolute;z-index:3;width:48px;height:48px;min-height:48px;min-width:48px;padding:0;border:1px solid #eed19388;border-radius:50%;background:radial-gradient(#e0b96813,#15202b33);box-shadow:inset 0 0 9px #e0b96866,0 0 0 4px #151c2444;touch-action:pan-y;transition:box-shadow 180ms}
+.castle-orrery-orbit{position:absolute;inset:8px;border:1px solid #ffe0a1a8;border-radius:50%;transform:rotate(calc(-30deg + var(--orrery-turn))) scaleX(.46);transition:transform 180ms ease-out}
+.castle-orrery-orbit:before{content:'';position:absolute;inset:0;border:1px solid #e6c99baa;border-radius:50%;transform:rotate(65deg) scaleX(1.5)}
+.castle-orrery-core{position:absolute;inset:20px;border-radius:50%;background:#ffe9ad;box-shadow:0 0 10px #fce1a9aa}
+body.spatial-atelier .account-board .castle-orrery[data-energy=lit]{box-shadow:inset 0 0 14px #e0b96899,0 0 22px #fbe1a966}
+.castle-door-handle{position:absolute;right:18%;bottom:34%;width:12px;height:4px;pointer-events:none;background:linear-gradient(#fff1bc,#a27b3f);border-radius:3px;box-shadow:0 1px 3px #0a1019;opacity:0;transform-origin:2px 50%;transition:opacity 160ms,transform 130ms}
+.castle-room-hotspot:is(:hover,:focus-visible,[data-contact=pressed]) .castle-door-handle{opacity:1}
+.castle-room-hotspot[data-contact=pressed] .castle-door-handle{transform:rotate(13deg) translateY(2px)}
+body.spatial-atelier .account-board .castle-room-hotspot[data-contact=pressed]{background:#f1ce6b19;border-color:#f1d48d88;box-shadow:inset 0 0 24px #f8d48622}
+body.spatial-atelier .spatial-shelf-dialog[open],body.spatial-atelier .spatial-room-dialog[open]{animation:castle-drawer-arrive 190ms cubic-bezier(.2,.8,.2,1)}
+@keyframes castle-drawer-arrive{from{transform:translateY(10px);opacity:.4}to{transform:translateY(0);opacity:1}}
+.spatial-castle[data-motion=reduced] :is(.castle-depth-edge,.castle-room-light,.castle-orrery-orbit,.castle-door-handle){transition:none!important;animation:none!important;transform:none!important}
+body:has(#reduce-setting:checked) :is(.spatial-shelf-dialog,.spatial-room-dialog){animation:none!important}
+@media(prefers-reduced-motion:reduce){.castle-depth-edge,.castle-room-light,.castle-orrery-orbit,.castle-door-handle,.spatial-shelf-dialog,.spatial-room-dialog{transition:none!important;animation:none!important}.castle-depth-edge,.castle-orrery-orbit{transform:none!important}}
+@media(max-width:700px){body.spatial-atelier .castle-experience-controls{top:9px;left:9px}.castle-door-handle{right:23%;bottom:42%}.castle-depth-edge:before,.castle-depth-edge:after{width:5px}}
