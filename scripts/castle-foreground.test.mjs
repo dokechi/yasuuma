@@ -58,3 +58,11 @@ test('tools departure captures visible workbench and object reliefs, never hidde
  const bench=doc.querySelector('.living-workbench');bench.getBoundingClientRect=()=>({left:40,top:160,width:300,height:400});bench.scrollTop=80;
  const snapshot=captureCastleForeground(doc),copy=snapshot.querySelector('[data-journey-part=paper]');assert.match(copy.textContent,/原稿棚/);assert.ok(copy.querySelector('i'));assert.equal(copy.textContent.includes('Private hidden draft'),false);assert.equal(copy.dataset.journeyScrollTop,'80');assert.equal(paper.style.visibility,'hidden');assert.equal(bench.isConnected,true);
 });
+test('departure retains asymmetric material borders and independent child transforms without double-transforming the root',t=>{
+ const {doc,paper}=setup(t);paper.style.cssText='rotate:3deg;translate:2px 4px;scale:1.1';
+ const relief=doc.createElement('span');relief.style.cssText='border:6px solid rgb(40,30,20);border-top:9px solid rgb(120,90,50);border-bottom:9px solid rgb(100,70,40);rotate:-2deg;translate:1px 2px;scale:0.98';paper.append(relief);
+ const before=relief.outerHTML,copy=captureCastleForeground(doc).querySelector('[data-journey-part=paper]'),surface=copy.querySelector('span'),computed=doc.defaultView.getComputedStyle(relief);
+ for(const property of ['border-top','border-right','border-bottom','border-left','rotate','translate','scale'])assert.equal(surface.style.getPropertyValue(property),computed.getPropertyValue(property),property);
+ for(const property of ['rotate','translate','scale'])assert.equal(copy.style.getPropertyValue(property),'none',property+' root already uses painted geometry');
+ assert.equal(relief.outerHTML,before);
+});

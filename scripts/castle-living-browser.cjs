@@ -180,11 +180,16 @@ function probe(){
    await f.locator('#reduce-setting').uncheck();await f.locator('#settings-close').click();
    await f.locator('.castle-room-hotspot[data-room=lottery]').click();await waitReader('lottery');
    await page.waitForFunction(()=>!document.querySelector('.castle-journey'));
-   await showTools();await page.evaluate(()=>__livingProbe.freezeNext=true);await f.locator('#back').click();
+   await showTools();
+   const materialProperties=['border-top','border-right','border-bottom','border-left','rotate','translate','scale'];
+   const departureMaterials=await f.locator('.living-object-art').evaluateAll((nodes,properties)=>nodes.map(node=>properties.map(property=>getComputedStyle(node).getPropertyValue(property))),materialProperties);
+   await page.evaluate(()=>__livingProbe.freezeNext=true);await f.locator('#back').click();
    await page.waitForFunction(()=>__livingProbe.held?.isConnected);
    await page.evaluate(()=>{for(const animation of __livingProbe.held.getAnimations({subtree:true})){animation.pause();animation.currentTime=0;}});
    await screenshot('tools-return-contact');
    check('return capture has the visible tools content',await page.locator('.castle-journey').textContent().then(text=>/持ち場メモ|原稿の本棚/.test(text)));
+   const capturedMaterials=await page.locator('.castle-journey [data-journey-part=paper] button').evaluateAll((nodes,properties)=>nodes.filter(node=>node.querySelector('strong')&&node.querySelector('span')).map(node=>properties.map(property=>getComputedStyle(node.querySelector('span')).getPropertyValue(property))),materialProperties);
+   check('return contact keeps every object border and independent material transform',JSON.stringify(capturedMaterials)===JSON.stringify(departureMaterials),{departureMaterials,capturedMaterials});
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('.castle-journey'));await f.locator('.account-board:not([hidden])').waitFor();
    check('interrupted tools return leaves no overlay and keeps the selected room',await f.locator('.castle-room-hotspot[data-room=lottery]').getAttribute('data-last-visited')==='true');
   }else{await f.locator('#back').click();await f.locator('.account-board:not([hidden])').waitFor();}
