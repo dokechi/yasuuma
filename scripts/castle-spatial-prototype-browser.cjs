@@ -193,6 +193,7 @@ function drawerContrast() {
         await f.locator('#desk-read').click();
         assert.equal(await f.locator('.spatial-work').getAttribute('open'), null, 'Read jump must close the covering work drawer.');
         assert.equal(await f.locator('#desk-scroll').evaluate(n => n === document.activeElement), true);
+        assert.equal(await f.locator('#room').evaluate(n=>n.scrollTop),0,'decorative actor overflow must not shift the room after read jump');
         roomResults.push({account: account.key, reading, actor: asset, contrast});
         if (account.key === 'insurance') {
           await f.locator('.spatial-shelf-open').click();
@@ -254,6 +255,23 @@ function drawerContrast() {
     assert.equal(await mf.locator('.castle-travel-view').count(), 0);
     results.push({motion: immediate, reducedMotion: 'no layer, no transition'});
     await motion.close();
+    // A missing presentation stylesheet must fall back to the original real
+    // account/reader controls, not strand data behind an unfinished scene.
+    const fallback=await browser.newPage({viewport:{width:800,height:700},reducedMotion:'reduce'});
+    await fallback.addInitScript(()=>{HTMLMediaElement.prototype.play=()=>Promise.resolve();Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>window.__copied=text}});});
+    await fallback.route('**/*',route=>{
+      const url=route.request().url();
+      if(url.includes('/castle-scene.css'))return route.fulfill({status:503,contentType:'text/css',body:''});
+      return url.startsWith(origin)?route.continue():route.abort();
+    });
+    await fallback.goto(origin+'/fixture.html');const ff=fallback.frameLocator('iframe');
+    await ff.locator('body[data-spatial=fallback]').waitFor();
+    await fallback.evaluate(drafts=>document.querySelector('iframe').contentWindow.postMessage({channel:'cc-castle-v1',type:'records',drafts,complete:true,loading:false,message:'保存原稿を読込済み'},location.origin),rows);
+    await ff.locator('.account-tile[data-destination=insurance]').click();await ff.locator('#draft-body').waitFor();
+    assert.equal(await ff.locator('#draft-body').textContent(),draft('insurance').body);
+    await ff.locator('#desk-copy').click();assert.equal(await fallback.frames().find(frame=>frame.url().includes('/lounge/')).evaluate(()=>window.__copied),draft('insurance').body);
+    await fallback.screenshot({path:path.join(out,'800-700-style-fallback.png')});await fallback.close();
+    results.push({failedPresentationStyles:'original account/reader route and exact copy retained'});
     fs.writeFileSync(path.join(out, 'results.json'), JSON.stringify(results, null, 2));
     console.log('PASS spatial castle: eight destinations, four matched rooms and actors, direct five-route picker, account-isolated copy/variants, paper/shelf/tools contrast, focus/back, lazy interiors and bounded world assets, preserved records, responsive geometry and nonblocking reduced-motion-safe travel.');
   } finally { await browser.close(); server.close(); }

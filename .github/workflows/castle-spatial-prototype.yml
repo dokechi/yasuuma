@@ -1,7 +1,10 @@
-name: Isolated castle spatial prototype
+name: Spatial castle integration
 on:
   push:
     branches: ['codex/castle-spatial-prototype-20261031']
+  pull_request:
+    branches: [main]
+    paths: ['command-center-98/**', 'scripts/castle-spatial*', '.github/workflows/castle-spatial-prototype.yml']
 permissions:
   contents: read
 jobs:
@@ -14,7 +17,8 @@ jobs:
         with:
           node-version: '24'
       - run: node --check command-center-98/lounge/castle-scene.js && node --check command-center-98/lounge/spatial-desk.js
-      - run: npm install --prefix "$RUNNER_TEMP/ui" --ignore-scripts --no-audit --no-fund playwright-core@1.62.1
+      - run: npm install --prefix "$RUNNER_TEMP/ui" --ignore-scripts --no-audit --no-fund playwright-core@1.62.1 jsdom@26.1.0
+      - run: NODE_PATH="$RUNNER_TEMP/ui/node_modules" node --test scripts/castle-spatial-desk.test.mjs
       - run: sudo apt-get update -qq && sudo apt-get install -y fonts-noto-cjk
       - run: NODE_PATH="$RUNNER_TEMP/ui/node_modules" node scripts/castle-spatial-prototype-browser.cjs
       - run: NODE_PATH="$RUNNER_TEMP/ui/node_modules" node scripts/castle-spatial-host-browser.cjs

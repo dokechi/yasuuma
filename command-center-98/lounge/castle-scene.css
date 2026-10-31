@@ -1,128 +1,131 @@
-/* Spatial prototype only. The live index and its board remain untouched. */
-body.spatial-prototype .account-board {
+/* Spatial castle enhancement. The original account/list controller remains the fallback. */
+body.spatial-atelier .account-board {
   padding: max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
   background: radial-gradient(ellipse at 50% 35%,#304052,#131b2b 80%);
   box-shadow: none; border: 0;
 }
-body.spatial-prototype .account-board>.room-atmosphere,
-body.spatial-prototype .account-board>.room-foyer,
-body.spatial-prototype .account-board[data-spatial-ready=true]>.account-tiles,
-body.spatial-prototype .door-threshold { display:none!important; }
-body.spatial-prototype .account-board-heading {
+body.spatial-atelier .account-board>.room-atmosphere,
+body.spatial-atelier .account-board>.room-foyer,
+body.spatial-atelier .account-board[data-spatial-ready=true]>.account-tiles,
+body.spatial-atelier .door-threshold { display:none!important; }
+body.spatial-atelier .account-board-heading {
   display:grid; grid-template-columns:auto 1fr; gap:16px; padding:0 0 8px;
   background:transparent; border-bottom:1px solid #dbc69730;
 }
-body.spatial-prototype .account-board-heading>div {display:block;padding:0;width:auto}
-body.spatial-prototype .account-board-heading :is(small,p) {display:none}
-body.spatial-prototype .account-board-heading h1 {font-size:28px;margin:0;line-height:1.3}
-body.spatial-prototype .account-board-heading nav {display:flex;flex-wrap:nowrap;max-width:none;gap:8px;width:auto}
-body.spatial-prototype .account-board-heading nav button {font-size:13px;padding:9px 13px;min-height:44px;white-space:nowrap}
-body.spatial-prototype .account-board-status {margin:0;padding:6px 0;min-height:30px;background:transparent;border:0;box-shadow:none;color:#eee6d8;font-size:12px}
-body.spatial-prototype .board-footer {margin:0;min-height:44px;display:flex;justify-content:space-between;border-top:1px solid #dbc69730;gap:8px}
-body.spatial-prototype .board-footer button {font-size:12px;min-height:44px;padding:8px 10px;background:transparent;border:0}
-body.spatial-prototype .spatial-castle {position:relative;min-height:0;flex:1;display:flex;flex-direction:column;isolation:isolate}
-body.spatial-prototype .castle-viewport {position:relative;flex:1;min-height:140px;overflow:hidden;touch-action:pan-y;border-radius:4px;background:#142033}
-body.spatial-prototype .castle-stage {position:absolute;left:0;top:0;width:1536px;height:1024px;transform-origin:0 0;transition:transform 220ms cubic-bezier(.2,.7,.2,1);pointer-events:none;will-change:transform}
-body.spatial-prototype .castle-cutaway {display:block;width:1536px;height:1024px;object-fit:contain;filter:none}
-body.spatial-prototype .castle-study-actor {position:absolute;left:24%;top:45%;width:14%;height:15%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 5px 5px #18111266);clip-path:inset(0 0 2% 0)}
-body.spatial-prototype .castle-hotspots {position:absolute;inset:0;pointer-events:none}
-body.spatial-prototype .account-board .castle-room-hotspot {
+body.spatial-atelier .account-board-heading>div {display:block;padding:0;width:auto}
+body.spatial-atelier .account-board-heading :is(small,p) {display:none}
+body.spatial-atelier .account-board-heading h1 {font-size:28px;margin:0;line-height:1.3}
+body.spatial-atelier .account-board-heading nav {display:flex;flex-wrap:nowrap;max-width:none;gap:8px;width:auto}
+body.spatial-atelier .account-board-heading nav button {font-size:13px;padding:9px 13px;min-height:44px;white-space:nowrap}
+body.spatial-atelier .account-board-status {margin:0;padding:6px 0;min-height:30px;background:transparent;border:0;box-shadow:none;color:#eee6d8;font-size:12px}
+body.spatial-atelier .board-footer {margin:0;min-height:44px;display:flex;justify-content:space-between;border-top:1px solid #dbc69730;gap:8px}
+body.spatial-atelier .board-footer button {font-size:12px;min-height:44px;padding:8px 10px;background:transparent;border:0}
+body.spatial-atelier .spatial-castle {position:relative;min-height:0;flex:1;display:flex;flex-direction:column;isolation:isolate}
+body.spatial-atelier .castle-viewport {position:relative;flex:1;min-height:140px;overflow:hidden;touch-action:pan-y;border-radius:4px;background:#142033}
+body.spatial-atelier .castle-stage {position:absolute;left:0;top:0;width:1536px;height:1024px;transform-origin:0 0;transition:transform 220ms cubic-bezier(.2,.7,.2,1);pointer-events:none;will-change:transform}
+body.spatial-atelier .castle-cutaway {display:block;width:1536px;height:1024px;object-fit:contain;filter:none}
+body.spatial-atelier .castle-study-actor {position:absolute;left:24%;top:45%;width:14%;height:15%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 5px 5px #18111266);clip-path:inset(0 0 2% 0)}
+body.spatial-atelier .castle-hotspots {position:absolute;inset:0;pointer-events:none}
+body.spatial-atelier .account-board .castle-room-hotspot {
   position:absolute;display:block;margin:0;padding:0;min-height:44px;min-width:44px;
   border:1px solid transparent;border-radius:48% 48% 12% 12%;background:transparent;
   box-shadow:none;pointer-events:auto;opacity:1;transition:background 180ms,border-color 180ms;
 }
-body.spatial-prototype .account-board .castle-room-hotspot:hover:not(:disabled) {background:#ffe4aa0c;border-color:#f5db9b66;box-shadow:inset 0 -20px 32px #e8d4a70a}
-body.spatial-prototype .account-board .castle-room-hotspot:active {transform:none}
-body.spatial-prototype .account-board .castle-room-hotspot:focus-visible {outline:3px solid #ffe2a1;outline-offset:2px;box-shadow:0 0 0 6px #101928aa}
-body.spatial-prototype .castle-room-label {
+body.spatial-atelier .account-board .castle-room-hotspot:hover:not(:disabled) {background:#ffe4aa0c;border-color:#f5db9b66;box-shadow:inset 0 -20px 32px #e8d4a70a}
+body.spatial-atelier .account-board .castle-room-hotspot:active {transform:none}
+body.spatial-atelier .account-board .castle-room-hotspot:focus-visible {outline:3px solid #ffe2a1;outline-offset:2px;box-shadow:0 0 0 6px #101928aa}
+body.spatial-atelier .castle-room-label {
   position:absolute;left:50%;bottom:2%;transform:translateX(-50%);display:flex;align-items:baseline;justify-content:center;gap:8px;
   min-width:104px;max-width:calc(100% + 24px);padding:7px 10px;
   border-bottom:1px solid #c7a777bb;background:linear-gradient(90deg,#171d22aa,#171d22f0 16%,#171d22f0 84%,#171d22aa);
   color:#fff2d5;text-shadow:0 1px 2px #000;white-space:nowrap;
 }
-body.spatial-prototype .castle-room-label strong {font-family:'Yu Mincho','Hiragino Mincho ProN',serif;font-size:16px;font-weight:600;line-height:1.5}
-body.spatial-prototype .castle-room-count {font-size:12px;color:#f0e0c2;line-height:1.5}
-body.spatial-prototype .castle-room-marker {position:absolute;left:9%;top:17%;display:grid;place-items:center;width:26px;height:26px;border:1px solid #c9ad78;background:#19222ce8;color:#f4ddb4;font:12px/1 system-ui;border-radius:50%;box-shadow:0 2px 5px #0007}
-body.spatial-prototype .castle-room-hotspot:disabled .castle-room-label {border-color:#aa9f84;background:#18202de8;gap:5px}
-body.spatial-prototype .castle-room-hotspot:disabled .castle-room-label strong {font-size:12px;font-family:system-ui,sans-serif}
-body.spatial-prototype .castle-room-hotspot:disabled .castle-room-count {display:none}
-body.spatial-prototype .castle-room-hotspot:disabled .castle-room-marker {left:calc(50% - 13px);top:35%;border-radius:5px;color:#dbd1b8}
-body.spatial-prototype .castle-room-hotspot:disabled .castle-room-marker:after {content:'封鎖';position:absolute;top:30px;font-size:10px;white-space:nowrap;padding:2px 4px;background:#18202deb}
-body.spatial-prototype .castle-routebar {display:flex;align-items:center;gap:14px;min-height:62px;flex-shrink:0;padding:5px 2px;color:#f4e5ca}
-body.spatial-prototype .castle-routecopy {flex:1;min-width:0;display:flex;align-items:baseline;gap:16px}
-body.spatial-prototype .castle-routecopy strong {font:600 16px/1.5 'Yu Mincho','Hiragino Mincho ProN',serif}
-body.spatial-prototype .castle-routecopy>span {font:12px/1.5 system-ui;color:#d7d3cc}
-body.spatial-prototype .account-board .castle-step {width:44px;min-width:44px;height:44px;padding:0;font-size:26px;border-radius:50%;background:#1c2c3d;border-color:#bda27377}
-body.spatial-prototype .account-board .castle-overview {font-size:12px;min-height:44px;border-radius:3px;background:#172538eb;border-color:#cab17e88}
-body.spatial-prototype .castle-quick {display:flex;gap:8px;align-items:center;flex-shrink:0;min-height:52px;padding:0 0 7px}
-body.spatial-prototype .castle-quick-label {font-size:12px;color:#d8ccb8;padding-right:6px}
-body.spatial-prototype .account-board .castle-quick-open {flex:1;min-height:44px;padding:8px;font-size:14px;border-radius:4px;background:#172537;border-color:#ada07666}
-body.spatial-prototype .account-board .castle-quick-open:hover {background:#2f4050}
-body.spatial-prototype .spatial-castle[data-art-failed=true] .castle-viewport:after {content:'城の絵を読み込めませんでした。下の持ち場から開けます。';position:absolute;inset:auto 12px 12px;padding:12px;background:#172538;color:#fff4de;font-size:14px}
+body.spatial-atelier .castle-room-label strong {font-family:'Yu Mincho','Hiragino Mincho ProN',serif;font-size:16px;font-weight:600;line-height:1.5}
+body.spatial-atelier .castle-room-count {font-size:12px;color:#f0e0c2;line-height:1.5}
+body.spatial-atelier .castle-room-marker {position:absolute;left:9%;top:17%;display:grid;place-items:center;width:26px;height:26px;border:1px solid #c9ad78;background:#19222ce8;color:#f4ddb4;font:12px/1 system-ui;border-radius:50%;box-shadow:0 2px 5px #0007}
+body.spatial-atelier .castle-room-hotspot:disabled .castle-room-label {border-color:#aa9f84;background:#18202de8;gap:5px}
+body.spatial-atelier .castle-room-hotspot:disabled .castle-room-label strong {font-size:12px;font-family:system-ui,sans-serif}
+body.spatial-atelier .castle-room-hotspot:disabled .castle-room-count {display:none}
+body.spatial-atelier .castle-room-hotspot:disabled .castle-room-marker {left:calc(50% - 13px);top:35%;border-radius:5px;color:#dbd1b8}
+body.spatial-atelier .castle-room-hotspot:disabled .castle-room-marker:after {content:'封鎖';position:absolute;top:30px;font-size:10px;white-space:nowrap;padding:2px 4px;background:#18202deb}
+body.spatial-atelier .castle-routebar {display:flex;align-items:center;gap:14px;min-height:62px;flex-shrink:0;padding:5px 2px;color:#f4e5ca}
+body.spatial-atelier .castle-routecopy {flex:1;min-width:0;display:flex;align-items:baseline;gap:16px}
+body.spatial-atelier .castle-routecopy strong {font:600 16px/1.5 'Yu Mincho','Hiragino Mincho ProN',serif}
+body.spatial-atelier .castle-routecopy>span {font:12px/1.5 system-ui;color:#d7d3cc}
+body.spatial-atelier .account-board .castle-step {width:44px;min-width:44px;height:44px;padding:0;font-size:26px;border-radius:50%;background:#1c2c3d;border-color:#bda27377}
+body.spatial-atelier .account-board .castle-overview {font-size:12px;min-height:44px;border-radius:3px;background:#172538eb;border-color:#cab17e88}
+body.spatial-atelier .castle-quick {display:flex;gap:8px;align-items:center;flex-shrink:0;min-height:52px;padding:0 0 7px}
+body.spatial-atelier .castle-quick-label {font-size:12px;color:#d8ccb8;padding-right:6px}
+body.spatial-atelier .account-board .castle-quick-open {flex:1;min-height:44px;padding:8px;font-size:14px;border-radius:4px;background:#172537;border-color:#ada07666}
+body.spatial-atelier .account-board .castle-quick-open:hover {background:#2f4050}
+body.spatial-atelier .spatial-castle[data-art-failed=true] .castle-viewport:after {content:'城の絵を読み込めませんでした。下の持ち場から開けます。';position:absolute;inset:auto 12px 12px;padding:12px;background:#172538;color:#fff4de;font-size:14px}
 @media(max-width:1000px) {
- body.spatial-prototype .castle-room-label {gap:5px;padding:5px 7px;flex-direction:column;align-items:center;min-width:82px}
- body.spatial-prototype .castle-room-label strong {font-size:14px}
- body.spatial-prototype .castle-room-count {font-size:12px}
- body.spatial-prototype .castle-routecopy {display:block}
- body.spatial-prototype .castle-routecopy>span {display:block;font-size:11px}
+ body.spatial-atelier .castle-room-label {gap:5px;padding:5px 7px;flex-direction:column;align-items:center;min-width:82px}
+ body.spatial-atelier .castle-room-label strong {font-size:14px}
+ body.spatial-atelier .castle-room-count {font-size:12px}
+ body.spatial-atelier .castle-routecopy {display:block}
+ body.spatial-atelier .castle-routecopy>span {display:block;font-size:11px}
 }
 @media(max-width:700px) {
- body.spatial-prototype .account-board {padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
- body.spatial-prototype .account-board-heading {gap:8px;padding-bottom:6px}
- body.spatial-prototype .account-board-heading h1 {font-size:23px;letter-spacing:.06em}
- body.spatial-prototype .account-board-heading nav {gap:5px;justify-content:flex-end}
- body.spatial-prototype .account-board-heading nav button {font-size:12px;padding:8px}
- body.spatial-prototype .account-board-status {font-size:12px;padding:5px 0;line-height:1.4;min-height:30px;max-height:52px}
- body.spatial-prototype .castle-viewport {border-radius:5px}
- body.spatial-prototype .castle-routebar {gap:8px;min-height:64px}
- body.spatial-prototype .castle-routecopy strong {font-size:16px}
- body.spatial-prototype .castle-routecopy>span {font-size:11px}
- body.spatial-prototype .account-board .castle-overview {position:absolute;right:9px;top:9px;z-index:2;padding:8px 10px;background:#15202fe8;max-width:150px}
- body.spatial-prototype .castle-quick {gap:5px;padding-bottom:7px}
- body.spatial-prototype .castle-quick-label {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
- body.spatial-prototype .account-board .castle-quick-open {font-size:13px;padding:7px 3px}
- body.spatial-prototype .castle-room-label {min-width:160px;max-width:calc(100% - 10px);padding:8px 12px;gap:4px;flex-direction:row}
- body.spatial-prototype .castle-room-label strong {font-size:20px}
- body.spatial-prototype .castle-room-count {font-size:12px}
- body.spatial-prototype .spatial-castle[data-overview=true] .castle-room-label {display:none}
- body.spatial-prototype .spatial-castle[data-overview=true] .castle-room-marker {left:calc(50% - 22px);top:calc(50% - 22px);width:44px;height:44px;font-size:14px}
- body.spatial-prototype .spatial-castle[data-overview=true] .castle-room-marker:after {display:none}
- body.spatial-prototype .spatial-castle[data-overview=false] .castle-room-marker {top:15px;left:14px}
+ body.spatial-atelier .account-board {padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+ body.spatial-atelier .account-board-heading {gap:8px;padding-bottom:6px}
+ body.spatial-atelier .account-board-heading h1 {font-size:23px;letter-spacing:.06em}
+ body.spatial-atelier .account-board-heading nav {gap:5px;justify-content:flex-end}
+ body.spatial-atelier .account-board-heading nav button {font-size:12px;padding:8px}
+ body.spatial-atelier .account-board-status {font-size:12px;padding:5px 0;line-height:1.4;min-height:30px;max-height:52px}
+ body.spatial-atelier .castle-viewport {border-radius:5px}
+ body.spatial-atelier .castle-routebar {gap:8px;min-height:64px}
+ body.spatial-atelier .castle-routecopy strong {font-size:16px}
+ body.spatial-atelier .castle-routecopy>span {font-size:11px}
+ body.spatial-atelier .account-board .castle-overview {position:absolute;right:9px;top:9px;z-index:2;padding:8px 10px;background:#15202fe8;max-width:150px}
+ body.spatial-atelier .castle-quick {gap:5px;padding-bottom:7px}
+ body.spatial-atelier .castle-quick-label {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ body.spatial-atelier .account-board .castle-quick-open {font-size:13px;padding:7px 3px}
+ body.spatial-atelier .castle-room-label {min-width:160px;max-width:calc(100% - 10px);padding:8px 12px;gap:4px;flex-direction:row}
+ body.spatial-atelier .castle-room-label strong {font-size:20px}
+ body.spatial-atelier .castle-room-count {font-size:12px}
+ body.spatial-atelier .spatial-castle[data-overview=true] .castle-room-label {display:none}
+ body.spatial-atelier .spatial-castle[data-overview=true] .castle-room-marker {left:calc(50% - 22px);top:calc(50% - 22px);width:44px;height:44px;font-size:14px}
+ body.spatial-atelier .spatial-castle[data-overview=true] .castle-room-marker:after {display:none}
+ body.spatial-atelier .spatial-castle[data-overview=false] .castle-room-marker {top:15px;left:14px}
 }
 @media(prefers-reduced-motion:reduce) {
- body.spatial-prototype .castle-stage,body.spatial-prototype .castle-room-hotspot {transition:none!important;animation:none!important}
+ body.spatial-atelier .castle-stage,body.spatial-atelier .castle-room-hotspot {transition:none!important;animation:none!important}
 }
 
 /* Visible neighbouring architecture remains a genuine destination, not a dead picture. */
-body.spatial-prototype .castle-room-hotspot[data-neighbor=true] .castle-room-label {display:none}
-body.spatial-prototype .castle-room-hotspot[data-neighbor=true] .castle-room-marker {left:calc(50% - 28px);top:calc(50% - 22px);width:56px;height:44px;border-radius:4px;font-size:12px}
-body.spatial-prototype .castle-room-hotspot[data-neighbor=true] .castle-room-marker:after {display:none}
-@media(max-width:700px){body.spatial-prototype .spatial-castle[data-overview=true] .castle-room-marker{font-size:12px;border-radius:5px;background:#172335f2;color:#fff0cb}}
+body.spatial-atelier .castle-room-hotspot[data-neighbor=true] .castle-room-label {display:none}
+body.spatial-atelier .castle-room-hotspot[data-neighbor=true] .castle-room-marker {left:calc(50% - 28px);top:calc(50% - 22px);width:56px;height:44px;border-radius:4px;font-size:12px}
+body.spatial-atelier .castle-room-hotspot[data-neighbor=true] .castle-room-marker:after {display:none}
+@media(max-width:700px){body.spatial-atelier .spatial-castle[data-overview=true] .castle-room-marker{font-size:12px;border-radius:5px;background:#172335f2;color:#fff0cb}}
 
 /* Screen-space travel follows the selected room's actual architectural bounds.
    It never intercepts input or delays the route; reduced motion has no layer. */
-body.spatial-prototype .castle-travel-view{position:fixed;inset:0;z-index:250;overflow:hidden;pointer-events:none;background:#172233;contain:strict}
-body.spatial-prototype .castle-travel-view .castle-stage{transition:none!important}
-@media(prefers-reduced-motion:reduce){body.spatial-prototype .castle-travel-view{display:none!important}}
+body.spatial-atelier .castle-travel-view{position:fixed;inset:0;z-index:250;overflow:hidden;pointer-events:none;background:#172233;contain:strict}
+body.spatial-atelier .castle-travel-view .castle-stage{transition:none!important}
+@media(prefers-reduced-motion:reduce){body.spatial-atelier .castle-travel-view{display:none!important}}
 
 /* Navigation belongs to the castle's brass-and-timber rail, not a blue app frame. */
-body.spatial-prototype .account-board{background-image:linear-gradient(#10182744,#0c142542),var(--castle-sky,none);background-size:cover;background-position:center}
-body.spatial-prototype .castle-viewport{background:transparent}
-body.spatial-prototype .account-board-heading{padding:7px 10px;background:linear-gradient(90deg,#24241dee,#172128bb);border:1px solid #b9a16b55;border-bottom-color:#d9bd7b88;box-shadow:inset 0 1px #e4cc8f22}
-body.spatial-prototype .account-board-status{text-shadow:0 1px 3px #08111b,0 0 5px #08111b}
-body.spatial-prototype .castle-routebar{padding:7px 8px;background:linear-gradient(90deg,#24271fe8,#19212bc9);border-top:1px solid #bd9f6466}
-body.spatial-prototype .castle-quick{gap:0;padding:3px 8px 7px;background:linear-gradient(#20291feb,#17232aee);border-bottom:1px solid #bd9f6466}
-body.spatial-prototype .account-board .castle-quick-open{border:0;border-left:1px solid #b79e6b44;border-radius:0;background:transparent;color:#f5e5c4;font-family:'Yu Mincho','Hiragino Mincho ProN',serif;font-size:15px;position:relative}
-body.spatial-prototype .account-board .castle-quick-open[aria-current=location]{color:#ffe2a0;background:#c9af6c11}
-body.spatial-prototype .account-board .castle-quick-open[aria-current=location]:after{content:'';position:absolute;bottom:3px;left:25%;right:25%;height:2px;background:#c9ad70}
-body.spatial-prototype .board-footer{background:#14202bc9;border-top:0}
-body.spatial-prototype .castle-travel-view{background-image:var(--castle-sky,none);background-size:cover;background-position:center}
-@media(max-width:700px){body.spatial-prototype .account-board-heading{padding:6px 7px}body.spatial-prototype .account-board .castle-quick-open{font-size:13px}body.spatial-prototype .castle-quick{padding:3px 0 7px}body.spatial-prototype .castle-routebar{padding:5px}}
+body.spatial-atelier .account-board{background-image:linear-gradient(#10182744,#0c142542),var(--castle-sky,none);background-size:cover;background-position:center}
+body.spatial-atelier .castle-viewport{background:transparent}
+body.spatial-atelier .account-board-heading{padding:7px 10px;background:linear-gradient(90deg,#24241dee,#172128bb);border:1px solid #b9a16b55;border-bottom-color:#d9bd7b88;box-shadow:inset 0 1px #e4cc8f22}
+body.spatial-atelier .account-board-status{text-shadow:0 1px 3px #08111b,0 0 5px #08111b}
+body.spatial-atelier .castle-routebar{padding:7px 8px;background:linear-gradient(90deg,#24271fe8,#19212bc9);border-top:1px solid #bd9f6466}
+body.spatial-atelier .castle-quick{gap:0;padding:3px 8px 7px;background:linear-gradient(#20291feb,#17232aee);border-bottom:1px solid #bd9f6466}
+body.spatial-atelier .account-board .castle-quick-open{border:0;border-left:1px solid #b79e6b44;border-radius:0;background:transparent;color:#f5e5c4;font-family:'Yu Mincho','Hiragino Mincho ProN',serif;font-size:15px;position:relative}
+body.spatial-atelier .account-board .castle-quick-open[aria-current=location]{color:#ffe2a0;background:#c9af6c11}
+body.spatial-atelier .account-board .castle-quick-open[aria-current=location]:after{content:'';position:absolute;bottom:3px;left:25%;right:25%;height:2px;background:#c9ad70}
+body.spatial-atelier .board-footer{background:#14202bc9;border-top:0}
+body.spatial-atelier .castle-travel-view{background-image:var(--castle-sky,none);background-size:cover;background-position:center}
+@media(max-width:700px){body.spatial-atelier .account-board-heading{padding:6px 7px}body.spatial-atelier .account-board .castle-quick-open{font-size:13px}body.spatial-atelier .castle-quick{padding:3px 0 7px}body.spatial-atelier .castle-routebar{padding:5px}}
 
 /* Companions inhabit the same floor coordinates as their working room. */
-body.spatial-prototype .castle-room-actor{position:absolute;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 4px 5px #18111266);pointer-events:none}
-body.spatial-prototype .castle-room-actor[data-actor=insurance]{left:24%;top:45%;width:14%;height:15%;clip-path:inset(0 0 2% 0)}
-body.spatial-prototype .castle-room-actor[data-actor=otoku]{left:31%;top:14%;width:7.5%;height:17%}
-body.spatial-prototype .castle-room-actor[data-actor=rakuten]{left:65%;top:43%;width:16%;height:16%}
-body.spatial-prototype .castle-room-actor[data-actor=lottery]{left:69%;top:18%;width:12%;height:14%}
-body.spatial-prototype .castle-room-actor[data-actor=sourcing]{left:57%;top:76%;width:13%;height:16%}
+body.spatial-atelier .castle-room-actor{position:absolute;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 4px 5px #18111266);pointer-events:none}
+body.spatial-atelier .castle-room-actor[data-actor=insurance]{left:24%;top:45%;width:14%;height:15%;clip-path:inset(0 0 2% 0)}
+body.spatial-atelier .castle-room-actor[data-actor=otoku]{left:31%;top:14%;width:7.5%;height:17%}
+body.spatial-atelier .castle-room-actor[data-actor=rakuten]{left:65%;top:43%;width:16%;height:16%}
+body.spatial-atelier .castle-room-actor[data-actor=lottery]{left:69%;top:18%;width:12%;height:14%}
+body.spatial-atelier .castle-room-actor[data-actor=sourcing]{left:57%;top:76%;width:13%;height:16%}
+
+body.spatial-atelier{--spatial-castle-ready:1}
+body.spatial-atelier .spatial-castle[data-motion=reduced] .castle-stage{transition:none!important}

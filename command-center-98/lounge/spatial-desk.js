@@ -1,6 +1,6 @@
-/* Isolated spatial prototype. No data requests, persistence, or source-record changes.
-   The bootstrap opts in with body.spatial-prototype and calls this installer. */
-import {publishingAccounts} from './accounts.js?v=20261031.9-world';
+/* Spatial publishing desks. No data requests, persistence, or source-record changes.
+   The entry opts in with body.spatial-atelier and calls this installer. */
+import {publishingAccounts} from './accounts.js?v=20261031.10-spatial';
 
 // Observed rectangles from command-castle-cutaway-v1-zones.json. The same
 // master artwork underlies the overview and these four publishing rooms.
@@ -118,7 +118,7 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
       marker.replaceWith(node);
     }
   };
-  const isEligible = () => doc.body.classList.contains('spatial-prototype') &&
+  const isEligible = () => doc.body.classList.contains('spatial-atelier') &&
     Object.hasOwn(rooms, room.dataset.account) && !room.hidden;
   const syncState = () => {
     if (!active) return;
@@ -369,6 +369,7 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
     destroyed = true;
   }};
   installations.set(doc, api);
-  sync();
+  try { sync(); }
+  catch (error) { api.destroy(); throw error; }
   return api;
 }

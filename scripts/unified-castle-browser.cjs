@@ -52,19 +52,25 @@ const server=http.createServer((req,res)=>{
       const lounge=page.frameLocator('#ccCastleFrame');
       assert.equal(new URL(await page.locator('#ccCastleFrame').getAttribute('src'),page.url()).pathname,'/command-center-98/lounge/index.html');
       await lounge.locator('.account-board[data-state=ready]').waitFor();
-      assert.equal(await lounge.locator('.account-tile').count(),8);
-      assert.match(await lounge.locator('.account-tile[data-destination=insurance]').textContent(),/保存原稿 1本/);
-      await lounge.locator('.account-tile[data-destination=insurance]').click();
+      await lounge.locator('.castle-room-hotspot').first().waitFor();
+      assert.equal(await lounge.locator('.castle-room-hotspot').count(),8);
+      assert.equal(await lounge.locator('.castle-room-hotspot:disabled').count(),3);
+      assert.match(await lounge.locator('.castle-room-hotspot[data-room=insurance]').textContent(),/保存原稿 1本/);
+      await lounge.locator('.castle-quick-open[data-room=insurance]').click();
+      await lounge.locator('#room[data-account=insurance][data-spatial-desk=ready]').waitFor();
       await lounge.locator('#draft-body').waitFor();
       assert.equal(await lounge.locator('#draft-body').textContent(),insuranceBody);
       assert.equal(await lounge.locator('#room-title').textContent(),'保険');
+      await lounge.locator('.spatial-work > summary').click();
       assert.equal(await lounge.locator('#desk-routes strong').textContent(),'保険 @sucker0508');
+      await lounge.locator('.spatial-work > summary').click();
       assert.equal(await page.evaluate(()=>localStorage.getItem('cc-castle-mode')),'castle');
       assert.equal(await page.locator('#ccRpgHome').textContent(),'');
       assert.equal(await page.locator('#commandHome').isVisible(),false);
       await lounge.locator('#desk-copy').click();
       assert.equal((await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n'),insuranceBody);
       // Open the supported native insurance review, not the retired kyun reader.
+      await lounge.locator('.spatial-work > summary').click();
       await lounge.locator('#desk-routes').getByRole('button',{name:'出典・確認記録',exact:true}).click();
       const review=page.locator('.manual-operation-review[open]');await review.waitFor();
       assert.equal(await review.locator('h2').textContent(),'保険｜@sucker0508');
@@ -104,7 +110,7 @@ const server=http.createServer((req,res)=>{
       await page.reload();await page.waitForFunction(()=>window.CCCastle?.unified&&!document.querySelector('#ccCastleFrame').hidden);
       await lounge.locator('.account-board[data-state=ready]').waitFor();
       assert.equal(await page.locator('#commandHome').isVisible(),false);
-      assert.match(await lounge.locator('.account-tile[data-destination=insurance]').textContent(),/保存原稿 1本/);
+      assert.match(await lounge.locator('.castle-room-hotspot[data-room=insurance]').textContent(),/保存原稿 1本/);
       assert.deepEqual(errors,[]);assert.deepEqual(blocked,[]);
       assert.equal(await page.evaluate(()=>__rpgQA.writes.length),0);
       await page.screenshot({path:path.join(out,width+'.png')});

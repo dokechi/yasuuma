@@ -28,8 +28,6 @@ const server=http.createServer((req,res)=>{
   if(!file.startsWith(root+path.sep))return res.writeHead(403).end();
   fs.readFile(file,(error,bytes)=>{
     if(error)return res.writeHead(404).end();let content=bytes;
-    if(relative==='/command-center-98/lounge/index.html')content=fs.readFileSync(path.join(root,'command-center-98/lounge/spatial-prototype.html'));
-    if(relative==='/command-center-98/app-assets.json'){const manifest=JSON.parse(bytes);manifest.styles.push('./spatial-workspace.css');content=JSON.stringify(manifest);}
     if(relative==='/command-center-98/app.html')content=bytes.toString().replace('<head>','<head><script>localStorage.setItem("cc-castle-mode","classic");</script><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script><script>'+fixtureScript+'</script>');
     if(relative==='/scripts/ui-fixtures.js')content=bytes.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
     res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'}).end(content);

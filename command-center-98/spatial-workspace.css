@@ -26,7 +26,7 @@ body.lounge-workspace :is(button.push-button,.sourcing-tabs button){min-height:4
  body.lounge-workspace #loungeWorkspaceHeader nav>div {gap:5px;flex-wrap:wrap;justify-content:flex-start}
  body.lounge-workspace #loungeWorkspaceHeader button {font-size:12px;min-height:44px;padding:8px 10px}
  body.lounge-workspace #loungeWorkspaceHeader:before {right:-9px;bottom:0;width:180px;height:145px;opacity:.94}
- body.lounge-workspace .lounge-workspace-caption {margin-top:18px;max-width:calc(100% - 116px);padding:7px 9px}
+ body.lounge-workspace .lounge-workspace-caption {margin-top:18px;max-width:calc(100% - 116px);padding:7px 9px;background:#152b2af5}
  body.lounge-workspace #loungeWorkspaceHeader h1 {font-size:27px!important}
  body.lounge-workspace .lounge-workspace-caption p:first-child {font-size:10px}
  body.lounge-workspace .lounge-workspace-caption p:last-child {font-size:12px;line-height:1.6}
