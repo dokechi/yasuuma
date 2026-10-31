@@ -12,7 +12,7 @@ const out = path.join(root, 'artifacts/castle-immersive');
 const mime = {'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript',
   '.json':'application/json','.css':'text/css','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg'};
 const roomKeys = ['insurance', 'otoku', 'rakuten', 'lottery'];
-const roomRects = {insurance:[.085,.33,.35,.28],otoku:[.17,.06,.27,.25],rakuten:[.58,.34,.34,.27],lottery:[.62,.05,.25,.27],sourcing:[.325,.66,.43,.27]};
+const roomRects = {insurance:[.085,.33,.35,.28],otoku:[.17,.06,.27,.25],rakuten:[.58,.34,.34,.27],lottery:[.62,.05,.25,.27],sourcing:[.325,.66,.43,.27],'planned-5':[.055,.675,.215,.23],'planned-6':[.817,.65,.152,.275],reserve:[.457,.015,.139,.14]};
 const rows = roomKeys.map((key, i) => ({id:901+i, taskId:key+'-threads-v1',eventKey:'immersive-'+key,
   title:({insurance:'保険を見直す前の確認',otoku:'お得な価格の条件',rakuten:'楽天犬と贈りもの',lottery:'抽選の締切を確かめる'})[key],
   occurredAt:'2026-10-31T08:00:00Z',domain:'money',payload:{
@@ -254,22 +254,36 @@ function installProbe() {
       // A user may enter before a browse camera settles. The travel must start
       // at the painted intermediate transform, not the pending CSS target.
       await setOverview();await f.locator('.castle-overview').click();
-      await f.locator('.castle-stage').evaluate(async n=>{
-        const animations=n.getAnimations().filter(a=>a.effect?.target===n);
+      const browseSample=await cf.evaluate(async rects=>{
+        const stage=document.querySelector('.castle-stage'),viewport=document.querySelector('.castle-viewport'),world=document.querySelector('.spatial-castle');
+        const animations=stage.getAnimations().filter(a=>a.effect?.target===stage);
         if(!animations.length)throw Error('No browse transform available to interrupt');
-        for(const a of animations){a.pause();a.currentTime=Number(a.effect.getTiming().duration)*.48;}
+        for(const a of animations)a.pause();
+        await Promise.all(animations.map(a=>a.ready));
+        for(const a of animations)a.currentTime=Number(a.effect.getTiming().duration)*.48;
         await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-      });
-      const paintedBrowse=await f.locator('.castle-cutaway').boundingBox();
-      const browseViewport=await f.locator('.castle-viewport').boundingBox(),[lx,ly,lw,lh]=roomRects.lottery;
-      const visibleRoom={x:Math.max(browseViewport.x,paintedBrowse.x+paintedBrowse.width*lx),y:Math.max(browseViewport.y,paintedBrowse.y+paintedBrowse.height*ly)};
-      visibleRoom.width=Math.max(44,Math.min(browseViewport.x+browseViewport.width,paintedBrowse.x+paintedBrowse.width*(lx+lw))-visibleRoom.x);
-      visibleRoom.height=Math.max(44,Math.min(browseViewport.y+browseViewport.height,paintedBrowse.y+paintedBrowse.height*(ly+lh))-visibleRoom.y);
-      const paintedHitbox=await f.locator('.castle-room-hotspot[data-room=lottery]').boundingBox();
-      check('browse hit targets follow painted room geometry',!!paintedHitbox&&['x','y','width','height'].every(k=>Math.abs(paintedHitbox[k]-visibleRoom[k])<3),{paintedHitbox,visibleRoom});
-      const hitPoint={x:visibleRoom.x+visibleRoom.width/2,y:visibleRoom.y+visibleRoom.height/2};
-      const currentFrame=await page.locator('#ccCastleFrame').boundingBox();
-      const hitRoom=await cf.evaluate(({x,y})=>document.elementFromPoint(x,y)?.closest('.castle-room-hotspot')?.dataset.room,{x:hitPoint.x-currentFrame.x,y:hitPoint.y-currentFrame.y});
+        // All architecture, aperture, targets and hit testing belong to one
+        // paint. Separate protocol tasks could mix a replaced CSS transition.
+        const frame=window.frameElement.getBoundingClientRect();
+        const rect=n=>{const r=n.getBoundingClientRect();return{x:r.x+frame.x,y:r.y+frame.y,width:r.width,height:r.height};};
+        const castle=rect(stage.querySelector('.castle-cutaway')),bounds=rect(viewport);
+        const targets=[...document.querySelectorAll('.castle-room-hotspot')].map(n=>{
+          const [x,y,w,h]=rects[n.dataset.room],left=Math.max(bounds.x,castle.x+castle.width*x),top=Math.max(bounds.y,castle.y+castle.height*y);
+          const expected={x:left,y:top,width:Math.max(44,Math.min(bounds.x+viewport.clientWidth,castle.x+castle.width*(x+w))-left),height:Math.max(44,Math.min(bounds.y+viewport.clientHeight,castle.y+castle.height*(y+h))-top)};
+          return{room:n.dataset.room,hidden:n.hidden,actual:rect(n),expected,inline:{left:n.style.left,top:n.style.top,width:n.style.width,height:n.style.height}};
+        });
+        const lottery=targets.find(n=>n.room==='lottery'),hitPoint={x:lottery.expected.x+lottery.expected.width/2,y:lottery.expected.y+lottery.expected.height/2};
+        return{castle,viewport:bounds,targets,hitPoint,hitRoom:document.elementFromPoint(hitPoint.x-frame.x,hitPoint.y-frame.y)?.closest('.castle-room-hotspot')?.dataset.room,
+          selected:world.dataset.selected,overview:world.dataset.overview,scroll:{left:viewport.scrollLeft,top:viewport.scrollTop},
+          stage:{inline:stage.style.transform,painted:getComputedStyle(stage).transform,rect:rect(stage)},
+          animations:stage.getAnimations().map(a=>({state:a.playState,pending:a.pending,time:a.currentTime,rate:a.playbackRate,timing:a.effect?.getTiming()}))};
+      },roomRects);
+      result.interruptedBrowse=browseSample;
+      fs.writeFileSync(path.join(out,`${width}-${height}-interrupted-browse.json`),JSON.stringify(browseSample,null,2));
+      const paintedBrowse=browseSample.castle;
+      const visibleTargets=browseSample.targets.filter(n=>!n.hidden);
+      check('browse hit targets follow painted room geometry',visibleTargets.length>0&&visibleTargets.every(n=>['x','y','width','height'].every(k=>Math.abs(n.actual[k]-n.expected[k])<3)),browseSample);
+      const {hitPoint,hitRoom}=browseSample;
       check('visible room under a mid-browse tap is the intended destination',hitRoom==='lottery',{hitPoint,hitRoom});
       await page.evaluate(()=>window.__immersiveQA.freezeNext=true);
       if(width<=800)await page.touchscreen.tap(hitPoint.x,hitPoint.y);else await page.mouse.click(hitPoint.x,hitPoint.y);
