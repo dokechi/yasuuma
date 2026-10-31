@@ -32,3 +32,4 @@ body.spatial-atelier #settings button,body.spatial-atelier #settings select,body
 body.spatial-atelier #settings small,body.spatial-atelier #settings .settings-note{font-size:12px;line-height:1.5;color:#62543c}
 body.spatial-atelier #settings .setting-line{min-height:56px}
 body.spatial-atelier #settings #settings-close{font-size:22px}
+body.spatial-atelier #settings .segmented label:has(input:checked) small{color:#f5ead4;opacity:1}

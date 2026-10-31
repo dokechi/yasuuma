@@ -382,6 +382,12 @@ function installProbe() {
       await f.locator('#settings .setting-line:has(#reduce-setting)').click();
       await f.locator('#settings .segmented label:has(input[value=quick])').click();
       check('settings UI updates the existing preferences',await cf.evaluate(()=>{const s=JSON.parse(localStorage.getItem('shireito-courtyard-v1'));return s.reduce===true&&s.pace==='quick';}));
+      const selectedHint=await f.locator('#settings .segmented label:has(input:checked) small').evaluate(n=>{
+        const css=getComputedStyle(n),parent=getComputedStyle(n.closest('label'));
+        const luminance=value=>{const rgb=(value.match(/[\d.]+/g)||[]).slice(0,3).map(Number).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;};
+        const a=luminance(css.color),b=luminance(parent.backgroundColor);return{contrast:(Math.max(a,b)+.05)/(Math.min(a,b)+.05),opacity:Number(css.opacity),fontSize:parseFloat(css.fontSize)};
+      });
+      check('selected pace helper stays readable on its dark selected surface',selectedHint.contrast>=4.5&&selectedHint.opacity===1&&selectedHint.fontSize>=12,selectedHint);
       await screenshot('experience-settings');await page.keyboard.press('Escape');
       await f.locator('#settings:not([open])').waitFor({state:'attached'});
       check('settings Escape restores its new visible opener',await f.locator('.castle-experience-settings').evaluate(n=>n===document.activeElement));
@@ -389,7 +395,26 @@ function installProbe() {
       await f.locator('#settings .setting-line:has(#reduce-setting)').click();
       await f.locator('#settings .segmented label:has(input[value=normal])').click();await f.locator('#settings-close').click();
       check('settings close restores opener and normal mode',await f.locator('.castle-experience-settings').evaluate(n=>n===document.activeElement)&&await cf.evaluate(()=>!document.getElementById('reduce-setting').checked));
+      await cf.waitForFunction(()=>{const n=document.querySelector('.castle-viewport');return n.scrollLeft===0&&n.scrollTop===0;},null,{polling:'raf'});
+      const restoredOrigin=await f.locator('.castle-viewport').evaluate(n=>({left:n.scrollLeft,top:n.scrollTop,overflow:getComputedStyle(n).overflow}));
+      check('modal focus restoration never scrolls the camera aperture',restoredOrigin.left===0&&restoredOrigin.top===0,restoredOrigin);
       await setOverview();
+      const cameraBeforeScroll=await f.locator('.castle-cutaway').boundingBox();
+      const cameraScroll=await f.locator('.castle-viewport').evaluate(async n=>{n.scrollLeft=32;n.scrollTop=32;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));return{left:n.scrollLeft,top:n.scrollTop,overflow:getComputedStyle(n).overflow};});
+      const cameraAfterScroll=await f.locator('.castle-cutaway').boundingBox();
+      check('programmatic scrolling cannot displace the castle camera',cameraScroll.left===0&&cameraScroll.top===0&&['x','y','width','height'].every(k=>Math.abs(cameraAfterScroll[k]-cameraBeforeScroll[k])<1),{scroll:cameraScroll,before:cameraBeforeScroll,after:cameraAfterScroll});
+      if(width===320){
+        // Exercise the named guard for engines without overflow:clip, rather
+        // than passing solely because current Chromium ignores scroll writes.
+        const legacyScroll=await f.locator('.castle-viewport').evaluate(async n=>{
+          const previous=n.style.overflow;n.style.overflow='hidden';n.scrollLeft=8;n.scrollTop=8;
+          const attempted={left:n.scrollLeft,top:n.scrollTop};
+          await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+          const result={attempted,left:n.scrollLeft,top:n.scrollTop};n.style.overflow=previous;return result;
+        });
+        const cameraAfterFallback=await f.locator('.castle-cutaway').boundingBox();
+        check('legacy hidden-overflow guard restores the same camera origin',(legacyScroll.attempted.left>0||legacyScroll.attempted.top>0)&&legacyScroll.left===0&&legacyScroll.top===0&&['x','y','width','height'].every(k=>Math.abs(cameraAfterFallback[k]-cameraBeforeScroll[k])<1),{scroll:legacyScroll,before:cameraBeforeScroll,after:cameraAfterFallback});
+      }
       const orrery=f.locator('.castle-orrery');await orrery.waitFor();
       const o=await orrery.evaluate(n=>({tag:n.tagName,name:n.getAttribute('aria-label')||n.textContent,disabled:n.disabled,rect:{width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height},touchAction:getComputedStyle(n).touchAction}));
       check('orrery is optional, labelled and touch-sized',o.tag==='BUTTON'&&!!o.name&&!o.disabled&&o.rect.width>=44&&o.rect.height>=44,o);
