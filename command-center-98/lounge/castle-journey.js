@@ -81,7 +81,12 @@ export function createCastleJourney({document: doc = globalThis.document, assetR
       actor.dataset.actor = key; Object.assign(actor.style, {left: x * 100 + '%', top: y * 100 + '%', width: w * 100 + '%', height: h * 100 + '%'}); camera.append(actor);
     }
     world.append(camera);
+    // A cold/failed high-resolution image must never reveal an empty sky. This
+    // uses the castle bitmap already displayed on home and needs no decode wait.
+    const fallback = make('div', 'fallback'), fallbackArt = image('fallback-art', 'castle-silhouette-v1.webp');
+    fallbackArt.width = WIDTH; fallbackArt.height = HEIGHT; fallbackArt.style.transform = near; fallback.append(fallbackArt);
     const interior = image('interior', 'castle-interior-' + spec.room + '-v1.webp');
+    interior.addEventListener('error', () => { interior.style.visibility = 'hidden'; }, {once: true});
     interior.dataset.room = spec.room;
     const source = spec.direction === 'switch' ? image('source-interior', 'castle-interior-' + sourceRoom + '-v1.webp') : null;
     // The caller supplies a sanitized, detached snapshot, never the live reader.
@@ -93,7 +98,7 @@ export function createCastleJourney({document: doc = globalThis.document, assetR
     const handle = make('span', 'handle'); leafLeft.append(handle);
     const light = make('div', 'light'), lintel = make('div', 'lintel'), postLeft = make('div', 'post'), postRight = make('div', 'post');
     postLeft.dataset.side = 'left'; postRight.dataset.side = 'right'; threshold.append(leafLeft, leafRight, light, lintel, postLeft, postRight);
-    layer.append(sky, interior, world); if (source) layer.append(source); if (foreground) layer.append(foreground); layer.append(threshold);
+    layer.append(sky, fallback, interior, world); if (source) layer.append(source); if (foreground) layer.append(foreground); layer.append(threshold);
     const record = {id: intent, layer, room: spec.room, direction: spec.direction, duration, started: false, animations: [], primary: null, raf: null, watchdog: null};
     current = record;
     try {
@@ -118,7 +123,7 @@ export function createCastleJourney({document: doc = globalThis.document, assetR
         {opacity: 1, clipPath: initialClip, offset: .9},
         {opacity: 0, clipPath: initialClip, offset: 1}
       ] : [
-        {opacity: 1, clipPath: spec.direction === 'switch' ? 'inset(0)' : initialClip, offset: 0},
+        {opacity: 1, clipPath: 'inset(0)', offset: 0},
         {opacity: 1, clipPath: 'inset(0)', offset: .24},
         {opacity: 1, clipPath: 'inset(0)', offset: .87},
         {opacity: 0, clipPath: 'inset(0)', offset: 1}
@@ -129,6 +134,7 @@ export function createCastleJourney({document: doc = globalThis.document, assetR
       const skyX = clamp((closeX - startX) * .2, -width * .035, width * .035), skyY = clamp((closeY - startY) * .2, -height * .035, height * .035);
       animate(sky, [{transform: 'translate(0,0) scale(1.08)', offset: 0}, {transform: `translate(${skyX}px,${skyY}px) scale(1.08)`, offset: .5}, {transform: `translate(${skyX}px,${skyY}px) scale(1.08)`, offset: 1}]);
       animate(world, [{opacity: source ? 0 : 1, offset: 0}, {opacity: source ? 0 : 1, offset: .47}, {opacity: 0, offset: .55}, {opacity: 0, offset: 1}]);
+      animate(fallback, [{opacity: 0, offset: 0}, {opacity: 0, offset: .43}, {opacity: 1, offset: .51}, {opacity: 1, offset: 1}]);
       animate(interior, [{opacity: 0, transform: 'scale(1.035)', offset: 0}, {opacity: 0, transform: 'scale(1.035)', offset: .43}, {opacity: 1, transform: 'scale(1.035)', offset: .51}, {opacity: 1, transform: 'scale(1)', offset: 1}]);
       if (source) animate(source, [{opacity: 1, transform: 'scale(1)', offset: 0}, {opacity: 1, transform: 'scale(1.035)', offset: .46}, {opacity: 0, transform: 'scale(1.035)', offset: .54}, {opacity: 0, transform: 'scale(1.035)', offset: 1}]);
       animate(threshold, [

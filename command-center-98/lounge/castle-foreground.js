@@ -6,9 +6,9 @@ export function captureCastleForeground(sourceDocument,{document:target=sourceDo
  let budget=350;
  function copy(node){
   if(node.nodeType===3)return target.createTextNode(node.textContent);
-  if(node.nodeType!==1||budget<=0||['SCRIPT','STYLE','IFRAME','AUDIO','VIDEO','INPUT','SELECT','TEXTAREA'].includes(node.tagName))return null;
+  if(node.nodeType!==1||budget<=0||['SCRIPT','STYLE','IFRAME','AUDIO','VIDEO','INPUT','SELECT','TEXTAREA','OBJECT','EMBED','LINK','META'].includes(node.tagName))return null;
   budget--;const style=win.getComputedStyle(node);if(style.display==='none'||style.visibility==='hidden')return null;
-  const clone=target.createElement(node.tagName.toLowerCase());
+  const clone=target.createElement(node.tagName==='FORM'?'div':node.tagName.toLowerCase());
   for(const property of properties)clone.style.setProperty(property,style.getPropertyValue(property));
   if(node.tagName==='IMG'){clone.src=node.currentSrc||node.src;clone.alt='';clone.draggable=false;}
   if(node.scrollTop)clone.dataset.journeyScrollTop=String(node.scrollTop);

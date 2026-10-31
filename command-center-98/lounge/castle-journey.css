@@ -34,3 +34,7 @@
 .castle-journey-foreground{position:absolute;inset:0;pointer-events:none!important}
 .castle-journey-foreground,.castle-journey-foreground *{animation:none!important;transition:none!important;pointer-events:none!important;user-select:none!important}
 .castle-journey-foreground [data-journey-part=paper],.castle-journey-foreground [data-journey-part=actor]{will-change:opacity,transform}
+
+/* Cached close-up architecture remains behind a cold/failed room image. */
+.castle-journey-fallback{position:absolute;inset:0;overflow:hidden;pointer-events:none;will-change:opacity}
+.castle-journey-fallback-art{position:absolute;left:0;top:0;display:block;width:1536px;height:1024px;max-width:none;transform-origin:0 0;object-fit:contain}

@@ -121,3 +121,13 @@ test('connected or foreign foreground nodes are never moved or removed', t => {
   const foreign = other.window.document.createElement('section'); foreign.textContent = 'Foreign detached'; renderer.travel(spec('otoku', {foreground: foreign})); assert.equal(foreign.parentNode, null); renderer.cancel(); assert.equal(foreign.ownerDocument, other.window.document);
   const holder = doc.createElement('div'), child = doc.createElement('section'); holder.append(child); renderer.travel(spec('rakuten', {foreground: child})); renderer.cancel(); assert.equal(child.parentNode, holder);
 });
+
+test('late or failed interiors retain cached close-up architecture without awaiting/replaying a route', t => {
+  const {renderer, doc, win, animations} = setup(t); renderer.travel(spec('insurance'));
+  const fallback = doc.querySelector('.castle-journey-fallback'), interior = doc.querySelector('.castle-journey-interior'), art = fallback.querySelector('img');
+  assert.equal(fallback.nextElementSibling, interior); assert.match(art.src, /castle-silhouette-v1.webp$/);
+  const camera = animations.find(a => a.node.className === 'castle-journey-camera'); assert.equal(art.style.transform, camera.frames[2].transform);
+  const backing = animations.find(a => a.node === fallback); assert.equal(backing.frames.at(-1).opacity, 1);
+  interior.dispatchEvent(new win.Event('error')); assert.equal(interior.style.visibility, 'hidden'); assert.equal(fallback.isConnected, true); assert.equal(renderer.state().room, 'insurance');
+  renderer.travel(spec('otoku')); interior.dispatchEvent(new win.Event('load')); assert.equal(renderer.state().room, 'otoku'); assert.equal(doc.querySelectorAll('.castle-journey').length, 1);
+});
