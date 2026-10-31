@@ -151,7 +151,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cc-rpg-browser-'));
  const proc=spawn(chrome,['--headless','--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--no-first-run','--disable-background-networking','--disable-component-update','--remote-debugging-port=0','--user-data-dir='+path.join(dir,'profile'),'about:blank'],{stdio:'ignore'});
- let ws,serial=0;const pending=new Map(),results=[],blocked=[],errors=[],cancelledInterceptions=[];
+ let ws,serial=0;const pending=new Map(),results=[],blocked=[],errors=[],cancelledInterceptions=[],navigationReadinessRetries=[];
  const rejectPending=reason=>{for(const p of pending.values()){clearTimeout(p.timer);p.reject(Error(reason+': '+p.context))}pending.clear()};
  try{
   const portFile=path.join(dir,'profile/DevToolsActivePort'),deadline=Date.now()+15000;
@@ -171,7 +171,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   });
   ws.onclose=event=>rejectPending('CDP socket closed ('+event.code+')');
   ws.onerror=()=>rejectPending('CDP socket error');
-  ws.onmessage=event=>{const m=JSON.parse(event.data);if(m.id&&pending.has(m.id)){const p=pending.get(m.id);clearTimeout(p.timer);pending.delete(m.id);m.error?p.reject(Error(m.error.message)):p.resolve(m.result)}
+  ws.onmessage=event=>{const m=JSON.parse(event.data);if(m.id&&pending.has(m.id)){const p=pending.get(m.id);clearTimeout(p.timer);pending.delete(m.id);m.error?p.reject(Object.assign(Error(m.error.message),{cdpContext:p.context})):p.resolve(m.result)}
    // A navigation can cancel an intercepted request before CDP continues it.
    // Record only that exact transport race separately; runtime exceptions and
    // all other protocol failures still fail, and blocked requests remain blocked.
@@ -181,13 +181,22 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   await send('Page.enable');await send('Runtime.enable');await send('Network.enable');await send('Network.setBypassServiceWorker',{bypass:true});await send('Fetch.enable',{patterns:[{urlPattern:'http*',requestStage:'Request'}]});
   const evaluate=async expression=>{const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result.value};
   diagnose=async(reason)=>{const label='failure-'+Date.now();const info={reason,requests,blocked,errors};try{info.page=await evaluate(`({url:location.href,readyState:document.readyState,title:document.title,body:document.body?.innerText?.slice(0,12000),html:document.documentElement.outerHTML.slice(0,25000),qa:window.__rpgQA?{writes:window.__rpgQA.writes,mode:window.__rpgQA.mode}:null})`)}catch(e){info.pageError=e.message}try{const png=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(output,label+'.png'),Buffer.from(png.data,'base64'))}catch(e){info.screenshotError=e.message}fs.writeFileSync(path.join(output,label+'.json'),JSON.stringify(info,null,2));console.error(JSON.stringify({reason,page:info.page?.url,title:info.page?.title,body:info.page?.body?.slice(0,1000),errors,blocked}));};
-  const waitFor=async expression=>{for(let i=0;i<100;i++){if(await evaluate(expression))return;await sleep(50)}throw Error('Timed out: '+expression)};
+  // The real entry intentionally redirects to its canonical version. Only
+  // idempotent readiness reads may retry that precise destroyed-context race;
+  // UI actions, runtime exceptions and persistent closed targets still fail.
+  const waitFor=async expression=>{for(let i=0;i<100;i++){
+   try{if(await evaluate(expression))return;}catch(error){
+    if(error.message!=='Inspected target navigated or closed'||!error.cdpContext?.startsWith('Runtime.evaluate '))throw error;
+    navigationReadinessRetries.push({expression,reason:error.message});
+   }
+   await sleep(50);
+  }throw Error('Timed out: '+expression)};
   // Startup completion is a host protocol event, not proof that child artwork has
   // decoded or its finite entrance transitions have painted. Final screenshots
   // await the actual embedded lounge; delayed/loading-gate captures do not.
   const loungeReady=async()=>{
-   await waitFor(`(()=>{const f=document.getElementById('ccCastleFrame'),d=f?.contentDocument;return !!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')&&f&&!f.hidden&&d?.querySelector('.account-board[data-state="ready"]')&&d.querySelectorAll('.account-tile img').length===8})()`);
-   await evaluate(`(async()=>{const c=document.getElementById('ccCastleFrame').contentWindow,d=c.document;await d.fonts.ready;const backgrounds=c.getComputedStyle(d.querySelector('.account-board')).backgroundImage.split('url(').slice(1).map(value=>value.split(')')[0].replaceAll('"','').replaceAll("'",''));await Promise.all([...d.querySelectorAll('.account-tile img')].map(image=>image.decode()).concat(backgrounds.map(src=>{const image=new c.Image();image.src=src;return image.decode()})));await Promise.all(d.getAnimations().filter(a=>a.effect?.target?.closest?.('.account-board')&&Number.isFinite(a.effect.getTiming().iterations)).map(a=>a.finished.catch(()=>{})));await new Promise(resolve=>c.requestAnimationFrame(()=>c.requestAnimationFrame(resolve)));})()`);
+   await waitFor(`(()=>{const f=document.getElementById('ccCastleFrame'),d=f?.contentDocument;return !!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')&&f&&!f.hidden&&d?.querySelector('.account-board[data-state="ready"]')&&d.querySelectorAll('.castle-stage img').length===6})()`);
+   await evaluate(`(async()=>{const c=document.getElementById('ccCastleFrame').contentWindow,d=c.document;await d.fonts.ready;const backgrounds=c.getComputedStyle(d.querySelector('.account-board')).backgroundImage.split('url(').slice(1).map(value=>value.split(')')[0].replaceAll('"','').replaceAll("'",''));await Promise.all([...d.querySelectorAll('.castle-stage img')].map(image=>image.decode()).concat(backgrounds.map(src=>{const image=new c.Image();image.src=src;return image.decode()})));await Promise.all(d.getAnimations().filter(a=>a.effect?.target?.closest?.('.account-board')&&Number.isFinite(a.effect.getTiming().iterations)).map(a=>a.finished.catch(()=>{})));await new Promise(resolve=>c.requestAnimationFrame(()=>c.requestAnimationFrame(resolve)));})()`);
   };
   const capture=async(name,extra)=>{await sleep(120);await evaluate('window.scrollTo(0,0)');const checks=await evaluate(geometry);if(extra)checks.push({name:'expected route content',pass:!!await evaluate(extra)});const png=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(output,name+'.png'),Buffer.from(png.data,'base64'));results.push({name,checks});console.log(name+': '+checks.filter(x=>x.pass).length+'/'+checks.length)};
   const key=async(value,modifiers=0)=>{const code=value==='Tab'?9:value==='Enter'?13:27;await send('Input.dispatchKeyEvent',{type:value==='Enter'?'keyDown':'rawKeyDown',key:value,code:value,windowsVirtualKeyCode:code,nativeVirtualKeyCode:code,modifiers,...(value==='Enter'?{text:'\r',unmodifiedText:'\r'}:{})});await send('Input.dispatchKeyEvent',{type:'keyUp',key:value,code:value,windowsVirtualKeyCode:code,nativeVirtualKeyCode:code,modifiers});};
@@ -426,31 +435,33 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   await send('Network.setBypassServiceWorker',{bypass:true});
   await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});
   const L=`document.getElementById('ccCastleFrame').contentWindow`;
-  await waitFor(`!!window.CCCastle&&!document.getElementById('ccCastleFrame').hidden&&${L}.document.querySelector('.account-board[data-state="ready"]')`);
+  await waitFor(`!!window.CCCastle&&!document.getElementById('ccCastleFrame').hidden&&${L}.document.querySelector('.account-board[data-state="ready"]')&&${L}.document.querySelector('.castle-quick-open')`);
   for(const [width,height] of [[360,800],[834,900]]){
    await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
-   await capture(width+'x'+height+'-lounge-home',`(()=>{const c=${L},f=document.getElementById('ccCastleFrame');return !f.hidden&&f.clientWidth===innerWidth&&c.location.pathname.endsWith('/lounge/index.html')&&c.document.querySelectorAll('.account-tile').length===8&&c.document.querySelectorAll('.account-tile:disabled').length===3&&c.document.documentElement.scrollWidth<=c.innerWidth+1})()`);
+   await capture(width+'x'+height+'-lounge-home',`(()=>{const c=${L},f=document.getElementById('ccCastleFrame');return !f.hidden&&f.clientWidth===innerWidth&&c.location.pathname.endsWith('/lounge/index.html')&&c.document.querySelectorAll('.castle-room-hotspot').length===8&&c.document.querySelectorAll('.castle-room-hotspot:disabled').length===3&&c.document.documentElement.scrollWidth<=c.innerWidth+1})()`);
    for(const account of ['insurance','otoku','rakuten','lottery']){
-    await evaluate(`${L}.document.querySelector('.account-tile[data-destination="${account}"]').click()`);
+    await evaluate(`${L}.document.querySelector('.castle-quick-open[data-room="${account}"]').click()`);
     await waitFor(`${L}.document.getElementById('room').hidden===false&&${L}.document.getElementById('draft-body').textContent.startsWith('${account}')`);
-    if(width<=700)await evaluate(`${L}.document.getElementById('desk-read').click()`);
-    await capture(width+'x'+height+'-lounge-room-'+account,`(()=>{const c=${L},d=c.document,body=d.getElementById('draft-body'),expected=window.__rpgQA.currentDrafts.find(x=>x.taskId==='${account}-threads-v1').payload.draft;return d.getElementById('room').dataset.account==='${account}'&&body.textContent===expected&&d.getElementById('room-art').complete&&d.getElementById('room-art').naturalWidth>0&&d.getElementById('desk-scroll').clientHeight>=180&&c.document.documentElement.scrollWidth<=c.innerWidth+1&&parseFloat(c.getComputedStyle(body).fontSize)>=16&&d.getElementById('desk-copy').getBoundingClientRect().height>=44})()`);
+    await waitFor(`${L}.document.getElementById('room').dataset.spatialScene==='interior'`);
+    await evaluate(`${L}.document.querySelector('.spatial-desk-actor').decode()`);
+    await capture(width+'x'+height+'-lounge-room-'+account,`(()=>{const c=${L},d=c.document,body=d.getElementById('draft-body'),expected=window.__rpgQA.currentDrafts.find(x=>x.taskId==='${account}-threads-v1').payload.draft;return d.getElementById('room').dataset.account==='${account}'&&body.textContent===expected&&d.querySelector('.spatial-desk-actor').complete&&d.querySelector('.spatial-desk-actor').naturalWidth>0&&d.getElementById('desk-scroll').clientHeight>=180&&c.document.documentElement.scrollWidth<=c.innerWidth+1&&parseFloat(c.getComputedStyle(body).fontSize)>=16&&d.getElementById('desk-copy').getBoundingClientRect().height>=44})()`);
     await evaluate(`(()=>{const c=${L};Object.defineProperty(c.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__loungeCopied=text}}});c.document.getElementById('desk-copy').click()})()`);
     await waitFor(`window.__loungeCopied===window.__rpgQA.currentDrafts.find(x=>x.taskId==='${account}-threads-v1').payload.draft`);
     await capture(width+'x'+height+'-lounge-copy-'+account,`window.__loungeCopied===${L}.document.getElementById('draft-body').textContent&&window.__rpgQA.writes.length===0&&window.__rpgQA.threads.simulatedWrites.length===0`);
     if(account==='insurance'){
+     await evaluate(`${L}.document.querySelector('.spatial-work>summary').click()`);
      await evaluate(`[...${L}.document.querySelectorAll('#desk-routes button')].find(n=>n.textContent==='出典・確認記録').click()`);
      await waitFor(`!!document.querySelector('.manual-operation-review[open] article>pre')`);
      await capture(width+'x'+height+'-lounge-native-insurance',`document.getElementById('ccCastleFrame').hidden&&document.querySelector('.manual-operation-review[open] h2').textContent==='保険｜@sucker0508'&&document.querySelector('.manual-operation-review[open] article>pre').textContent===window.__rpgQA.currentDrafts[0].payload.draft&&document.querySelectorAll('.daily-tools,.daily-card-tools').length===0`);
      await evaluate(`document.querySelector('.manual-operation-review[open]>button').click()`);
      await waitFor(`!document.getElementById('ccCastleFrame').hidden`);
     }
-    await evaluate(`[...${L}.document.querySelectorAll('#desk-routes button')].find(n=>n.textContent==='← 6アカウント一覧').click()`);
+    await evaluate(`${L}.document.getElementById('back').click()`);
     await waitFor(`${L}.document.querySelector('.account-board').hidden===false`);
    }
   }
   // Resizing never swaps the selected manuscript. Pinning remains a local note.
-  await evaluate(`${L}.document.querySelector('.account-tile[data-destination="insurance"]').click()`);
+  await evaluate(`${L}.document.querySelector('.castle-quick-open[data-room="insurance"]').click()`);
   await waitFor(`${L}.document.getElementById('room').hidden===false`);
   await evaluate(`${L}.document.getElementById('desk-pin').click();${L}.document.getElementById('desk-scroll').scrollTop=150;window.__loungeTitle=${L}.document.getElementById('draft-title').textContent;window.__loungeText=${L}.document.getElementById('draft-body').textContent;window.__loungeScroll=${L}.document.getElementById('desk-scroll').scrollTop`);
   await send('Emulation.setDeviceMetricsOverride',{width:360,height:800,deviceScaleFactor:1,mobile:true});await sleep(250);
@@ -460,13 +471,13 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   await capture('lounge-read-failure-keeps-manuscript',`${L}.document.getElementById('draft-body').textContent===window.__loungeText&&!${L}.document.getElementById('desk-copy').disabled`);
   await evaluate(`window.__rpgQA.mode='normal';CCCastle.refresh()`);
   await waitFor(`${L}.document.getElementById('desk-status').textContent.includes('読込完了')`);
-  await evaluate(`[...${L}.document.querySelectorAll('#desk-routes button')].find(n=>n.textContent==='← 6アカウント一覧').click()`);
+  await evaluate(`${L}.document.getElementById('back').click()`);
   await waitFor(`${L}.document.querySelector('.account-board').hidden===false`);
-  await evaluate(`${L}.document.querySelector('.account-tile[data-destination="sourcing"]').click()`);
+  await evaluate(`${L}.document.querySelector('.castle-quick-open[data-room="sourcing"]').click()`);
   await waitFor(`!app.busy&&app.view==='sourcing'&&document.getElementById('ccCastleFrame').hidden`);
-  await capture('lounge-native-sourcing',`sourcingApp.sub==='purchases'&&!document.getElementById('ccCastleReturn').hidden`);
-  await evaluate(`document.getElementById('ccCastleReturn').click()`);await waitFor(`!document.getElementById('ccCastleFrame').hidden&&${L}.document.querySelector('.account-board').hidden===false`);
-  await evaluate(`[...${L}.document.querySelectorAll('.account-board-heading button')].find(n=>n.textContent==='ラウンジ・管理へ').click()`);
+  await capture('lounge-native-sourcing',`sourcingApp.sub==='purchases'&&!document.getElementById('loungeWorkspaceHeader').hidden&&document.querySelector('[data-lounge-home]').getBoundingClientRect().height>=44`);
+  await evaluate(`document.querySelector('[data-lounge-home]').click()`);await waitFor(`!document.getElementById('ccCastleFrame').hidden&&${L}.document.querySelector('.account-board').hidden===false`);
+  await evaluate(`[...${L}.document.querySelectorAll('.account-board button')].find(n=>n.textContent==='ラウンジ・管理へ').click()`);
   await evaluate(`${L}.document.querySelector('.place-label[data-room="silver"]').click()`);
   await waitFor(`${L}.document.getElementById('room').hidden===false&&${L}.document.getElementById('desk-routes').textContent.includes('FP 台本・画像')`);
   await evaluate(`[...${L}.document.querySelectorAll('#desk-routes button')].find(n=>n.textContent==='FP 台本・画像').click()`);
@@ -579,7 +590,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   await capture('classic-component-offline',`${C}.CCCastleApp.notebook.all().some(x=>x.id===window.__classicDraftId&&x.title==='クラシック部品・確認用の端末原稿')&&${C}.navigator.onLine===false`);
   await send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
   results.push({name:'network-isolation',checks:[{name:'no attempted external network request',pass:blocked.length===0,detail:blocked},{name:'no uncaught browser exceptions',pass:errors.length===0,detail:errors}]});
- }catch(error){await diagnose(error.message);throw error;}finally{fs.writeFileSync(path.join(output,'results.json'),JSON.stringify({results,blocked,errors,cancelledInterceptions,requests},null,2));rejectPending('CDP session ended');ws?.close();proc.kill();server.close();}
+ }catch(error){await diagnose(error.message+(error.cdpContext?' @ '+error.cdpContext:''));throw error;}finally{fs.writeFileSync(path.join(output,'results.json'),JSON.stringify({results,blocked,errors,cancelledInterceptions,navigationReadinessRetries,requests},null,2));rejectPending('CDP session ended');ws?.close();proc.kill();server.close();}
  const failures=results.flatMap(r=>r.checks.filter(c=>!c.pass).map(c=>({route:r.name,...c})));
  assert.deepEqual(failures,[],'See artifacts/rpg-theme/results.json and per-route PNGs');
 });

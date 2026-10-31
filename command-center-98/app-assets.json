@@ -14,7 +14,7 @@
     "./v225-menu-layer-fix.css?v=225.1",
     "./affiliate-production.css?v=20261002.3",
     "./binbo-neko.css?v=20261002.2",
-    "./v230-request-progress.css?v=20261023.4-compact-top",
+    "./v230-request-progress.css?v=20261031.10-spatial",
     "./v231-trade-details.css?v=20261022.25-profit-actions",
     "./rpg-home.css?v=20261018.41-archive",
     "./rpg-theme.css?v=20261018.41-archive",
@@ -22,6 +22,7 @@
     "./rpg-workspaces.css?v=20261013.9-detail",
     "./rpg-daily-desk.css?v=20261015.1",
     "./lounge-workspace.css?v=20261031.9-world",
+    "./spatial-workspace.css?v=20261031.10-spatial",
     "./lounge-feedback.css?v=20261021.5-boot",
     "./overseas-profit-readiness.css?v=20261023.1-profit-route"
   ],
@@ -96,7 +97,7 @@
     "./rpg-workspaces.js?v=20261017.33-unified",
     "./rpg-daily-store.js?v=20261015.1",
     "./rpg-daily-desk.js?v=20261017.33-unified",
-    "./castle-parent.js?v=20261031.9-world",
+    "./castle-parent.js?v=20261031.10-spatial",
     "./lounge-workspace.js?v=20261021.8-hall"
   ]
 }

@@ -1,4 +1,4 @@
-import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261031.9-world';
+import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261031.10-spatial';
 import {createConveniences} from './qol.js?v=20261031.1-lottery';
 import {resumeView,postingReadiness} from './qol-model.js?v=20261031.1-lottery';
 import {createNotebook,safeLink} from './notebook.js?v=20261031.1-lottery';
@@ -65,7 +65,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  function routes(){
   const host=$('desk-routes');host.replaceChildren();
   const account=publishingAccounts.find(a=>a.place===place);
-  if(account){host.append(button('← 6アカウント一覧',()=>{returnToAccounts=true;onHome();}),el('strong',account.name+(account.handle?' '+account.handle:'')));if(account.handle){const profile=el('a','投稿先を開く ↗');profile.href='https://www.threads.com/'+account.handle;profile.target='_blank';profile.rel='noopener noreferrer';host.append(profile);}else host.append(el('span','投稿先未登録'));host.append(button('出典・確認記録',()=>native(place)));}
+  if(account){host.append(button('← 司令塔へ',()=>{returnToAccounts=true;onHome();}),el('strong',account.name+(account.handle?' '+account.handle:'')));if(account.handle){const profile=el('a','投稿先を開く ↗');profile.href='https://www.threads.com/'+account.handle;profile.target='_blank';profile.rel='noopener noreferrer';host.append(profile);}else host.append(el('span','投稿先未登録'));host.append(button('出典・確認記録',()=>native(place)));}
   else if(place==='choi')host.append(button('過去原稿を開く',()=>native('choi')));
   else if(place==='fp')host.append(button('FP 台本・画像',()=>native('fp')),button('TikTok 投稿結果',()=>native('tiktok',active?.source?.account==='tiktok'?active.source.id:undefined)));
   else if(place==='shiire')host.append(button('購入・在庫・売却を開く',()=>native('sourcing')));
@@ -206,5 +206,5 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  document.addEventListener('visibilitychange',()=>{if(document.hidden)savePosition();});
  window.addEventListener('storage',e=>{if(e.key?.startsWith('castle-production.v1.')){externalNotes=true;operation('別の画面で読書メモが更新されました。部屋に入り直すと反映します。');}});
  if(!embedded){$('desk-connect').hidden=false;setStatus('本体から開くと、ログイン中の保存原稿・履歴・仕入れ管理を使えます。');}
- return {enter,leave:()=>{send('reading-room',{active:false});savePosition();rememberView();place=null;active=null;nativeWork=null;conveniences.update(null);if(pending)applyPending();if(returnToAccounts)board.show();},native,ready:()=>{if(embedded){setStatus('本体の保存原稿に接続しています…',{loading:true});send('ready');}},receive,notebook,workMarks:conveniences.workMarks};
+ return {accountBoard:board,enter,leave:()=>{send('reading-room',{active:false});savePosition();rememberView();place=null;active=null;nativeWork=null;conveniences.update(null);if(pending)applyPending();if(returnToAccounts)board.show();},native,ready:()=>{if(embedded){setStatus('本体の保存原稿に接続しています…',{loading:true});send('ready');}},receive,notebook,workMarks:conveniences.workMarks};
 }

@@ -47,7 +47,7 @@ function successfulFetch(calls = []) {
 const addedStyles = [
  './sourcing-mobile-comparison.css','./v230-request-progress.css','./v231-trade-details.css',
  './rpg-home.css','./rpg-theme.css','./rpg-account-pages.css','./rpg-workspaces.css','./rpg-daily-desk.css',
- './lounge-workspace.css','./lounge-feedback.css','./overseas-profit-readiness.css'
+ './lounge-workspace.css','./spatial-workspace.css','./lounge-feedback.css','./overseas-profit-readiness.css'
 ];
 const addedScripts = [
  './sourcing-atomic-save.js','./overseas-profit-readiness.js','./sourcing-economics.js',

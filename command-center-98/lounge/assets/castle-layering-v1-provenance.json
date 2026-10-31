@@ -1,0 +1,134 @@
+{
+  "assets": [
+    {
+      "name": "command-castle-silhouette-v1",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "mode": "RGBA",
+      "bytes": 467966,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "generation": "built-in image_gen.imagegen",
+      "optimized": "WebP quality 86; no resizing or geometry edits"
+    },
+    {
+      "name": "command-castle-sky-v1",
+      "dimensions": [
+        1774,
+        887
+      ],
+      "mode": "RGB",
+      "bytes": 90624,
+      "alphaExtrema": null,
+      "generation": "built-in image_gen.imagegen",
+      "optimized": "WebP quality 86; no resizing or geometry edits"
+    }
+  ],
+  "landmarkAlignment": [
+    {
+      "name": "astrolabe",
+      "sourceCenter": [
+        800,
+        430
+      ],
+      "bestCorrelation": 0.8543,
+      "offsetPixels": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "reserve-door",
+      "sourceCenter": [
+        800,
+        95
+      ],
+      "bestCorrelation": 0.839,
+      "offsetPixels": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "study-desk",
+      "sourceCenter": [
+        415,
+        530
+      ],
+      "bestCorrelation": 0.9475,
+      "offsetPixels": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "observatory-telescope",
+      "sourceCenter": [
+        1190,
+        205
+      ],
+      "bestCorrelation": 0.9275,
+      "offsetPixels": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "pantry-table",
+      "sourceCenter": [
+        1150,
+        510
+      ],
+      "bestCorrelation": 0.9139,
+      "offsetPixels": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "workshop",
+      "sourceCenter": [
+        860,
+        820
+      ],
+      "bestCorrelation": 0.8994,
+      "offsetPixels": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "left-closed-door",
+      "sourceCenter": [
+        232,
+        820
+      ],
+      "bestCorrelation": 0.7347,
+      "offsetPixels": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "right-closed-door",
+      "sourceCenter": [
+        1385,
+        845
+      ],
+      "bestCorrelation": 0.866,
+      "offsetPixels": [
+        0,
+        0
+      ]
+    }
+  ],
+  "notes": [
+    "Original master PNG and sky preserved.",
+    "Five room centers plus three closed wing geometry tested by normalized local luminance correlation against the original. This is not pixel-identical extraction.",
+    "Sky intended fullbleed cover/no-repeat; exact periodic tiling not established."
+  ]
+}

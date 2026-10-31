@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1d211f">
+  <meta name="description" content="キャラクターのいる仕事部屋から、原稿・投稿先・仕入れを見渡す司令塔。">
+  <meta name="robots" content="noindex,nofollow,noarchive"><title>司令塔 — 空間試作（未公開）</title>
+  <link rel="stylesheet" href="style.css?v=20261023.5-new-top">
+  <link rel="stylesheet" href="accounts.css?v=20261031.9-world">
+  <link rel="stylesheet" href="desk.css?v=20261023.4-compact-top">
+  <link rel="stylesheet" href="qol.css?v=20261022.12-profit">
+  <link rel="stylesheet" href="hall-tools.css?v=20261021.8-hall">
+  <link rel="stylesheet" href="music.css?v=20261021.3-audio">
+  <link rel="stylesheet" href="interaction-feedback.css?v=20261021.4-touch">
+  <link rel="stylesheet" href="reader-polish.css?v=20261031.9-world">
+  <link rel="stylesheet" href="world-atelier.css?v=20261031.9-world">
+  <link rel="stylesheet" href="world-rooms.css?v=20261031.9-world">
+  <link rel="stylesheet" href="castle-scene.css">
+  <link rel="stylesheet" href="spatial-desk.css">
+  <link rel="modulepreload" href="castle-scene.js?v=20261031.10-spatial">
+  <link rel="modulepreload" href="spatial-desk.js?v=20261031.10-spatial">
+</head>
+<body class="spatial-atelier">
+  <main id="app" class="town-mode hybrid-hall manor-lounge board-home">
+    <div id="world" role="group" aria-label="4人がお茶や読書を楽しむ共有ラウンジ。奥の4つの扉から持ち場へ入れます。"></div>
+    <div class="world-vignette" aria-hidden="true"></div>
+    <header class="topbar">
+      <h1 class="sr-only">司令塔</h1>
+      <div class="top-actions"><button id="settings-open" class="round-button system-button" aria-label="システム設定" aria-haspopup="dialog" title="システム設定">⚙</button></div>
+    </header>
+    <section class="town-copy sr-only" aria-label="司令塔の広間">
+      <span class="eyebrow">A LITTLE MAGIC, EVERY DAY</span>
+      <h2>おかえり。<br>今日は、どこから？</h2>
+      <p>扉の向こうで、待っています。</p>
+    </section>
+    <button id="account-board-open" class="account-board-launch">8パネルを開く</button>
+    <div id="labels" aria-label="4つの扉"></div>
+    <div id="loading" role="status"><span class="loading-mark">✧</span><span>司令塔に明かりを灯しています</span></div>
+    <div class="town-footer">
+      <button id="town-work" class="town-work" hidden></button>
+      <p id="town-hint"><span class="hint-diamond">◇</span> 絵の中の扉を押して、部屋へ</p>
+
+    </div>
+    <section id="room" aria-label="部屋" hidden>
+      <div class="room-architecture" aria-hidden="true"></div><img id="room-art" alt="">
+      <div class="room-shade"></div>
+      <button id="back" class="back-button">← 司令塔へ</button>
+      <div class="room-caption"><span class="eyebrow" id="room-location">THE MERCHANT'S TAVERN</span><h2 id="room-title">仕入れ</h2></div>
+      <section id="desk" class="reading-desk" aria-label="持ち場の作業机">
+        <div class="desk-toolbar">
+        <header class="desk-heading"><div><span id="desk-kicker" class="eyebrow">THE READING DESK</span><h3 id="desk-title">保存原稿</h3></div><button id="desk-read" type="button" aria-controls="desk-scroll">本文へ ↓</button><button id="desk-focus" aria-pressed="false">集中</button></header>
+        <nav id="desk-routes" class="desk-routes" aria-label="本体の機能"></nav>
+        <div class="desk-state"><details><summary id="desk-status-label">保存原稿の状態</summary><p id="desk-status" role="status">本体との接続を確認しています</p></details><button id="desk-refresh">↻ 更新</button></div>
+        </div>
+        <button id="desk-pending" class="desk-pending" hidden>読んでいる原稿の更新を反映</button>
+        <a id="desk-connect" class="desk-connect" href="https://dokechi.github.io/yasuuma/command-center-98/app-v130.html" target="_top" hidden>本体と連動して使う ↗</a>
+        <div class="desk-content">
+          <aside class="manuscript-shelf" aria-label="原稿一覧">
+            <label class="desk-search"><span class="sr-only">読込済み原稿を検索</span><input id="desk-query" type="search" placeholder="原稿を探す" aria-label="読込済み原稿を検索"></label>
+            <nav class="desk-filters" aria-label="原稿の絞り込み"><button data-desk-filter="all" aria-pressed="true">すべて</button><button data-desk-filter="pin" aria-pressed="false">お気に入り</button><button data-desk-filter="done" aria-pressed="false">読了</button></nav>
+            <p id="desk-count" class="desk-count"></p><div id="desk-list" class="manuscript-list"></div>
+          </aside>
+          <section class="manuscript-reader" aria-label="原稿を読む">
+            <nav id="desk-variants" class="desk-variants" aria-label="本文の別案"></nav>
+            <div class="reader-scroll" id="desk-scroll" tabindex="0"><article id="desk-article"><p id="draft-kind" class="draft-kind"></p><h4 id="draft-title"></h4><p id="draft-meta" class="draft-meta"></p><div id="desk-prior" class="desk-prior" hidden></div><div id="draft-body" class="draft-body"></div><div id="draft-links" class="draft-links"></div></article><p id="desk-empty" class="desk-empty"></p></div>
+            <div id="reader-qol" class="reader-qol" aria-label="この原稿の作業"></div><footer class="reader-actions"><button id="desk-copy" class="desk-primary">本文をコピー</button><button id="desk-pin" aria-pressed="false">☆</button><button id="desk-done">読了にして戻る</button></footer>
+          </section>
+        </div>
+        <footer class="desk-footer"><span id="desk-footer-tools"></span><button id="desk-history">コピー履歴</button><button id="desk-undo" hidden>元に戻す</button><p id="desk-operation" role="status" aria-live="polite"></p><button id="again">扉から入り直す ↺</button></footer>
+      </section>
+    </section>
+    <div id="entry-wash" aria-hidden="true"></div>
+    <div id="touch-effects" aria-hidden="true"></div>
+    <p id="announcer" class="sr-only" role="status" aria-live="polite"></p>
+    <dialog id="settings" aria-labelledby="settings-title">
+      <div class="dialog-heading"><div><span class="eyebrow">MAKE YOURSELF AT HOME</span><h2 id="settings-title">システム</h2></div><button id="settings-close" class="round-button" aria-label="設定を閉じる">×</button></div>
+      <h3>表示設定</h3>
+      <fieldset><legend>部屋に入る速さ</legend><div class="segmented"><label><input type="radio" name="pace" value="quick"><span>きびきび</span><small>0.65秒</small></label><label><input type="radio" name="pace" value="normal" checked><span>なめらか</span><small>1秒</small></label><label><input type="radio" name="pace" value="slow"><span>ゆったり</span><small>1.4秒</small></label></div></fieldset>
+      <input id="sound-setting" type="checkbox" hidden checked>
+
+      <label class="setting-line"><span>視点のゆらぎ<small>視線に合わせた小さな動き</small></span><input id="ambient-setting" type="checkbox" checked></label>
+      <label class="setting-line"><span>移動の演出を省略<small>選んだ部屋をすぐに表示</small></span><input id="reduce-setting" type="checkbox"></label>
+      <label class="setting-line"><span>本文の大きさ<small>部屋の中で読む原稿の文字</small></span><select id="desk-font" aria-label="本文の大きさ"><option value="standard">標準</option><option value="large">大きめ</option></select></label>
+      <section class="system-audio"><h3>音の設定</h3><div id="audioControls" class="audio-controls"><details id="audioSettings" class="audio-settings"><summary><span aria-hidden="true">♫</span> <span class="music-state">音の設定</span></summary><section class="audio-panel" aria-label="音の設定"><h2>ラウンジの音</h2><label class="audio-row"><span><input id="bgmEnabled" type="checkbox" checked> BGM</span><output id="bgmVolumeValue">12%</output></label><label for="bgmVolume">BGMの音量</label><input id="bgmVolume" type="range" min="0" max="100" value="12"><p id="bgmTrack">４曲を重複なしでシャッフル</p><div class="music-buttons"><button id="bgmStart" hidden>BGMを再生</button><button id="bgmNext">次の曲 ›</button></div><p id="bgmStatus" role="status" aria-live="polite">BGMを準備しています</p><label class="audio-row"><span><input id="effectsEnabled" type="checkbox" checked> 効果音</span><output id="effectsVolumeValue">50%</output></label><label for="effectsVolume">効果音の音量</label><input id="effectsVolume" type="range" min="0" max="100" value="50"><details class="music-credit"><summary>音楽クレジット</summary><p>Harvest Festival — PeriTune / むつき醒。CC BY 4.0。公式ループ版を無加工で使用。</p><p>Lively Tavern — Alexander Nakarada / CreatorChords。CC BY 4.0。Music: Lively Tavern by Alexander Nakarada (https://creatorchords.com) Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).</p><p>Enchanted Festival / Woodland Fantasy — Music by Matthew Pablo (https://www.matthewpablo.com)。CC BY 3.0。通常MP3を無加工で使用。</p><p><a href="https://dokechi.github.io/yasuuma/command-center-98/castle/audio/LICENSE.txt" target="_blank" rel="noopener noreferrer">配布元・ライセンス</a> · <a href="https://dokechi.github.io/yasuuma/command-center-98/castle/audio/ADDITIONAL-PROVENANCE.json" target="_blank" rel="noopener noreferrer">追加3曲の出典</a></p></details><audio id="bgmAudio" preload="none" playsinline></audio></section></details></div><button id="sound" hidden aria-pressed="true">効果音 ON</button></section>
+            <section class="feedback-preview" aria-label="操作音を試す"><p>操作音を試す</p><div><button data-feedback-preview="door" aria-label="扉の音を試す">扉</button><button data-feedback-preview="paper" aria-label="原稿の音を試す">原稿</button><button data-feedback-preview="copy" aria-label="完了の音を試す">完了</button></div></section><section class="system-management"><h3>管理</h3><button id="manage" class="system-action">管理画面を開く</button></section>
+      <p class="settings-note">この端末に設定を覚えておきます。</p>
+      <nav id="service-links" class="service-links" aria-label="別サービス"></nav>
+    </dialog>
+    <noscript><p class="no-script">JavaScriptを有効にすると広場に入れます。<a href="https://dokechi.github.io/yasuuma/command-center-98/app-v130.html">いつもの司令塔へ</a></p></noscript>
+  </main>
+  <dialog id="desk-history-dialog" class="desk-dialog" aria-labelledby="desk-history-title"><header><h2 id="desk-history-title">コピー履歴</h2><button id="desk-history-close" aria-label="コピー履歴を閉じる">×</button></header><div id="desk-history-list"></div></dialog>
+  <dialog id="desk-copy-dialog" class="desk-dialog" aria-labelledby="desk-copy-title"><header><h2 id="desk-copy-title">選択してコピー</h2><button id="desk-copy-close" aria-label="コピー画面を閉じる">×</button></header><p>コピーできなかったため、本文を選択してコピーしてください。</p><textarea id="desk-copy-text" readonly aria-label="コピーする本文"></textarea><button id="desk-copy-manual">コピーした</button></dialog>
+  <dialog id="later-dialog" class="qol-dialog" aria-labelledby="later-title"><header><div><small>ONE THING AT A TIME</small><h2 id="later-title">あとで箱</h2></div><button id="later-close" aria-label="あとで箱を閉じる">×</button></header><p class="qol-note">気になったものを、理由と一緒に。この端末に覚えておきます。</p><p id="later-empty">まだ空です。原稿の「あとで考える」から入れられます。</p><div class="later-layout"><nav id="later-list" aria-label="あとで確認するもの"></nav><section id="later-detail" aria-label="あとで箱の詳細"></section></div><footer><button id="later-undo">直前の端末メモを元に戻す</button><p id="later-status" role="status"></p></footer></dialog>
+  <dialog id="posting-dialog" class="qol-dialog" aria-labelledby="posting-heading"><header><div><small>READY TO SHARE</small><h2 id="posting-heading">投稿セット</h2></div><button id="posting-close" aria-label="投稿セットを閉じる">×</button></header><h3 id="posting-title"></h3><p class="qol-note">本文・返信・画像・収益リンクを、この画面で確認できます。価格・在庫は商品ページで確認してください。</p><p id="posting-changed" hidden>保存原稿が更新されています。閉じて最新の原稿で開き直してください。</p><p id="posting-readiness" class="posting-readiness"></p><div class="qol-actions"><button id="posting-copy-all">投稿文をまとめてコピー</button></div><div id="posting-steps"></div><div id="posting-images"></div><p id="posting-progress" role="status" aria-live="polite"></p><div class="qol-actions"><button id="posting-complete">投稿したので完了</button><button id="posting-native">本体の投稿結果へ</button></div><p class="qol-note">完了はこの端末のメモです。本体の投稿結果は「本体の投稿結果へ」で記録できます。コピーだけでは投稿済みになりません。</p></dialog>
+  <dialog id="install-dialog" class="qol-dialog" aria-labelledby="install-title"><header><h2 id="install-title">いつもの場所へ、ひと押しで</h2><button id="install-close" aria-label="アプリ追加の案内を閉じる">×</button></header><p>AndroidのChromeで本体を開き、ブラウザの「︙」から「ホーム画面に追加」→「インストール」を選んでください。</p><p class="qol-note">司令塔のアイコンから起動できます。項目名はブラウザにより異なります。ログインは今までの司令塔と共通です。</p></dialog>
+  <dialog id="hall-dialog" class="qol-dialog hall-dialog" aria-labelledby="hall-title"><header><div><small>FIND YOUR WAY BACK</small><h2 id="hall-title">司令塔の全体検索</h2></div><button id="hall-close" aria-label="全体検索を閉じる">×</button></header><label class="hall-search-label"><span class="sr-only">司令塔全体を検索</span><input id="hall-query" type="search" placeholder="商品名・原稿の一言・メモから探す" aria-label="司令塔全体を検索"></label><nav class="hall-filters" aria-label="検索する情報"><button data-hall-filter="all" aria-pressed="true">すべて</button><button data-hall-filter="draft" aria-pressed="false">原稿</button><button data-hall-filter="purchase" aria-pressed="false">仕入れ</button><button data-hall-filter="research" aria-pressed="false">調査</button><button data-hall-filter="copy" aria-pressed="false">コピー</button><button data-hall-filter="later" aria-pressed="false">あとで</button></nav><details class="hall-status"><summary>検索範囲・読取状況</summary><p id="hall-source-status" role="status"></p><p>価格は保存時点の記録です。現在の価格・在庫は商品ページで確認できます。端末の調査更新メモは最新250件を保持します。</p><button id="hall-refresh">保存情報を更新</button></details><p id="hall-result-count" role="status" aria-live="polite"></p><div class="hall-layout"><nav id="hall-results" aria-label="全体検索の結果"></nav><section id="hall-detail" aria-label="検索結果の内容"></section></div><button id="hall-more" hidden>さらに100件を表示</button></dialog>
+  <dialog id="work-dialog" class="qol-dialog" aria-labelledby="work-title"><header><h2 id="work-title">今日、この場所で</h2><button id="work-close" aria-label="今日の作業を閉じる">×</button></header><p class="qol-note">この端末の読了と投稿メモ。ひと区切りの手紙が、ラウンジのテーブルに残ります。</p><ul id="work-list" class="work-list"></ul></dialog>
+  <script src="threads-archive.js"></script><script src="sourcing-archive.js"></script>
+  <script type="module" src="spatial-prototype.js"></script>
+</body>
+</html>

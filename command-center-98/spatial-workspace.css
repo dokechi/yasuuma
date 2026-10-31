@@ -1,0 +1,36 @@
+/* The merchant's existing ledger remains in its own document and keeps its
+   original controls/handlers. This skin places it inside the same castle room. */
+body.lounge-workspace {
+  background-color:#182e30!important;
+  background-image:linear-gradient(90deg,#11242855,#11242811 60%,#11242833),url('./lounge/assets/castle-interior-sourcing-v1.webp')!important;
+  background-position:center!important;background-size:cover!important;background-attachment:fixed!important;
+}
+body.lounge-workspace .desktop {padding:0 24px 40px!important}
+body.lounge-workspace #mainWindow {max-width:1260px!important}
+body.lounge-workspace #loungeWorkspaceHeader {position:relative;isolation:isolate;padding:20px 0 30px;min-height:220px}
+body.lounge-workspace #loungeWorkspaceHeader:before {content:'';position:absolute;right:12px;bottom:0;z-index:-1;width:280px;height:185px;background:url('./lounge/assets/sourcing-desk-actor.webp') center bottom/contain no-repeat;pointer-events:none;filter:drop-shadow(0 8px 12px #07191b66)}
+body.lounge-workspace #loungeWorkspaceHeader nav {padding:5px 0 10px;border-bottom:1px solid #e3d0a244;background:linear-gradient(90deg,#15292b99,#15292b33);position:relative;z-index:1}
+body.lounge-workspace #loungeWorkspaceHeader button {min-height:44px;font-size:13px;padding:9px 13px;border-radius:4px;border-color:#c9b58388;background:#162b2bea;color:#fff1d6}
+body.lounge-workspace #loungeWorkspaceHeader [data-lounge-home] {min-height:44px;padding-left:12px;font-size:14px}
+body.lounge-workspace .lounge-workspace-caption {margin-top:25px;max-width:calc(100% - 260px);padding:8px 12px;background:linear-gradient(90deg,#142b2acc,transparent);border-left:2px solid #c4aa72}
+body.lounge-workspace .lounge-workspace-caption p:first-child {font-size:11px;color:#e7d4a9}
+body.lounge-workspace #loungeWorkspaceHeader h1 {font-size:30px!important;color:#fff4dc!important}
+body.lounge-workspace .lounge-workspace-caption p:last-child {font-size:13px;color:#fff1d8}
+body.lounge-workspace #mainWindow>.window-body {background:#faf4e6f7!important;border:1px solid #bf9d5a!important;border-radius:3px!important;box-shadow:0 0 0 4px #3c3b26,0 0 0 5px #b59b6477,0 22px 65px #071b1e66!important}
+body.lounge-workspace #rpgSourcingAux .push-button {min-height:44px!important;font-size:12px!important;padding:9px 12px!important}
+body.lounge-workspace :is(button.push-button,.sourcing-tabs button){min-height:44px;font-size:13px}
+@media(max-width:700px){
+ body.lounge-workspace .desktop {padding:0 12px 28px!important}
+ body.lounge-workspace #loungeWorkspaceHeader {padding:10px 0 18px;min-height:238px}
+ body.lounge-workspace #loungeWorkspaceHeader nav {gap:6px;align-items:flex-start}
+ body.lounge-workspace #loungeWorkspaceHeader nav>div {gap:5px;flex-wrap:wrap;justify-content:flex-start}
+ body.lounge-workspace #loungeWorkspaceHeader button {font-size:12px;min-height:44px;padding:8px 10px}
+ body.lounge-workspace #loungeWorkspaceHeader:before {right:-9px;bottom:0;width:180px;height:145px;opacity:.94}
+ body.lounge-workspace .lounge-workspace-caption {margin-top:18px;max-width:calc(100% - 116px);padding:7px 9px;background:#152b2af5}
+ body.lounge-workspace #loungeWorkspaceHeader h1 {font-size:27px!important}
+ body.lounge-workspace .lounge-workspace-caption p:first-child {font-size:10px}
+ body.lounge-workspace .lounge-workspace-caption p:last-child {font-size:12px;line-height:1.6}
+ body.lounge-workspace #mainWindow>.window-body {padding:12px!important;border-radius:3px!important}
+ body.lounge-workspace #rpgSourcingAux .push-button {font-size:12px!important;min-height:44px!important}
+}
+@media(prefers-reduced-motion:reduce){body.lounge-workspace #loungeWorkspaceHeader:before{animation:none!important;transition:none!important}}
