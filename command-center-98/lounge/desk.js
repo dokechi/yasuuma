@@ -1,8 +1,8 @@
-import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261030.8-integrated';
-import {createConveniences} from './qol.js?v=20261030.8-integrated';
-import {resumeView,postingReadiness} from './qol-model.js?v=20261030.8-integrated';
-import {createNotebook,safeLink} from './notebook.js?v=20261030.8-integrated';
-import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261030.8-integrated';
+import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261031.1-lottery';
+import {createConveniences} from './qol.js?v=20261031.1-lottery';
+import {resumeView,postingReadiness} from './qol-model.js?v=20261031.1-lottery';
+import {createNotebook,safeLink} from './notebook.js?v=20261031.1-lottery';
+import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261031.1-lottery';
 
 export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{},onOpenRoom=()=>{},onLounge=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;
@@ -10,16 +10,16 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  const button=(text,fn,cls)=>{const n=el('button',text,cls);n.type='button';n.addEventListener('click',fn);return n;};
  let storage;try{storage=window.localStorage;}catch{}
  let storageError=false;
- const notebook=createNotebook({seeds:{kyun:[],choi:[],otoku:[],rakuten:[],fp:[],shiire:[]},storage,onError:()=>{storageError=true;}});
+ const notebook=createNotebook({seeds:{kyun:[],choi:[],otoku:[],rakuten:[],lottery:[],fp:[],shiire:[]},storage,onError:()=>{storageError=true;}});
  let place=null,active=null,query='',filter='all',pending=null,loading=false,complete=false,connected=false,autoReturn=false,manual=null,scrollTimer=0,externalNotes=false,nativeWork=null;
  const selections=new Map(),views=new Map();let requested=null;let returnToAccounts=false;
  const board=createAccountBoard({host:document.body,rows:()=>notebook.all(),open:(account,id)=>{returnToAccounts=true;requested={place:account.place,id};if(id)selections.set(account.place,id);onOpenRoom(account.place);},onLounge:()=>{returnToAccounts=false;onLounge();},onLegacy:showLegacy,onRefresh:()=>{if(embedded){setStatus('保存原稿を読み込み中…',{loading:true});send('refresh');}else window.top.location.href=productionURL;}});
  $('account-board-open').addEventListener('click',()=>board.show());
  function showLegacy(){
-  const dialog=el('dialog',undefined,'legacy-account-archive'),header=el('header');header.append(el('h2','旧データの保管庫'),button('閉じる',()=>dialog.close()));dialog.append(header,el('p','過去のアカウント・投稿先未確定の保存記録です。現在の3アカウントには混ぜず、閲覧用として保持しています。'));
+  const dialog=el('dialog',undefined,'legacy-account-archive'),header=el('header');header.append(el('h2','旧データの保管庫'),button('閉じる',()=>dialog.close()));dialog.append(header,el('p','過去のアカウント・投稿先未確定の保存記録です。現在のアカウントには混ぜず、閲覧用として保持しています。'));
   const records=notebook.legacySources();if(!records.length)dialog.append(el('p','この端末に保管された旧原稿はありません。'));
   for(const d of records){const entry=el('details'),summary=el('summary',d.title||'名称未確認');entry.append(summary,el('p','元の区分: '+(d.source?.account||'未確定')+' / '+(d.checkedAt||'日付未確認')),el('pre',d.body||''));dialog.append(entry);}
-  const oldCopies=notebook.copies().filter(c=>['kyun','choi','otoku','rakuten'].includes(c.place)&&!publishingAccounts.some(a=>copiesForAccount([c],a,id=>notebook.get(id)).length));if(oldCopies.length)dialog.append(el('h3','旧・投稿先未確定のコピー履歴'));for(const c of oldCopies){const item=el('details');item.append(el('summary',c.title||'以前のコピー'),el('pre',c.text));dialog.append(item);}
+  const oldCopies=notebook.copies().filter(c=>['kyun','choi','otoku','rakuten','lottery'].includes(c.place)&&!publishingAccounts.some(a=>copiesForAccount([c],a,id=>notebook.get(id)).length));if(oldCopies.length)dialog.append(el('h3','旧・投稿先未確定のコピー履歴'));for(const c of oldCopies){const item=el('details');item.append(el('summary',c.title||'以前のコピー'),el('pre',c.text));dialog.append(item);}
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();
  }
  const conveniences=createConveniences({notebook,open:context=>{requested=context;if(context.id)selections.set(context.place,context.id);onOpenRoom(context.place);},copy:(...args)=>copy(...args),native,onFeedback,send:(...args)=>send(...args)});
@@ -65,7 +65,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  function routes(){
   const host=$('desk-routes');host.replaceChildren();
   const account=publishingAccounts.find(a=>a.place===place);
-  if(account){host.append(button('← 6アカウント一覧',()=>{returnToAccounts=true;onHome();}),el('strong',account.name+' '+account.handle));const profile=el('a','投稿先を開く ↗');profile.href='https://www.threads.com/'+account.handle;profile.target='_blank';profile.rel='noopener noreferrer';host.append(profile,button('出典・確認記録',()=>native(place)));}
+  if(account){host.append(button('← 6アカウント一覧',()=>{returnToAccounts=true;onHome();}),el('strong',account.name+(account.handle?' '+account.handle:'')));if(account.handle){const profile=el('a','投稿先を開く ↗');profile.href='https://www.threads.com/'+account.handle;profile.target='_blank';profile.rel='noopener noreferrer';host.append(profile);}else host.append(el('span','投稿先未登録'));host.append(button('出典・確認記録',()=>native(place)));}
   else if(place==='choi')host.append(button('過去原稿を開く',()=>native('choi')));
   else if(place==='fp')host.append(button('FP 台本・画像',()=>native('fp')),button('TikTok 投稿結果',()=>native('tiktok',active?.source?.account==='tiktok'?active.source.id:undefined)));
   else if(place==='shiire')host.append(button('購入・在庫・売却を開く',()=>native('sourcing')));
@@ -123,8 +123,8 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  }
  function enter(roomId){
   send('reading-room',{active:true});
-  savePosition();rememberView();if(externalNotes&&notebook.persistent()){notebook.sync();externalNotes=false;}place=roomId==='purple'?(['choi','otoku','rakuten'].includes(requested?.place)?requested.place:'otoku'):placeForRoom[roomId];active=null;const view=requested?.id&&!requested.resume?{query:'',filter:'all'}:resumeView(views.get(place)||notebook.pref('view:'+place,null));query=view.query;filter=view.filter;$('desk-query').value=query;
-  notebook.visit(place);$('desk-title').textContent=place==='shiire'?'仕入れの持ち場':['kyun','otoku','rakuten'].includes(place)?placeNames[place]:'保存原稿';$('desk-kicker').textContent=place==='fp'?'SCRIPTS & CONTENT':place==='shiire'?'THE MERCHANT’S DESK':'YOUR MANUSCRIPTS';
+  savePosition();rememberView();if(externalNotes&&notebook.persistent()){notebook.sync();externalNotes=false;}place=roomId==='purple'?(['choi','otoku','rakuten','lottery'].includes(requested?.place)?requested.place:'otoku'):placeForRoom[roomId];active=null;const view=requested?.id&&!requested.resume?{query:'',filter:'all'}:resumeView(views.get(place)||notebook.pref('view:'+place,null));query=view.query;filter=view.filter;$('desk-query').value=query;
+  notebook.visit(place);$('desk-title').textContent=place==='shiire'?'仕入れの持ち場':['kyun','otoku','rakuten','lottery'].includes(place)?placeNames[place]:'保存原稿';$('desk-kicker').textContent=place==='fp'?'SCRIPTS & CONTENT':place==='shiire'?'THE MERCHANT’S DESK':'YOUR MANUSCRIPTS';
   $('desk').dataset.place=place;routes();render({restore:true});
   if(pending)applyPending();
   if(requested?.native&&embedded&&(['sourcing','watches','cards'].includes(requested.native)&&place==='shiire'||['fp','tiktok'].includes(requested.native)&&place==='fp'))native(requested.native,requested.recordId,true,requested.section);else if(place==='shiire'&&embedded)native('sourcing',undefined,true);requested=null;
@@ -199,4 +199,3 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  if(!embedded){$('desk-connect').hidden=false;setStatus('本体から開くと、ログイン中の保存原稿・履歴・仕入れ管理を使えます。');}
  return {enter,leave:()=>{send('reading-room',{active:false});savePosition();rememberView();place=null;active=null;nativeWork=null;conveniences.update(null);if(pending)applyPending();if(returnToAccounts)board.show();},native,ready:()=>{if(embedded){setStatus('本体の保存原稿に接続しています…',{loading:true});send('ready');}},receive,notebook,workMarks:conveniences.workMarks};
 }
-

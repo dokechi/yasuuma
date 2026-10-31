@@ -1,7 +1,7 @@
 // Portable, browser-local records. No credentials and no production writes.
 export const NOTEBOOK_PREFIX='castle-production.v1.';
 // Old room names are not publishing identities. Keep unmatched saved text in history.
-export function isLegacyPublishingDraft(d){const expected={kyun:'insurance',otoku:'otoku',rakuten:'rakuten'};return d?.place==='choi'||Object.hasOwn(expected,d?.place)&&d?.source?.account!==expected[d.place];}
+export function isLegacyPublishingDraft(d){const expected={kyun:'insurance',otoku:'otoku',rakuten:'rakuten',lottery:'lottery'};return d?.place==='choi'||Object.hasOwn(expected,d?.place)&&d?.source?.account!==expected[d.place];}
 // Presentation only: explicit source identity, never titles or guessed URLs.
 export function groupDrafts(rows){
  const groups=new Map();

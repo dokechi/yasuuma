@@ -3,7 +3,8 @@ export const publishingAccounts=Object.freeze([
  {key:'insurance',place:'kyun',name:'保険',handle:'@sucker0508',tone:'rose'},
  {key:'otoku',place:'otoku',name:'まだ安く買えるはず',handle:'@thats_a_steal0601',tone:'violet'},
  {key:'rakuten',place:'rakuten',name:'楽天犬',handle:'@bonya0914',tone:'amber'},
- ...[4,5,6].map(n=>({key:'planned-'+n,name:'アカウント '+n,pending:true}))
+ {key:'lottery',place:'lottery',name:'抽選',handle:'',tone:'green',artKey:'planned-4'},
+ ...[5,6].map(n=>({key:'planned-'+n,name:'アカウント '+n,pending:true}))
 ]);
 export function draftsForAccount(rows,account){
  if(!account||account.pending)return [];
@@ -39,25 +40,25 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
   const destinations=[...publishingAccounts,{key:'sourcing',place:'shiire',name:'仕入れ',tone:'green'},{key:'reserve',name:'予備の持ち場',pending:true}];
   for(const [i,a] of destinations.entries()){
    const tile=btn('',()=>travel(a));tile.className='account-tile';tile.dataset.destination=a.key;tile.disabled=!!a.pending;
-   const art=el('img');art.src='assets/panel-'+a.key+'.webp';art.alt='';art.loading='eager';art.onerror=()=>{art.onerror=null;art.src='assets/'+(['red','purple','orange','silver','purple','red','orange','silver'][i])+'-face.webp';};
-   const caption=el('span',undefined,'account-tile-caption');caption.append(el('small',String(i+1).padStart(2,'0')+' / '+(a.pending?'準備中':a.key==='sourcing'?'SOURCING':'THREADS')),el('strong',a.name),el('span',a.handle|| (a.pending?'名前・用途は未設定':'購入・在庫・売却')));
+   const art=el('img');art.src='assets/panel-'+(a.artKey||a.key)+'.webp';art.alt='';art.loading='eager';art.onerror=()=>{art.onerror=null;art.src='assets/'+(['red','purple','orange','silver','purple','red','orange','silver'][i])+'-face.webp';};
+   const caption=el('span',undefined,'account-tile-caption');caption.append(el('small',String(i+1).padStart(2,'0')+' / '+(a.pending?'準備中':a.key==='sourcing'?'SOURCING':'THREADS')),el('strong',a.name),el('span',a.handle|| (a.pending?'名前・用途は未設定':a.key==='sourcing'?'購入・在庫・売却':'投稿先未登録')));
    tile.append(art,caption);tiles.append(tile);
   }
-  status.textContent=message||(complete?'保存原稿を読込済み。追加3枠は未設定です。':'読込済みの原稿を表示しています。');
+  status.textContent=message||(complete?'保存原稿を読込済み。追加2枠は未設定です。':'読込済みの原稿を表示しています。');
   for(const [i,a]of publishingAccounts.entries()){
    const column=el('section',undefined,'account-column');column.dataset.account=a.key;column.dataset.tone=a.tone||'empty';
    const heading=el('header'),number=el('small',String(i+1).padStart(2,'0'),'account-number');heading.append(number,el('h2',a.name));
    const drafts=draftsForAccount(rows(),a);
    if(a.pending){heading.append(el('span','追加予定・未設定','account-handle'));column.append(heading,el('div','名前と投稿先が決まったら、この列を使います。','account-placeholder'));}
    else{
-    const profile=el('a',a.handle+' ↗','account-handle');profile.href='https://www.threads.com/'+a.handle;profile.target='_blank';profile.rel='noopener noreferrer';
+    const profile=el(a.handle?'a':'span',a.handle?a.handle+' ↗':'投稿先未登録','account-handle');if(a.handle){profile.href='https://www.threads.com/'+a.handle;profile.target='_blank';profile.rel='noopener noreferrer';}
     const groups=new Map();for(const d of drafts){const k=d.source.id;if(!groups.has(k))groups.set(k,d);}
     heading.append(profile,el('p',groups.size+'本の保存原稿','account-count'));column.append(heading);
     const list=el('div',undefined,'account-drafts');
     if(!groups.size)list.append(el('p',loading?'読み込み中…':complete?'このアカウントの保存原稿はまだありません。':'保存原稿の読取状況を確認してください。','account-placeholder'));
     for(const d of groups.values()){
      const card=btn('',()=>travel(a,d.id));card.className='account-draft';card.dataset.draftId=d.id;
-     card.append(el('small',d.checkedAt||'日付未確認'),el('strong',d.title),el('span',d.body.slice(0,110)),el('small',[d.posting?.reply?'本文＋返信':'本文',d.source.imageCount?'画像 '+d.source.imageCount+'枚':''].filter(Boolean).join(' · ')));
+     card.append(el('small',d.checkedAt||'日付未確認'),el('strong',d.title),el('span',d.body.slice(0,110)),el('small',[d.posting?.reply?'本文＋返信':'本文',d.source.imageCount?'画像 '+d.source.imageCount+'枚':'',a.key==='lottery'?d.source.status:''].filter(Boolean).join(' · ')));
      list.append(card);
     }
     column.append(list,btn('このアカウントを開く',()=>travel(a)));list.scrollTop=scrolls.get(a.key)||0;

@@ -25,10 +25,10 @@ test('production bridge routes explicit task ids to separate account drafts',()=
  const start=code.indexOf(' function drafts('),end=code.indexOf('\n async function read()',start);
  const context={H:{unique:x=>x,isSuppressed:()=>false,payload:i=>i.payload,matchesAccount:()=>false},w:{}};
  vm.createContext(context);vm.runInContext(code.slice(start,end),context);
- const items=['rakuten','otoku','insurance'].map((key,i)=>({id:'task:'+key,eventRecordId:100+i,taskId:key+'-threads-v1',title:key,payload:{draft:key+'本文',reply:key+'返信'},occurredAt:'2026-10-30T07:00:00Z'}));
+ const items=['rakuten','otoku','insurance','lottery'].map((key,i)=>({id:'task:'+key,eventRecordId:100+i,taskId:key+'-threads-v1',title:key,payload:{draft:key+'本文',reply:key+'返信'},occurredAt:'2026-10-30T07:00:00Z'}));
  const rows=context.drafts(items);
- assert.equal(rows.length,3);
- assert.deepEqual(Array.from(rows,r=>r.place),['rakuten','otoku','kyun']);
+ assert.equal(rows.length,4);
+ assert.deepEqual(Array.from(rows,r=>r.place),['rakuten','otoku','kyun','lottery']);
  assert.equal(rows[0].posting.reply,'rakuten返信');assert.equal(rows[0].source.recordId,'100');
- assert.equal(rows[1].id,'otoku-task:otoku');
+ assert.equal(rows[1].id,'otoku-task:otoku');assert.equal(rows[3].source.account,'lottery');assert.equal(rows[3].posting.reply,'lottery返信');assert.equal(rows[3].source.recordId,'103');
 });
