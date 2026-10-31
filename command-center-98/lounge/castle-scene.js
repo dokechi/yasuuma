@@ -16,7 +16,7 @@ export function mountCastleScene({accountBoard,castleImage='assets/castle-cutawa
  const node=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
  const button=(cls,text,fn)=>{const b=node('button',cls,text);b.type='button';b.addEventListener('click',fn);return b;};
  const activeRooms=castleRooms.filter(r=>!r.sealed),mobile=matchMedia('(max-width:700px)');
- let selected='insurance',overview=!mobile.matches,lastTrigger=null,lastHidden=board.hidden,geometry=null,ignoreClickUntil=0,queuedRoom=null,returning=false,observedVisit=null,observedVisitVersion=-1;
+ let selected='insurance',overview=!mobile.matches,lastTrigger=null,lastHidden=board.hidden,geometry=null,ignoreClickUntil=0,queuedRoom=null,returning=false,observedVisit=null,observedVisitVersion=-1,viewportMobile=null;
  if(skyImage)document.body.style.setProperty('--castle-sky',`url("${skyImage}")`);
  board.setAttribute('aria-label','司令塔の部屋と持ち場');
  const world=node('section','spatial-castle');world.setAttribute('aria-label','つながった城の持ち場');
@@ -63,6 +63,7 @@ export function mountCastleScene({accountBoard,castleImage='assets/castle-cutawa
  function layout(){
   world.dataset.selected=selected;for(const [key,b]of quickButtons)b.setAttribute('aria-current',key===selected?'location':'false');
   if(world.hidden||board.hidden)return;const w=viewport.clientWidth,h=viewport.clientHeight;if(!w||!h)return;
+  const currentMobile=innerWidth<=700;if(viewportMobile!==currentMobile){viewportMobile=currentMobile;overview=!currentMobile;}
   const r=castleRooms.find(r=>r.key===selected),scale=overview?Math.min(w/1536,h/1024):Math.min(w*.96/(1536*r.w),h*.82/(1024*r.h));
   const cx=overview?.5:r.x+r.w/2,cy=overview?.5:r.y+r.h*.55,left=w/2-cx*1536*scale,top=h/2-cy*1024*scale;
   geometry={width:w,height:h,scale,left,top};stage.style.transform=`translate(${left}px,${top}px) scale(${scale})`;world.dataset.overview=String(overview);world.dataset.selected=selected;

@@ -41,6 +41,9 @@ const server=http.createServer((req,res)=>{
   page.on('pageerror',e=>errors.push(e.message));await context.route('**/*',r=>{if(new URL(r.request().url()).origin===origin&&['GET','HEAD'].includes(r.request().method()))return r.continue();blocked.push(r.request().url());return r.abort();});
   await page.goto(origin+'/command-center-98/app-v130.html');await page.waitForFunction(()=>window.CCCastle?.unified&&!document.querySelector('#ccCastleFrame').hidden);
   const lounge=page.frameLocator('#ccCastleFrame');await lounge.locator('.castle-quick-open[data-room=sourcing]').waitFor();
+  await lounge.locator('.castle-stage img').evaluateAll(ns=>Promise.all(ns.map(n=>n.decode())));
+  await page.frames().find(f=>f.url().includes('/lounge/')).evaluate(async()=>{await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
+  if(width>700){assert.equal(await lounge.locator('.spatial-castle').getAttribute('data-overview'),'true','unfolded hidden-host startup resolves to the full castle');assert.equal(await lounge.locator('.castle-room-hotspot:visible').count(),8);}
   await page.screenshot({path:path.join(out,`${width}-${height}-host-home.png`)});
   const frameRect=await page.locator('#ccCastleFrame').boundingBox(),barRect=await page.locator('#requestProgressShortcut').boundingBox();
   assert.ok(frameRect.y>=barRect.y+barRect.height);assert.ok((await page.locator('#requestProgressOpen').boundingBox()).height>=44);
