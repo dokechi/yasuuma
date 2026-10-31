@@ -171,13 +171,17 @@ export function createCastleJourney({document: doc = globalThis.document, assetR
       animate(handle, [{transform: 'rotate(0deg)', offset: 0}, {transform: 'rotate(18deg)', offset: .1}, {transform: 'rotate(18deg)', offset: .52}, {transform: 'rotate(0deg)', offset: .7}, {transform: 'rotate(0deg)', offset: 1}]);
       animate(light, [{opacity: 0, transform: 'scaleX(1)', offset: 0}, {opacity: .6, transform: 'scaleX(1)', offset: .13}, {opacity: 1, transform: 'scaleX(1)', offset: .51}, {opacity: .8, transform: 'scaleX(18)', offset: .67}, {opacity: 0, transform: 'scaleX(22)', offset: .84}, {opacity: 0, transform: 'scaleX(22)', offset: 1}]);
       if (foreground) {
+        // On compact readers the paper physically masks the foreground cutout's
+        // lower edge. Reveal/depart that pair together behind the closed door,
+        // never expose a floating rectangular character while paper is absent.
+        const compactForeground = width <= 700;
         for (const node of [foreground, ...foreground.querySelectorAll('[data-journey-part]')]) {
-          if (node.dataset.journeyPart === 'actor') animate(node, reverse ? [
+          if (node.dataset.journeyPart === 'actor' || (compactForeground && node.dataset.journeyPart === 'paper')) animate(node, reverse ? [
             {opacity: 1, offset: 0}, {opacity: 1, offset: .5}, {opacity: 0, offset: .501}, {opacity: 0, offset: 1}
           ] : [
             {opacity: 0, offset: 0}, {opacity: 0, offset: .499}, {opacity: 1, offset: .5}, {opacity: 1, offset: 1}
           ], 'linear', false);
-          if (node.dataset.journeyPart === 'paper') animate(node, reverse ? [
+          if (!compactForeground && node.dataset.journeyPart === 'paper') animate(node, reverse ? [
             {opacity: 1, transform: 'translateY(0px)', offset: 0},
             {opacity: 0, transform: 'translateY(8px)', offset: .22},
             {opacity: 0, transform: 'translateY(8px)', offset: 1}
@@ -211,6 +215,9 @@ export function createCastleJourney({document: doc = globalThis.document, assetR
   const key = event => { if (event.key === 'Escape') cancel(); };
   const visibility = () => { if (doc.hidden) cancel(); };
   const motion = () => { if (quiet?.matches) cancel(); };
-  doc.addEventListener('keydown', key); doc.addEventListener('visibilitychange', visibility); quiet?.addEventListener?.('change', motion);
-  return {travel, cancel, state, destroy() { if (disposed) return; disposed = true; cancel(); interiorCache.clear(); doc.removeEventListener('keydown', key); doc.removeEventListener('visibilitychange', visibility); quiet?.removeEventListener?.('change', motion); }};
+  // Fold/unfold and orientation changes invalidate the captured screen geometry.
+  // Stop only this presentation; canonical navigation has already committed.
+  const viewportChanged = () => cancel();
+  doc.addEventListener('keydown', key); doc.addEventListener('visibilitychange', visibility); quiet?.addEventListener?.('change', motion); win.addEventListener('resize', viewportChanged); win.addEventListener('orientationchange', viewportChanged);
+  return {travel, cancel, state, destroy() { if (disposed) return; disposed = true; cancel(); interiorCache.clear(); doc.removeEventListener('keydown', key); doc.removeEventListener('visibilitychange', visibility); quiet?.removeEventListener?.('change', motion); win.removeEventListener('resize', viewportChanged); win.removeEventListener('orientationchange', viewportChanged); }};
 }

@@ -7,9 +7,9 @@ The existing castle is rendered as layered 2.5D DOM/CSS, not a mandatory driving
 
 ## Interaction contract
 - A physical room target responds immediately; camera coordinates begin at the actual painted castle, even if a previous focus/overview movement is unfinished. Touch targets and the orrery follow the painted architecture throughout that movement, rather than jumping to future positions.
-- Camera approaches that room, wood/brass leaves and foreground frame occlude the change, the matching interior appears, then the companion and existing manuscript settle. Return retraces the same room.
+- Camera approaches that room, wood/brass leaves and foreground frame occlude the change, the matching interior appears, then the companion and existing manuscript settle. On compact readers the paper and companion stay paired so their original crop is never exposed. Return retraces the same room.
 - Normal pace is 780 ms; the existing quick/normal/slow preference adjusts presentation only. The explicit **すぐ開く** rail skips travel on entry and its matching return.
-- Routing and copy/search/shelf/work controls never wait for animation. Pointer work, Escape, newer navigation, hidden pages and reduced motion cancel presentation safely. Motion owns no focus, route, source record, or network write.
+- Routing and copy/search/shelf/work controls never wait for animation. Pointer work, Escape, newer navigation, hidden pages, viewport changes (including Fold posture changes) and reduced motion cancel presentation safely. Motion owns no focus, route, source record, or network write.
 - The central orrery has a keyboard-accessible click alternative to hold/horizontal drag. It changes only local light/material response. Vertical touch panning is not captured; an orrery drag does not also swipe the room browser. Paper text never follows pointer motion or rotates.
 - The visible sound toggle reuses `shireito-courtyard-v1` and the established audio controls. Default is OFF; explicit user gestures enable short existing feedback sounds. No new audio service, track or autoplay was added.
 

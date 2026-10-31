@@ -158,3 +158,35 @@ test('a same-room switch never moves one cached image into both source and desti
   const {renderer, doc} = setup(t); renderer.travel(spec()); const interior = doc.querySelector('.castle-journey-interior'); Object.defineProperties(interior, {complete: {value: true}, naturalWidth: {value: 1536}}); renderer.cancel();
   renderer.travel(spec('insurance', {direction: 'switch', sourceRoom: 'insurance'})); const source = doc.querySelector('.castle-journey-source-interior'); assert.ok(source); assert.notEqual(source, interior); assert.equal(source.src, interior.src); assert.equal(doc.querySelector('.castle-journey-interior'), interior);
 });
+
+test('compact readers keep actor and masking paper solid together on entry and return', t => {
+  const {renderer, doc, win, animations} = setup(t);
+  for (const width of [320, 390, 700]) {
+    Object.defineProperty(win, 'innerWidth', {value: width, configurable: true});
+    for (const direction of ['in', 'out']) {
+      const foreground = doc.createElement('div'); foreground.innerHTML = '<img data-journey-part="actor"><section data-journey-part="paper">The paper masks the existing crop</section>';
+      renderer.travel(spec('insurance', {direction, foreground}));
+      const actor = animations.findLast(a => a.node.dataset.journeyPart === 'actor'), paper = animations.findLast(a => a.node.dataset.journeyPart === 'paper');
+      assert.deepEqual(paper.frames, actor.frames, width + ' ' + direction + ': the crop must never appear without its paper');
+      assert.ok(paper.frames.every(f => !Object.hasOwn(f, 'transform')), 'no independent paper displacement separates the compact foreground');
+      assert.equal(paper.timing.direction, 'normal'); assert.equal(paper.timing.duration, actor.timing.duration);
+    }
+  }
+});
+test('desktop foreground retains its separate late paper settle', t => {
+  const {renderer, doc, animations} = setup(t), foreground = doc.createElement('div'); foreground.innerHTML = '<img data-journey-part="actor"><section data-journey-part="paper">Desktop paper</section>';
+  // setup's 800px viewport remains above the compact bound.
+  renderer.travel(spec('insurance', {foreground})); const actor = animations.find(a => a.node.dataset.journeyPart === 'actor'), paper = animations.find(a => a.node.dataset.journeyPart === 'paper');
+  assert.notDeepEqual(paper.frames, actor.frames); assert.equal(paper.frames[1].offset, .84); assert.equal(paper.frames[1].transform, 'translateY(8px)');
+});
+
+test('Fold resize and orientation change immediately cancel only stale presentation geometry', t => {
+  const {renderer, doc, win} = setup(t); doc.querySelector('#copy').focus();
+  for (const type of ['resize', 'orientationchange']) {
+    renderer.travel(spec('insurance')); assert.equal(renderer.state().active, true);
+    win.dispatchEvent(new win.Event(type)); assert.equal(renderer.state().active, false); assert.equal(doc.querySelector('.castle-journey'), null);
+    assert.equal(doc.querySelector('#draft').textContent, 'Owner text'); assert.equal(doc.activeElement.id, 'copy');
+  }
+  const removed = [], remove = win.removeEventListener; win.removeEventListener = function (type, ...args) { removed.push(type); return remove.call(this, type, ...args); };
+  renderer.destroy(); assert.ok(removed.includes('resize')); assert.ok(removed.includes('orientationchange'));
+});

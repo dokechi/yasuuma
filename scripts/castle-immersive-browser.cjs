@@ -119,7 +119,15 @@ function installProbe() {
       const returnHome=async()=>{await f.locator('#back').click();await home();};
       const setOverview=async()=>{
         if(await f.locator('.spatial-castle').getAttribute('data-overview')!=='true')await f.locator('.castle-overview').click();
-        await f.locator('.castle-stage').evaluate(async n=>{await Promise.all(n.getAnimations().map(a=>a.finished.catch(()=>{})));await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
+        // Layout observers may start a second CSS transition after the first
+        // promise settles. Observe the actual centered overview, not a timer or
+        // a stale animation list; real early-entry remains separately tested.
+        await cf.waitForFunction(()=>{
+          const world=document.querySelector('.spatial-castle'),viewport=world?.querySelector('.castle-viewport'),stage=world?.querySelector('.castle-stage');
+          if(!stage||world.dataset.overview!=='true'||stage.getAnimations().some(a=>a.pending||a.playState==='running'))return false;
+          const v=viewport.getBoundingClientRect(),s=stage.getBoundingClientRect(),scale=Math.min(viewport.clientWidth/1536,viewport.clientHeight/1024);
+          return Math.abs(s.width-1536*scale)<1&&Math.abs(s.height-1024*scale)<1&&Math.abs(s.left-(v.left+(viewport.clientWidth-1536*scale)/2))<1&&Math.abs(s.top-(v.top+(viewport.clientHeight-1024*scale)/2))<1;
+        },null,{polling:'raf'});
       };
       const pressRoom=async(key,{hold=false}={})=>{
         if(hold)await page.evaluate(()=>window.__immersiveQA.freezeNext=true);
@@ -128,6 +136,17 @@ function installProbe() {
       const readerGeometry=async()=>f.locator('#desk-scroll').evaluate(n=>({height:n.clientHeight,bodyTop:document.getElementById('draft-body').getBoundingClientRect().top,viewport:innerHeight,
         overflow:document.documentElement.scrollWidth>innerWidth,
         actions:[...document.querySelectorAll('.reader-actions button')].map(b=>{const r=b.getBoundingClientRect();return{id:b.id,width:r.width,height:r.height,top:r.top,bottom:r.bottom};})}));
+      const liveForeground=async()=>({actor:await f.locator('.spatial-desk-actor').boundingBox(),paper:await f.locator('#desk').boundingBox()});
+      const assertPhoneForeground=(name,shot,live)=>{
+        if(width>700||!shot.actor)return;
+        check(name+' keeps paper opaque with its companion',!!shot.paper&&Math.abs(shot.paper.effectiveOpacity-1)<.005,shot.paper);
+        const difference={
+          x:(shot.actor.left-shot.paper.left)-(live.actor.x-live.paper.x),
+          y:(shot.actor.top-shot.paper.top)-(live.actor.y-live.paper.y),
+          actorWidth:shot.actor.width-live.actor.width,actorHeight:shot.actor.height-live.actor.height,
+          paperWidth:shot.paper.width-live.paper.width,paperHeight:shot.paper.height-live.paper.height};
+        check(name+' preserves the landed paper/actor crop coverage',Object.values(difference).every(n=>Math.abs(n)<2),difference);
+      };
       const assertReader=async key=>{
         await waitRoom(key);const g=await readerGeometry();check('reader geometry '+key,g.height>=180&&g.bodyTop<g.viewport-80&&!g.overflow&&g.actions.every(b=>b.width>=44&&b.height>=44&&b.top>=0&&b.bottom<=g.viewport+1),g);
       };
@@ -139,7 +158,7 @@ function installProbe() {
           await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
           const inspect=selector=>{const n=layer.querySelector(selector);if(!n)return null;const r=n.getBoundingClientRect(),s=getComputedStyle(n);let effectiveOpacity=1,p=n;while(p&&p!==layer.parentElement){effectiveOpacity*=Number(getComputedStyle(p).opacity);p=p.parentElement;}return{left:r.left,top:r.top,width:r.width,height:r.height,opacity:s.opacity,effectiveOpacity,transform:s.transform,background:s.backgroundImage,backgroundColor:s.backgroundColor};};
           return{room:layer.dataset.room,direction:layer.dataset.direction,phase:layer.dataset.phase,pointerEvents:getComputedStyle(layer).pointerEvents,ariaHidden:layer.getAttribute('aria-hidden'),
-            bounds:(()=>{const r=layer.getBoundingClientRect();return{left:r.left,top:r.top,width:r.width,height:r.height};})(),camera:inspect('.castle-journey-camera'),world:inspect('.castle-journey-world'),sky:inspect('.castle-journey-sky'),threshold:inspect('.castle-journey-threshold'),interior:inspect('.castle-journey-interior'),actor:inspect('[data-journey-part=actor]'),
+            bounds:(()=>{const r=layer.getBoundingClientRect();return{left:r.left,top:r.top,width:r.width,height:r.height};})(),camera:inspect('.castle-journey-camera'),world:inspect('.castle-journey-world'),sky:inspect('.castle-journey-sky'),threshold:inspect('.castle-journey-threshold'),interior:inspect('.castle-journey-interior'),actor:inspect('[data-journey-part=actor]'),paper:inspect('[data-journey-part=paper]'),
             leaves:[...layer.querySelectorAll('.castle-journey-leaf')].map(n=>{const s=getComputedStyle(n),rgba=(s.backgroundColor.match(/[\d.]+/g)||[]).map(Number),m=new DOMMatrixReadOnly(s.transform==='none'?undefined:s.transform);return{side:n.dataset.side,opacity:Number(s.opacity),baseAlpha:rgba.length===4?rgba[3]:rgba.length===3?1:0,rotation:{m11:m.m11,m13:m.m13,m31:m.m31,m33:m.m33}};}),
             images:[...layer.querySelectorAll('img')].map(n=>({src:n.currentSrc||n.src,width:n.naturalWidth})),animations:animations.length,
             focusCaptured:layer.contains(document.activeElement),activeFrames:document.querySelectorAll('.castle-journey').length};
@@ -178,6 +197,7 @@ function installProbe() {
       check('approach and threshold use opaque physical wood',[approach,threshold].every(frame=>Math.abs(Number(frame.threshold.opacity)-1)<.005&&frame.leaves.length===2&&frame.leaves.every(leaf=>leaf.baseAlpha===1&&leaf.opacity===1)),{approach:{threshold:approach.threshold,leaves:approach.leaves},threshold:{threshold:threshold.threshold,leaves:threshold.leaves}});
       check('both leaves remain closed during the room swap',swap.leaves.length===2&&swap.leaves.every(leaf=>Math.abs(leaf.rotation.m11-1)<.001&&Math.abs(leaf.rotation.m33-1)<.001&&Math.abs(leaf.rotation.m13)<.001&&Math.abs(leaf.rotation.m31)<.001),swap.leaves);
       if(reveal.actor)check('revealed companion stays opaque rather than ghosting',Math.abs(reveal.actor.effectiveOpacity-1)<.005,reveal.actor);
+      assertPhoneForeground('phone arrival',reveal,await liveForeground());
       check('camera has real relative movement before threshold',press.camera?.transform!==approach.camera?.transform&&!!approach.world, {press:press.camera,approach:approach.camera});
       const [rx,ry,rw,rh]=roomRects.insurance;
       const approachedCenter={x:threshold.camera.left+threshold.camera.width*(rx+rw/2),y:threshold.camera.top+threshold.camera.height*(ry+rh/2)};
@@ -199,9 +219,10 @@ function installProbe() {
       check('shelf Escape restores opener without leaving room',await f.locator('#room').isVisible()&&await f.locator('.spatial-shelf-open').evaluate(n=>n===document.activeElement));
       await f.locator('.spatial-room-name').click();await f.locator('#spatial-room-dialog[open]').waitFor();await page.keyboard.press('Escape');
       check('destination Escape restores identity control',await f.locator('#room').isVisible()&&await f.locator('.spatial-room-name').evaluate(n=>n===document.activeElement));
+      const departureForeground=await liveForeground();
       await page.evaluate(()=>window.__immersiveQA.freezeNext=true);await returnHome();
       await page.locator('.castle-journey[data-room=insurance][data-direction=out]').waitFor();
-      await seekJourney(0,'06-return-contact');await seekJourney(.03,'06-return-first-frame');const returnRoom=await seekJourney(.2,'06-return-room');if(returnRoom.actor)check('departing companion stays opaque until door occlusion',Math.abs(returnRoom.actor.effectiveOpacity-1)<.005,returnRoom.actor);await seekJourney(.55,'07-return-threshold');await seekJourney(.94,'08-return-castle');await finishJourney();
+      await seekJourney(0,'06-return-contact');await seekJourney(.03,'06-return-first-frame');const returnRoom=await seekJourney(.2,'06-return-room');if(returnRoom.actor)check('departing companion stays opaque until door occlusion',Math.abs(returnRoom.actor.effectiveOpacity-1)<.005,returnRoom.actor);assertPhoneForeground('phone departure',returnRoom,departureForeground);await seekJourney(.55,'07-return-threshold');await seekJourney(.94,'08-return-castle');await finishJourney();
       check('reverse returns focus to the exact physical door',await f.locator('.castle-room-hotspot[data-room=insurance]').evaluate(n=>n===document.activeElement));
       const afterCastle=await f.locator('.castle-cutaway').boundingBox();
       check('reverse preserves castle camera coordinates',Math.abs(afterCastle.x-originalCastle.x)<2&&Math.abs(afterCastle.y-originalCastle.y)<2&&Math.abs(afterCastle.width-originalCastle.width)<2,{before:originalCastle,after:afterCastle});
@@ -236,6 +257,9 @@ function installProbe() {
       await page.evaluate(()=>window.__immersiveQA.freezeNext=true);
       if(width<=800)await page.touchscreen.tap(hitPoint.x,hitPoint.y);else await page.mouse.click(hitPoint.x,hitPoint.y);
       await waitRoom('lottery');
+      // The canonical reader commits before the same-origin presentation message
+      // reaches its parent. Observe that real handshake, not a timing sleep.
+      await page.locator('.castle-journey[data-room=lottery][data-direction=in]').waitFor({state:'attached'});
       const interrupted=await seekJourney(0,'interrupted-overview-contact');
       check('entry during browse starts at painted camera, not pending target',Math.abs(interrupted.camera.left-paintedBrowse.x)<2&&Math.abs(interrupted.camera.top-paintedBrowse.y)<2&&Math.abs(interrupted.camera.width-paintedBrowse.width)<2,{paintedBrowse,journey:interrupted.camera});
       await finishJourney();await returnHome();await noJourney();
@@ -286,6 +310,21 @@ function installProbe() {
       await cf.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});
       check('hide/resume cancels visuals without changing destination',await f.locator('#room').getAttribute('data-account')==='insurance'&&await page.locator('.castle-journey').count()===0);
       await returnHome();await noJourney();
+
+      if(width===800){
+        // Folding/resizing aborts obsolete camera geometry, not the open work.
+        await setOverview();await pressRoom('insurance',{hold:true});await waitRoom('insurance');
+        await page.locator('.castle-journey[data-room=insurance]').waitFor({state:'attached'});
+        await page.setViewportSize({width:390,height:900});await noJourney();await cf.waitForFunction(()=>innerWidth===390);
+        await assertReader('insurance');
+        await page.evaluate(()=>navigator.clipboard.writeText('isolated-resize-copy-sentinel'));
+        await f.locator('#desk-copy').click();await f.locator('#desk-operation').getByText('本文をコピーしました。',{exact:true}).waitFor();
+        await page.waitForFunction(async body=>(await navigator.clipboard.readText()).replace(/\r\n/g,'\n')===body,rows[0].payload.draft);
+        check('folding mid-travel keeps the current draft usable',(await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n')===rows[0].payload.draft&&await f.locator('#room').getAttribute('data-account')==='insurance');
+        await page.setViewportSize({width,height});await cf.waitForFunction(()=>innerWidth===800);await assertReader('insurance');
+        check('unfolding does not resurrect the cancelled camera',await page.locator('.castle-journey').count()===0);
+        await returnHome();await noJourney();
+      }
 
       // OS and saved accessibility controls can cancel a journey already in flight.
       await setOverview();await pressRoom('insurance',{hold:true});await waitRoom('insurance');
