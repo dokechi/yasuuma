@@ -7,7 +7,8 @@ test('shared theme loads once after legacy cascade and entry pages only add pres
  assert.ok(manifest.styles.indexOf(manifest.styles.find(x=>x.startsWith('./rpg-theme.css?')))>manifest.styles.indexOf(manifest.styles.find(x=>x.startsWith('./rpg-home.css?'))));
  for(const page of ['app.html','index.html','app-v130.html']){
   const html=read(page);assert.match(html,/<body class="cc-rpg-theme">/);
-  if(page!=='app.html')assert.match(html,/href="\.\/rpg-theme\.css\?v=/);
+  if(page==='app-v130.html')assert.match(html,/href="\.\/rpg-theme\.css\?v=/);
+  if(page==='index.html'){assert.match(html,/href="\.\/entry-polish\.css\?v=/);assert.doesNotMatch(html,/href="\.\/rpg-theme\.css/);assert.ok(read('entry-polish.css').includes(':focus-visible'));}
  }
  assert(!manifest.scripts.some(x=>x.includes('rpg-theme')),'Theme introduces no new runtime behavior');
 });

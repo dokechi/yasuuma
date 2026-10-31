@@ -43,13 +43,28 @@ function successfulFetch(calls = []) {
   };
 }
 
-test('the manifest preserves every legacy asset in order with explicit read-model and progress additions', () => {
+// Every addition is explicit; keep the historical assets in their original order.
+const addedStyles = [
+ './sourcing-mobile-comparison.css','./v230-request-progress.css','./v231-trade-details.css',
+ './rpg-home.css','./rpg-theme.css','./rpg-account-pages.css','./rpg-workspaces.css','./rpg-daily-desk.css',
+ './lounge-workspace.css','./lounge-feedback.css','./overseas-profit-readiness.css'
+];
+const addedScripts = [
+ './sourcing-atomic-save.js','./overseas-profit-readiness.js','./sourcing-economics.js',
+ './sourcing-display-model.js','./sourcing-mobile-comparison.js','./post-learning.js','./command-center-data.js',
+ './v230-request-progress.js','./ledger-profit-model.js','./purchase-profit-actions.js','./v231-trade-details.js',
+ './fp-finished-images.js','./threads-archive.js','./sourcing-archive.js','./sourcing-profit-guard.js','./threads-images.js',
+ './manual-operation-hub.js','./rpg-home.js','./rpg-workspaces.js','./rpg-daily-store.js','./rpg-daily-desk.js',
+ './castle-parent.js','./lounge-workspace.js'
+];
+test('the manifest preserves every legacy asset in order with explicit current read-model and workspace additions', () => {
   assert.equal(manifest.shell.split('?')[0], legacy.shell.split('?')[0]);
-  assert.equal(manifest.styles.length, 20);
-  assert.equal(manifest.scripts.length, legacy.scripts.length + 15);
   const paths=urls=>urls.map(url=>url.split('?')[0]);
-  assert.deepEqual(paths(manifest.styles).filter(path=>!['./sourcing-mobile-comparison.css','./v230-request-progress.css','./v231-trade-details.css','./rpg-home.css','./rpg-theme.css','./rpg-account-pages.css','./rpg-workspaces.css','./rpg-daily-desk.css'].includes(path)), paths(legacy.styles));
-  assert.deepEqual(paths(manifest.scripts).filter(path=>!['./sourcing-atomic-save.js','./sourcing-mobile-comparison.js','./sourcing-display-model.js','./command-center-data.js','./v230-request-progress.js','./v231-trade-details.js','./fp-finished-images.js','./threads-archive.js','./sourcing-archive.js','./manual-operation-hub.js','./rpg-home.js','./rpg-workspaces.js','./rpg-daily-store.js','./rpg-daily-desk.js','./castle-parent.js'].includes(path)), paths(legacy.scripts));
+  for (const [kind, additions] of [['styles',addedStyles],['scripts',addedScripts]]) {
+    assert.equal(manifest[kind].length, legacy[kind].length + additions.length);
+    assert.deepEqual(paths(manifest[kind]).filter(file=>!additions.includes(file)), paths(legacy[kind]));
+    assert.deepEqual(paths(manifest[kind]).filter(file=>additions.includes(file)), additions);
+  }
   assert.equal(manifest.scripts.findIndex(url=>url.startsWith('./sourcing-display-model.js')),manifest.scripts.findIndex(url=>url.startsWith('./sourcing-mobile-comparison.js'))-1);
   assert.equal(manifest.scripts.findIndex(url=>url.startsWith('./sourcing-mobile-comparison.js')),manifest.scripts.findIndex(url=>url.startsWith('./v216-sourcing-status-flow.js'))-1);
   assert.equal(manifest.scripts.findIndex(url=>url.startsWith('./command-center-data.js')),manifest.scripts.findIndex(url=>url.startsWith('./v155-home.js'))-1);
@@ -64,7 +79,7 @@ test('every configured asset exists and is loaded once, even across version stri
 });
 
 test('late feature patches and the latest daily-report entry remain present', () => {
-  assert.deepEqual(manifest.scripts.filter(url=>!['./fp-finished-images.js','./threads-archive.js','./sourcing-archive.js','./manual-operation-hub.js','./rpg-home.js','./rpg-workspaces.js','./rpg-daily-store.js','./rpg-daily-desk.js','./castle-parent.js'].includes(url.split('?')[0])).slice(-9,-2), [
+  const retainedPatches = [
     './v222-sourcing-click-fix.js?v=222.1',
     './v223-home-cleanup.js?v=20261003.1',
     './v224-home-menu-fix.js?v=224.2',
@@ -72,20 +87,26 @@ test('late feature patches and the latest daily-report entry remain present', ()
     './v229-sourcing-mercari-history.js?v=229.4',
     './affiliate-production.js?v=20261008.1-manual',
     './binbo-neko.js?v=20261002.1'
-  ]);
+  ];
+  const positions=retainedPatches.map(url=>manifest.scripts.indexOf(url));
+  assert.ok(positions.every(index=>index>=0),'every versioned late patch remains declared');
+  assert.deepEqual(positions,[...positions].sort((a,b)=>a-b),'late patch execution order is retained');
   assert.ok(manifest.scripts.includes('./v148-daily-report-link.js?v=20261004.1'));
   assert.ok(manifest.scripts.includes('./v155-home.js?v=20261003.1'));
 });
 
 test('manual review additions load after existing home and FP dependencies',()=>{
  const paths=manifest.scripts.map(url=>url.split('?')[0]);
- assert.deepEqual(paths.slice(-9),['./fp-finished-images.js','./threads-archive.js','./sourcing-archive.js','./manual-operation-hub.js','./rpg-home.js','./rpg-workspaces.js','./rpg-daily-store.js','./rpg-daily-desk.js','./castle-parent.js']);
+ assert.deepEqual(paths.slice(-12),['./fp-finished-images.js','./threads-archive.js','./sourcing-archive.js','./sourcing-profit-guard.js','./threads-images.js','./manual-operation-hub.js','./rpg-home.js','./rpg-workspaces.js','./rpg-daily-store.js','./rpg-daily-desk.js','./castle-parent.js','./lounge-workspace.js']);
  assert.ok(paths.indexOf('./fp-finished-images.js')>paths.indexOf('./v151-fp-content-pipeline.js'));
  assert.ok(paths.indexOf('./manual-operation-hub.js')>paths.indexOf('./v155-home.js'));
 });
-test('RPG assets append last after the manual hub without replacing legacy assets',()=>{
- assert.deepEqual(manifest.styles.slice(-5).map(url=>url.split('?')[0]),['./rpg-home.css','./rpg-theme.css','./rpg-account-pages.css','./rpg-workspaces.css','./rpg-daily-desk.css']);
- assert.deepEqual(manifest.scripts.slice(-5).map(x=>x.split('?')[0]),['./rpg-home.js','./rpg-workspaces.js','./rpg-daily-store.js','./rpg-daily-desk.js','./castle-parent.js']);
+test('RPG assets remain ordered after the manual hub and before lounge integrations',()=>{
+ const styles=manifest.styles.map(url=>url.split('?')[0]),scripts=manifest.scripts.map(url=>url.split('?')[0]);
+ assert.deepEqual(styles.slice(styles.indexOf('./rpg-home.css'),styles.indexOf('./rpg-home.css')+5),['./rpg-home.css','./rpg-theme.css','./rpg-account-pages.css','./rpg-workspaces.css','./rpg-daily-desk.css']);
+ assert.deepEqual(scripts.slice(scripts.indexOf('./rpg-home.js'),scripts.indexOf('./rpg-home.js')+5),['./rpg-home.js','./rpg-workspaces.js','./rpg-daily-store.js','./rpg-daily-desk.js','./castle-parent.js']);
+ assert.ok(styles.indexOf('./lounge-workspace.css')>styles.indexOf('./rpg-daily-desk.css'));
+ assert.ok(scripts.indexOf('./lounge-workspace.js')>scripts.indexOf('./castle-parent.js'));
  assert.notEqual(manifest.scripts.find(url=>url.startsWith('./manual-operation-hub.js?')),'./manual-operation-hub.js?v=20261008.3-state');
 });
 

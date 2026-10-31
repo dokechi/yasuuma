@@ -89,14 +89,25 @@ test('refresh clicks the existing HOME refresh button without issuing its own re
  const h=harness();let refreshes=0;const button=h.doc.createElement('button');button.id='refreshBtn';button.onclick=()=>refreshes++;h.main.append(button);
  h.doc.querySelector('[data-rpg-refresh]').click();assert.equal(refreshes,1);
 });
-test('the production manual-hub bridge opens only supported account reviews',()=>{
- const h=harness({withHub:false});
+test('the production manual-hub bridge preserves current account destinations and rejects unknown keys',async()=>{
+ const h=harness({withHub:false}),requests=[],external=[];
+ h.root.fetch=async(url,options)=>{requests.push({url:String(url),options});return {ok:true,json:async()=>({ok:true,events:[],items:[],total:0,nextOffset:null})};};
+ h.root.open=(...args)=>external.push(args);
  const source=fs.readFileSync(path.join(__dirname,'manual-operation-hub.js'),'utf8');
- new Function('window',source)(h.root);
+ // Both the window and lexical browser APIs are explicit read-only test doubles.
+ new Function('window','API','authHeaders','fetch','localStorage','URL',source)(h.root,'https://example.test/api',()=>({}),h.root.fetch,{getItem:()=>null},URL);
  assert.equal(typeof h.root.CCManualOperationHub.openAccount,'function');h.rerun();assert.ok(h.root.CCRpgHome);
- for(const [key,label] of [['kyun','キュン拾い'],['choi','ちょい上等'],['tiktok','TikTok @sucker0508']]){
-  assert.equal(h.root.CCRpgHome.openAccount(key),true);const dialog=h.doc.querySelector('dialog');assert.ok(dialog.open);assert.equal(dialog.querySelector('h2').textContent,label);dialog.close();assert.equal(h.doc.querySelector('dialog'),null);
+ for(const [key,label] of [['kyun','保険｜@sucker0508'],['tiktok','TikTok @sucker0508']]){
+  assert.equal(h.root.CCRpgHome.openAccount(key),true);await Promise.resolve();await Promise.resolve();const dialog=h.doc.querySelector('dialog');assert.ok(dialog.open);assert.equal(dialog.querySelector('h2').textContent,label);dialog.querySelectorAll('button').find(b=>b.textContent==='閉じる').click();assert.equal(h.doc.querySelector('dialog'),null);
  }
+ assert.equal(h.root.CCRpgHome.openAccount('choi'),true);
+ assert.deepEqual(external,[['https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit','_blank','noopener']]);
+ assert.equal(h.doc.querySelector('dialog'),null);
+ for(const [key,label,taskId] of [['otoku','まだ安く買えるはず｜@thats_a_steal0601','otoku-threads-v1'],['rakuten','楽天犬｜@bonya0914','rakuten-threads-v1'],['lottery','抽選｜@kousaka_san_','lottery-threads-v1']]){
+  assert.equal(h.root.CCManualOperationHub.openAccount(key),true);await Promise.resolve();await Promise.resolve();const dialog=h.doc.querySelector('dialog');assert.equal(dialog.querySelector('h2').textContent,label);assert.equal(new URL(requests.at(-1).url).searchParams.get('taskId'),taskId);dialog.querySelectorAll('button').find(b=>b.textContent==='閉じる').click();
+ }
+ assert.ok(requests.some(r=>new URL(r.url).searchParams.get('taskId')==='insurance-threads-v1'));
+ assert.ok(requests.every(r=>!r.options.method&&!r.options.body),'opening a review never writes data');
  assert.equal(h.root.CCManualOperationHub.openAccount('sourcing'),false);assert.equal(h.root.CCManualOperationHub.openAccount('unknown'),false);assert.equal(h.doc.querySelector('dialog'),null);assert.ok(h.home.children.includes(h.preserved));
 });
 test('CSS only hides legacy navigation while RPG is active and all local artwork exists',()=>{
