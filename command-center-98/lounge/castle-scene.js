@@ -52,7 +52,7 @@ export function mountCastleScene({accountBoard,castleImage='assets/castle-cutawa
  const announcement=node('p','sr-only');announcement.setAttribute('aria-live','polite');announcement.setAttribute('aria-atomic','true');
  world.append(viewport,routebar,quick,announcement);tiles.before(world);
  // The stable list remains intact as the immediate manuscript-first view.
- const mode=board.querySelector('.board-primary');const syncMode=()=>{world.hidden=board.dataset.view==='list';mode.textContent=world.hidden?'← 城の全景へ':'原稿一覧';};
+ const mode=board.querySelector('.board-primary');const syncMode=()=>{world.hidden=board.dataset.view==='list';mode.textContent=world.hidden?'← 城の全景へ':'原稿一覧';layout();};
  function update(){
   if(accountBoard.state.visitVersion!==observedVisitVersion){observedVisitVersion=accountBoard.state.visitVersion;observedVisit=accountBoard.state.lastVisited;if(observedVisit)selected=observedVisit;}
   for(const r of castleRooms){const original=source(r.key),c=controls.get(r.key);if(!original)continue;const title=original.name||r.short;const state=original.status||'';c.title.textContent=r.short;c.button.title=title;c.button.dataset.lastVisited=String(r.key===observedVisit);c.count.textContent=state;c.button.setAttribute('aria-label',title+'、'+state+(r.sealed?'、封鎖中':'を開く')+(r.key===observedVisit?'、最後に開いた持ち場':''));quickButtons.get(r.key)?.setAttribute('aria-label',title+'をすぐ開く');}
@@ -60,6 +60,7 @@ export function mountCastleScene({accountBoard,castleImage='assets/castle-cutawa
  }
  function browse(delta){const i=activeRooms.findIndex(r=>r.key===selected);selected=activeRooms[(i+delta+activeRooms.length)%activeRooms.length].key;overview=false;layout();announcement.textContent=castleRooms.find(r=>r.key===selected).name+'。部屋または「すぐ開く」から入れます。';}
  function layout(){
+  world.dataset.selected=selected;for(const [key,b]of quickButtons)b.setAttribute('aria-current',key===selected?'location':'false');
   if(world.hidden||board.hidden)return;const w=viewport.clientWidth,h=viewport.clientHeight;if(!w||!h)return;
   const r=castleRooms.find(r=>r.key===selected),scale=overview?Math.min(w/1536,h/1024):Math.min(w*.96/(1536*r.w),h*.82/(1024*r.h));
   const cx=overview?.5:r.x+r.w/2,cy=overview?.5:r.y+r.h*.55,left=w/2-cx*1536*scale,top=h/2-cy*1024*scale;
