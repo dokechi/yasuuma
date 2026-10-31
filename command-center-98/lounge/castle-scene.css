@@ -21,7 +21,7 @@ body.spatial-atelier .account-board-status {margin:0;padding:6px 0;min-height:30
 body.spatial-atelier .board-footer {margin:0;min-height:44px;display:flex;justify-content:space-between;border-top:1px solid #dbc69730;gap:8px}
 body.spatial-atelier .board-footer button {font-size:12px;min-height:44px;padding:8px 10px;background:transparent;border:0}
 body.spatial-atelier .spatial-castle {position:relative;min-height:0;flex:1;display:flex;flex-direction:column;isolation:isolate}
-body.spatial-atelier .castle-viewport {position:relative;flex:1;min-height:140px;overflow:hidden;touch-action:pan-y;border-radius:4px;background:#142033}
+body.spatial-atelier .castle-viewport {position:relative;flex:1;min-height:140px;overflow:hidden;overflow:clip;touch-action:pan-y;border-radius:4px;background:#142033}
 body.spatial-atelier .castle-stage {position:absolute;left:0;top:0;width:1536px;height:1024px;transform-origin:0 0;transition:transform 220ms cubic-bezier(.2,.7,.2,1);pointer-events:none;will-change:transform}
 body.spatial-atelier .castle-cutaway {display:block;width:1536px;height:1024px;object-fit:contain;filter:none}
 body.spatial-atelier .castle-study-actor {position:absolute;left:24%;top:45%;width:14%;height:15%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 5px 5px #18111266);clip-path:inset(0 0 2% 0)}

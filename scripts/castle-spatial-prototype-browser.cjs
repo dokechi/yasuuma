@@ -110,7 +110,7 @@ function drawerContrast() {
         assert.ok(asset.src.endsWith(`/${key}-desk-actor.webp`) && asset.width > 0 && asset.height > 0, JSON.stringify(asset));
         assert.ok((await f.locator('.spatial-study-scene').evaluate(n => getComputedStyle(n).backgroundImage))
           .includes(`castle-interior-${key}-v1.webp`));
-        assert.equal(await f.locator('.castle-travel-view').count(), 0, 'Reduced motion must create no travel layer.');
+        assert.equal(await f.locator('.castle-journey').count(), 0, 'Reduced motion must create no travel layer.');
         return asset;
       };
       const readGeometry = async () => {
@@ -235,9 +235,10 @@ function drawerContrast() {
     const motion = await browser.newPage({viewport: {width: 800, height: 700}, reducedMotion: 'no-preference'});
     const {f: mf, cf: mcf} = await prepare(motion);
     assert.equal(await mf.locator('.castle-stage').evaluate(n => getComputedStyle(n).transitionDuration), '0.22s');
-    const immediate = await mcf.evaluate(() => {
-      document.querySelector('.castle-quick-open[data-room=insurance]').click();
-      const layer = document.querySelector('.castle-travel-view');
+    const immediate = await mcf.evaluate(async () => {
+      document.querySelector('.castle-room-hotspot[data-room=insurance]').click();
+      await Promise.resolve();
+      const layer = document.querySelector('.castle-journey');
       return {roomVisible: !document.getElementById('room').hidden, layer: !!layer,
         pointerEvents: layer && getComputedStyle(layer).pointerEvents,
         durations: layer ? layer.getAnimations({subtree: true}).map(animation => animation.effect.getTiming().duration) : []};
@@ -245,14 +246,14 @@ function drawerContrast() {
     assert.equal(immediate.roomVisible, true, 'Travel must not delay access to the working room.');
     assert.equal(immediate.layer, true);
     assert.equal(immediate.pointerEvents, 'none');
-    assert.ok(immediate.durations.length >= 2 && immediate.durations.every(duration => duration === 220), JSON.stringify(immediate));
-    await mf.locator('.castle-travel-view').waitFor({state: 'detached'});
+    assert.ok(immediate.durations.length >= 2 && immediate.durations.every(duration => duration === 780), JSON.stringify(immediate));
+    await mf.locator('.castle-journey').waitFor({state: 'detached'});
     await mf.locator('#back').click(); await mf.locator('.account-board').waitFor();
     await motion.emulateMedia({reducedMotion: 'reduce'});
     assert.equal(await mf.locator('.castle-stage').evaluate(n => getComputedStyle(n).transitionDuration), '0s');
     await mf.locator('.castle-quick-open[data-room=otoku]').click();
     await mf.locator('#room[data-account=otoku]').waitFor();
-    assert.equal(await mf.locator('.castle-travel-view').count(), 0);
+    assert.equal(await mf.locator('.castle-journey').count(), 0);
     results.push({motion: immediate, reducedMotion: 'no layer, no transition'});
     await motion.close();
     // A missing presentation stylesheet must fall back to the original real

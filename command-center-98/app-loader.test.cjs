@@ -47,7 +47,7 @@ function successfulFetch(calls = []) {
 const addedStyles = [
  './sourcing-mobile-comparison.css','./v230-request-progress.css','./v231-trade-details.css',
  './rpg-home.css','./rpg-theme.css','./rpg-account-pages.css','./rpg-workspaces.css','./rpg-daily-desk.css',
- './lounge-workspace.css','./spatial-workspace.css','./lounge-feedback.css','./overseas-profit-readiness.css'
+ './lounge-workspace.css','./castle-journey-host.css','./spatial-workspace.css','./lounge-feedback.css','./overseas-profit-readiness.css'
 ];
 const addedScripts = [
  './sourcing-atomic-save.js','./overseas-profit-readiness.js','./sourcing-economics.js',
@@ -55,7 +55,7 @@ const addedScripts = [
  './v230-request-progress.js','./ledger-profit-model.js','./purchase-profit-actions.js','./v231-trade-details.js',
  './fp-finished-images.js','./threads-archive.js','./sourcing-archive.js','./sourcing-profit-guard.js','./threads-images.js',
  './manual-operation-hub.js','./rpg-home.js','./rpg-workspaces.js','./rpg-daily-store.js','./rpg-daily-desk.js',
- './castle-parent.js','./lounge-workspace.js'
+ './castle-parent.js','./castle-journey-host.js','./lounge-workspace.js'
 ];
 test('the manifest preserves every legacy asset in order with explicit current read-model and workspace additions', () => {
   assert.equal(manifest.shell.split('?')[0], legacy.shell.split('?')[0]);
@@ -97,7 +97,7 @@ test('late feature patches and the latest daily-report entry remain present', ()
 
 test('manual review additions load after existing home and FP dependencies',()=>{
  const paths=manifest.scripts.map(url=>url.split('?')[0]);
- assert.deepEqual(paths.slice(-12),['./fp-finished-images.js','./threads-archive.js','./sourcing-archive.js','./sourcing-profit-guard.js','./threads-images.js','./manual-operation-hub.js','./rpg-home.js','./rpg-workspaces.js','./rpg-daily-store.js','./rpg-daily-desk.js','./castle-parent.js','./lounge-workspace.js']);
+ assert.deepEqual(paths.slice(-13),['./fp-finished-images.js','./threads-archive.js','./sourcing-archive.js','./sourcing-profit-guard.js','./threads-images.js','./manual-operation-hub.js','./rpg-home.js','./rpg-workspaces.js','./rpg-daily-store.js','./rpg-daily-desk.js','./castle-parent.js','./castle-journey-host.js','./lounge-workspace.js']);
  assert.ok(paths.indexOf('./fp-finished-images.js')>paths.indexOf('./v151-fp-content-pipeline.js'));
  assert.ok(paths.indexOf('./manual-operation-hub.js')>paths.indexOf('./v155-home.js'));
 });

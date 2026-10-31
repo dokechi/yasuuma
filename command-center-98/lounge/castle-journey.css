@@ -1,0 +1,44 @@
+:root{--castle-journey-ready:1}
+/* Transient architectural layers only. Existing content, focus and hit targets
+   stay live underneath; no page typography or application state is restyled. */
+.castle-journey{--journey-wood:#38251d;--journey-brass:#c0a36b;--journey-light:#ffdfaa;position:fixed;inset:0;z-index:260;overflow:hidden;pointer-events:none!important;isolation:isolate;contain:strict;background:#111a24;perspective:1000px}
+.castle-journey[data-room=otoku]{--journey-wood:#302334;--journey-brass:#b7a0b8;--journey-light:#e6c8ff}
+.castle-journey[data-room=rakuten]{--journey-wood:#51341b;--journey-brass:#d8ac5d;--journey-light:#ffdea1}
+.castle-journey[data-room=lottery]{--journey-wood:#203439;--journey-brass:#96b7b4;--journey-light:#c1ece9}
+.castle-journey[data-room=sourcing]{--journey-wood:#1e3430;--journey-brass:#b9a875;--journey-light:#cde8ca}
+.castle-journey *{box-sizing:border-box;pointer-events:none!important}
+.castle-journey-sky,.castle-journey-world{position:absolute;inset:0;overflow:hidden}
+.castle-journey-sky{background-size:cover;background-position:center;transform-origin:center;will-change:transform}
+.castle-journey-world{will-change:opacity}
+.castle-journey-camera{position:absolute;left:0;top:0;width:1536px;height:1024px;transform-origin:0 0;will-change:transform}
+.castle-journey-castle{display:block;width:1536px;height:1024px;object-fit:contain}
+.castle-journey-actor{position:absolute;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 4px 5px #18111266)}
+.castle-journey-actor[data-actor=insurance]{clip-path:inset(0 0 2% 0)}
+.castle-journey-interior,.castle-journey-source-interior{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;object-position:center;transform-origin:center;will-change:transform,opacity}
+.castle-journey-threshold{position:absolute;left:0;top:0;transform-origin:0 0;perspective:1400px;transform-style:preserve-3d;will-change:transform,opacity}
+.castle-journey-leaf{position:absolute;inset:0 auto 0 0;width:50.2%;height:100%;border:3px double var(--journey-brass);background:repeating-linear-gradient(89deg,#120d0b00 0 24px,#efcf9b08 25px,#120d0b00 27px 42px),linear-gradient(103deg,#0c0b0b66,var(--journey-wood) 14%,var(--journey-wood) 70%,#080a0bcc);box-shadow:inset 0 0 0 9px #100c0a77,inset 0 0 0 11px #c3a36c44,inset 0 0 64px #080808aa,0 0 8px #050708aa;transform-origin:left center;backface-visibility:hidden;will-change:transform}
+.castle-journey-leaf[data-side=right]{left:auto;right:0;transform-origin:right center;background:repeating-linear-gradient(91deg,#120d0b00 0 31px,#efcf9b08 32px,#120d0b00 34px 48px),linear-gradient(257deg,#0c0b0b77,var(--journey-wood) 18%,var(--journey-wood) 70%,#080a0bcc)}
+.castle-journey-leaf:before{content:'';position:absolute;inset:12% 14%;border:1px solid #d7b97e66;border-radius:42% 42% 2px 2px;box-shadow:inset 0 0 0 6px #090a0c33,0 0 0 5px #c7a7770a;background:linear-gradient(115deg,#f6deb40b,transparent 35%,#0002)}
+.castle-journey-leaf:after{content:'';position:absolute;left:9%;right:9%;top:68%;height:9px;background:linear-gradient(#d5b47666,#3c2b20 30%,#17110d 70%,#d5b47644);box-shadow:0 2px 5px #0005}
+.castle-journey-handle{position:absolute;right:7%;top:48%;width:12px;height:54px;border-radius:45%;border:1px solid #ecd198aa;background:linear-gradient(90deg,#53412c,#d8ba7a 40%,#8f7246 78%,#332619);box-shadow:3px 4px 5px #0008;transform-origin:50% 12%;z-index:2}
+.castle-journey-handle:before{content:'';position:absolute;left:-5px;top:-7px;width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e6cc94,#9f8150 52%,#33261c 60%,#d8b47c 66%,#231b15 75%);border:1px solid #b79767}
+.castle-journey-post{position:absolute;top:-5%;bottom:-5%;left:0;width:clamp(22px,4.4vw,75px);background:linear-gradient(90deg,#100e0d,var(--journey-wood) 12%,#b99a6355 18%,#120e0a 22%,var(--journey-wood) 33%,#11100f 82%,#c4a67688 87%,#120e0a);box-shadow:7px 0 18px #0009;border-right:2px solid var(--journey-brass);transform:translateZ(35px)}
+.castle-journey-post[data-side=right]{left:auto;right:0;transform:translateZ(35px) scaleX(-1)}
+.castle-journey-lintel{position:absolute;left:-5%;right:-5%;top:-3%;height:clamp(32px,8vh,90px);border-bottom:3px double var(--journey-brass);background:linear-gradient(#0b0c0e,var(--journey-wood) 35%,#0b0c0e 78%,#c8a87466 83%,#181511 90%);box-shadow:0 14px 24px #0009;transform:translateZ(36px);z-index:3}
+.castle-journey-lintel:after{content:'';position:absolute;left:calc(50% - 25px);top:35%;width:50px;height:50px;border:2px solid var(--journey-brass);border-radius:50%;background:radial-gradient(circle,#edce9022,transparent 63%);box-shadow:inset 0 0 0 6px #0005,0 0 0 4px #b99a6322;transform:rotate(45deg)}
+.castle-journey-light{position:absolute;left:calc(50% - 2px);top:8%;bottom:0;width:4px;background:var(--journey-light);box-shadow:0 0 22px 7px var(--journey-light);transform-origin:center;mix-blend-mode:screen;will-change:opacity,transform}
+@media(prefers-reduced-motion:reduce){.castle-journey{display:none!important}}
+
+/* Detached owner snapshots retain real text and character geometry. Only their
+   local opacity/translation participates in travel; no duplicate input is live. */
+.castle-journey-foreground{position:absolute;inset:0;pointer-events:none!important}
+.castle-journey-foreground,.castle-journey-foreground *{animation:none!important;transition:none!important;pointer-events:none!important;user-select:none!important}
+.castle-journey-foreground [data-journey-part=paper],.castle-journey-foreground [data-journey-part=actor]{will-change:opacity,transform}
+
+/* Cached close-up architecture remains behind a cold/failed room image. */
+.castle-journey-fallback{position:absolute;inset:0;overflow:hidden;pointer-events:none;will-change:opacity}
+.castle-journey-fallback-art{position:absolute;left:0;top:0;display:block;width:1536px;height:1024px;max-width:none;transform-origin:0 0;object-fit:contain}
+
+/* Wood is a physical occluder, not tinted glass. Gradients remain decorative
+   over this fully opaque material on both leaves. */
+.castle-journey-leaf,.castle-journey-leaf[data-side=right]{background-color:var(--journey-wood)}

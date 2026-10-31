@@ -10,7 +10,7 @@ export function createInteractionFeedback({doc=document,win=window,play=()=>{},a
  const held=new Map(),keys=new Set(),recent=new WeakMap(),timers=new Map();
  const valid=el=>el&&!el.disabled&&el.getAttribute('aria-disabled')!=='true'&&active();
  const control=event=>{const el=event.target?.closest?.(controls);return valid(el)?el:null;};
- const muteControl=el=>el.matches('#sound,#sound-setting,#effectsEnabled');
+ const muteControl=el=>el.matches('#sound,#sound-setting,#effectsEnabled,.castle-sound-toggle');
  const down=el=>el.classList.add(reduced()?'feedback-still':'feedback-down');
  function sound(el){if(!muteControl(el)&&!el.matches('[data-feedback-preview],input,select'))play(interactionKind(el),el.dataset.room||room());}
  function release(el,animate=true){

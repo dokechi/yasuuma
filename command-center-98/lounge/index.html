@@ -16,10 +16,12 @@
   <link rel="stylesheet" href="reader-polish.css?v=20261031.9-world">
   <link rel="stylesheet" href="world-atelier.css?v=20261031.9-world">
   <link rel="stylesheet" href="world-rooms.css?v=20261031.9-world">
-  <link rel="stylesheet" href="castle-scene.css?v=20261031.10-spatial">
-  <link rel="stylesheet" href="spatial-desk.css?v=20261031.10-spatial">
-  <link rel="modulepreload" href="castle-scene.js?v=20261031.10-spatial">
-  <link rel="modulepreload" href="spatial-desk.js?v=20261031.10-spatial">
+  <link rel="stylesheet" href="castle-scene.css?v=20261031.11-immersive">
+  <link rel="stylesheet" href="spatial-desk.css?v=20261031.11-immersive">
+  <link rel="stylesheet" href="castle-journey.css?v=20261031.11-immersive">
+  <link rel="stylesheet" href="castle-presence.css?v=20261031.11-immersive">
+  <link rel="modulepreload" href="castle-scene.js?v=20261031.11-immersive">
+  <link rel="modulepreload" href="spatial-desk.js?v=20261031.11-immersive">
 </head>
 <body class="spatial-atelier">
   <main id="app" class="town-mode hybrid-hall manor-lounge board-home">
@@ -76,7 +78,7 @@
     <dialog id="settings" aria-labelledby="settings-title">
       <div class="dialog-heading"><div><span class="eyebrow">MAKE YOURSELF AT HOME</span><h2 id="settings-title">システム</h2></div><button id="settings-close" class="round-button" aria-label="設定を閉じる">×</button></div>
       <h3>表示設定</h3>
-      <fieldset><legend>部屋に入る速さ</legend><div class="segmented"><label><input type="radio" name="pace" value="quick"><span>きびきび</span><small>0.65秒</small></label><label><input type="radio" name="pace" value="normal" checked><span>なめらか</span><small>1秒</small></label><label><input type="radio" name="pace" value="slow"><span>ゆったり</span><small>1.4秒</small></label></div></fieldset>
+      <fieldset><legend>部屋に入る速さ</legend><div class="segmented"><label><input type="radio" name="pace" value="quick"><span>きびきび</span><small>短い移動</small></label><label><input type="radio" name="pace" value="normal" checked><span>なめらか</span><small>標準の移動</small></label><label><input type="radio" name="pace" value="slow"><span>ゆったり</span><small>長めの移動</small></label></div></fieldset>
       <input id="sound-setting" type="checkbox" hidden checked>
 
       <label class="setting-line"><span>視点のゆらぎ<small>視線に合わせた小さな動き</small></span><input id="ambient-setting" type="checkbox" checked></label>
@@ -97,7 +99,7 @@
   <dialog id="hall-dialog" class="qol-dialog hall-dialog" aria-labelledby="hall-title"><header><div><small>FIND YOUR WAY BACK</small><h2 id="hall-title">司令塔の全体検索</h2></div><button id="hall-close" aria-label="全体検索を閉じる">×</button></header><label class="hall-search-label"><span class="sr-only">司令塔全体を検索</span><input id="hall-query" type="search" placeholder="商品名・原稿の一言・メモから探す" aria-label="司令塔全体を検索"></label><nav class="hall-filters" aria-label="検索する情報"><button data-hall-filter="all" aria-pressed="true">すべて</button><button data-hall-filter="draft" aria-pressed="false">原稿</button><button data-hall-filter="purchase" aria-pressed="false">仕入れ</button><button data-hall-filter="research" aria-pressed="false">調査</button><button data-hall-filter="copy" aria-pressed="false">コピー</button><button data-hall-filter="later" aria-pressed="false">あとで</button></nav><details class="hall-status"><summary>検索範囲・読取状況</summary><p id="hall-source-status" role="status"></p><p>価格は保存時点の記録です。現在の価格・在庫は商品ページで確認できます。端末の調査更新メモは最新250件を保持します。</p><button id="hall-refresh">保存情報を更新</button></details><p id="hall-result-count" role="status" aria-live="polite"></p><div class="hall-layout"><nav id="hall-results" aria-label="全体検索の結果"></nav><section id="hall-detail" aria-label="検索結果の内容"></section></div><button id="hall-more" hidden>さらに100件を表示</button></dialog>
   <dialog id="work-dialog" class="qol-dialog" aria-labelledby="work-title"><header><h2 id="work-title">今日、この場所で</h2><button id="work-close" aria-label="今日の作業を閉じる">×</button></header><p class="qol-note">この端末の読了と投稿メモ。ひと区切りの手紙が、ラウンジのテーブルに残ります。</p><ul id="work-list" class="work-list"></ul></dialog>
   <script src="threads-archive.js"></script><script src="sourcing-archive.js"></script>
-  <script type="module" src="app.js?v=20261031.10-spatial"></script>
-  <script type="module" src="spatial-atelier.js?v=20261031.10-spatial"></script>
+  <script type="module" src="app.js?v=20261031.11-immersive"></script>
+  <script type="module" src="spatial-atelier.js?v=20261031.11-immersive"></script>
 </body>
 </html>
