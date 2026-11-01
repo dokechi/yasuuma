@@ -1,0 +1,89 @@
+{
+  "asset": "arrival-court-v1.glb",
+  "authoredRevision": "v3.3",
+  "status": "Approved integration candidate only; actual WebGL release QA pending",
+  "runtimeSha256": "b8167b25892380bf0ed18fba1d90522a7bb96e6e80a468a7b511e8b0fc6e06bb",
+  "runtimeBytes": 1981880,
+  "authoring": "Original procedural architectural mesh and PBR material authoring, Blender 4.3.2. No third-party model/art inputs.",
+  "sourceRecipe": [
+    "build_arrival_court.py",
+    "quantize_arrival_court.py",
+    "bake_stone_material.py"
+  ],
+  "sourceFiles": {
+    "build_arrival_court.py": {
+      "bytes": 24891,
+      "sha256": "6d4bb58249b560de713673c35131aecdcab5b9a7cfe6e1b776346fc8ce067dfd"
+    },
+    "quantize_arrival_court.py": {
+      "bytes": 6759,
+      "sha256": "bc9bd05d1df4444c704f5884941e5bc62e236c63538d87b6ef3bd833594f8521"
+    },
+    "bake_stone_material.py": {
+      "bytes": 3259,
+      "sha256": "38bc0c52b61010f3cfa8b7eab8f8d846f8324bebafc86c54d4a9f4c9b100d282"
+    },
+    "README.md": {
+      "bytes": 3588,
+      "sha256": "933f6d95a9d7940ec30ae65ab63a4d4319bf68ab959b46b8724f1c44a6a1ad8b"
+    },
+    "materials/stone-basecolor-prompt.txt": {
+      "bytes": 1192,
+      "sha256": "f6b2db57ebf62c4880bccbf94f8f9320282c4a168264b6ec83a26d3551531d52"
+    },
+    "materials/stone-basecolor-v1.jpg": {
+      "bytes": 13677,
+      "sha256": "eec44631a738f38588528a56e796a763c73c4cfb4b3459961983f36cd999cdcd"
+    },
+    "materials/stone-normal-v1.png": {
+      "bytes": 46402,
+      "sha256": "3d2becf4165c8070659d8c4b1c1f061a7c00c81662b77b684564839c6ad9bda6"
+    },
+    "materials/stone-orm-v1.png": {
+      "bytes": 15127,
+      "sha256": "4f0701a658b7afac85b01a3527f0a2ea2da019d3f6b6384be8572e429d55c393"
+    }
+  },
+  "basecolor": {
+    "mode": "Built-in image_gen imagegen, new image",
+    "originalOutput": "exec-d0a35e42-e066-47ca-b3d8-0430d1876c40.png",
+    "prompt": "materials/stone-basecolor-prompt.txt",
+    "runtimeProcessing": "Downscale to256x256 and JPEG encoding only"
+  },
+  "technicalMaps": {
+    "normal": "Native Blender tangent-space bake of original periodic material microrelief,192x192",
+    "orm": "Native Blender emission bake of roughness into G, neutral AO=1 and metal=0,128x128",
+    "source": "bake_stone_material.py"
+  },
+  "referenceUse": "User-provided Igloo screenshots used only to evaluate spatial/material quality, no pixels or models copied. Existing original castle identities informed the dome, stair spine, armillary and color accents.",
+  "geometry": {
+    "triangles": 54364,
+    "materials": 12,
+    "meshes": 16,
+    "drawGroups": 48,
+    "images": 3,
+    "textures": 3,
+    "decodedSourceTexels": 118784,
+    "noExternalURI": true
+  },
+  "quantization": {
+    "rawBytes": 3785380,
+    "quantizedBytes": 1981880,
+    "verticesBefore": 106666,
+    "verticesAfter": 105860,
+    "texturedVertices": 68464,
+    "drawGroups": 48,
+    "embeddedImages": 3,
+    "embeddedImageBytes": 75206,
+    "maxPositionErrorMeters": 0.0004999999999997229,
+    "positionPrecisionMeters": 0.001,
+    "uvPrecisionTiles": 0.00390625,
+    "sha256": "b8167b25892380bf0ed18fba1d90522a7bb96e6e80a468a7b511e8b0fc6e06bb",
+    "triangleTopologyUnchanged": true
+  },
+  "knownScope": "Cinematic arrival court, not a complete city or360degree environment. Existing characters/interiors/controllers stay unchanged. Materials/fog/UI/hit targets require actual WebGL QA; no claim of Igloo-equivalent final quality.",
+  "focusCorrection": "Only focus-otoku Y+1.50m and focus-lottery Y+1.00m on actual upper portal geometry changed after v3 preview; mesh/camera frozen. CPU first-hit raycast verification required.",
+  "revisionChange": "Only existing five textile and hanging-rail clusters translated 0.46m forward toward court, correcting actual WebGL-visible pier embedding. No added mesh/materials; cameras and corrected focus anchors unchanged.",
+  "cameraRevision": "Only native phone establishing camera changed: Y-up position[0.5,2.6,16], target[-3.85,3.5,-1.5], vertical FOV44 degrees. No runtime override. Actual WebGL acceptance pending.",
+  "materialRevision": "Only closed lottery identity textile reassigned from copper_patina to existing cloth_teal (matte green family). Open dome remains copper; no new PBR material, geometry, camera or texture."
+}

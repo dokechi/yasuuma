@@ -1,0 +1,209 @@
+{
+  "version": 1,
+  "units": "meters",
+  "up": "Y",
+  "origin": "courtyard floor below central stair spine",
+  "triangleCount": 54364,
+  "materialCount": 12,
+  "meshCount": 16,
+  "glbBytes": 1981880,
+  "cameras": {
+    "arrival-camera": {
+      "position": [
+        7.5,
+        2.65,
+        12.0
+      ],
+      "target": [
+        -0.2,
+        3.3,
+        -2.2
+      ],
+      "fovVerticalDegrees": 39.966
+    },
+    "phone-camera": {
+      "position": [
+        0.5,
+        2.6,
+        16
+      ],
+      "target": [
+        -3.85,
+        3.5,
+        -1.5
+      ],
+      "fovVerticalDegrees": 44
+    }
+  },
+  "anchors": {
+    "focus-insurance": [
+      -5.46,
+      1.826,
+      -2.72
+    ],
+    "room-insurance-threshold": [
+      -5.6,
+      0.41,
+      -1.8
+    ],
+    "focus-rakuten": [
+      5.39,
+      1.826,
+      -3.22
+    ],
+    "room-rakuten-threshold": [
+      5.25,
+      0.41,
+      -2.3
+    ],
+    "focus-otoku": [
+      -5.16,
+      6.492,
+      -4.79
+    ],
+    "room-otoku-threshold": [
+      -5.3,
+      3.54,
+      -3.87
+    ],
+    "focus-sourcing": [
+      0.14,
+      1.82,
+      -6.19
+    ],
+    "room-sourcing-threshold": [
+      0,
+      0.26,
+      -5.27
+    ],
+    "closed-reserve-threshold": [
+      0,
+      6.11,
+      -5.77
+    ],
+    "focus-lottery": [
+      5.24,
+      6.0764,
+      -4.32
+    ],
+    "room-lottery-threshold": [
+      5.1,
+      3.61,
+      -3.4
+    ],
+    "closed-planned-5-threshold": [
+      -9.6,
+      0.2,
+      -4.82
+    ],
+    "closed-planned-6-threshold": [
+      9.6,
+      0.2,
+      -5.42
+    ],
+    "arrival-orrery": [
+      0,
+      2.85,
+      1.8
+    ],
+    "approach-insurance": [
+      -4.2,
+      2.2,
+      5
+    ],
+    "approach-rakuten": [
+      6,
+      2.2,
+      4
+    ],
+    "approach-sourcing": [
+      2.2,
+      2.3,
+      3.5
+    ],
+    "approach-otoku": [
+      -8.5,
+      5.8,
+      0.1
+    ],
+    "approach-lottery": [
+      8,
+      6.1,
+      0.5
+    ]
+  },
+  "materials": [
+    "stone_dusk",
+    "stone_worn",
+    "stone_shadow",
+    "oak_smoked",
+    "brass_aged",
+    "iron_forged",
+    "window_amber",
+    "cloth_burgundy",
+    "cloth_violet",
+    "cloth_amber",
+    "copper_patina",
+    "cloth_teal"
+  ],
+  "lightingIntent": "broad cool upper-left key; restrained warm window reflections; contact shadows essential; no bloom blanket",
+  "budget": {
+    "trianglesTarget": 60000,
+    "trianglesMaximum": 80000,
+    "glbMaximumBytes": 2000000,
+    "materialsMaximum": 12,
+    "drawCallsMaximum": 50
+  },
+  "notes": [
+    "Static original architectural prototype; not a claim of Igloo-equivalent render quality.",
+    "Original embedded PBR stone maps only; no copied models/art, external URI, user data or character replacements.",
+    "Existing reader, authentication, immediate routes and painted castle remain implementation-owned fallback.",
+    "Phone should select/focus a room, never shrink all gates to unreadable miniatures."
+  ],
+  "authoredRevision": "v3.3",
+  "asset": "arrival-court-v1.glb",
+  "runtimeBytes": 1981880,
+  "runtimeSha256": "b8167b25892380bf0ed18fba1d90522a7bb96e6e80a468a7b511e8b0fc6e06bb",
+  "drawGroups": 48,
+  "textureCount": 3,
+  "imageCount": 3,
+  "quantization": {
+    "rawBytes": 3785380,
+    "quantizedBytes": 1981880,
+    "verticesBefore": 106666,
+    "verticesAfter": 105860,
+    "texturedVertices": 68464,
+    "drawGroups": 48,
+    "embeddedImages": 3,
+    "embeddedImageBytes": 75206,
+    "maxPositionErrorMeters": 0.0004999999999997229,
+    "positionPrecisionMeters": 0.001,
+    "uvPrecisionTiles": 0.00390625,
+    "sha256": "b8167b25892380bf0ed18fba1d90522a7bb96e6e80a468a7b511e8b0fc6e06bb",
+    "triangleTopologyUnchanged": true
+  },
+  "textures": [
+    {
+      "path": "materials/stone-basecolor-v1.jpg",
+      "width": 256,
+      "height": 256,
+      "bytes": 13677,
+      "sha256": "eec44631a738f38588528a56e796a763c73c4cfb4b3459961983f36cd999cdcd"
+    },
+    {
+      "path": "materials/stone-normal-v1.png",
+      "width": 192,
+      "height": 192,
+      "bytes": 46402,
+      "sha256": "3d2becf4165c8070659d8c4b1c1f061a7c00c81662b77b684564839c6ad9bda6"
+    },
+    {
+      "path": "materials/stone-orm-v1.png",
+      "width": 128,
+      "height": 128,
+      "bytes": 15127,
+      "sha256": "4f0701a658b7afac85b01a3527f0a2ea2da019d3f6b6384be8572e429d55c393"
+    }
+  ],
+  "decodedSourceTexels": 118784
+}

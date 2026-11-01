@@ -19,3 +19,7 @@ try{
  board?.render({...board.state,message:'城の表示を読み込めませんでした。通常の持ち場一覧で続けられます。'});
  console.warn('Spatial presentation unavailable; original account view retained.',error);
 }
+
+// Optional, isolated presentation experiments may reuse the established owners.
+// This does not change the default castle, reader, or their routing contracts.
+export const getSpatialPresentation=()=>({board,scene,desk});
