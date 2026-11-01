@@ -335,8 +335,11 @@ async function initialReducedCase(browser,origin){
   check(ctx.result,'initial reduced motion keeps a visible explained disabled entry without loading graphics',await entry.isDisabled()&&!!await entry.getAttribute('title')&&ctx.result.heavyRequests.length===0,ctx.result.heavyRequests);
   await ctx.f.locator('.castle-quick-open[data-room=insurance]').click();await reader(ctx,'insurance');await back(ctx);
   check(ctx.result,'default reduced-motion reader use still loads no optional renderer',ctx.result.heavyRequests.length===0,ctx.result.heavyRequests);
-  await ctx.page.emulateMedia({reducedMotion:'no-preference'});await entry.waitFor();await ctx.frame.waitForFunction(()=>!document.querySelector('[data-arrival-entry]').disabled);
-  check(ctx.result,'ending reduced motion enables the entry but does not automatically import graphics',ctx.result.heavyRequests.length===0&&await ctx.frame.evaluate(()=>!window.__arrivalCourt));
+  await ctx.page.emulateMedia({reducedMotion:'no-preference'});await entry.waitFor();
+  check(ctx.result,'ending OS reduce does not override the established app motion preference',await ctx.f.locator('#reduce-setting').isChecked()&&await entry.isDisabled()&&ctx.result.heavyRequests.length===0);
+  await ctx.f.locator('.castle-experience-settings').click();await ctx.f.locator('#settings .setting-line:has(#reduce-setting)').click();await closeSettings(ctx);
+  await ctx.frame.waitForFunction(()=>!document.querySelector('[data-arrival-entry]').disabled);
+  check(ctx.result,'explicitly ending the app reduce preference enables entry without automatically importing graphics',ctx.result.heavyRequests.length===0&&await ctx.frame.evaluate(()=>!window.__arrivalCourt));
   await entry.click();await ctx.f.locator('.arrival-court[data-state=ready]').waitFor();await settled(ctx.frame);
   check(ctx.result,'explicit tap after preference change reaches real 3D',(await snapshot(ctx.frame)).active===true);await capture(ctx,'explicit-after-reduce');await unchanged(ctx);
  }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
