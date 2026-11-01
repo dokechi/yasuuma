@@ -42,8 +42,8 @@ test('old completion and posting marks do not appear under current account label
 import fs from 'node:fs';import vm from 'node:vm';
 test('new offline shell clears only superseded application caches, not account storage',async()=>{
  const handlers={},deleted=[];const code=fs.readFileSync(new URL('../command-center-98/castle-offline.js',import.meta.url),'utf8');
- vm.runInNewContext(code,{URL,Set,self:{location:{href:'https://example.test/command-center-98/castle-offline.js'},addEventListener:(name,fn)=>handlers[name]=fn,clients:{claim:async()=>{}}},caches:{keys:async()=>['cc-production-shell-69','cc-production-shell-70','cc-production-shell-71','cc-production-shell-72','cc-production-shell-73','cc-production-shell-74','cc-production-shell-75','user-backup'],delete:async key=>deleted.push(key)}});
- let task;handlers.activate({waitUntil:p=>task=p});await task;assert.deepEqual(deleted,['cc-production-shell-69','cc-production-shell-70','cc-production-shell-71','cc-production-shell-72','cc-production-shell-73','cc-production-shell-74']);assert.match(code,/await fetch\(r\)/,'online files are network-first, not an old cached account screen');
+ vm.runInNewContext(code,{URL,Set,self:{location:{href:'https://example.test/command-center-98/castle-offline.js'},addEventListener:(name,fn)=>handlers[name]=fn,clients:{claim:async()=>{}}},caches:{keys:async()=>['cc-production-shell-69','cc-production-shell-70','cc-production-shell-71','cc-production-shell-72','cc-production-shell-73','cc-production-shell-74','cc-production-shell-75','cc-production-shell-76','user-backup'],delete:async key=>deleted.push(key)}});
+ let task;handlers.activate({waitUntil:p=>task=p});await task;assert.deepEqual(deleted,['cc-production-shell-69','cc-production-shell-70','cc-production-shell-71','cc-production-shell-72','cc-production-shell-73','cc-production-shell-74','cc-production-shell-75']);assert.match(code,/await fetch\(r\)/,'online files are network-first, not an old cached account screen');
 });
 
 import {copiesForAccount} from '../command-center-98/lounge/accounts.js';

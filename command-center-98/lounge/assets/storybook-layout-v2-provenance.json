@@ -1,0 +1,20 @@
+{
+  "revision": "insurance-layout-v2",
+  "originalNativeArt": true,
+  "generator": "hand-authored native SVG and DOM, not raster tracing",
+  "module": "storybook-art.js",
+  "sha256": "ffb3ae41986362eebde3ed4404c98e990f533a4e4cc502fd354e6304524eeecd",
+  "changes": [
+    "spread2:1 and page1:1.05 props repositioned without raster edits",
+    "legacy4:3 default remains for reader",
+    "modern backdrop board omitted; HTML book faces own world colors",
+    "SVG preserveAspectRatio=xMidYMax meet",
+    "single transform rotation, no double rotate"
+  ],
+  "rasterUnchanged": {
+    "file": "insurance-actor-v1.webp",
+    "sha256": "446b0755d56156a8c993eff1ff239d4544a923ff1cbf6ee9e080b34916f7dd84"
+  },
+  "pureProof": "layout-v2-proof.json",
+  "realAppVisualStatus": "pending next exacthead frames"
+}

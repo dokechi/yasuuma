@@ -1,6 +1,6 @@
 /* Spatial publishing desks. No data requests, persistence, or source-record changes.
    The entry opts in with body.spatial-atelier and calls this installer. */
-import {publishingAccounts} from './accounts.js?v=20261101.1-living';
+import {publishingAccounts} from './accounts.js?v=20261101.8-storybook';
 
 // Observed rectangles from command-castle-cutaway-v1-zones.json. The same
 // master artwork underlies the overview and these four publishing rooms.
@@ -12,7 +12,7 @@ const rooms = Object.freeze({
 });
 const installations = new WeakMap();
 
-export function installSpatialDesk({document: doc = globalThis.document, openRoom, roomScenes = {}} = {}) {
+export function installSpatialDesk({document: doc = globalThis.document, openRoom, roomScenes = {}, roomPresentation = {}} = {}) {
   if (installations.has(doc)) return installations.get(doc);
   const win = doc.defaultView;
   const room = doc.getElementById('room');
@@ -21,6 +21,26 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
   if (!win || !room || !desk || !shelf) throw new Error('Spatial desk needs the existing lounge reader.');
   const assetRoot = new URL('./assets/', import.meta.url);
   const masterURL = new URL('castle-cutaway-v1.webp', assetRoot).href;
+  const assetURL = (value, label) => {
+    if (typeof value !== 'string') throw new TypeError(label + ' needs a repository asset URL.');
+    const url = new URL(value, import.meta.url);
+    if (url.protocol !== assetRoot.protocol || url.origin !== assetRoot.origin || !url.pathname.startsWith(assetRoot.pathname) || !/\.(webp|png|jpe?g|avif)$/i.test(url.pathname)) {
+      throw new TypeError(label + ' must use raster images in lounge/assets.');
+    }
+    return url.href;
+  };
+  // Optional presentation metadata belongs to the entry, not the manuscript
+  // controller. Explicit entries never fetch the legacy castle or portrait.
+  const presentations = new Map();
+  for (const key of Object.keys(rooms)) {
+    if (!Object.hasOwn(roomPresentation, key)) continue;
+    const value = roomPresentation[key];
+    if (!value || typeof value !== 'object') throw new TypeError('Invalid room presentation: ' + key);
+    if (value.name !== undefined && (typeof value.name !== 'string' || !value.name.trim())) throw new TypeError('A room name must be nonempty text: ' + key);
+    const fallbackColor = value.fallbackColor ?? '#F7F8F2';
+    if (typeof fallbackColor !== 'string' || !/^#[\da-f]{6}$/i.test(fallbackColor)) throw new TypeError('A room fallback must be a six-digit color: ' + key);
+    presentations.set(key, {name: value.name?.trim() || rooms[key].name, actorURL: value.actorURL == null ? null : assetURL(value.actorURL, 'Room actor'), fallbackColor});
+  }
   const interiors = new Map();
   for (const key of Object.keys(rooms)) {
     const config = roomScenes[key];
@@ -43,6 +63,8 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
     if (text) node.textContent = text;
     return node;
   };
+  const illustration = make('div', 'spatial-illustration-stage');
+  illustration.setAttribute('aria-hidden', 'true');
   const scene = make('div', 'spatial-study-scene');
   const surface = make('div', 'spatial-writing-surface');
   const actor = make('img', 'spatial-desk-actor');
@@ -233,7 +255,7 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
   // normalized room rectangle, rather than stretching or replacing its scene.
   const master = new win.Image();
   const resizeScene = () => {
-    if (!active || room.dataset.spatialScene === 'interior' || !master.naturalWidth || !master.naturalHeight) return;
+    if (!active || presentations.has(currentAccount) || room.dataset.spatialScene === 'interior' || !master.naturalWidth || !master.naturalHeight) return;
     const [x, y, w, h] = rooms[currentAccount].rect;
     const width = room.clientWidth, height = room.clientHeight;
     const scale = Math.max(width / (master.naturalWidth * w), height / (master.naturalHeight * h));
@@ -298,7 +320,7 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
     restoreMoves();
     delete room.dataset.spatialDesk;
     delete room.dataset.spatialScene;
-    for (const node of [scene, surface, actor, nav, dialog, identity, picker]) node.remove();
+    for (const node of [scene, surface, actor, illustration, nav, dialog, identity, picker]) node.remove();
   };
   const sync = () => {
     if (destroyed) return;
@@ -314,25 +336,33 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
       const [x, y, w, h] = config.rect;
       scene.dataset.account = next;
       const interior = interiors.get(next);
-      // Always paint the existing master first. High-resolution art is an
-      // enhancement after a successful decode, never a blank-room dependency.
-      room.dataset.spatialScene = 'master';
+      const presentation = presentations.get(next);
+      // An opted-in paper presentation is usable before art loads and never
+      // flashes or requests the older world. Existing callers keep their master.
+      room.dataset.spatialScene = presentation ? 'paper' : 'master';
       scene.dataset.interiorStatus = interior?.state || 'unconfigured';
-      scene.style.backgroundImage = `url(${JSON.stringify(masterURL)})`;
-      scene.style.backgroundSize = `${100 / w}% ${100 / h}%`;
-      scene.style.backgroundPosition = `${100 * x / (1 - w)}% ${100 * y / (1 - h)}%`;
-      if (!master.src) master.src = masterURL;
-      actor.src = new URL(`./assets/${next}-desk-actor.webp`, import.meta.url).href;
+      scene.style.backgroundColor = presentation?.fallbackColor || '';
+      scene.style.backgroundImage = presentation ? 'none' : `url(${JSON.stringify(masterURL)})`;
+      scene.style.backgroundSize = presentation ? 'cover' : `${100 / w}% ${100 / h}%`;
+      scene.style.backgroundPosition = presentation ? 'center' : `${100 * x / (1 - w)}% ${100 * y / (1 - h)}%`;
+      if (!presentation && !master.src) master.src = masterURL;
+      const actorURL = presentation ? presentation.actorURL : new URL(`./assets/${next}-desk-actor.webp`, import.meta.url).href;
+      actor.hidden = !actorURL;
+      if (actorURL) actor.src = actorURL;
+      else actor.removeAttribute('src');
       identity.textContent = account.name + ' ⌄';
       identity.setAttribute('aria-label', account.name + ' ' + account.handle + '。現在の部屋と行き先を開く');
       accountName.textContent = account.name;
       accountHandle.textContent = account.handle;
-      roomName.textContent = config.name;
+      roomName.textContent = presentation?.name || config.name;
       for (const button of destinations.children) {
         if (button.dataset.destination === next) button.setAttribute('aria-current', 'page');
         else button.removeAttribute('aria-current');
       }
-      room.prepend(scene, surface, actor);
+      // Optional paper presentations share one normalized art stage. The live
+      // manuscript and every existing control stay outside decorative layers.
+      if (presentation) { illustration.append(scene, actor); room.prepend(illustration, surface); }
+      else room.prepend(scene, surface, actor);
       room.append(nav, dialog, picker);
       room.querySelector('.room-caption')?.append(identity);
       room.dataset.spatialDesk = 'ready';
@@ -348,7 +378,15 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
       prepareInterior(next);
     }
   };
-  const observer = new win.MutationObserver(() => { sync(); syncState(); });
+  const observer = new win.MutationObserver(() => {
+    try { sync(); syncState(); }
+    catch (error) {
+      // A room normally opens after installation. Late presentation failures
+      // need the same exact rollback as initial failures, not a half-moved desk.
+      api.destroy();
+      win.console?.warn('Reader presentation unavailable; original controls restored.', error);
+    }
+  });
   observer.observe(room, {attributes: true, attributeFilter: ['data-account', 'hidden']});
   observer.observe(doc.body, {attributes: true, attributeFilter: ['class']});
   if (article) observer.observe(article, {attributes: true, attributeFilter: ['hidden']});

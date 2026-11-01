@@ -39,8 +39,8 @@ const server=http.createServer((req,res)=>{
   const browser=await chromium.launch({executablePath:process.env.CC_TEST_CHROME||['/usr/bin/google-chrome','/usr/bin/chromium','C:/Program Files/Google/Chrome/Application/chrome.exe'].find(p=>fs.existsSync(p)),headless:true});
   const results=[];
   try{
-    for(const width of [390,800,1440]){
-      const context=await browser.newContext({viewport:{width,height:900},permissions:['clipboard-read','clipboard-write'],serviceWorkers:'block',reducedMotion:'reduce'});
+    for(const [width,height] of [[320,640],[390,900],[800,900],[1440,900]]){
+      const context=await browser.newContext({viewport:{width,height},permissions:['clipboard-read','clipboard-write'],serviceWorkers:'block',reducedMotion:'reduce'});
       const page=await context.newPage(),errors=[],blocked=[];page.on('pageerror',error=>errors.push(error.message));
       await context.route('**/*',route=>{
         const request=route.request();
@@ -52,13 +52,44 @@ const server=http.createServer((req,res)=>{
       const lounge=page.frameLocator('#ccCastleFrame');
       assert.equal(new URL(await page.locator('#ccCastleFrame').getAttribute('src'),page.url()).pathname,'/command-center-98/lounge/index.html');
       await lounge.locator('.account-board[data-state=ready]').waitFor();
-      await lounge.locator('.castle-room-hotspot').first().waitFor();
-      assert.equal(await lounge.locator('.castle-room-hotspot').count(),8);
-      assert.equal(await lounge.locator('.castle-room-hotspot:disabled').count(),3);
-      assert.match(await lounge.locator('.castle-room-hotspot[data-room=insurance]').textContent(),/保存原稿 1本/);
-      await lounge.locator('.castle-quick-open[data-room=insurance]').click();
+      await lounge.locator('.storybook[data-ready=true]').waitFor();
+      assert.equal(await lounge.locator('[data-story-destination]').count(),8);
+      assert.equal(await lounge.locator('[data-story-destination]:disabled').count(),3);
+      assert.equal(await lounge.locator('[data-story-destination]:not(:disabled)').count(),5);
+      assert.equal(await lounge.locator('[data-story-destination]:visible').count(),5);
+      const preparing=lounge.locator('.story-preparing');await preparing.locator('summary').click();
+      const pending=await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(node=>({name:node.getAttribute('aria-label'),disabled:node.disabled,height:node.getBoundingClientRect().height})));assert.deepEqual(pending.map(node=>node.name),['追加アカウント5、未設定','追加アカウント6、未設定','予備、未設定']);assert.ok(pending.every(node=>node.disabled&&node.height>=44));
+      const selectedBefore=await lounge.locator('.storybook').getAttribute('data-story-room');await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.forEach(node=>node.click()));
+      assert.equal(await lounge.locator('.storybook').getAttribute('data-story-room'),selectedBefore);assert.equal(await lounge.locator('.account-board').evaluate(node=>node.hidden),false);assert.equal(await lounge.locator('#room').evaluate(node=>node.hidden),true);
+      await preparing.locator('summary').click();assert.equal(await lounge.locator('[data-story-destination]:visible').count(),5);
+      // Every chapter uses its own actual decorative source, not insurance art
+      // reused under another label. Selection alone never enters a route.
+      const handles={insurance:'@sucker0508',otoku:'@thats_a_steal0601',rakuten:'@bonya0914',lottery:'@chusen1101'};
+      for(const key of ['insurance','otoku','rakuten','lottery','sourcing']){
+        await lounge.locator('[data-story-chapter='+key+']').click();
+        const art=lounge.locator('.story-art-host .story-paper-art[data-story-room='+key+']');await art.waitFor();
+        const actor=art.locator('.story-actor-image');await actor.waitFor();await actor.evaluate(image=>image.decode());
+        assert.ok(await art.locator('svg').count());assert.equal(await actor.evaluate(image=>image.complete&&image.naturalWidth>0),true);
+        assert.match(await actor.getAttribute('src'),new RegExp('storybook-'+key+'-actor-v1\\.webp'));
+        if(handles[key])assert.ok((await lounge.locator('.story-account-identity').textContent()).includes(handles[key]));
+        assert.equal(await lounge.locator('.account-board').evaluate(n=>n.hidden),false);
+        assert.equal(await lounge.locator('#room').evaluate(n=>n.hidden),true);
+      }
+      // Chapter selection only changes the illustrated page. Its live memo is
+      // the new presentation of the same owner count, not a fabricated tile count.
+      await lounge.locator('[data-story-chapter=insurance]').click();
+      await lounge.locator('.story-read-state > summary').click();
+      await lounge.locator('.story-memo p').filter({hasText:/保存原稿 1本/}).waitFor();
+      assert.match(await lounge.locator('.story-account-identity').textContent(),/@sucker0508/);
+      assert.match(await lounge.locator('.story-memo p').textContent(),/保存原稿 1本/);
+      await lounge.locator('.story-read-state > summary').click();
+      await lounge.locator('[data-story-instant=insurance]').click();
       await lounge.locator('#room[data-account=insurance][data-spatial-desk=ready]').waitFor();
       await lounge.locator('#draft-body').waitFor();
+      await lounge.locator('#room[data-story-scene=ready]').waitFor();
+      await lounge.locator('.spatial-desk-actor').evaluate(image=>image.decode());
+      const reading=await lounge.locator('#room').evaluate(room=>({font:parseFloat(getComputedStyle(room.querySelector('#draft-body')).fontSize),bodyHeight:room.querySelector('#desk-scroll').clientHeight,copyHeight:room.querySelector('#desk-copy').getBoundingClientRect().height,actorReady:room.querySelector('.spatial-desk-actor').naturalWidth>0,actorURL:room.querySelector('.spatial-desk-actor').src,illustrated:!!room.querySelector('.spatial-study-scene .story-paper-art'),overflow:document.documentElement.scrollWidth>innerWidth+1}));
+      assert.ok(reading.font>=16);assert.ok(reading.bodyHeight>=180);assert.ok(reading.copyHeight>=44);assert.equal(reading.actorReady,true);assert.match(reading.actorURL,/storybook-insurance-actor/);assert.equal(reading.illustrated,true);assert.equal(reading.overflow,false);
       assert.equal(await lounge.locator('#draft-body').textContent(),insuranceBody);
       assert.equal(await lounge.locator('#room-title').textContent(),'保険');
       await lounge.locator('.spatial-work > summary').click();
@@ -110,11 +141,16 @@ const server=http.createServer((req,res)=>{
       await page.reload();await page.waitForFunction(()=>window.CCCastle?.unified&&!document.querySelector('#ccCastleFrame').hidden);
       await lounge.locator('.account-board[data-state=ready]').waitFor();
       assert.equal(await page.locator('#commandHome').isVisible(),false);
-      assert.match(await lounge.locator('.castle-room-hotspot[data-room=insurance]').textContent(),/保存原稿 1本/);
+      await lounge.locator('.storybook[data-ready=true]').waitFor();
+      await lounge.locator('[data-story-chapter=insurance]').click();
+      await lounge.locator('.story-read-state > summary').click();
+      await lounge.locator('.story-memo p').filter({hasText:/保存原稿 1本/}).waitFor();
+      assert.match(await lounge.locator('.story-memo p').textContent(),/保存原稿 1本/);
+      await lounge.locator('.story-read-state > summary').click();
       assert.deepEqual(errors,[]);assert.deepEqual(blocked,[]);
       assert.equal(await page.evaluate(()=>__rpgQA.writes.length),0);
       await page.screenshot({path:path.join(out,width+'.png')});
-      results.push({width,currentHost:'lounge/index.html',insuranceFixture:true,classicRetired:true,managementPreserved:true,oneReadingDesk:true,keyboardRoutes:true,externalReturn:true,reload:true,sourceUnchanged:true,errors,writes:0,syntheticInitializations:audit.initializations});
+      results.push({width,height,currentHost:'lounge/index.html',presentation:'storybook',insuranceFixture:true,fiveChapterIdentities:true,classicRetired:true,managementPreserved:true,oneReadingDesk:true,keyboardRoutes:true,externalReturn:true,reload:true,sourceUnchanged:true,errors,writes:0,syntheticInitializations:audit.initializations});
       await context.close();
     }
     fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(results,null,2));console.log(JSON.stringify(results,null,2));

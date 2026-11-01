@@ -1,0 +1,275 @@
+/* The manuscript is a real, upright notebook leaf. The surrounding illustration
+   can change; selection, controls, saved text and dialog owners do not. */
+body.storybook-atelier { --storybook-reader-ready: 1; color-scheme: light; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] {
+  --sb-book-edge: 24px;
+  --sb-book-split: 44%;
+  --sb-book-top: 76px;
+  --sb-leaf-ground: var(--sb-lime,#AAF618);
+  --sb-reader-inset: var(--sb-book-top) var(--sb-book-edge) 26px var(--sb-book-split);
+  --spatial-paper: var(--sb-paper,#F7F8F2);
+  --spatial-ink: var(--sb-ink,#173A35);
+  --spatial-title: var(--sb-ink,#173A35);
+  --spatial-muted: #365B54;
+  --spatial-accent: var(--sb-accent,var(--sb-coral,#F15F50));
+  --spatial-rail: var(--sb-page,#ECE1E9);
+  --living-cloth: var(--sb-accent,var(--sb-coral,#F15F50));
+  --living-cloth-light: var(--sb-pink,#F4A7CB);
+  --living-metal: var(--sb-sun,#F5CF5D);
+  --living-metal-light: var(--sb-paper,#F7F8F2);
+  overflow: clip; background: var(--sb-page,#ECE1E9); color: var(--sb-ink,#173A35);
+  font-family: system-ui,-apple-system,'Noto Sans JP',sans-serif;
+}
+/* One physical spread, not a portrait beside a floating application card. The
+   two leaves share an outline, page edges and a stitched paper hinge. */
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'][data-account='otoku'] { --sb-leaf-ground: var(--sb-mint,#63D9A5); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'][data-account='rakuten'] { --sb-leaf-ground: var(--sb-pink,#F4A7CB); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'][data-account='lottery'] { --sb-leaf-ground: var(--sb-lilac,#DFA4E1); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready']::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  inset: var(--sb-book-top) var(--sb-book-edge) 24px;
+  border: 1.5px solid var(--sb-ink,#173A35); border-radius: 9px 14px 8px 8px;
+  background: linear-gradient(90deg,var(--sb-leaf-ground) 0 var(--sb-book-split),var(--sb-paper,#F7F8F2) var(--sb-book-split) 100%);
+  box-shadow: 0 4px 0 var(--sb-paper,#F7F8F2),0 5px 0 1px var(--sb-ink,#173A35),0 10px 0 var(--sb-accent,var(--sb-coral,#F15F50));
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready']::after {
+  content: ''; position: absolute; z-index: 3; pointer-events: none;
+  left: calc(var(--sb-book-split) - 9px); width: 18px; top: calc(var(--sb-book-top) + 1px); bottom: 26px;
+  border-inline: 1px solid #173A3540;
+  background: repeating-linear-gradient(0deg,transparent 0 22px,#173A3580 22px 24px,transparent 24px 46px),var(--sb-paper,#F7F8F2);
+  box-shadow: -4px 0 0 #173A350d,4px 0 0 #173A350d;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-writing-surface { display: none; }
+/* The page preset's actor canvas and SVG props now have the SAME containing
+   block. Transparent source margins cannot independently shrink the person. */
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-illustration-stage {
+  position: absolute; z-index: 0; pointer-events: none;
+  left: calc((var(--sb-book-edge) + var(--sb-book-split)) / 2); bottom: 44px;
+  width: min(calc(var(--sb-book-split) - var(--sb-book-edge) - 24px),calc((100dvh - 192px) / 1.05));
+  aspect-ratio: 1 / 1.05; transform: translateX(-50%); isolation: isolate;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-illustration-stage .spatial-study-scene {
+  inset: 0; z-index: 0; background-color: transparent!important; background-image: none!important;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-illustration-stage .spatial-study-scene::after { display: none; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-illustration-stage .spatial-study-scene>.story-paper-art {
+  position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; aspect-ratio: 1 / 1.05; opacity: 1;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-desk-actor {
+  left: var(--story-actor-x,-40%); top: var(--story-actor-y,1%); bottom: auto; width: var(--story-actor-w,140%); height: var(--story-actor-h,97%); z-index: 1;
+  object-fit: contain; object-position: center; filter: none;
+  -webkit-mask-image: none; mask-image: none;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .back-button,
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.spatial-desk-nav button,.spatial-work>summary,.spatial-room-name,.living-toggle) {
+  min-height: 44px; border: 1.5px solid var(--sb-ink,#173A35); border-radius: 4px;
+  color: var(--sb-ink,#173A35); background: var(--sb-paper,#F7F8F2);
+  box-shadow: none; text-shadow: none; white-space: nowrap; overflow-wrap: normal;
+  font: 700 14px/1.45 system-ui,-apple-system,'Noto Sans JP',sans-serif;
+  letter-spacing: 0; padding: 9px 13px;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .back-button { top: 12px; left: var(--sb-book-edge); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-desk-nav { top: 12px; right: var(--sb-book-edge); gap: 8px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-open { background: var(--sb-lime,#AAF618); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work>summary { background: var(--sb-mint,#63D9A5); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .room-caption {
+  left: calc(var(--sb-book-edge) + 16px); top: 94px; right: auto; width: calc(var(--sb-book-split) - var(--sb-book-edge) - 42px); max-width: none;
+  display: grid; grid-template-columns: minmax(0,1fr) 76px; align-items: start; gap: 8px;
+  text-shadow: none; padding: 0; background: none;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-room-name {
+  min-width: 0; max-width: 100%; text-align: left; overflow: hidden; text-overflow: ellipsis; background: var(--sb-paper,#F7F8F2); border-left: 7px solid var(--sb-accent,var(--sb-coral,#F15F50));
+  color: var(--sb-ink,#173A35); font-size: 18px;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-toggle { width: 76px; min-width: 76px; margin: 0; padding-inline: 12px; background: var(--sb-paper,#F7F8F2); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-toggle[aria-expanded='true'] { background: var(--sb-sun,#F5CF5D); }
+
+/* The actual manuscript is the right leaf. Its text and controls stay upright,
+   with no perspective transform, cloned content, or independent card shadow. */
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reading-desk {
+  inset: var(--sb-reader-inset); border: 0; border-radius: 0 12px 6px 0;
+  overflow: hidden; background: var(--sb-paper,#F7F8F2); box-shadow: none;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reading-desk::before {
+  display: block; content: ''; position: absolute; z-index: 3;
+  left: 28px; top: 0; bottom: 0; width: 1px; border: 0;
+  background: var(--sb-coral,#F15F50); opacity: .4; pointer-events: none;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .manuscript-reader { background: var(--sb-paper,#F7F8F2); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-scroll { padding: 24px 30px 30px 46px; scrollbar-color: var(--sb-teal,#106762) var(--sb-paper,#F7F8F2); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] #draft-title {
+  margin: 0 0 16px; color: var(--sb-ink,#173A35);
+  font: 750 clamp(22px,2vw,27px)/1.5 system-ui,-apple-system,'Noto Sans JP',sans-serif;
+  letter-spacing: .01em; overflow-wrap: anywhere;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] #draft-body { color: var(--sb-ink,#173A35); font-size: 16px; line-height: 1.9; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(#draft-links a,.draft-body a) { color: var(--sb-teal,#106762); text-underline-offset: 3px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions {
+  gap: 8px; padding: 11px 14px 11px 40px;
+  border-top: 1.5px solid var(--sb-ink,#173A35); background: var(--sb-sky,#6DBDDD);
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions button {
+  min-height: 44px; border: 1.5px solid var(--sb-ink,#173A35); border-radius: 4px;
+  background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35);
+  box-shadow: 1px 2px 0 var(--sb-ink,#173A35); font-size: 14px;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions #desk-copy { background: var(--sb-teal,#106762); color: var(--sb-paper,#F7F8F2); border-color: var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions #desk-pin { background: var(--sb-sun,#F5CF5D); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions #desk-done { background: var(--sb-lime,#AAF618); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] #desk-operation { padding: 8px 16px 8px 24px; color: var(--sb-ink,#173A35); background: var(--sb-paper,#F7F8F2); font-size: 13px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .desk-pending { background: var(--sb-sun,#F5CF5D)!important; color: var(--sb-ink,#173A35); border: 1.5px solid var(--sb-ink,#173A35)!important; font-size: 14px!important; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.desk-empty,.desk-count,#draft-meta,#draft-kind) { color: #365B54; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .desk-variants { padding-left: 26px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .desk-variants button { min-height: 44px; font-size: 14px; background: var(--sb-paper,#F7F8F2); border: 1px solid var(--sb-ink,#173A35); color: var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .desk-variants [aria-pressed='true'] { background: var(--sb-sun,#F5CF5D); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'].desk-focused { --sb-book-split: 18%; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'].desk-focused .reading-desk { left: var(--sb-book-split); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'].desk-focused .spatial-illustration-stage { opacity: .18; }
+
+/* The secondary toolbox remains a disclosure, not a toolbar over the page. */
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work-body {
+  top: 54px; padding: 18px; border: 1.5px solid var(--sb-ink,#173A35); border-top: 8px solid var(--sb-lime,#AAF618);
+  border-radius: 3px 8px 3px 3px; background: var(--sb-paper,#F7F8F2);
+  box-shadow: 4px 5px 0 var(--sb-ink,#173A35); color: var(--sb-ink,#173A35);
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work-body :is(h3,strong,p,span,small,label,summary,button,input,select,textarea) { color: var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work-body :is(button,input,select,textarea) { border: 1px solid var(--sb-ink,#173A35); border-radius: 4px; background: var(--sb-paper,#F7F8F2); font-size: 14px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work-body a { color: var(--sb-teal,#106762); font-size: 14px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work-body :is(#draft-meta,#draft-kind,.desk-state) { font-size: 13px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work-body h3 { font: 750 18px/1.5 system-ui,sans-serif; }
+
+/* All top-layer pages use the same ink and paper, including owner-created
+   copy/history, favorites, posting, search, settings and room records. */
+body.storybook-atelier :is(dialog,#settings,.desk-dialog,.qol-dialog,.living-dialog) {
+  --reader-paper: var(--sb-paper,#F7F8F2); --reader-ink: var(--sb-ink,#173A35); --reader-muted: #365B54;
+  border: 1.5px solid var(--sb-ink,#173A35); border-radius: 5px 12px 5px 5px;
+  background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35);
+  box-shadow: 5px 6px 0 var(--sb-ink,#173A35);
+  font-family: system-ui,-apple-system,'Noto Sans JP',sans-serif;
+  max-width: calc(100vw - 24px); max-height: calc(100dvh - 28px);
+}
+body.storybook-atelier dialog::backdrop { background: #173A3575; backdrop-filter: none; }
+body.storybook-atelier :is(dialog,#settings) :is(h2,h3,h4) { color: var(--sb-ink,#173A35); font-family: system-ui,-apple-system,'Noto Sans JP',sans-serif; font-weight: 750; letter-spacing: .01em; }
+body.storybook-atelier :is(dialog,#settings) h2 { font-size: 22px; line-height: 1.5; }
+body.storybook-atelier :is(dialog,#settings) :is(p,label,legend,li) { color: var(--sb-ink,#173A35); font-size: 14px; line-height: 1.75; }
+body.storybook-atelier :is(dialog,#settings) :is(small,.qol-note,.settings-note,.living-dialog-note,.living-object-detail) { color: #365B54; font-size: 12px; opacity: 1; }
+body.storybook-atelier :is(dialog,#settings) :is(button,summary) { min-height: 44px; font: 650 14px/1.5 system-ui,sans-serif; }
+body.storybook-atelier :is(dialog,#settings) button { border: 1px solid var(--sb-ink,#173A35); border-radius: 4px; padding: 10px 13px; color: var(--sb-ink,#173A35); background: var(--sb-paper,#F7F8F2); }
+body.storybook-atelier :is(dialog,#settings) :is(input:not([type=radio]):not([type=checkbox]),textarea,select) { min-height: 44px; border: 1.5px solid var(--sb-ink,#173A35); border-radius: 4px; background: #fff; color: var(--sb-ink,#173A35); font: 16px/1.7 system-ui,sans-serif; }
+body.storybook-atelier :is(dialog,#settings) a { color: var(--sb-teal,#106762); text-underline-offset: 3px; }
+body.storybook-atelier :is(dialog,#settings) :is([aria-pressed='true'],[aria-current='page']) { color: var(--sb-ink,#173A35); background: var(--sb-sun,#F5CF5D); border-color: var(--sb-ink,#173A35); }
+body.storybook-atelier :is(.hall-preview,.later-preview,.posting-step pre,.hall-related>div,.work-list li,#posting-readiness,.posting-readiness,.living-dialog-note) { color: var(--sb-ink,#173A35); background: var(--sb-page,#E0E6CC); font-size: 14px; line-height: 1.8; border-radius: 4px; }
+body.storybook-atelier :is(#hall-detail,#later-detail) :is(small,strong,span),
+body.storybook-atelier :is(#hall-results,#later-list,.living-records) :is(small,span) { color: #365B54; font-size: 13px; opacity: 1; }
+body.storybook-atelier :is(#hall-results,#later-list,.living-records) strong { color: var(--sb-ink,#173A35); font-size: 16px; }
+body.storybook-atelier :is(.qol-actions button:first-child,#posting-copy-all) { background: var(--sb-teal,#106762); color: var(--sb-paper,#F7F8F2); }
+body.storybook-atelier :is(.dialog-heading,.living-dialog-heading) { background: var(--sb-sun,#F5CF5D); color: var(--sb-ink,#173A35); border-color: var(--sb-ink,#173A35); }
+body.storybook-atelier #settings { background-image: none; }
+body.storybook-atelier #settings :is(fieldset,.segmented label,.setting-line,.service-links) { border-color: #173A3545; background: transparent; }
+body.storybook-atelier #settings .segmented label:has(input:checked) { background: var(--sb-mint,#63D9A5); color: var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #settings .segmented label:has(input:checked) small,
+body.storybook-atelier #settings .setting-line small { color: #365B54; font-size: 12px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.spatial-shelf-dialog,.spatial-room-dialog) { border: 1.5px solid var(--sb-ink,#173A35); border-radius: 4px 12px 4px 4px; background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35); box-shadow: 5px 6px 0 var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.spatial-shelf-dialog,.spatial-room-dialog)::backdrop { background: #173A3575; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-heading { border-color: var(--sb-ink,#173A35); border-top: 7px solid var(--sb-accent,var(--sb-coral,#F15F50)); background: var(--sb-lime,#AAF618); color: var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-heading h2 { font: 750 21px/1.5 system-ui,sans-serif; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.spatial-shelf-dialog,.spatial-room-dialog) button { min-height: 44px; background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35); border: 1px solid var(--sb-ink,#173A35); font-size: 14px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-dialog .manuscript-shelf { background: var(--sb-paper,#F7F8F2); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-dialog .manuscript-card { border-left: 6px solid var(--sb-accent,var(--sb-coral,#F15F50)); border-radius: 2px 8px 2px 2px; box-shadow: 2px 3px 0 #173A3530; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-dialog :is(.manuscript-card small,.manuscript-card span,.desk-count) { color: #365B54; font-size: 13px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.spatial-shelf-dialog,.spatial-room-dialog) [aria-pressed='true'],
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-quick-destinations button[aria-current='page'] { background: var(--sb-sun,#F5CF5D); color: var(--sb-ink,#173A35); border: 2px solid var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-account-identity { border-color: #173A3540; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-account-identity h3 { font: 750 22px/1.5 system-ui,sans-serif; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.spatial-account-identity p,.spatial-quick-destinations button span) { color: #365B54; }
+
+/* Interactive room objects become crisp paper constructions, not miniature
+   stained-wood props. The existing scope labels/counts remain real live text. */
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'][data-living-view='tools'] .living-workbench {
+  inset: var(--sb-reader-inset); padding: 20px 20px 20px 34px; border: 0; border-radius: 0 12px 6px 0;
+  background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35);
+  box-shadow: none; scrollbar-color: var(--sb-teal,#106762) var(--sb-paper,#F7F8F2);
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing { background: var(--sb-page,#ECE1E9); border: 1px solid var(--sb-ink,#173A35); border-left: 5px solid var(--sb-accent,var(--sb-coral,#F15F50)); box-shadow: 2px 3px 0 #173A3530; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing :is(h3,small,p) { color: var(--sb-ink,#173A35); font-family: system-ui,sans-serif; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.living-reader-return,.living-bench-footer button,.living-object strong) { border: 1px solid var(--sb-ink,#173A35); border-radius: 4px; color: var(--sb-ink,#173A35); background: var(--sb-sun,#F5CF5D); box-shadow: 1px 2px 0 #173A3540; font-size: 14px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.living-object-detail,.living-bench-footer p) { color: #365B54; font-size: 13px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-bench-footer { border-color: #173A3540; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-object-art { filter: drop-shadow(3px 4px 0 #173A3530); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-art-back { display: none; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='shelf'] .living-object-art { border: 3px solid var(--sb-ink,#173A35); border-radius: 6px 6px 1px 1px; background: var(--sb-sky,#6DBDDD); box-shadow: 4px 4px 0 var(--sb-cobalt,#4D70E3); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='shelf'] .living-art-front { background: repeating-linear-gradient(90deg,var(--sb-coral,#F15F50) 0 18%,var(--sb-ink,#173A35) 18% 19%,var(--sb-sun,#F5CF5D) 19% 37%,var(--sb-ink,#173A35) 37% 38%,var(--sb-lilac,#DFA4E1) 38% 62%,var(--sb-ink,#173A35) 62% 63%,var(--sb-jade,#17B982) 63% 82%,var(--sb-ink,#173A35) 82% 83%,var(--sb-pink,#F4A7CB) 83%); box-shadow: none; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='shelf'] .living-art-detail { border: 1px solid var(--sb-ink,#173A35); background: var(--sb-blue,#70A8EC); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='notice'] .living-object-art { border: 2px solid var(--sb-ink,#173A35); background: var(--sb-coral,#F15F50); box-shadow: 4px 4px 0 var(--sb-pink,#F4A7CB); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='notice'] .living-art-front { border-color: var(--sb-ink,#173A35); background: repeating-linear-gradient(0deg,var(--sb-paper,#F7F8F2) 0 12px,#173A3530 12px 13px); box-shadow: none; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='notice'] .living-art-detail { background: var(--sb-sun,#F5CF5D); border: 1px solid var(--sb-ink,#173A35); box-shadow: none; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='desk'] .living-object-art { border-color: var(--sb-ink,#173A35); background: repeating-linear-gradient(0deg,var(--sb-paper,#F7F8F2) 0 13px,#173A3520 13px 14px); box-shadow: 3px 3px 0 var(--sb-sky,#6DBDDD),4px 4px 0 var(--sb-ink,#173A35),7px 7px 0 var(--sb-paper,#F7F8F2); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='desk'] .living-art-front { background: var(--sb-coral,#F15F50); border-color: var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='desk'] .living-art-detail { display: none; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='chest'] .living-object-art { border: 2px solid var(--sb-ink,#173A35); border-radius: 8px; background: var(--sb-lilac,#DFA4E1); box-shadow: 4px 4px 0 var(--sb-cobalt,#4D70E3); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='chest'] .living-art-front { background: var(--sb-pink,#F4A7CB); border-color: var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='chest'] .living-art-detail { background: var(--sb-sun,#F5CF5D); border-color: var(--sb-ink,#173A35); box-shadow: none; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-object:disabled strong { color: #365B54; background: var(--sb-page,#ECE1E9); }
+body.storybook-atelier :is(button,a,input,textarea,select,summary,#desk-scroll):focus-visible { outline: 3px solid var(--sb-teal,#106762); outline-offset: 3px; box-shadow: 0 0 0 6px var(--sb-paper,#F7F8F2); }
+body.storybook-atelier [hidden] { display: none!important; }
+
+@media (max-width:1000px) and (min-width:601px) {
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] { --sb-book-edge: 16px; --sb-book-split: 38%; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .room-caption { left: 28px; width: calc(var(--sb-book-split) - 54px); grid-template-columns: minmax(0,1fr) 68px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-room-name { font-size: 16px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-toggle { width: 68px; min-width: 68px; padding-inline: 10px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-scroll { padding: 20px 20px 26px 36px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions { padding: 10px 10px 10px 28px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reading-desk::before { left: 20px; }
+}
+@media (max-width:600px) {
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] { --sb-book-top: 112px; --sb-book-edge: 8px; --sb-book-split: 15px; --sb-reader-inset: 112px 8px max(14px,env(safe-area-inset-bottom)) 16px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready']::before { bottom: max(14px,env(safe-area-inset-bottom)); background: var(--sb-paper,#F7F8F2); box-shadow: 0 4px 0 var(--sb-accent,var(--sb-coral,#F15F50)); }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready']::after { left: 8px; width: 8px; bottom: max(14px,env(safe-area-inset-bottom)); border-inline: 0; background: var(--sb-accent,var(--sb-coral,#F15F50)); box-shadow: none; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .back-button { top: max(8px,env(safe-area-inset-top)); left: 8px; padding: 9px 8px; font-size: 13px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-desk-nav { top: max(8px,env(safe-area-inset-top)); right: 8px; gap: 6px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.spatial-desk-nav>button,.spatial-work>summary) { padding: 9px 8px; min-width: 44px; font-size: 13px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work>summary { gap: 3px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .room-caption { top: 60px; left: 8px; right: 8px; width: auto; max-width: none; display: grid; grid-template-columns: minmax(0,1fr) 76px; gap: 8px; align-items: start; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-room-name { min-width: 0; max-width: 100%; width: 100%; font-size: 14px; padding: 10px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-toggle { width: 76px; min-width: 76px; padding: 10px 12px; font-size: 14px; white-space: nowrap; }
+  /* A readable working page wins over an illegible decorative cameo. Character
+     identity remains on the chapter/home and object pages, not wedged in a gap. */
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-illustration-stage { display: none; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reading-desk,
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'].desk-focused .reading-desk { inset: var(--sb-reader-inset); border: 0; border-radius: 0 10px 4px 0; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reading-desk::before { left: 10px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-scroll { padding: 16px 14px 22px 22px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] #draft-title { font-size: 20px; line-height: 1.5; margin-bottom: 12px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] #draft-body { font-size: 16px; line-height: 1.85; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions { gap: 6px; padding: 8px 8px 8px 16px; grid-template-columns: minmax(0,1fr) 44px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions button { padding: 8px; font-size: 14px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions #desk-done { grid-column: 1 / -1; font-size: 14px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] #desk-operation { padding: 7px 12px 7px 20px; font-size: 12px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .desk-variants { padding: 6px 10px 0 18px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work-body { top: 52px; right: 0; width: calc(100vw - 22px); padding: 14px; max-height: calc(100dvh - 82px); }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'][data-living-view='tools'] .living-workbench { inset: var(--sb-reader-inset); padding: 14px 10px 14px 18px; border: 0; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing { padding: 12px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-objects { gap: 16px 8px; }
+  body.storybook-atelier :is(dialog,#settings) { max-width: calc(100vw - 20px); }
+  body.storybook-atelier :is(#hall-results,#later-list) { max-height: 160px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  body.storybook-atelier :is(.spatial-desk-actor,.spatial-study-scene,.reading-desk,.living-object,.living-object-art) { animation: none!important; transition: none!important; }
+}
+
+/* Retained legacy rules use !important for selected manuscripts and pending
+   notices. Override those specific material declarations, not their behavior. */
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-dialog .manuscript-card { background: var(--sb-paper,#F7F8F2)!important; border-color: var(--sb-ink,#173A35)!important; border-left: 6px solid var(--sb-accent,var(--sb-coral,#F15F50))!important; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-dialog .manuscript-card[aria-pressed='true'] { background: var(--sb-lime,#AAF618)!important; border-color: var(--sb-ink,#173A35)!important; border-left-color: var(--sb-ink,#173A35)!important; box-shadow: 2px 3px 0 var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions #desk-copy:hover { background: var(--sb-teal,#106762)!important; }
+/* Mounting this page changes the old owner's palette in one paint. Do not
+   freeze an inherited 180ms theme-color transition into its travel snapshot.
+   Explicit press/lift feedback remains available without delaying the route. */
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions button { transition-property: transform; }
+
+body.storybook-atelier.spatial-atelier #settings :is(.audio-panel,.audio-settings>summary,.system-action) { background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35); border-color: var(--sb-ink,#173A35); box-shadow: none; backdrop-filter: none; }
+body.storybook-atelier.spatial-atelier #settings :is(.audio-panel p,.music-credit p,.audio-panel output) { font-size: 13px; color: #365B54; }
+body.storybook-atelier.spatial-atelier #settings input { accent-color: var(--sb-teal,#106762); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reading-desk :is(textarea,input,select) { min-height: 44px; background: #fff; color: var(--sb-ink,#173A35); border: 1px solid var(--sb-ink,#173A35); border-radius: 4px; font: 16px/1.75 system-ui,sans-serif; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.cc-post-learning button,#desk-prior button) { min-height: 44px; padding: 10px 12px; background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35); border: 1px solid var(--sb-ink,#173A35); font-size: 14px; }

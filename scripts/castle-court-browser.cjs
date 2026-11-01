@@ -1,5 +1,5 @@
 /* Owned synthetic CI only. No production credentials, posts, or remote traffic.
- * Real app-v130 -> castle-parent -> default lounge index -> explicit lazy entry.
+ * Real app-v130 -> default storybook -> visible Settings/archive -> explicit lazy court entry.
  * Only synthetic records are injected; the host/iframe route is not substituted.
  * Software GL verifies rendering and lifecycle, NOT a physical phone FPS claim.
  */
@@ -7,6 +7,7 @@
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium}=require('playwright-core');
 const {PNG}=require('pngjs');
+const {openStorybookArchive}=require('./storybook-archive-entry.cjs');
 const root=path.resolve(__dirname,'..'),mode=process.env.COURT_MODE||'all';
 const widths=[[390,900],[320,640],[800,648],[1440,900]],nativeWidth=Number(process.env.COURT_WIDTH),nativeHeight=Number(process.env.COURT_HEIGHT);
 assert.ok(['all','baseline','native'].includes(mode),'explicit supported court fixture mode');
@@ -89,17 +90,15 @@ async function openHost(browser,origin,{width=390,height=900,label,fault=null,sh
  });
  const ctx={context,page,result,frame:null,f:null,releaseModel,modelRequest,releaseNativeSnapshot};
  try{
-  await page.goto(origin+'/command-center-98/app-v130.html');
-  await page.waitForFunction(()=>window.CCCastle?.unified&&!document.getElementById('ccCastleFrame').hidden);
-  ctx.frame=page.frames().find(frame=>new URL(frame.url()).pathname.endsWith('/lounge/index.html'));
-  assert.ok(ctx.frame,'real unmodified host loads its default lounge index');ctx.f=page.frameLocator('#ccCastleFrame');
+  const archive=await openStorybookArchive(page,origin,{check:(name,pass,detail)=>check(result,name,pass,detail)});
+  ctx.frame=archive.frame;ctx.f=archive.f;
   await ctx.f.locator('.account-board').waitFor({state:'attached'});
   await ctx.frame.evaluate(async()=>{await document.fonts.ready;const script=document.querySelector('script[src^="app.js"]');if(script)window.__courtLiving=(await import(script.src)).getLivingDesk();});
   await ctx.frame.waitForFunction(()=>window.__courtLiving?.snapshot().complete===true);
   await ctx.f.locator('[data-arrival-entry]').waitFor();await ctx.f.locator('.spatial-castle').waitFor({state:'visible'});
-  check(result,'default real host has no prototype route or eagerly loaded graphics',!new URL(ctx.frame.url()).searchParams.has('experience')&&result.heavyRequests.length===0&&await ctx.frame.evaluate(()=>!window.__arrivalCourt),[...result.heavyRequests]);
+  check(result,'explicit archive has no prototype route or eagerly loaded graphics',!new URL(ctx.frame.url()).searchParams.has('experience')&&result.heavyRequests.length===0&&await ctx.frame.evaluate(()=>!window.__arrivalCourt),[...result.heavyRequests]);
   const entry=await ctx.f.locator('[data-arrival-entry]').evaluate(node=>{const r=node.getBoundingClientRect();return {width:r.width,height:r.height,left:r.left,right:r.right,bottom:r.bottom,viewport:[innerWidth,innerHeight],overflow:document.documentElement.scrollWidth>innerWidth};});
-  check(result,'default castle exposes a bounded 44px optional 3D entry',entry.width>=44&&entry.height>=44&&entry.left>=-.5&&entry.right<=entry.viewport[0]+.5&&entry.bottom<=entry.viewport[1]+.5&&!entry.overflow,entry);
+  check(result,'explicit archived castle exposes a bounded 44px optional 3D entry',entry.width>=44&&entry.height>=44&&entry.left>=-.5&&entry.right<=entry.viewport[0]+.5&&entry.bottom<=entry.viewport[1]+.5&&!entry.overflow,entry);
   await capture(ctx,'default-castle');
   if(autoActivate)await ctx.f.locator('[data-arrival-entry]').click();
   return ctx;

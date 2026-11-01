@@ -1,0 +1,177 @@
+/* The existing native ledger is the notebook's working chapter. Its records,
+   forms, table scrollports and original actions are not replaced or moved. */
+body.storybook-host { --storybook-workspace-ready: 1; }
+body.storybook-host.lounge-workspace {
+  --rpg-bg: var(--sb-page,#E0E6CC);
+  --rpg-panel: var(--sb-paper,#F7F8F2);
+  --rpg-raised: #E0E6CC;
+  --rpg-sunken: #EDF3E9;
+  --rpg-line: var(--sb-ink,#173A35);
+  --rpg-line-soft: #9FAFA1;
+  --rpg-text: var(--sb-ink,#173A35);
+  --rpg-muted: #365B54;
+  --rpg-gold: var(--sb-teal,#106762);
+  --rpg-link: var(--sb-teal,#106762);
+  --rpg-good: #106348;
+  --rpg-bad: #A42E30;
+  --rpg-warning: #754800;
+  color-scheme: light;
+  background-color: var(--sb-page,#E0E6CC)!important;
+  background-image: var(--sb-workspace-scene,none)!important;
+  background-position: center!important; background-size: cover!important;
+  background-attachment: fixed!important; color: var(--sb-ink,#173A35)!important;
+  font-family: system-ui,-apple-system,'Noto Sans JP',sans-serif!important;
+}
+body.storybook-host.lounge-workspace .desktop { padding: 0 28px 44px!important; }
+body.storybook-host.lounge-workspace #mainWindow { --rpg-detail-surface: var(--sb-paper,#F7F8F2); --rpg-detail-border: #9FAFA1; max-width: 1260px!important; min-width: 0; }
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader { min-height: 176px; padding: 18px 0 22px; text-shadow: none; }
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader::before { right: 20px; bottom: 0; width: 210px; height: 130px; background: var(--sb-workspace-actor,none) center bottom / contain no-repeat; filter: drop-shadow(3px 4px 0 #173A3526); }
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader nav { gap: 12px; padding: 0; border: 0; background: none; align-items: start; }
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader nav>div { gap: 8px; }
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader button {
+  min-width: 44px; min-height: 44px; padding: 10px 14px;
+  border: 1.5px solid var(--sb-ink,#173A35); border-radius: 4px;
+  background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35);
+  box-shadow: 2px 3px 0 var(--sb-ink,#173A35); font: 700 14px/1.5 system-ui,sans-serif;
+}
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader [data-lounge-search] { background: var(--sb-lime,#AAF618); }
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader [data-lounge-tools] { background: var(--sb-mint,#63D9A5); }
+body.storybook-host.lounge-workspace .lounge-workspace-caption {
+  display: inline-block; max-width: calc(100% - 230px); margin-top: 22px; padding: 10px 17px;
+  border: 1.5px solid var(--sb-ink,#173A35); border-left: 10px solid var(--sb-jade,#17B982);
+  border-radius: 2px 9px 2px 2px; background: var(--sb-paper,#F7F8F2);
+  box-shadow: 3px 4px 0 var(--sb-jade,#17B982); color: var(--sb-ink,#173A35);
+}
+/* This obsolete decorative English room name is not a business label. */
+body.storybook-host.lounge-workspace .lounge-workspace-caption p:first-child { display: none; }
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader h1 { margin: 0 0 3px; color: var(--sb-ink,#173A35)!important; font: 800 28px/1.4 system-ui,sans-serif!important; letter-spacing: .01em; }
+body.storybook-host.lounge-workspace .lounge-workspace-caption p:last-child { color: #365B54; font: 14px/1.6 system-ui,sans-serif; }
+body.storybook-host.lounge-workspace #mainWindow>.window-body {
+  position: relative; min-width: 0; padding: 24px 24px 28px 34px!important;
+  border: 1.5px solid var(--sb-ink,#173A35)!important; border-left: 12px solid var(--sb-jade,#17B982)!important;
+  border-radius: 5px 16px 5px 3px!important; background: var(--sb-paper,#F7F8F2)!important;
+  color: var(--sb-ink,#173A35)!important;
+  box-shadow: -1px 0 0 1px var(--sb-ink,#173A35),4px 5px 0 var(--sb-paper,#F7F8F2),5px 6px 0 1px var(--sb-ink,#173A35),9px 10px 0 var(--sb-jade,#17B982)!important;
+}
+body.storybook-host.lounge-workspace #mainWindow>.window-body::before { content: ''; position: absolute; top: 0; bottom: 0; left: 17px; width: 1px; background: var(--sb-coral,#F15F50); opacity: .45; pointer-events: none; }
+body.storybook-host.lounge-workspace #mainWindow :is(h1,h2,h3,h4,.section-title,.supplier-ledger-head b,.purchase-order-head b) { color: var(--sb-ink,#173A35)!important; font-family: system-ui,-apple-system,'Noto Sans JP',sans-serif!important; font-weight: 750!important; letter-spacing: .01em; line-height: 1.5; }
+body.storybook-host.lounge-workspace #mainWindow :is(h2,.section-title) { font-size: 22px; }
+body.storybook-host.lounge-workspace #mainWindow h3 { font-size: 18px; }
+body.storybook-host.lounge-workspace #mainWindow :is(p,.sourcing-help,.sourcing-intro,.reddit-intro,.x-intro,.purchase-ledger,.supplier-ledger) { font-size: 16px; line-height: 1.75; }
+body.storybook-host.lounge-workspace #mainWindow :is(.purchase-note,.sourcing-note,.ledger-note,.purchase-profit-period,.purchase-profit-method,.trade-basis-note,.empty,small,.sourcing-meta,.sourcing-card-meta,.purchase-order-head) { font-size: 13px!important; color: #365B54!important; line-height: 1.7; }
+body.storybook-host.lounge-workspace #rpgSourcingAux { gap: 8px!important; margin-bottom: 20px!important; }
+body.storybook-host.lounge-workspace #rpgSourcingAux .push-button {
+  min-height: 44px!important; padding: 10px 13px!important; border: 1.5px solid var(--sb-ink,#173A35)!important;
+  border-radius: 5px 5px 0 0!important; color: var(--sb-ink,#173A35)!important;
+  background: var(--sb-paper,#F7F8F2)!important; font: 650 14px/1.5 system-ui,sans-serif!important;
+}
+body.storybook-host.lounge-workspace #rpgSourcingAux .push-button[aria-current='page'] { border-bottom: 5px solid var(--sb-ink,#173A35)!important; background: var(--sb-sky,#6DBDDD)!important; color: var(--sb-ink,#173A35)!important; }
+body.storybook-host.lounge-workspace :is(button.push-button,.sourcing-tabs button) { min-height: 44px!important; padding: 10px 12px!important; border: 1px solid var(--sb-ink,#173A35)!important; border-radius: 4px!important; background: var(--sb-paper,#F7F8F2)!important; color: var(--sb-ink,#173A35)!important; font-size: 14px!important; line-height: 1.5!important; }
+body.storybook-host.lounge-workspace :is(button.selected,.sourcing-tabs button.selected,button[aria-pressed='true']) { background: var(--sb-sun,#F5CF5D)!important; border-color: var(--sb-ink,#173A35)!important; color: var(--sb-ink,#173A35)!important; }
+body.storybook-host.lounge-workspace :is(.sourcing-tab-count,.badge,.state-tag) { background: var(--sb-page,#E0E6CC)!important; color: var(--sb-ink,#173A35)!important; border-color: #9FAFA1!important; font-size: 12px; }
+body.storybook-host.lounge-workspace :is(#sourcingHub,#sourcingTabs,#sourcingBody,.sourcing-help,.sourcing-section,.sourcing-group,.supplier-ledger,.purchase-ledger) { color: var(--sb-ink,#173A35)!important; border-color: #9FAFA1!important; }
+body.storybook-host.lounge-workspace #mainWindow :is(.sourcing-card,.thread,.reddit-card,.x-card,.purchase-order,.supplier-ledger-head,.supplier-candidate-audit,.store-audit-card,.store-products,.sourcing-hold-section,.price-wait-box,.last-check-box,.result-record) { border: 1px solid #9FAFA1!important; border-radius: 4px 9px 4px 4px!important; background: #fff!important; color: var(--sb-ink,#173A35)!important; box-shadow: none!important; }
+body.storybook-host.lounge-workspace #mainWindow :is(.cc-item-summary,.thread-head,.sourcing-card-head,.x-card-head,.purchase-order-head,.supplier-candidate-audit-body,.store-audit-body) { background: var(--sb-paper,#F7F8F2)!important; color: var(--sb-ink,#173A35)!important; border-color: #9FAFA1!important; }
+body.storybook-host.lounge-workspace #mainWindow :is(table,thead,tbody,tr,td,th) { color: var(--sb-ink,#173A35)!important; border-color: #B3C2B6!important; }
+body.storybook-host.lounge-workspace #mainWindow table { background: #fff!important; font-size: 14px!important; line-height: 1.75!important; }
+body.storybook-host.lounge-workspace #mainWindow :is(table,.trade-table,.purchase-table,.supplier-table,.sourcing-meta) th { background: #E0E6CC!important; color: var(--sb-ink,#173A35)!important; font-weight: 750!important; }
+body.storybook-host.lounge-workspace #mainWindow :is(table,.trade-table,.purchase-table,.supplier-table,.sourcing-meta) td { background: #fff!important; color: var(--sb-ink,#173A35)!important; }
+body.storybook-host.lounge-workspace :is(.purchase-table-wrap,.supplier-table-wrap,.trade-table-wrap,.purchase-drill-table-wrap,.mercari-history-scroll,.ledger-sale-scroll,.cce-scroll) { max-width: 100%; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-color: var(--sb-teal,#106762) var(--sb-paper,#F7F8F2); }
+body.storybook-host.lounge-workspace #mainWindow :is(input:not([type=checkbox]):not([type=radio]),textarea,select) { min-height: 44px; border: 1px solid var(--sb-ink,#173A35)!important; border-radius: 4px!important; color: var(--sb-ink,#173A35)!important; background: #fff!important; font: 16px/1.6 system-ui,sans-serif; }
+body.storybook-host.lounge-workspace a { color: var(--sb-teal,#106762)!important; text-underline-offset: 3px; }
+body.storybook-host.lounge-workspace .purchase-profit-total { border: 1.5px solid var(--sb-ink,#173A35); border-radius: 4px; background: var(--sb-teal,#106762); color: var(--sb-paper,#F7F8F2); }
+body.storybook-host.lounge-workspace #mainWindow .purchase-profit-total :is(span,strong,small) { color: var(--sb-paper,#F7F8F2)!important; }
+body.storybook-host.lounge-workspace .purchase-profit-total.forecast { background: var(--sb-mint,#63D9A5); color: var(--sb-ink,#173A35); }
+body.storybook-host.lounge-workspace #mainWindow .purchase-profit-total.forecast :is(span,strong,small) { color: var(--sb-ink,#173A35)!important; }
+body.storybook-host.lounge-workspace .purchase-profit-total strong { font-variant-numeric: tabular-nums; }
+body.storybook-host.lounge-workspace #mainWindow .purchase-profit-total .negative { color: #FFE0DD!important; }
+body.storybook-host.lounge-workspace #mainWindow .purchase-profit-total.forecast .negative { color: #8F2029!important; }
+body.storybook-host.lounge-workspace :is(.sourcing-meta .profit,.ledger-sale-money) { color: #106348!important; }
+body.storybook-host.lounge-workspace :is(button,a,input,textarea,select,summary,[tabindex]):focus-visible { outline: 3px solid var(--sb-teal,#106762)!important; outline-offset: 3px; box-shadow: 0 0 0 6px var(--sb-paper,#F7F8F2)!important; }
+
+/* Settings/help and retained native detail dialogs are notebook inserts. This
+   does not change their open/close state, focus owner, or field behavior. */
+body.storybook-host :is(dialog.rpg-workspace-dialog,dialog:not([class]),.purchase-drill-window) { --rpg-panel: var(--sb-paper,#F7F8F2); --rpg-text: var(--sb-ink,#173A35); --rpg-muted: #365B54; --rpg-line: #9FAFA1; background: var(--sb-paper,#F7F8F2)!important; color: var(--sb-ink,#173A35)!important; border: 1.5px solid var(--sb-ink,#173A35)!important; border-radius: 5px 12px 5px 5px!important; box-shadow: 5px 6px 0 var(--sb-ink,#173A35)!important; font-family: system-ui,sans-serif!important; }
+body.storybook-host .rpg-workspace-dialog::backdrop { background: #173A3575; }
+body.storybook-host .rpg-workspace-dialog :is(h2,h3,h4,p,label,summary,pre) { color: var(--sb-ink,#173A35)!important; font-family: system-ui,sans-serif!important; }
+body.storybook-host .rpg-workspace-dialog h2 { font-size: 24px; font-weight: 750; }
+body.storybook-host .rpg-workspace-dialog :is(p,label,summary,button.push-button) { font-size: 14px!important; line-height: 1.7; }
+body.storybook-host .rpg-workspace-dialog :is(input,button.push-button,summary) { min-height: 44px; }
+body.storybook-host .rpg-workspace-dialog :is(input,button.push-button,details) { border: 1px solid var(--sb-ink,#173A35)!important; background: var(--sb-paper,#F7F8F2)!important; color: var(--sb-ink,#173A35)!important; border-radius: 4px!important; }
+body.storybook-host .rpg-workspace-dialog input { font-size: 16px; }
+body.storybook-host .rpg-workspace-dialog :is(button,a,input,summary):focus-visible { outline: 3px solid var(--sb-teal,#106762)!important; outline-offset: 3px; }
+
+@media (max-width:700px) {
+  body.storybook-host.lounge-workspace .desktop { padding: 0 12px 30px!important; }
+  body.storybook-host.lounge-workspace #loungeWorkspaceHeader { padding: 10px 0 18px; min-height: 0; }
+  body.storybook-host.lounge-workspace #loungeWorkspaceHeader nav { display: flex; flex-direction: column; gap: 10px; }
+  body.storybook-host.lounge-workspace #loungeWorkspaceHeader nav>div { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); width: 100%; gap: 8px; }
+  body.storybook-host.lounge-workspace #loungeWorkspaceHeader button { font-size: 14px; padding: 8px 10px; min-height: 44px; }
+  body.storybook-host.lounge-workspace #loungeWorkspaceHeader::before { right: -4px; bottom: 3px; width: 86px; height: 95px; }
+  body.storybook-host.lounge-workspace .lounge-workspace-caption { margin-top: 18px; padding: 8px 10px; max-width: calc(100% - 82px); border-left-width: 7px; }
+  body.storybook-host.lounge-workspace #loungeWorkspaceHeader h1 { font-size: 23px!important; }
+  body.storybook-host.lounge-workspace .lounge-workspace-caption p:last-child { font-size: 13px; line-height: 1.6; }
+  body.storybook-host.lounge-workspace #mainWindow>.window-body { padding: 16px 11px 22px 20px!important; border-left-width: 7px!important; border-radius: 4px 10px 4px 2px!important; }
+  body.storybook-host.lounge-workspace #mainWindow>.window-body::before { left: 10px; }
+  body.storybook-host.lounge-workspace #rpgSourcingAux { display: grid!important; grid-template-columns: repeat(2,minmax(0,1fr)); overflow: visible!important; gap: 7px!important; }
+  body.storybook-host.lounge-workspace #rpgSourcingAux .push-button { grid-column: auto; min-width: 0; white-space: normal; padding: 8px!important; font-size: 14px!important; }
+  body.storybook-host.lounge-workspace #mainWindow table { font-size: 14px!important; }
+  body.storybook-host.lounge-workspace .purchase-profit-totals { grid-template-columns: minmax(0,1fr); }
+  body.storybook-host .rpg-workspace-dialog { max-width: calc(100vw - 22px); }
+}
+@media (prefers-reduced-motion:reduce) { body.storybook-host.lounge-workspace #loungeWorkspaceHeader::before { animation: none!important; transition: none!important; } }
+
+body.storybook-host .purchase-drill-window :is(.title-bar,.purchase-drill-titleline) { background: var(--sb-lime,#AAF618)!important; color: var(--sb-ink,#173A35)!important; font: 700 16px/1.5 system-ui,sans-serif; }
+body.storybook-host .purchase-drill-window .purchase-drill-body { background: var(--sb-paper,#F7F8F2)!important; color: var(--sb-ink,#173A35)!important; }
+body.storybook-host .purchase-drill-window button { min-width: 44px; min-height: 44px; color: var(--sb-ink,#173A35)!important; background: var(--sb-paper,#F7F8F2)!important; border: 1px solid var(--sb-ink,#173A35)!important; }
+/* The persistent request shortcut is a paper margin, not a dark app toolbar. */
+body.storybook-host #requestProgressShortcut{background:#F7F8F2!important;border-bottom:1px solid #173A3538!important;color:#173A35!important;box-shadow:none!important}
+body.storybook-host #requestProgressOpen{background:#DCECC8!important;color:#173A35!important;border:1px solid #173A35!important;border-radius:3px!important;box-shadow:none!important;font-family:system-ui,sans-serif!important}
+/* A fresh paper stage belongs to this native chapter, never to the ledger DOM. */
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader[data-story-art=ready]{min-height:280px;background:linear-gradient(90deg,#EE8B54 0 50%,#6DBDDD 50%);border:1.5px solid #173A35;border-radius:5px 5px 16px 16px;padding:16px 20px 24px;box-shadow:0 4px #F7F8F2,0 5px #173A3560}
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader::before{display:none}
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader nav{position:relative;z-index:3}
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader[data-story-art=ready] .lounge-workspace-caption{position:relative;z-index:2;max-width:55%;margin-top:28px;padding:12px;background:#F7F8F2;display:inline-block}
+body.storybook-host .story-workspace-art{position:absolute;right:4%;bottom:10px;width:210px;height:auto;aspect-ratio:1 / 1.05;pointer-events:none;overflow:hidden}
+body.storybook-host .story-workspace-art .story-paper-art{width:100%;height:100%;position:relative}
+/* On a phone the chapter has already introduced its character. Working pages
+   open onto work, not a second full-screen illustrated cover. */
+@media(max-width:600px){body.storybook-host.lounge-workspace #loungeWorkspaceHeader[data-story-art=ready]{padding:12px;display:flex;flex-direction:column;min-height:0}body.storybook-host.lounge-workspace #loungeWorkspaceHeader[data-story-art=ready] .lounge-workspace-caption{max-width:none;margin-top:12px;padding:8px 10px;align-self:flex-start}body.storybook-host .story-workspace-art{display:none}}
+@media(max-width:600px){
+  /* Keep the five real utilities, but let work follow a compact chapter head.
+     The subsidiary destinations are a keyboard/touch-scrollable tab strip,
+     not three extra rows before the saved sourcing records. */
+  body.storybook-host.lounge-workspace #loungeWorkspaceHeader nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;align-items:stretch}
+  body.storybook-host.lounge-workspace #loungeWorkspaceHeader nav>div{display:contents}
+  body.storybook-host.lounge-workspace #loungeWorkspaceHeader button{min-width:0;padding:7px 5px;font-size:13px;overflow-wrap:anywhere}
+  body.storybook-host.lounge-workspace #rpgSourcingAux{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;max-width:100%;gap:7px!important;margin-bottom:12px!important;padding:3px 3px 8px!important;scroll-padding-inline:3px;scrollbar-width:thin;overscroll-behavior-x:contain}
+  body.storybook-host.lounge-workspace #rpgSourcingAux .push-button{flex:0 0 auto!important;min-height:44px!important;min-width:44px;white-space:nowrap;max-width:none;padding:8px 12px!important}
+}
+@media(max-width:600px){
+  /* A working chapter's first screen belongs to its real ledger. Keep both
+     named business groups and all their actions, without stacking five tabs
+     into four rows before the existing record-derived purchase summary. */
+  body.storybook-host.lounge-workspace #loungeWorkspaceHeader[data-story-art=ready] .lounge-workspace-caption{margin-top:10px;padding:7px 10px}
+  body.storybook-host.lounge-workspace #loungeWorkspaceHeader[data-story-art=ready] .lounge-workspace-caption p:last-child{display:none}
+  body.storybook-host.lounge-workspace #loungeWorkspaceHeader h1{margin:0;font-size:22px!important}
+  body.storybook-host.lounge-workspace #sourcingTabs{display:block!important;padding-top:12px;min-width:0}
+  body.storybook-host.lounge-workspace #sourcingTabs .sourcing-tab-group{display:flex!important;flex-wrap:nowrap!important;min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;margin-bottom:8px;padding:19px 5px 7px;gap:5px;scrollbar-width:thin;scroll-padding-inline:5px;overscroll-behavior-x:contain}
+  body.storybook-host.lounge-workspace #sourcingTabs .sourcing-tab-group:last-child{margin-bottom:8px}
+  body.storybook-host.lounge-workspace #sourcingTabs .sourcing-tab-group-label{position:absolute;left:5px;top:1px;padding:0 3px;font-size:12px;line-height:1.5}
+  body.storybook-host.lounge-workspace #sourcingTabs .sourcing-tab-group .push-button{flex:0 0 auto;min-width:44px;min-height:44px!important;white-space:nowrap;padding:8px 10px!important}
+  /* Put the existing factual purchase count before the two profit estimates.
+     The owner, source values and disclosure/order controls remain unchanged. */
+  body.storybook-host.lounge-workspace #ledgerProfitSummary{display:flex;flex-direction:column}
+  body.storybook-host.lounge-workspace #ledgerProfitSummary .purchase-paid-line{order:-1;margin:8px 2px;font-size:14px}
+  body.storybook-host.lounge-workspace #ledgerProfitSummary .purchase-paid-line>span{font-size:13px;color:#365B54}
+
+}
+/* Period filters are real working tabs, not inherited dark chrome. */
+body.storybook-host.lounge-workspace #mainWindow .ledger-month-tab,
+body.storybook-host.lounge-workspace #mainWindow .ledger-month-tab:is(:hover,:focus-visible,:active){min-width:44px;min-height:44px;height:auto;padding:8px 10px;background:#F7F8F2!important;color:#173A35!important;border:1px solid #173A35!important;box-shadow:none!important;font:650 14px/1.5 system-ui,sans-serif;white-space:nowrap}
+body.storybook-host.lounge-workspace #mainWindow .ledger-month-tab.selected,
+body.storybook-host.lounge-workspace #mainWindow .ledger-month-tab.selected:is(:hover,:focus-visible,:active){background:#F5CF5D!important;color:#173A35!important;border-bottom:3px solid #173A35!important}
+/* Native business tabs keep the same legible paper/ink in every pointer and
+   keyboard state; old dark-theme hover rules must not recolor this chapter. */
+body.storybook-host.lounge-workspace #mainWindow :is(button.push-button,.sourcing-tabs button):is(:hover,:focus-visible,:active){background:#F7F8F2!important;color:#173A35!important;border-color:#173A35!important}
+body.storybook-host.lounge-workspace #mainWindow :is(button.selected,.sourcing-tabs button.selected,button[aria-pressed='true']):is(:hover,:focus-visible,:active){background:#F5CF5D!important;color:#173A35!important;border-color:#173A35!important}

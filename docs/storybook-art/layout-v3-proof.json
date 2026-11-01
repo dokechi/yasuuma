@@ -1,0 +1,1089 @@
+{
+  "passed": true,
+  "scope": "pure DOM/box/fault contract, not actual browser visual acceptance",
+  "rooms": 5,
+  "layouts": 3,
+  "actorBoundsChecks": 60,
+  "report": [
+    {
+      "key": "insurance",
+      "layout": "legacy",
+      "host": [
+        1200,
+        460
+      ],
+      "stage": [
+        613.3333333333333,
+        459.99999999999994
+      ],
+      "visibleActorBounds": [
+        243.976,
+        69.246,
+        610.538,
+        449.385
+      ]
+    },
+    {
+      "key": "insurance",
+      "layout": "legacy",
+      "host": [
+        712,
+        240
+      ],
+      "stage": [
+        320,
+        240
+      ],
+      "visibleActorBounds": [
+        127.292,
+        36.128,
+        318.542,
+        234.462
+      ]
+    },
+    {
+      "key": "insurance",
+      "layout": "legacy",
+      "host": [
+        342,
+        400
+      ],
+      "stage": [
+        342,
+        256.5
+      ],
+      "visibleActorBounds": [
+        136.043,
+        38.612,
+        340.441,
+        250.581
+      ]
+    },
+    {
+      "key": "insurance",
+      "layout": "legacy",
+      "host": [
+        290,
+        320
+      ],
+      "stage": [
+        290,
+        217.5
+      ],
+      "visibleActorBounds": [
+        115.358,
+        32.741,
+        288.678,
+        212.481
+      ]
+    },
+    {
+      "key": "insurance",
+      "layout": "spread",
+      "host": [
+        1200,
+        460
+      ],
+      "stage": [
+        920,
+        460
+      ],
+      "visibleActorBounds": [
+        456.694,
+        21.131,
+        852.581,
+        431.681
+      ]
+    },
+    {
+      "key": "insurance",
+      "layout": "spread",
+      "host": [
+        712,
+        240
+      ],
+      "stage": [
+        480,
+        240
+      ],
+      "visibleActorBounds": [
+        238.275,
+        11.025,
+        444.825,
+        225.225
+      ]
+    },
+    {
+      "key": "insurance",
+      "layout": "spread",
+      "host": [
+        342,
+        400
+      ],
+      "stage": [
+        342,
+        171
+      ],
+      "visibleActorBounds": [
+        169.771,
+        7.855,
+        316.938,
+        160.473
+      ]
+    },
+    {
+      "key": "insurance",
+      "layout": "spread",
+      "host": [
+        290,
+        320
+      ],
+      "stage": [
+        290,
+        145
+      ],
+      "visibleActorBounds": [
+        143.958,
+        6.661,
+        268.748,
+        136.073
+      ]
+    },
+    {
+      "key": "insurance",
+      "layout": "page",
+      "host": [
+        1200,
+        460
+      ],
+      "stage": [
+        438.0952380952381,
+        460
+      ],
+      "visibleActorBounds": [
+        68.738,
+        42.822,
+        435.3,
+        422.96
+      ]
+    },
+    {
+      "key": "insurance",
+      "layout": "page",
+      "host": [
+        712,
+        240
+      ],
+      "stage": [
+        228.57142857142856,
+        240
+      ],
+      "visibleActorBounds": [
+        35.863,
+        22.342,
+        227.113,
+        220.675
+      ]
+    },
+    {
+      "key": "insurance",
+      "layout": "page",
+      "host": [
+        342,
+        400
+      ],
+      "stage": [
+        342,
+        359.1
+      ],
+      "visibleActorBounds": [
+        53.66,
+        33.429,
+        339.818,
+        330.185
+      ]
+    },
+    {
+      "key": "insurance",
+      "layout": "page",
+      "host": [
+        290,
+        320
+      ],
+      "stage": [
+        290,
+        304.5
+      ],
+      "visibleActorBounds": [
+        45.501,
+        28.346,
+        288.15,
+        279.981
+      ]
+    },
+    {
+      "key": "otoku",
+      "layout": "legacy",
+      "host": [
+        1200,
+        460
+      ],
+      "stage": [
+        613.3333333333333,
+        459.99999999999994
+      ],
+      "visibleActorBounds": [
+        198.854,
+        53.673,
+        608.142,
+        458.569
+      ]
+    },
+    {
+      "key": "otoku",
+      "layout": "legacy",
+      "host": [
+        712,
+        240
+      ],
+      "stage": [
+        320,
+        240
+      ],
+      "visibleActorBounds": [
+        103.75,
+        28.003,
+        317.292,
+        239.253
+      ]
+    },
+    {
+      "key": "otoku",
+      "layout": "legacy",
+      "host": [
+        342,
+        400
+      ],
+      "stage": [
+        342,
+        256.5
+      ],
+      "visibleActorBounds": [
+        110.883,
+        29.929,
+        339.105,
+        255.702
+      ]
+    },
+    {
+      "key": "otoku",
+      "layout": "legacy",
+      "host": [
+        290,
+        320
+      ],
+      "stage": [
+        290,
+        217.5
+      ],
+      "visibleActorBounds": [
+        94.023,
+        25.378,
+        287.546,
+        216.823
+      ]
+    },
+    {
+      "key": "otoku",
+      "layout": "spread",
+      "host": [
+        1200,
+        460
+      ],
+      "stage": [
+        920,
+        460
+      ],
+      "visibleActorBounds": [
+        407.962,
+        4.313,
+        849.994,
+        441.6
+      ]
+    },
+    {
+      "key": "otoku",
+      "layout": "spread",
+      "host": [
+        712,
+        240
+      ],
+      "stage": [
+        480,
+        240
+      ],
+      "visibleActorBounds": [
+        212.85,
+        2.25,
+        443.475,
+        230.4
+      ]
+    },
+    {
+      "key": "otoku",
+      "layout": "spread",
+      "host": [
+        342,
+        400
+      ],
+      "stage": [
+        342,
+        171
+      ],
+      "visibleActorBounds": [
+        151.656,
+        1.603,
+        315.976,
+        164.16
+      ]
+    },
+    {
+      "key": "otoku",
+      "layout": "spread",
+      "host": [
+        290,
+        320
+      ],
+      "stage": [
+        290,
+        145
+      ],
+      "visibleActorBounds": [
+        128.597,
+        1.359,
+        267.933,
+        139.2
+      ]
+    },
+    {
+      "key": "otoku",
+      "layout": "page",
+      "host": [
+        1200,
+        460
+      ],
+      "stage": [
+        438.0952380952381,
+        460
+      ],
+      "visibleActorBounds": [
+        23.616,
+        27.249,
+        432.904,
+        432.144
+      ]
+    },
+    {
+      "key": "otoku",
+      "layout": "page",
+      "host": [
+        712,
+        240
+      ],
+      "stage": [
+        228.57142857142856,
+        240
+      ],
+      "visibleActorBounds": [
+        12.321,
+        14.217,
+        225.863,
+        225.467
+      ]
+    },
+    {
+      "key": "otoku",
+      "layout": "page",
+      "host": [
+        342,
+        400
+      ],
+      "stage": [
+        342,
+        359.1
+      ],
+      "visibleActorBounds": [
+        18.436,
+        21.272,
+        337.948,
+        337.354
+      ]
+    },
+    {
+      "key": "otoku",
+      "layout": "page",
+      "host": [
+        290,
+        320
+      ],
+      "stage": [
+        290,
+        304.5
+      ],
+      "visibleActorBounds": [
+        15.633,
+        18.037,
+        286.564,
+        286.061
+      ]
+    },
+    {
+      "key": "rakuten",
+      "layout": "legacy",
+      "host": [
+        1200,
+        460
+      ],
+      "stage": [
+        613.3333333333333,
+        459.99999999999994
+      ],
+      "visibleActorBounds": [
+        182.882,
+        58.864,
+        610.139,
+        453.777
+      ]
+    },
+    {
+      "key": "rakuten",
+      "layout": "legacy",
+      "host": [
+        712,
+        240
+      ],
+      "stage": [
+        320,
+        240
+      ],
+      "visibleActorBounds": [
+        95.417,
+        30.712,
+        318.333,
+        236.753
+      ]
+    },
+    {
+      "key": "rakuten",
+      "layout": "legacy",
+      "host": [
+        342,
+        400
+      ],
+      "stage": [
+        342,
+        256.5
+      ],
+      "visibleActorBounds": [
+        101.977,
+        32.823,
+        340.219,
+        253.03
+      ]
+    },
+    {
+      "key": "rakuten",
+      "layout": "legacy",
+      "host": [
+        290,
+        320
+      ],
+      "stage": [
+        290,
+        217.5
+      ],
+      "visibleActorBounds": [
+        86.471,
+        27.832,
+        288.49,
+        214.558
+      ]
+    },
+    {
+      "key": "rakuten",
+      "layout": "spread",
+      "host": [
+        1200,
+        460
+      ],
+      "stage": [
+        920,
+        460
+      ],
+      "visibleActorBounds": [
+        390.712,
+        9.919,
+        852.15,
+        436.425
+      ]
+    },
+    {
+      "key": "rakuten",
+      "layout": "spread",
+      "host": [
+        712,
+        240
+      ],
+      "stage": [
+        480,
+        240
+      ],
+      "visibleActorBounds": [
+        203.85,
+        5.175,
+        444.6,
+        227.7
+      ]
+    },
+    {
+      "key": "rakuten",
+      "layout": "spread",
+      "host": [
+        342,
+        400
+      ],
+      "stage": [
+        342,
+        171
+      ],
+      "visibleActorBounds": [
+        145.243,
+        3.687,
+        316.777,
+        162.236
+      ]
+    },
+    {
+      "key": "rakuten",
+      "layout": "spread",
+      "host": [
+        290,
+        320
+      ],
+      "stage": [
+        290,
+        145
+      ],
+      "visibleActorBounds": [
+        123.159,
+        3.127,
+        268.612,
+        137.569
+      ]
+    },
+    {
+      "key": "rakuten",
+      "layout": "page",
+      "host": [
+        1200,
+        460
+      ],
+      "stage": [
+        438.0952380952381,
+        460
+      ],
+      "visibleActorBounds": [
+        7.644,
+        32.44,
+        434.901,
+        427.353
+      ]
+    },
+    {
+      "key": "rakuten",
+      "layout": "page",
+      "host": [
+        712,
+        240
+      ],
+      "stage": [
+        228.57142857142856,
+        240
+      ],
+      "visibleActorBounds": [
+        3.988,
+        16.925,
+        226.905,
+        222.967
+      ]
+    },
+    {
+      "key": "rakuten",
+      "layout": "page",
+      "host": [
+        342,
+        400
+      ],
+      "stage": [
+        342,
+        359.1
+      ],
+      "visibleActorBounds": [
+        5.967,
+        25.324,
+        339.506,
+        333.614
+      ]
+    },
+    {
+      "key": "rakuten",
+      "layout": "page",
+      "host": [
+        290,
+        320
+      ],
+      "stage": [
+        290,
+        304.5
+      ],
+      "visibleActorBounds": [
+        5.06,
+        21.474,
+        287.885,
+        282.889
+      ]
+    },
+    {
+      "key": "lottery",
+      "layout": "legacy",
+      "host": [
+        1200,
+        460
+      ],
+      "stage": [
+        613.3333333333333,
+        459.99999999999994
+      ],
+      "visibleActorBounds": [
+        162.917,
+        57.267,
+        604.549,
+        458.569
+      ]
+    },
+    {
+      "key": "lottery",
+      "layout": "legacy",
+      "host": [
+        712,
+        240
+      ],
+      "stage": [
+        320,
+        240
+      ],
+      "visibleActorBounds": [
+        85,
+        29.878,
+        315.417,
+        239.253
+      ]
+    },
+    {
+      "key": "lottery",
+      "layout": "legacy",
+      "host": [
+        342,
+        400
+      ],
+      "stage": [
+        342,
+        256.5
+      ],
+      "visibleActorBounds": [
+        90.844,
+        31.932,
+        337.102,
+        255.702
+      ]
+    },
+    {
+      "key": "lottery",
+      "layout": "legacy",
+      "host": [
+        290,
+        320
+      ],
+      "stage": [
+        290,
+        217.5
+      ],
+      "visibleActorBounds": [
+        77.031,
+        27.077,
+        285.846,
+        216.823
+      ]
+    },
+    {
+      "key": "lottery",
+      "layout": "spread",
+      "host": [
+        1200,
+        460
+      ],
+      "stage": [
+        920,
+        460
+      ],
+      "visibleActorBounds": [
+        369.15,
+        8.194,
+        846.112,
+        441.6
+      ]
+    },
+    {
+      "key": "lottery",
+      "layout": "spread",
+      "host": [
+        712,
+        240
+      ],
+      "stage": [
+        480,
+        240
+      ],
+      "visibleActorBounds": [
+        192.6,
+        4.275,
+        441.45,
+        230.4
+      ]
+    },
+    {
+      "key": "lottery",
+      "layout": "spread",
+      "host": [
+        342,
+        400
+      ],
+      "stage": [
+        342,
+        171
+      ],
+      "visibleActorBounds": [
+        137.227,
+        3.046,
+        314.533,
+        164.16
+      ]
+    },
+    {
+      "key": "lottery",
+      "layout": "spread",
+      "host": [
+        290,
+        320
+      ],
+      "stage": [
+        290,
+        145
+      ],
+      "visibleActorBounds": [
+        116.363,
+        2.583,
+        266.709,
+        139.2
+      ]
+    },
+    {
+      "key": "lottery",
+      "layout": "page",
+      "host": [
+        1200,
+        460
+      ],
+      "stage": [
+        438.0952380952381,
+        460
+      ],
+      "visibleActorBounds": [
+        0.548,
+        36.467,
+        429.562,
+        426.303
+      ]
+    },
+    {
+      "key": "lottery",
+      "layout": "page",
+      "host": [
+        712,
+        240
+      ],
+      "stage": [
+        228.57142857142856,
+        240
+      ],
+      "visibleActorBounds": [
+        0.286,
+        19.026,
+        224.119,
+        222.419
+      ]
+    },
+    {
+      "key": "lottery",
+      "layout": "page",
+      "host": [
+        342,
+        400
+      ],
+      "stage": [
+        342,
+        359.1
+      ],
+      "visibleActorBounds": [
+        0.428,
+        28.468,
+        335.338,
+        332.795
+      ]
+    },
+    {
+      "key": "lottery",
+      "layout": "page",
+      "host": [
+        290,
+        320
+      ],
+      "stage": [
+        290,
+        304.5
+      ],
+      "visibleActorBounds": [
+        0.363,
+        24.139,
+        284.351,
+        282.194
+      ]
+    },
+    {
+      "key": "sourcing",
+      "layout": "legacy",
+      "host": [
+        1200,
+        460
+      ],
+      "stage": [
+        613.3333333333333,
+        459.99999999999994
+      ],
+      "visibleActorBounds": [
+        91.441,
+        53.673,
+        608.142,
+        449.385
+      ]
+    },
+    {
+      "key": "sourcing",
+      "layout": "legacy",
+      "host": [
+        712,
+        240
+      ],
+      "stage": [
+        320,
+        240
+      ],
+      "visibleActorBounds": [
+        47.708,
+        28.003,
+        317.292,
+        234.462
+      ]
+    },
+    {
+      "key": "sourcing",
+      "layout": "legacy",
+      "host": [
+        342,
+        400
+      ],
+      "stage": [
+        342,
+        256.5
+      ],
+      "visibleActorBounds": [
+        50.988,
+        29.929,
+        339.105,
+        250.581
+      ]
+    },
+    {
+      "key": "sourcing",
+      "layout": "legacy",
+      "host": [
+        290,
+        320
+      ],
+      "stage": [
+        290,
+        217.5
+      ],
+      "visibleActorBounds": [
+        43.236,
+        25.378,
+        287.546,
+        212.481
+      ]
+    },
+    {
+      "key": "sourcing",
+      "layout": "spread",
+      "host": [
+        1200,
+        460
+      ],
+      "stage": [
+        920,
+        460
+      ],
+      "visibleActorBounds": [
+        291.956,
+        4.313,
+        849.994,
+        431.681
+      ]
+    },
+    {
+      "key": "sourcing",
+      "layout": "spread",
+      "host": [
+        712,
+        240
+      ],
+      "stage": [
+        480,
+        240
+      ],
+      "visibleActorBounds": [
+        152.325,
+        2.25,
+        443.475,
+        225.225
+      ]
+    },
+    {
+      "key": "sourcing",
+      "layout": "spread",
+      "host": [
+        342,
+        400
+      ],
+      "stage": [
+        342,
+        171
+      ],
+      "visibleActorBounds": [
+        108.532,
+        1.603,
+        315.976,
+        160.473
+      ]
+    },
+    {
+      "key": "sourcing",
+      "layout": "spread",
+      "host": [
+        290,
+        320
+      ],
+      "stage": [
+        290,
+        145
+      ],
+      "visibleActorBounds": [
+        92.03,
+        1.359,
+        267.933,
+        136.073
+      ]
+    },
+    {
+      "key": "sourcing",
+      "layout": "page",
+      "host": [
+        1200,
+        460
+      ],
+      "stage": [
+        438.0952380952381,
+        460
+      ],
+      "visibleActorBounds": [
+        1.289,
+        61.612,
+        429.413,
+        389.487
+      ]
+    },
+    {
+      "key": "sourcing",
+      "layout": "page",
+      "host": [
+        712,
+        240
+      ],
+      "stage": [
+        228.57142857142856,
+        240
+      ],
+      "visibleActorBounds": [
+        0.673,
+        32.145,
+        224.042,
+        203.211
+      ]
+    },
+    {
+      "key": "sourcing",
+      "layout": "page",
+      "host": [
+        342,
+        400
+      ],
+      "stage": [
+        342,
+        359.1
+      ],
+      "visibleActorBounds": [
+        1.006,
+        48.097,
+        335.222,
+        304.054
+      ]
+    },
+    {
+      "key": "sourcing",
+      "layout": "page",
+      "host": [
+        290,
+        320
+      ],
+      "stage": [
+        290,
+        304.5
+      ],
+      "visibleActorBounds": [
+        0.853,
+        40.784,
+        284.253,
+        257.824
+      ]
+    }
+  ]
+}

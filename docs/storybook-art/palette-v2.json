@@ -1,0 +1,144 @@
+{
+  "version": 2,
+  "status": "v2 strong chroma palette proposal",
+  "sources": [
+    {
+      "url": "https://mount.jp/projects/kokuyo-curiosity-is-life/",
+      "files": [
+        {
+          "path": "kokuyo_reference_review/official-gallery-browser.jpg",
+          "sha256": "37d4ac260eb580ce46141d584c29f9aa075af6b4b3a7aa7ffd0863928eb1aaca"
+        },
+        {
+          "path": "kokuyo_reference_review/mount-overview.jpg",
+          "sha256": "80385480a2fb8ddacdda120aeb8b67717bf95a2226823e90c5758ed736907e0f"
+        },
+        {
+          "path": "kokuyo_reference_review/mount-notebook.jpg",
+          "sha256": "4778fd6021a3176a9d94b32e4e429067bea83aaa2273f092ccbdd3fcd4f77413"
+        },
+        {
+          "path": "kokuyo_reference_review/mount-scenes.png",
+          "sha256": "f363c08b2a964021ad7786e37af7c800b72bf993af4949e925f94efcf2ec5036"
+        }
+      ]
+    }
+  ],
+  "measurement": {
+    "method": "Pillow RGB image quantization,24 colors,FASTOCTREE; dominant representative averages from official stills. Page backgrounds are5x5 pixel patch RGB means from actual browser screenshot. These are observed rendered pixels, NOT official design tokens or full-site exhaustive extraction. Compression, color management and resampling influence values.",
+    "reference_only": "No official raster/logo/model/audio may be copied to production.",
+    "additionalSamples": {
+      "image": "kokuyo_reference_review/official-page-turn-browser.jpg",
+      "method": "5x5 RGB arithmetic means",
+      "samples": [
+        {
+          "role": "lime paper",
+          "x": 380,
+          "y": 350,
+          "hex": "#AAF618"
+        },
+        {
+          "role": "gold-orange paper",
+          "x": 800,
+          "y": 450,
+          "hex": "#FEB60A"
+        }
+      ]
+    }
+  },
+  "referenceRepresentativeColors": {
+    "coral": "#F15F50",
+    "orange": "#EE8B54",
+    "yellow": "#F5CF5D",
+    "jade": "#17B982",
+    "mint": "#63D9A5",
+    "deep-green": "#106762",
+    "forest": "#02672F",
+    "leaf": "#9FEA58",
+    "sky": "#6DBDDD",
+    "blue": "#70A8EC",
+    "royal": "#4D70E3",
+    "pink": "#F4A7CB",
+    "lilac": "#DFA4E1",
+    "lime": "#AAF618",
+    "gold": "#FEB60A"
+  },
+  "referenceBackgroundPatchMeans": {
+    "sage": "#E0E6CC",
+    "mint-paper": "#DCECC8",
+    "pink-paper": "#ECE1E9",
+    "periwinkle": "#C0CEEB",
+    "sand-paper": "#F0E3DA"
+  },
+  "originalUITokens": {
+    "paper": "#F7F8F2",
+    "ink": "#173A35"
+  },
+  "proposedChapterMap": {
+    "insurance": {
+      "primary": "coral",
+      "page": "pink-paper",
+      "secondary": [
+        "sky",
+        "yellow",
+        "deep-green"
+      ]
+    },
+    "otoku": {
+      "primary": "lilac",
+      "page": "periwinkle",
+      "secondary": [
+        "orange",
+        "yellow",
+        "deep-green"
+      ]
+    },
+    "rakuten": {
+      "primary": "orange",
+      "page": "yellow",
+      "secondary": [
+        "sky",
+        "mint",
+        "coral"
+      ]
+    },
+    "lottery": {
+      "primary": "sky",
+      "page": "mint-paper",
+      "secondary": [
+        "royal",
+        "jade",
+        "yellow"
+      ]
+    },
+    "sourcing": {
+      "primary": "jade",
+      "page": "sage",
+      "secondary": [
+        "coral",
+        "blue",
+        "yellow"
+      ]
+    }
+  },
+  "inkContrastOnColors": {
+    "coral": 3.83,
+    "orange": 4.99,
+    "yellow": 8.25,
+    "jade": 4.9,
+    "mint": 7.09,
+    "deep-green": 1.85,
+    "forest": 1.76,
+    "leaf": 8.5,
+    "sky": 5.89,
+    "blue": 5.02,
+    "royal": 2.8,
+    "pink": 6.64,
+    "lilac": 6.22
+  },
+  "paperInkContrast": 11.61,
+  "originalSceneSupplement": {
+    "cyan": "#0AA9E4",
+    "note": "Authored supporting scene color for flat desk; not claimed as an official or locally sampled reference token."
+  }
+}

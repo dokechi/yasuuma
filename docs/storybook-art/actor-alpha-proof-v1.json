@@ -1,0 +1,37 @@
+{
+  "insurance": {
+    "sourceOptimizedAlphaIdentical": true,
+    "weak5percentOrMorePixels": 6856,
+    "weak5percentOrMoreMaxDistanceFromSolidPx": 3.605551275463989,
+    "weak5percentBeyond4pxCount": 0,
+    "weak5percentBeyond16pxCount": 0
+  },
+  "otoku": {
+    "sourceOptimizedAlphaIdentical": true,
+    "weak5percentOrMorePixels": 11343,
+    "weak5percentOrMoreMaxDistanceFromSolidPx": 8.06225774829855,
+    "weak5percentBeyond4pxCount": 262,
+    "weak5percentBeyond16pxCount": 0
+  },
+  "rakuten": {
+    "sourceOptimizedAlphaIdentical": true,
+    "weak5percentOrMorePixels": 5087,
+    "weak5percentOrMoreMaxDistanceFromSolidPx": 6.324555320336759,
+    "weak5percentBeyond4pxCount": 8,
+    "weak5percentBeyond16pxCount": 0
+  },
+  "lottery": {
+    "sourceOptimizedAlphaIdentical": true,
+    "weak5percentOrMorePixels": 5594,
+    "weak5percentOrMoreMaxDistanceFromSolidPx": 10.0,
+    "weak5percentBeyond4pxCount": 247,
+    "weak5percentBeyond16pxCount": 0
+  },
+  "sourcing": {
+    "sourceOptimizedAlphaIdentical": true,
+    "weak5percentOrMorePixels": 8084,
+    "weak5percentOrMoreMaxDistanceFromSolidPx": 6.708203932499369,
+    "weak5percentBeyond4pxCount": 83,
+    "weak5percentBeyond16pxCount": 0
+  }
+}
