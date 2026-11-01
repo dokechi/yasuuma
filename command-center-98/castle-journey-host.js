@@ -6,7 +6,7 @@
  const send=(type,data={})=>frame.contentWindow?.postMessage({channel:'cc-castle-v1',type,...data},origin);
  const cancel=()=>{engine?.cancel();send('journey-state',{active:false});};
  const root=new URL('./lounge/assets/',w.location.href).href;
- Promise.all([import('./lounge/castle-journey.js?v=20261101.1-living'),import('./lounge/castle-foreground.js?v=20261101.1-living')]).then(([{createCastleJourney},{captureCastleForeground}])=>{
+ Promise.all([import('./lounge/castle-journey.js?v=20261101.1-living'),import('./lounge/castle-foreground.js?v=20261101.9-workbook')]).then(([{createCastleJourney},{captureCastleForeground}])=>{
   capture=()=>{try{const rect=frame.getBoundingClientRect();return captureCastleForeground(frame.contentDocument,{document:d,offsetX:rect.left,offsetY:rect.top,surfaceTop:rect.top});}catch{return null;}};
   w.CCCastleJourneyCapture=()=>{departure=capture();};
   if(w.getComputedStyle(d.documentElement).getPropertyValue('--castle-journey-ready').trim()!=='1')return;

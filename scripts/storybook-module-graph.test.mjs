@@ -43,3 +43,5 @@ test('explicit archive uses the same canonical identity/owner graph, never the s
  const {html}=checkOwners('command-center-98/lounge/archive.html');
  assert.match(html,/archive|保管|旧|以前/i,'archive is visibly described as retained experience');
 });
+
+test('changed foreground and its retained archive import graph use the same current cache pin',()=>{for(const file of ['command-center-98/lounge/storybook-passage.js','command-center-98/lounge/arrival-passage.js','command-center-98/lounge/castle-scene.js','command-center-98/castle-journey-host.js']){const source=fs.readFileSync(new URL('../'+file,import.meta.url),'utf8');assert.match(source,/castle-foreground\.js\?v=20261101\.9-workbook/);assert.doesNotMatch(source,/castle-foreground\.js\?v=20261101\.1-living/);}});

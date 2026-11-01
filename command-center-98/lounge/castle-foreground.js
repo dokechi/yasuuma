@@ -1,7 +1,7 @@
 /* A short-lived visual copy of already rendered paper/companion, never HTML
    serialization or data transport. No handlers, IDs, forms, or executable nodes. */
 const properties=('display position box-sizing order flex flex-direction flex-wrap flex-grow flex-shrink flex-basis align-items align-self justify-content gap row-gap column-gap grid-template-columns grid-template-rows grid-column grid-row width height min-width min-height max-width max-height margin padding border border-top border-right border-bottom border-left border-radius border-color background background-color color opacity font-family font-size font-weight font-style line-height letter-spacing text-align text-indent text-decoration text-overflow -webkit-line-clamp -webkit-box-orient white-space overflow overflow-x overflow-y scrollbar-width scrollbar-gutter scrollbar-color overflow-wrap word-break box-shadow text-shadow object-fit object-position filter clip-path mask-image transform translate rotate scale transform-origin top right bottom left z-index').split(' ');
-export function captureCastleForeground(sourceDocument,{document:target=sourceDocument,offsetX=0,offsetY=0,surfaceTop=0,extraRoots=[],strict=false}={}){
+export function captureCastleForeground(sourceDocument,{document:target=sourceDocument,offsetX=0,offsetY=0,surfaceTop=0,extraRoots=[],strict=false,onFailure=null}={}){
  const win=sourceDocument.defaultView,root=target.createElement('div');root.className='castle-journey-foreground';root.setAttribute('aria-hidden','true');root.inert=true;
  let budget=350,visited=0,text=0;const start=win.performance.now(),extras=[];
  // Work-first pages may show the original shelf alongside the paper. Only its
@@ -51,6 +51,6 @@ export function captureCastleForeground(sourceDocument,{document:target=sourceDo
   const clone=copy(source);if(!clone)continue;clone.dataset.journeyPart=part;
   if(strict)set(clone,'box-sizing','border-box');
   for(const [property,value]of Object.entries({position:'absolute',left:(rect.left+offsetX)+'px',top:(rect.top+offsetY-surfaceTop)+'px',right:'auto',bottom:'auto',width:rect.width+'px',height:rect.height+'px',margin:'0',transform:'none',translate:'none',rotate:'none',scale:'none','pointer-events':'none'}))set(clone,property,value);root.append(clone);
- }}catch{return null;}
+ }}catch(error){try{onFailure?.({reason:/^snapshot-[a-z-]+$/.test(error?.message||'')?error.message:'snapshot-error',elapsed:win.performance.now()-start,visited,nodes:350-budget});}catch{}return null;}
  return root.childElementCount?root:null;
 }

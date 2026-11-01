@@ -1,7 +1,7 @@
 /* A short-lived paper presentation around the existing account/reader owners.
    No routing, manuscript writes, live DOM moves, media, or saved preferences. */
 import {createStorybookJourney} from './storybook-journey.js?v=20261101.9-workbook';
-import {captureCastleForeground} from './castle-foreground.js?v=20261101.1-living';
+import {captureCastleForeground} from './castle-foreground.js?v=20261101.9-workbook';
 
 export const storybookPassageDuration=pace=>pace==='quick'?380:pace==='slow'?850:620;
 const installations=new WeakMap(),publishingRooms=new Set(['insurance','otoku','rakuten','lottery']);
@@ -14,7 +14,7 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
  if(!win||!panel||!scene?.element||!spatialDesk||!journey)throw Error('The existing book and reader must be mounted first.');
  let host=win,target=doc,frame=null;
  try{if(win.parent!==win){if(win.parent.location.origin!==win.location.origin)return null;host=win.parent;target=host.document;frame=win.frameElement;if(!frame||frame.contentDocument!==doc)return null;}}catch{return null;}
- let disposed=false,epoch=0,trip=null,departure=null,timer=0,raf=0,captureWait=null,wakeCapture=null,returnSurface=null,rafOwner=win,previousHidden=panel.hidden;
+ let disposed=false,epoch=0,trip=null,departure=null,timer=0,raf=0,captureWait=null,wakeCapture=null,returnSurface=null,rafOwner=win,previousHidden=panel.hidden,workCapture=null;
  const listeners=[];
  const listen=(node,type,fn,options)=>{node.addEventListener(type,fn,options);listeners.push(()=>node.removeEventListener(type,fn,options));};
  const reduced=()=>!!doc.querySelector('#reduce-setting')?.checked||win.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
@@ -141,38 +141,40 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
   if(right<=left||bottom<=top)return null;
   return {frame:frameBounds,local:{left,top,width:right-left,height:bottom-top},visual:{left:frameBounds.left+left,top:frameBounds.top+top,width:right-left,height:bottom-top}};
  }
- function captureWork(room,bounds){
+ function captureWork(room,bounds,stage='destination'){
+  const started=host.performance.now();let failure=null;const record=reason=>{if(workCapture){workCapture.attempts++;workCapture.last={room,stage,reason,elapsed:host.performance.now()-started,failure};}return null;};
   const liveRoom=doc.querySelector('#room'),dock=liveRoom?.querySelector('.workbook-list');
-  if(!bounds||!dock||liveRoom.hidden||liveRoom.dataset.account!==room||liveRoom.dataset.spatialDesk!=='ready'||liveRoom.dataset.livingView==='tools')return null;
+  if(!bounds||!dock||liveRoom.hidden||liveRoom.dataset.account!==room||liveRoom.dataset.spatialDesk!=='ready'||liveRoom.dataset.livingView==='tools')return record('room-not-ready');
   const extraRoots=[],dockStyle=win.getComputedStyle(dock),dockVisible=!dock.hidden&&dockStyle.display!=='none'&&dockStyle.visibility!=='hidden'&&!!boxOf(dock);
-  if(dockVisible){const shelf=dock.querySelector(':scope > .manuscript-shelf');if(!shelf||!boxOf(shelf))return null;extraRoots.push({element:shelf,part:'list'});}
-  const foreground=captureForeground(doc,{document:target,offsetX:-bounds.local.left||0,offsetY:-bounds.local.top||0,surfaceTop:0,strict:true,extraRoots});
-  if(!foreground?.querySelector('[data-journey-part=paper]')||dockVisible&&!foreground.querySelector('[data-journey-part=list]'))return null;
-  const fresh=pageAt(room,bounds.frame);if(!fresh)return null;
+  if(dockVisible){const shelf=dock.querySelector(':scope > .manuscript-shelf');if(!shelf||!boxOf(shelf))return record('shelf-not-ready');extraRoots.push({element:shelf,part:'list'});}
+  const foreground=captureForeground(doc,{document:target,offsetX:-bounds.local.left||0,offsetY:-bounds.local.top||0,surfaceTop:0,strict:true,extraRoots,onFailure:value=>{failure=value;}});
+  if(!foreground?.querySelector('[data-journey-part=paper]')||dockVisible&&!foreground.querySelector('[data-journey-part=list]'))return record('foreground');
+  const fresh=pageAt(room,bounds.frame);if(!fresh)return record('art-not-ready');
   // Clip only the real work area. The permanent chapter header remains live;
   // all fresh book/prop coordinates are shifted once by that measured origin.
   const page=rootPage(color(liveRoom)),position=target.createElement('div');position.className='story-passage-work-surface';Object.assign(position.style,{position:'absolute',left:-bounds.local.left+'px',top:-bounds.local.top+'px',width:win.innerWidth+'px',height:win.innerHeight+'px',pointerEvents:'none'});position.append(fresh);page.append(position);
-  return {scene:page,foreground};
+  record('ready');return {scene:page,foreground};
  }
  function onTurn(intent={}){
+  workCapture={attempts:0,last:null,abort:null};
   const serial=++epoch;stopCapture();trip=null;returnSurface=null;forget();journey.cancel();
   const from=currentRoom();
   if(serial!==epoch||disposed||intent.instant||!publishingRooms.has(from)||!publishingRooms.has(intent.room)||intent.room===from||intent.sourceRoom&&intent.sourceRoom!==from||!['next','previous'].includes(intent.direction)||!panel.hidden||reduced()||!closedDialog())return false;
   try{
-   rafOwner=win;const bounds=workSurface(),source=captureWork(from,bounds);if(!source||serial!==epoch)return false;
+   rafOwner=win;const bounds=workSurface(),source=captureWork(from,bounds,'source');if(!source||serial!==epoch)return false;
    const duration=pace(),deadline=host.performance.now()+duration*.4;if(serial!==epoch)return false;
    const token=journey.travel({room:intent.room,direction:'switch',turnSign:intent.direction==='previous'?-1:1,surface:bounds.visual,sourceScene:source.scene,sourceForeground:source.foreground,sourceDocument:doc,uprightDestination:true,duration});
    if(!token||serial!==epoch){token?.cancel();return false;}
    trip={room:intent.room,surface:bounds.frame,visualSurface:bounds.visual,hostSize:hostSize(),arrived:false,native:false,returning:false,turn:true,token};const saved=trip;let captured=false,initialLayoutRetry=true;
    const settle=()=>{
     if(serial!==epoch||trip!==saved||disposed||captured)return;
-    try{const state=journey.state(),next=workSurface();if(!state.active||!sameBox(bounds.frame,next?.frame)||!sameBox(bounds.visual,next?.visual)||reduced()||!closedDialog()||host.performance.now()>=deadline||state.progress>=.4){cancel();return;}
-     if(currentRoom()===saved.room){const visual=captureWork(saved.room,next);if(visual){if(serial!==epoch||trip!==saved)return;if(host.performance.now()>=deadline||journey.state().progress>=.4){cancel();return;}if(token.setDestination(visual)){captured=true;stopCapture();}else cancel();return;}}
+    try{const state=journey.state(),next=workSurface();if(!state.active||!sameBox(bounds.frame,next?.frame)||!sameBox(bounds.visual,next?.visual)||reduced()||!closedDialog()||host.performance.now()>=deadline||state.progress>=.4){workCapture.abort=!state.active?'inactive':!sameBox(bounds.frame,next?.frame)||!sameBox(bounds.visual,next?.visual)?'surface':reduced()?'reduced':!closedDialog()?'dialog':'deadline-before';cancel();return;}
+     if(currentRoom()===saved.room){const visual=captureWork(saved.room,next);if(visual){if(serial!==epoch||trip!==saved)return;if(host.performance.now()>=deadline||journey.state().progress>=.4){workCapture.abort='deadline-after';cancel();return;}if(token.setDestination(visual)){captured=true;stopCapture();}else{workCapture.abort='destination-rejected';cancel();}return;}}
     }catch{if(serial===epoch)cancel();return;}
     if(initialLayoutRetry){initialLayoutRetry=false;raf=win.requestAnimationFrame(settle);}
    };
    const room=doc.querySelector('#room'),wake=()=>host.queueMicrotask(settle);wakeCapture=wake;const readiness=new win.MutationObserver(wake);readiness.observe(room,{attributes:true,attributeFilter:['hidden','data-account','data-spatial-desk','data-story-scene','data-workbook-ready'],childList:true,subtree:true});room.addEventListener('load',wake,true);room.addEventListener('error',wake,true);
-   const expiry=host.setTimeout(()=>{if(serial===epoch&&trip===saved)cancel();},Math.max(0,deadline-host.performance.now()));captureWait=()=>{host.clearTimeout(expiry);readiness.disconnect();room.removeEventListener('load',wake,true);room.removeEventListener('error',wake,true);};win.queueMicrotask(()=>win.queueMicrotask(settle));return true;
+   const expiry=host.setTimeout(()=>{if(serial===epoch&&trip===saved){workCapture.abort='deadline-timer';cancel();}},Math.max(0,deadline-host.performance.now()));captureWait=()=>{host.clearTimeout(expiry);readiness.disconnect();room.removeEventListener('load',wake,true);room.removeEventListener('error',wake,true);};win.queueMicrotask(()=>win.queueMicrotask(settle));return true;
   }catch{if(serial===epoch)cancel();return false;}
  }
  function onTravel(intent={}){
@@ -273,7 +275,7 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
  // cover entry. A later Back must snapshot the current tools/text, not replay it.
  function interrupt(){if(disposed)return false;if(journey.state().active||departure||trip&&!trip.arrived){cancel();return true;}return false;}
  function destroy(){if(disposed)return;disposed=true;cancel();observer.disconnect();unsubscribe?.();for(const off of listeners.splice(0))off();journey.destroy();}
- return {onTravel,onTurn,cancel,interrupt,destroy,snapshot:()=>({active:!!journey.state().active,returnRoom:trip?.turn?null:trip?.room||null,pendingReturn:!!departure,phase:journey.state().phase||'idle'})};
+ return {onTravel,onTurn,cancel,interrupt,destroy,snapshot:()=>({active:!!journey.state().active,returnRoom:trip?.turn?null:trip?.room||null,pendingReturn:!!departure,phase:journey.state().phase||'idle',workCapture:workCapture?{...workCapture,last:workCapture.last?{...workCapture.last,failure:workCapture.last.failure?{...workCapture.last.failure}:null}:null}:null})};
 }
 
 export function installStorybookPassage(options={}){

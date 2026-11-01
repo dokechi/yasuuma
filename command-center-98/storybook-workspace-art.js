@@ -32,7 +32,9 @@
   const control=target.getBoundingClientRect(),bounds=strip.getBoundingClientRect(),left=bounds.left+strip.clientLeft,right=Math.min(bounds.right,left+strip.clientWidth);
   if(control.width<=0||control.height<=0||strip.clientWidth<=0)return;
   const delta=control.left<left?control.left-left:control.right>right?control.right-right:0;
-  if(delta)strip.scrollLeft=Math.max(0,Math.min(strip.scrollWidth-strip.clientWidth,strip.scrollLeft+delta));
+  // Chromium can round scrollLeft to whole CSS pixels. Round away from the
+  // clipped edge so a fractional button border never stays outside the strip.
+  if(delta){const next=delta>0?Math.ceil(strip.scrollLeft+delta):Math.floor(strip.scrollLeft+delta);strip.scrollLeft=Math.max(0,Math.min(strip.scrollWidth-strip.clientWidth,next));}
  }
  function sync(){
   syncChapters();

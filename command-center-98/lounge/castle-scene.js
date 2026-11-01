@@ -1,4 +1,4 @@
-import {captureCastleForeground} from './castle-foreground.js?v=20261101.1-living';
+import {captureCastleForeground} from './castle-foreground.js?v=20261101.9-workbook';
 import {createCastleJourney} from './castle-journey.js?v=20261101.1-living';
 import {mountCastlePresence} from './castle-presence.js?v=20261101.1-living';
 /* Presentation-only spatial adapter. The existing account controller owns routing,
