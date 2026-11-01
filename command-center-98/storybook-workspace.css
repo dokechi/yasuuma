@@ -171,3 +171,7 @@ body.storybook-host.lounge-workspace #mainWindow .ledger-month-tab,
 body.storybook-host.lounge-workspace #mainWindow .ledger-month-tab:is(:hover,:focus-visible,:active){min-width:44px;min-height:44px;height:auto;padding:8px 10px;background:#F7F8F2!important;color:#173A35!important;border:1px solid #173A35!important;box-shadow:none!important;font:650 14px/1.5 system-ui,sans-serif;white-space:nowrap}
 body.storybook-host.lounge-workspace #mainWindow .ledger-month-tab.selected,
 body.storybook-host.lounge-workspace #mainWindow .ledger-month-tab.selected:is(:hover,:focus-visible,:active){background:#F5CF5D!important;color:#173A35!important;border-bottom:3px solid #173A35!important}
+/* Native business tabs keep the same legible paper/ink in every pointer and
+   keyboard state; old dark-theme hover rules must not recolor this chapter. */
+body.storybook-host.lounge-workspace #mainWindow :is(button.push-button,.sourcing-tabs button):is(:hover,:focus-visible,:active){background:#F7F8F2!important;color:#173A35!important;border-color:#173A35!important}
+body.storybook-host.lounge-workspace #mainWindow :is(button.selected,.sourcing-tabs button.selected,button[aria-pressed='true']):is(:hover,:focus-visible,:active){background:#F5CF5D!important;color:#173A35!important;border-color:#173A35!important}

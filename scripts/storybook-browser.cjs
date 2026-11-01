@@ -163,6 +163,18 @@ const contrast=sample=>{const text=rgb(sample.color),surface=rgb(sample.backgrou
      }
      check('native stock and task quantities remain unknown rather than invented zeroes',(await roomState('sourcing')).loadedCount===null&&(await roomState('sourcing')).totalCount===null);
      await capture('sourcing-native');
+     if(width<=390){
+      const business=page.locator('#sourcingTabs button[data-sourcing-sub]'),businessBefore=await page.evaluate(()=>({selected:sourcingApp.sub,items:JSON.stringify(sourcingApp.items),purchases:JSON.stringify(sourcingApp.purchases),requests:__storybookRecords.requests.filter(n=>new URL(n.url).searchParams.get('resource')==='sourcing').length}));
+      check('five existing native business destinations remain present',await business.count()===5);
+      await business.first().focus();
+      for(let index=0;index<5;index++){
+       if(index)await page.keyboard.press('Tab');
+       const focused=await business.nth(index).evaluate(async node=>{await Promise.all(node.getAnimations().map(a=>a.finished.catch(()=>{})));const r=node.getBoundingClientRect(),strip=node.closest('.sourcing-tab-group'),bounds=strip.getBoundingClientRect(),style=getComputedStyle(node),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {key:node.dataset.sourcingSub,focused:document.activeElement===node,rect:r.toJSON(),strip:bounds.toJSON(),scrollLeft:strip.scrollLeft,viewport:[innerWidth,innerHeight],hit:hit===node||node.contains(hit),color:style.color,background:style.backgroundColor,opacity:Number(style.opacity)};});
+       await business.nth(index).hover();const hovered=await business.nth(index).evaluate(async node=>{await Promise.all(node.getAnimations().map(a=>a.finished.catch(()=>{})));const style=getComputedStyle(node);return {hovered:node.matches(':hover'),color:style.color,background:style.backgroundColor,opacity:Number(style.opacity)};});
+       check('native business '+focused.key+' preserves readable hover/focus and its full 44px keyboard target',focused.focused&&focused.rect.width>=44&&focused.rect.height>=44&&focused.rect.left>=focused.strip.left-1&&focused.rect.right<=focused.strip.right+1&&focused.rect.left>=0&&focused.rect.right<=focused.viewport[0]+1&&focused.rect.top>=0&&focused.rect.bottom<=focused.viewport[1]+1&&focused.hit&&contrast(focused)>=4.5&&hovered.hovered&&contrast(hovered)>=4.5,{focus:{...focused,contrast:contrast(focused)},hover:{...hovered,contrast:contrast(hovered)}});
+      }
+      check('business hover and keyboard focus do not route, reload or mutate source records',await page.evaluate(before=>sourcingApp.sub===before.selected&&JSON.stringify(sourcingApp.items)===before.items&&JSON.stringify(sourcingApp.purchases)===before.purchases&&__storybookRecords.requests.filter(n=>new URL(n.url).searchParams.get('resource')==='sourcing').length===before.requests,businessBefore));await capture('sourcing-business-keyboard');
+     }
      if(width===320){
       const auxiliary=page.locator('#rpgSourcingAux button');check('all five existing native auxiliary destinations remain present',await auxiliary.count()===5);
       await auxiliary.first().focus();
