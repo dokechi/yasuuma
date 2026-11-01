@@ -82,3 +82,15 @@ frame rate, thermals or battery use**. A prototype pass is not a production gate
 - https://playwright.dev/docs/browsers
 - https://chromium.googlesource.com/chromium/src/+/main/docs/gpu/swiftshader.md
 - https://registry.khronos.org/webgl/extensions/WEBGL_lose_context/
+
+## Bounded dusk calibration
+
+The native phone establishing camera now steps back to retain the study, stairs
+and instrument edge rather than presenting an extreme wall crop. Geometry and
+material pixels remain unchanged. One restrained static fanlight is architectural
+illumination, never a workflow/activity signal. The renderer uses supported PCF
+shadows, a fitted 1024-pixel shadow frustum and audited closed-solid back-face
+shadow casting; the open copper dome retains double-sided casting. The static
+shadow map is reused during camera-only travel. Shadow-off images in the owned
+fixture are explicitly diagnostic source substitutions, not production behavior
+or proof that disabled shadows are acceptable.

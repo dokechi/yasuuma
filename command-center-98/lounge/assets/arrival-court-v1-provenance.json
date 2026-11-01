@@ -1,9 +1,9 @@
 {
   "asset": "arrival-court-v1.glb",
-  "authoredRevision": "v3.1",
+  "authoredRevision": "v3.2",
   "status": "Approved integration candidate only; actual WebGL release QA pending",
-  "runtimeSha256": "c6baebc2d517bac5261e8bb5860aeef304c1e9130879c9f192e26d787e87d040",
-  "runtimeBytes": 1981900,
+  "runtimeSha256": "1bdbe3ab14485638535364e8579c3d2422b9eae16fb7a264baf60110210c6112",
+  "runtimeBytes": 1981880,
   "authoring": "Original procedural architectural mesh and PBR material authoring, Blender 4.3.2. No third-party model/art inputs.",
   "sourceRecipe": [
     "build_arrival_court.py",
@@ -12,8 +12,8 @@
   ],
   "sourceFiles": {
     "build_arrival_court.py": {
-      "bytes": 24862,
-      "sha256": "7037e3b07e58ca7907c759ce59d994d93b51fe8fb3c1c34e32c447c28973d927"
+      "bytes": 24894,
+      "sha256": "d267fe7a4d057c6e6707630e72d29a814bea882f1f7697724aa42d7a4a933615"
     },
     "quantize_arrival_court.py": {
       "bytes": 6759,
@@ -24,8 +24,8 @@
       "sha256": "38bc0c52b61010f3cfa8b7eab8f8d846f8324bebafc86c54d4a9f4c9b100d282"
     },
     "README.md": {
-      "bytes": 3064,
-      "sha256": "0a4710d17564447ca093c5fe3dd90fa6855ea0cd5fd81dfc5fda5effc31b09e8"
+      "bytes": 3335,
+      "sha256": "4ce18e158984a4666a78c63ca4282808f6814143f2c73d1bb069a12b7bd9145c"
     },
     "materials/stone-basecolor-prompt.txt": {
       "bytes": 1192,
@@ -67,8 +67,8 @@
     "noExternalURI": true
   },
   "quantization": {
-    "rawBytes": 3785400,
-    "quantizedBytes": 1981900,
+    "rawBytes": 3785380,
+    "quantizedBytes": 1981880,
     "verticesBefore": 106666,
     "verticesAfter": 105860,
     "texturedVertices": 68464,
@@ -78,10 +78,11 @@
     "maxPositionErrorMeters": 0.0004999999999997229,
     "positionPrecisionMeters": 0.001,
     "uvPrecisionTiles": 0.00390625,
-    "sha256": "c6baebc2d517bac5261e8bb5860aeef304c1e9130879c9f192e26d787e87d040",
+    "sha256": "1bdbe3ab14485638535364e8579c3d2422b9eae16fb7a264baf60110210c6112",
     "triangleTopologyUnchanged": true
   },
   "knownScope": "Cinematic arrival court, not a complete city or360degree environment. Existing characters/interiors/controllers stay unchanged. Materials/fog/UI/hit targets require actual WebGL QA; no claim of Igloo-equivalent final quality.",
   "focusCorrection": "Only focus-otoku Y+1.50m and focus-lottery Y+1.00m on actual upper portal geometry changed after v3 preview; mesh/camera frozen. CPU first-hit raycast verification required.",
-  "revisionChange": "Only existing five textile and hanging-rail clusters translated 0.46m forward toward court, correcting actual WebGL-visible pier embedding. No added mesh/materials; cameras and corrected focus anchors unchanged."
+  "revisionChange": "Only existing five textile and hanging-rail clusters translated 0.46m forward toward court, correcting actual WebGL-visible pier embedding. No added mesh/materials; cameras and corrected focus anchors unchanged.",
+  "cameraRevision": "Only native phone establishing camera changed: Y-up position[0.5,2.6,16], target[-3.85,3.5,-1.5], vertical FOV44 degrees. No runtime override. Actual WebGL acceptance pending."
 }

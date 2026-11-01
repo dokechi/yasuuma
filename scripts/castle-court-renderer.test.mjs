@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-import {COURT_KEYS,COURT_BUDGET,COURT_ATMOSPHERE,courtSkyPixels,renderDimensions,validPose,copyPose,orbitPose,focusPose,interpolatePose,createCameraMotion,createDemandDriver,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from '../command-center-98/lounge/arrival-camera.js';
+import {COURT_KEYS,COURT_BUDGET,COURT_ATMOSPHERE,courtSkyPixels,fitCourtShadow,closedCourtShadowMaterial,renderDimensions,validPose,copyPose,orbitPose,focusPose,interpolatePose,createCameraMotion,createDemandDriver,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from '../command-center-98/lounge/arrival-camera.js';
 const home={position:[11,7.2,21],target:[0,3.2,-2],fov:43};
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-9,`${a} differs from ${b}`);
 function glb(json,binary=null){const raw=new TextEncoder().encode(JSON.stringify(json)),length=Math.ceil(raw.length/4)*4,binLength=binary?Math.ceil(binary.length/4)*4:0,buffer=new ArrayBuffer(20+length+(binary?8+binLength:0)),view=new DataView(buffer);view.setUint32(0,0x46546c67,true);view.setUint32(4,2,true);view.setUint32(8,buffer.byteLength,true);view.setUint32(12,length,true);view.setUint32(16,0x4e4f534a,true);const bytes=new Uint8Array(buffer,20,length);bytes.fill(32);bytes.set(raw);if(binary){view.setUint32(20+length,binLength,true);view.setUint32(24+length,0x004e4942,true);new Uint8Array(buffer,28+length,binLength).set(binary);}return buffer;}
@@ -16,6 +16,12 @@ test('dusk atmosphere is bounded and the original static sky has quiet latitude 
  for(let y=0;y<sky.height;y++)assert.deepEqual(at(0,y),at(sky.width-1,y),'seamless longitude');
  assert.notEqual(courtSkyPixels().data,sky.data,'renderer owns each disposable texture payload');
 });
+test('the fixed directional shadow fits actual caster bounds without chasing the viewer',()=>{
+ const min=[-15.565,-14.177,-36.188],max=[17.890,17.491,-4.335],fit=fitCourtShadow(min,max);for(const [key,value]of Object.entries({left:-16.065,right:18.39,bottom:-14.677,top:17.991,near:3.835,far:36.688}))near(fit[key],value);
+ assert.ok(fit.right-fit.left<38);assert.ok(fit.far-fit.near<40);assert.deepEqual(min,[-15.565,-14.177,-36.188]);
+ for(const bounds of[[[0,0,0],[1,1,1]],[[0,0,-5],[0,2,-1]],[[0,NaN,-5],[1,2,-1]]])assert.throws(()=>fitCourtShadow(...bounds));
+});
+test('back-face shadow casting is limited to audited closed solids, not the open copper dome',()=>{for(const name of['stone_dusk','oak_smoked','cloth_burgundy','window_amber'])assert.equal(closedCourtShadowMaterial(name),true);for(const name of['copper_patina','unreviewed-plane',undefined])assert.equal(closedCourtShadowMaterial(name),false);});
 test('device ratio and drawing buffer are independently capped at actual screen sizes',()=>{
  for(const [width,height]of[[320,588],[390,848],[800,596],[1440,848],[4096,2160]]){const value=renderDimensions(width,height,3);assert.ok(value.pixelRatio<=1.5);assert.ok(value.physicalPixels<=COURT_BUDGET.pixels);assert.ok(value.physicalWidth<=4096&&value.physicalHeight<=4096);assert.equal(value.width,width);assert.equal(value.height,height);}
  assert.equal(renderDimensions(320,588,3).pixelRatio,1.5);assert.equal(renderDimensions(320,588,.8).pixelRatio,.8);
@@ -76,5 +82,5 @@ test('resource disposal is unique even with shared material and geometry instanc
 });
 test('vendored runtime is exact, self-contained and carries its upstream MIT license',async()=>{
  const base=new URL('../command-center-98/lounge/vendor/three-r187/',import.meta.url),metadata=JSON.parse(await readFile(new URL('provenance.json',base))),bytes=await readFile(new URL('court-three.js',base));assert.equal(metadata.three,'0.187.0');assert.equal(metadata.esbuild,'0.25.12');assert.equal(bytes.length,metadata.bundle.bytes);assert.equal(createHash('sha256').update(bytes).digest('hex'),metadata.bundle.sha256);assert.ok(bytes.length<700000);assert.match(await readFile(new URL('LICENSE',base),'utf8'),/MIT License/);assert.ok(metadata.inputs.some(input=>input.path.endsWith('SkeletonUtils.js')));assert.ok(metadata.inputs.some(input=>input.path.endsWith('BufferGeometryUtils.js')));
- const vendor=await import(new URL('court-three.js',base));for(const key of['WebGLRenderer','GLTFLoader','RoomEnvironment','Vector3'])assert.equal(typeof vendor[key],'function');
+ const vendor=await import(new URL('court-three.js',base));for(const key of['WebGLRenderer','GLTFLoader','RoomEnvironment','Vector3'])assert.equal(typeof vendor[key],'function');for(const key of['PCFShadowMap','BackSide'])assert.equal(typeof vendor[key],'number');assert.equal(vendor.PCFSoftShadowMap,undefined);
 });

@@ -17,11 +17,11 @@
       "integrity": "sha512-bbPBYYrtZbkt6Os6FiTLCTFxvq4tt3JKall1vRwshA3fdVztsLAatFaZobhkBC8/BrPetoa0oksYoKXoG4ryJg=="
     }
   ],
-  "entry": "export {WebGLRenderer,Scene,PerspectiveCamera,Vector2,Vector3,Raycaster,Box3,Color,FogExp2,HemisphereLight,DirectionalLight,PointLight,PMREMGenerator,ACESFilmicToneMapping,SRGBColorSpace,PCFSoftShadowMap,LoadingManager,DataTexture,RGBAFormat,UnsignedByteType,EquirectangularReflectionMapping,LinearFilter} from 'three';\nexport {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';\nexport {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';\n",
+  "entry": "export {WebGLRenderer,Scene,PerspectiveCamera,Vector2,Vector3,Raycaster,Box3,Color,FogExp2,HemisphereLight,DirectionalLight,PointLight,PMREMGenerator,ACESFilmicToneMapping,SRGBColorSpace,PCFShadowMap,BackSide,LoadingManager,DataTexture,RGBAFormat,UnsignedByteType,EquirectangularReflectionMapping,LinearFilter} from 'three';\nexport {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';\nexport {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';\n",
   "bundle": {
     "file": "court-three.js",
-    "bytes": 626967,
-    "sha256": "68c2b55e9703ef4e204567e9279b07aeae493cd21ec3b6fb94d125dcff7fd6da"
+    "bytes": 626978,
+    "sha256": "fdbd5d29b14f04a13717e9fe918db5ccc5bd0163db9401138d1e7b4c31a662c9"
   },
   "inputs": [
     {

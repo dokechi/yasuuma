@@ -152,6 +152,7 @@ async function normalCase(browser,origin,width,height){
   check(result,'genuine WebGL2 rendered real bounded geometry',render.webgl2===true&&render.frameCount>0&&render.meshTriangles>0&&render.meshTriangles<=60_000&&render.drawCalls>0&&render.renderedTriangles>0&&!render.contextLost,render);
   check(result,'materials, main-plus-shadow draw calls and decoded textures stay bounded',render.drawCalls<=128&&render.materialCount<=12&&render.assetTextureCount<=4&&render.assetTexels<=1_000_000,{drawCalls:render.drawCalls,materialCount:render.materialCount,assetTextureCount:render.assetTextureCount,assetTexels:render.assetTexels,gpuTextures:render.gpuTextures});
   check(result,'generated runtime sky is one bounded texture, separate from authored asset textures',render.runtimeSkyTextures===1&&render.runtimeSkyTexels===32_768,{runtimeSkyTextures:render.runtimeSkyTextures,runtimeSkyTexels:render.runtimeSkyTexels,atmosphere:render.atmosphere});
+  check(result,'normal court retains supported bounded cached shadows rather than hiding the defect by disabling them',render.shadowEnabled===true&&render.shadowFilter==='pcf'&&render.shadowMapSize<=1024&&render.staticShadow===true&&render.closedShadowMaterials===11,{shadowEnabled:render.shadowEnabled,shadowFilter:render.shadowFilter,shadowMapSize:render.shadowMapSize,shadowRadius:render.shadowRadius,staticShadow:render.staticShadow,closedShadowMaterials:render.closedShadowMaterials,shadowBounds:render.shadowBounds,doorLight:render.doorLight});
   check(result,'drawing buffer is bounded',render.pixelRatio<=1.5&&render.physicalPixels<=1_800_000&&render.physicalWidth*render.physicalHeight<=1_800_000&&render.width>0&&render.height>0,render);
   const gl=await f.locator('.arrival-court canvas').evaluate(canvas=>{const gl=canvas.getContext('webgl2'),debug=gl.getExtension('WEBGL_debug_renderer_info');return {webgl2:gl instanceof WebGL2RenderingContext,version:gl.getParameter(gl.VERSION),renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),vendor:debug?gl.getParameter(debug.UNMASKED_VENDOR_WEBGL):gl.getParameter(gl.VENDOR)};});
   gl.backend=/swiftshader|software/i.test(gl.renderer)?'software':/angle|nvidia|intel|amd|adreno|mali/i.test(gl.renderer)?'hardware-or-unknown':'unknown';
@@ -268,6 +269,12 @@ async function normalCase(browser,origin,width,height){
   await f.locator('.arrival-launch').click();await f.locator('.arrival-court[data-state=ready]').waitFor();await settled(frame);
   check(result,'explicit opt-in restores the same live renderer after reduced motion ends',(await snapshot(frame)).active===true);
   if(width===390){await page.emulateMedia({reducedMotion:'reduce'});await f.locator('.spatial-castle').waitFor({state:'visible'});check(result,'OS reduced-motion changes also stop the optional renderer',!(await snapshot(frame)).renderer.active);await page.emulateMedia({reducedMotion:'no-preference'});await f.locator('.arrival-launch').click();await settled(frame);}
+  // SwiftShader may lack this optional asynchronous-compile extension; the
+  // actual first-frame gate still proves synchronous compilation succeeded.
+  // No shader errors, removed/deprecated features, or other Three warnings pass.
+  const allowedCapabilityNotice='THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported.';
+  const threeWarnings=(result.console||[]).filter(message=>message.startsWith('THREE.'));
+  check(result,'normal rendering has no unexpected Three shader or deprecation diagnostics',threeWarnings.every(message=>message===allowedCapabilityNotice),threeWarnings);
   await unchanged(ctx);console.log(`PASS ${result.label}: ${result.checks.length} checks, ${result.frames.length} screenshots.`);
  }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
 }

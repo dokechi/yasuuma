@@ -16,6 +16,14 @@ export function courtSkyPixels(){
 }
 const finite=value=>Number.isFinite(value);
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+export function fitCourtShadow(min,max){
+ if(![min,max].every(v=>Array.isArray(v)&&v.length===3&&v.every(finite))||min.some((v,i)=>v>=max[i])||max[2]>=-.1)throw Error('Invalid court light-space bounds');
+ return {left:min[0]-.5,right:max[0]+.5,bottom:min[1]-.5,top:max[1]+.5,near:Math.max(.1,-max[2]-.5),far:-min[2]+.5};
+}
+// The authored copper material includes an intentionally open hemisphere. Only
+// the audited closed-solid materials use back-face casting; visible PBR faces
+// and the open dome remain unchanged.
+export function closedCourtShadowMaterial(name){return ['stone_shadow','stone_worn','stone_dusk','oak_smoked','window_amber','brass_aged','iron_forged','cloth_burgundy','cloth_amber','cloth_violet','cloth_teal'].includes(name);}
 export function renderDimensions(width,height,dpr=1){
  if(!finite(width)||!finite(height)||width<=0||height<=0||width>1_000_000||height>1_000_000)throw Error('Court dimensions must be positive and bounded');
  const ratio=Math.min(finite(dpr)&&dpr>0?dpr:1,COURT_BUDGET.dpr,Math.sqrt(COURT_BUDGET.pixels/(width*height)),COURT_BUDGET.dimension/Math.max(width,height));

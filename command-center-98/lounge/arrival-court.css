@@ -55,3 +55,4 @@ body{--arrival-court-ready:1}
 /* Selected account information is a real opaque reading plane, never a ghost of
    a marker underneath it. Its physical door remains available via the entry. */
 .arrival-detail{background:#f3f0e9f5}
+.account-board .arrival-court .arrival-target:hover:not(:disabled){background:transparent;border:0}

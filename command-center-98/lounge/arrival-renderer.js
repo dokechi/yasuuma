@@ -1,7 +1,7 @@
 /* Optional real geometry and light. The existing application owns all routes,
    records and accessible controls. This module never reads user storage. */
-import * as T from './vendor/three-r187/court-three.js?v=20261101.3-arrival';
-import {COURT_KEYS,COURT_BUDGET,COURT_ATMOSPHERE,courtSkyPixels,renderDimensions,createCameraMotion,createDemandDriver,copyPose,orbitPose,focusPose,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from './arrival-camera.js?v=20261101.3-arrival';
+import * as T from './vendor/three-r187/court-three.js?v=20261101.4-arrival';
+import {COURT_KEYS,COURT_BUDGET,COURT_ATMOSPHERE,courtSkyPixels,fitCourtShadow,closedCourtShadowMaterial,renderDimensions,createCameraMotion,createDemandDriver,copyPose,orbitPose,focusPose,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from './arrival-camera.js?v=20261101.4-arrival';
 
 export class CourtRendererError extends Error{constructor(code,message,cause){super(message,{cause});this.name='CourtRendererError';this.code=code;}}
 const abortError=()=>new DOMException('Court initialization cancelled','AbortError');
@@ -22,7 +22,7 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
  let deadline=0,stopReject;const stopped=new Promise((_,reject)=>{stopReject=reject;});stopped.catch(()=>{});
  const loadAbort=new AbortController(),anchors=new Map(),homePoses=new Map(),roomPoses=new Map();
  const raycaster=new T.Raycaster(),point=new T.Vector3(),bufferSize=new T.Vector2();
- let assetInfo=null,meshTriangles=0,materialCount=0,drawCalls=0,renderedTriangles=0,pose=null;
+ let assetInfo=null,meshTriangles=0,materialCount=0,closedShadowMaterials=0,shadowBounds=null,drawCalls=0,renderedTriangles=0,pose=null;
  function release(reason=abortError()){
   if(disposed)return;disposed=true;active=false;ready=false;clearTimeout(deadline);loadAbort.abort();driver?.dispose();
   canvas.removeEventListener('webglcontextlost',lost,true);signal?.removeEventListener('abort',aborted);stopReject(reason);
@@ -67,12 +67,12 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
   renderer=new T.WebGLRenderer({canvas,alpha:false,antialias:true,powerPreference:'low-power',preserveDrawingBuffer:false});
   const gl=renderer.getContext();if(!String(gl.getParameter(gl.VERSION)).includes('WebGL 2'))throw new CourtRendererError('webgl2','WebGL2 is unavailable');
   renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=COURT_ATMOSPHERE.exposure;
-  renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
+  renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;
   renderer.debug.onShaderError=()=>{throw new CourtRendererError('shader','A court material shader could not compile');};
   const box=canvas.getBoundingClientRect();resize(Math.max(1,box.width||canvas.clientWidth||canvas.width),Math.max(1,box.height||canvas.clientHeight||canvas.height));
   scene=new T.Scene();const skyPixels=courtSkyPixels();sky=new T.DataTexture(skyPixels.data,skyPixels.width,skyPixels.height,T.RGBAFormat,T.UnsignedByteType);sky.mapping=T.EquirectangularReflectionMapping;sky.colorSpace=T.SRGBColorSpace;sky.magFilter=T.LinearFilter;sky.minFilter=T.LinearFilter;sky.generateMipmaps=false;sky.needsUpdate=true;scene.background=sky;scene.fog=new T.FogExp2(COURT_ATMOSPHERE.fogColor,COURT_ATMOSPHERE.fogDensity);
   const hemi=new T.HemisphereLight('#bcc9de','#44342b',COURT_ATMOSPHERE.hemisphere);scene.add(hemi);
-  const sun=new T.DirectionalLight('#ffe0b5',COURT_ATMOSPHERE.sun);sun.position.set(-10,18,12);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-19,right:19,top:19,bottom:-19,near:.5,far:70});sun.shadow.normalBias=COURT_ATMOSPHERE.shadowNormalBias;sun.shadow.bias=-.00012;sun.shadow.radius=2;sun.target.position.set(0,1,-2);scene.add(sun,sun.target);
+  const sun=new T.DirectionalLight('#ffe0b5',COURT_ATMOSPHERE.sun);sun.position.set(-10,18,12);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-19,right:19,top:19,bottom:-19,near:.5,far:70});sun.shadow.normalBias=COURT_ATMOSPHERE.shadowNormalBias;sun.shadow.bias=-.00012;sun.shadow.radius=1;sun.shadow.autoUpdate=false;sun.shadow.needsUpdate=true;sun.target.position.set(0,1,-2);scene.add(sun,sun.target);
   const fill=new T.DirectionalLight('#9eafce',COURT_ATMOSPHERE.fill);fill.position.set(12,8,-14);scene.add(fill);
   environment=new T.RoomEnvironment();pmrem=new T.PMREMGenerator(renderer);environmentTarget=pmrem.fromScene(environment,.04,.1,80,{size:256});scene.environment=environmentTarget.texture;scene.environmentIntensity=COURT_ATMOSPHERE.environment;environment.dispose();environment=null;pmrem.dispose();pmrem=null;
   const response=await wait(fetch(url,{credentials:'omit',signal:loadAbort.signal,cache:'force-cache'}));alive();if(!response.ok)throw new CourtRendererError('asset-load','Court model could not be loaded');
@@ -80,8 +80,8 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
   const manager=new T.LoadingManager();manager.setURLModifier(value=>{try{return embeddedCourtURL(value,url.origin);}catch(error){throw new CourtRendererError('asset-reference','Court model may not load secondary resources',error);}});
   const loader=new T.GLTFLoader(manager);const gltf=await wait(loader.parseAsync(buffer,'').then(value=>{if(disposed){disposeCourtResources(value.scene);throw abortError();}return value;}));
   if(disposed){disposeCourtResources(gltf.scene);throw abortError();}model=gltf.scene;model.updateMatrixWorld(true);
-  const materials=new Set();model.traverse(object=>{if(!object.isMesh)return;meshTriangles+=(object.geometry.index?.count||object.geometry.attributes.position?.count||0)/3*(object.isInstancedMesh?object.count:1);for(const material of Array.isArray(object.material)?object.material:[object.material])materials.add(material);object.castShadow=true;object.receiveShadow=true;});
-  materialCount=materials.size;if(meshTriangles>COURT_BUDGET.triangles||materialCount>COURT_BUDGET.materials)throw new CourtRendererError('asset-budget','Court geometry exceeded its bounded budget');
+  const materials=new Set();model.traverse(object=>{if(!object.isMesh)return;meshTriangles+=(object.geometry.index?.count||object.geometry.attributes.position?.count||0)/3*(object.isInstancedMesh?object.count:1);for(const material of Array.isArray(object.material)?object.material:[object.material]){materials.add(material);if(closedCourtShadowMaterial(material.name))material.shadowSide=T.BackSide;}object.castShadow=true;object.receiveShadow=true;});
+  materialCount=materials.size;closedShadowMaterials=[...materials].filter(material=>material.shadowSide===T.BackSide).length;if(meshTriangles>COURT_BUDGET.triangles||materialCount>COURT_BUDGET.materials)throw new CourtRendererError('asset-budget','Court geometry exceeded its bounded budget');
   const bounds=new T.Box3().setFromObject(model),center=bounds.getCenter(new T.Vector3());
   for(const key of COURT_KEYS){
    const door=model.getObjectByName('room-'+key)||model.getObjectByName('closed-'+key)||model.getObjectByName('sealed-'+key),focus=model.getObjectByName('focus-'+key)||door;
@@ -94,8 +94,10 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
   homePoses.set('wide',cameraPose(wide,center));homePoses.set('phone',cameraPose(phone,center));
   for(const key of COURT_KEYS){const fixed=model.getObjectByName('camera-'+key),approach=model.getObjectByName('approach-'+key);if(fixed?.isPerspectiveCamera)roomPoses.set(key,cameraPose(fixed,anchors.get(key).point));else if(approach)roomPoses.set(key,focusPose(homePose(),anchors.get(key).point.toArray(),approach.getWorldPosition(new T.Vector3()).toArray()));}
   camera=new T.PerspectiveCamera(43,dimensions.width/dimensions.height,.1,120);motion=createCameraMotion(homePose(),now);applyPose(motion.sample());scene.add(model);
-  // A little actual warm light near the entrance, not claimed workflow status.
-  const lamp=new T.PointLight('#ffc68a',18,9,2);lamp.position.set(0,3.4,0);scene.add(lamp);
+  scene.updateMatrixWorld(true);sun.shadow.updateMatrices(sun);const lightBounds=bounds.clone().applyMatrix4(sun.shadow.camera.matrixWorldInverse);shadowBounds=fitCourtShadow(lightBounds.min.toArray(),lightBounds.max.toArray());Object.assign(sun.shadow.camera,shadowBounds);sun.shadow.camera.updateProjectionMatrix();
+  // One restrained spill at the visible study fanlight. Ambient
+  // architecture only: it never claims activity or follows workflow state.
+  const lamp=new T.PointLight('#ffc68a',3,4,2);lamp.position.set(-5.6,2.8,-2.65);scene.add(lamp);
   await wait(renderer.compileAsync(scene,camera));alive();draw();alive();if(!frameCount)throw new CourtRendererError('first-frame','Court did not render a first frame');
   driver=createDemandDriver({render:draw,request:callback=>win.requestAnimationFrame(callback),cancel:id=>win.cancelAnimationFrame(id)});
   ready=true;clearTimeout(deadline);
@@ -106,7 +108,7 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
    nudge(deltaX){if(disposed||!Number.isFinite(deltaX))return false;yaw=Math.max(-.3,Math.min(.3,yaw+deltaX*.002));driver.invalidate();return true;},
    setActive(value){if(disposed)return;active=!!value;if(!active)motion.settle();driver.setActive(active);},
    pick(x,y){if(disposed||!active||!Number.isFinite(x)||!Number.isFinite(y)||Math.abs(x)>1||Math.abs(y)>1)return null;return roomAt(x,y);},
-   diagnostics(){const size=renderer?.getDrawingBufferSize(bufferSize);return {webgl2:true,ready,disposed,contextLost,active,frameCount,meshTriangles,materialCount,shadowEnabled:renderer?.shadowMap.enabled===true,atmosphere:{...COURT_ATMOSPHERE},runtimeSkyTextures:sky?1:0,runtimeSkyTexels:sky?COURT_ATMOSPHERE.skyWidth*COURT_ATMOSPHERE.skyHeight:0,drawCalls,renderedTriangles,assetTextureCount:assetInfo?.textureCount||0,assetTexels:assetInfo?.texels||0,gpuTextures:renderer?.info.memory.textures||0,assetBytes:assetInfo?.bytes||0,physicalPixels:dimensions?.physicalPixels||0,physicalWidth:size?.x||0,physicalHeight:size?.y||0,pixelRatio:dimensions?.pixelRatio||0,width:dimensions?.width||0,height:dimensions?.height||0,pendingFrame:driver?.state().pendingFrame||false,selected,camera:pose?copyPose(pose):null,projectedRooms:projected.map(value=>({...value}))};},
+   diagnostics(){const size=renderer?.getDrawingBufferSize(bufferSize);return {webgl2:true,ready,disposed,contextLost,active,frameCount,meshTriangles,materialCount,shadowEnabled:renderer?.shadowMap.enabled===true,shadowFilter:renderer?.shadowMap.type===T.PCFShadowMap?'pcf':'other',shadowMapSize:sun.shadow.mapSize.x,shadowRadius:sun.shadow.radius,closedShadowMaterials,shadowBounds:shadowBounds?{...shadowBounds}:null,staticShadow:sun.shadow.autoUpdate===false,doorLight:{position:lamp.position.toArray(),intensity:lamp.intensity,distance:lamp.distance,castsShadow:lamp.castShadow},atmosphere:{...COURT_ATMOSPHERE},runtimeSkyTextures:sky?1:0,runtimeSkyTexels:sky?COURT_ATMOSPHERE.skyWidth*COURT_ATMOSPHERE.skyHeight:0,drawCalls,renderedTriangles,assetTextureCount:assetInfo?.textureCount||0,assetTexels:assetInfo?.texels||0,gpuTextures:renderer?.info.memory.textures||0,assetBytes:assetInfo?.bytes||0,physicalPixels:dimensions?.physicalPixels||0,physicalWidth:size?.x||0,physicalHeight:size?.y||0,pixelRatio:dimensions?.pixelRatio||0,width:dimensions?.width||0,height:dimensions?.height||0,pendingFrame:driver?.state().pendingFrame||false,selected,camera:pose?copyPose(pose):null,projectedRooms:projected.map(value=>({...value}))};},
    dispose
   };
  }catch(error){fail(error,false);throw error;}

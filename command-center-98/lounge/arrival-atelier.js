@@ -1,6 +1,6 @@
 /* Isolated, opt-in architectural preview. Existing owners keep all records,
    routing and paper. Nothing here reads an API or changes source records. */
-import * as spatial from './spatial-atelier.js?v=20261101.1-living';
+import * as spatial from './spatial-atelier.js?v=20261101.4-arrival';
 import * as application from './app.js?v=20261101.1-living';
 
 const rooms=[
@@ -150,13 +150,13 @@ if(reduced()||lowQuality()){
  root.dataset.state='fallback';
 }else{
  try{
-  await new Promise((resolve,reject)=>{const link=doc.createElement('link');link.rel='stylesheet';link.href=new URL('./arrival-court.css?v=20261101.3-arrival',import.meta.url);link.onload=resolve;link.onerror=()=>reject(Error('Arrival styles unavailable'));doc.head.append(link);loadTimer=setTimeout(()=>reject(Error('Arrival style timeout')),10000);});clearTimeout(loadTimer);
+  await new Promise((resolve,reject)=>{const link=doc.createElement('link');link.rel='stylesheet';link.href=new URL('./arrival-court.css?v=20261101.4-arrival',import.meta.url);link.onload=resolve;link.onerror=()=>reject(Error('Arrival styles unavailable'));doc.head.append(link);loadTimer=setTimeout(()=>reject(Error('Arrival style timeout')),10000);});clearTimeout(loadTimer);
   if(getComputedStyle(doc.body).getPropertyValue('--arrival-court-ready').trim()!=='1')throw Error('Arrival style contract unavailable');
   // Keep the original castle visible during loading and shader compilation.
   root.hidden=false;root.dataset.state='loading';const rect=panel.getBoundingClientRect();canvas.width=Math.max(1,rect.width);canvas.height=Math.max(1,rect.height);
   loadTimer=setTimeout(()=>fail(Error('Arrival model/compile timeout')),15000);
-  const {createCourtRenderer}=await import('./arrival-renderer.js?v=20261101.3-arrival');
-  const result=await createCourtRenderer({canvas,modelURL:new URL('./assets/arrival-court-v1.glb?v=c6baebc2d517',import.meta.url).href,onFrame:project,onFailure:fail,signal:abort.signal});
+  const {createCourtRenderer}=await import('./arrival-renderer.js?v=20261101.4-arrival');
+  const result=await createCourtRenderer({canvas,modelURL:new URL('./assets/arrival-court-v1.glb?v=1bdbe3ab1448',import.meta.url).href,onFrame:project,onFailure:fail,signal:abort.signal});
   if(disposed||failed){result.dispose();}else{renderer=result;clearTimeout(loadTimer);ready=true;root.dataset.state='ready';root.hidden=true;sync();}
  }catch(error){if(disposed||reduced()||lowQuality()){clearTimeout(loadTimer);root.dataset.state='fallback';releaseOriginal();}else fail(error);}
 }
