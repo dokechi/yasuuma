@@ -1,7 +1,7 @@
 """Original architectural arrival court; geometry/PBR only, no external artwork.
 Run with Blender 4.3: blender -b -t 8 -P build_arrival_court.py
 """
-import bpy, math, random, json, os, collections, sys
+import bpy, math, random, json, os, collections, sys, hashlib
 from mathutils import Vector
 from math import sin, cos, pi
 ROOT=os.path.dirname(os.path.abspath(__file__)); random.seed(27)
@@ -69,6 +69,8 @@ def anchor(name,point,meta=None):
  if meta:
   for k,v in meta.items():o[k]=v
  anchors[name]=point;return o
+def motion(o,part):
+ o['nativeMotion']=part;return o
 def door(key,x,y,z,r=1.1,spring=2.05,accent='cloth_burgundy',closed=False):
  global active_portal
  prefix=('closed-' if closed else 'room-')+key;active_portal=prefix
@@ -76,17 +78,21 @@ def door(key,x,y,z,r=1.1,spring=2.05,accent='cloth_burgundy',closed=False):
  lower=key in ('insurance','rakuten','sourcing')
  back=y+(.12 if closed else .64)
  o=extrude_shape(prefix,arch_shape(x,z+.035,r-.08,spring-.035),back,.10,'oak_smoked' if closed or lower else 'window_amber',True)
+ if not closed:motion(o,1)
  if lower:
   pts=[(x-r*.72,z+spring-.12),(x+r*.72,z+spring-.12)]+[(x+r*.72*cos(i*pi/14),z+spring-.12+r*.72*sin(i*pi/14)) for i in range(15)]
-  extrude_shape(prefix+' warm transom',pts,back-.061,.025,'window_amber')
-  for dx in [-.42,.42]:orb(prefix+' brass latch',(x+dx,back-.12,z+1.12),.055,'brass_aged',10,5)
+  motion(extrude_shape(prefix+' warm transom',pts,back-.061,.025,'window_amber'),4)
+  for dx in [-.42,.42]:motion(orb(prefix+' brass latch',(x+dx,back-.12,z+1.12),.055,'brass_aged',10,5),2 if dx<0 else 3)
  o['destination']=key;o['sealed']=closed;o['semantic']='sealed wing' if closed else 'existing authenticated destination'
  # Visible depth of reveal; no invisible floating hotspot geometry.
  arch_ring(prefix+' inner reveal',x,y+.07,z,r-.09,spring,.065,.11,'iron_forged',11)
  for dx in [-.65,-.32,0,.32,.65]:
   if abs(dx)>=r-.09:continue
-  top=z+spring+math.sqrt(max(0,(r-.10)**2-dx**2));rod(prefix+' mullion',(x+dx,back-.08,z+.08),(x+dx,back-.08,top-.04),.022,'oak_smoked' if lower else 'iron_forged',6)
- for zz in [z+.85,z+spring]:box(prefix+' transom',(x,back-.09,zz),(2*r-.20,.065,.055),'oak_smoked' if lower else 'iron_forged',.005)
+  top=z+spring+math.sqrt(max(0,(r-.10)**2-dx**2));bar=rod(prefix+' mullion',(x+dx,back-.08,z+.08),(x+dx,back-.08,top-.04),.022,'oak_smoked' if lower else 'iron_forged',6)
+  if not closed:motion(bar,1)
+ for zz in [z+.85,z+spring]:
+  bar=box(prefix+' transom',(x,back-.09,zz),(2*r-.20,.065,.055),'oak_smoked' if lower else 'iron_forged',.005)
+  if not closed:motion(bar,1)
  if closed:
   for zz in [z+.65,z+1.25]:box(prefix+' sealed brace',(x,y-.10,zz),(2*r-.12,.10,.14),'iron_forged',.012)
   orb(prefix+' lock',(x,y-.19,z+.98),.07,'brass_aged',12,6)
@@ -104,12 +110,31 @@ def door(key,x,y,z,r=1.1,spring=2.05,accent='cloth_burgundy',closed=False):
 
 def wall(name,x,y,z,w,h,depth=.65):
  # Courses remain true relief, not a tiled image.
- rows=round(h/.52);cols=max(2,round(w/.94));dy=h/rows
+ rows=round(h/.52);cols=max(2,round(w/.94));dy=h/rows;created=[]
  for row in range(rows):
   for col in range(cols):
    xx=x-w/2+(col+.5)*w/cols
    material=random.choices(['stone_dusk','stone_worn','stone_shadow'],[.75,.19,.06])[0]
-   box(name,(xx,y,z+(row+.5)*dy),(w/cols-.024,depth+random.uniform(-.025,.025),dy-.020),material,.02)
+   created.append(box(name,(xx,y,z+(row+.5)*dy),(w/cols-.024,depth+random.uniform(-.025,.025),dy-.020),material,.02))
+ return created
+
+def carve(targets,cutter,label):
+ """A real closed pocket within existing building masses; no renderer masking."""
+ bpy.context.view_layer.update();points=[cutter.matrix_world@Vector(p)for p in cutter.bound_box]
+ lo=[min(p[i]for p in points)for i in range(3)];hi=[max(p[i]for p in points)for i in range(3)];changed=0
+ for o in list(targets):
+  points=[o.matrix_world@Vector(p)for p in o.bound_box]
+  if any(max(p[i]for p in points)<lo[i]or min(p[i]for p in points)>hi[i]for i in range(3)):continue
+  mod=o.modifiers.new(label,'BOOLEAN');mod.operation='DIFFERENCE';mod.solver='EXACT';mod.object=cutter
+  bpy.context.view_layer.objects.active=o;bpy.ops.object.modifier_apply(modifier=mod.name);changed+=1
+  if not o.data.polygons:
+   if o in static:static.remove(o)
+   targets.remove(o);bpy.data.objects.remove(o,do_unlink=True)
+ if cutter in static:static.remove(cutter)
+ bpy.data.objects.remove(cutter,do_unlink=True);print('NATIVE_POCKET',label,changed,flush=True)
+
+def pocket_box(targets,label,x,front,back,bottom,top,width):
+ carve(targets,box('_CUT_'+label,(x,(front+back)/2,(bottom+top)/2),(width,back-front,top-bottom),'stone_shadow',0),label)
 
 def gable(name,x,y,z,width,depth,rise,material='oak_smoked'):
  pts=[(x-width/2,z),(x+width/2,z),(x,z+rise)]
@@ -125,35 +150,44 @@ def lantern(x,y,z):
 
 # One inhabited stone court, deliberately spacious in the foreground.
 box('Courtyard foundation',(0,0,-.43),(23,24,.72),'stone_shadow',.13)
-for row in range(11):
- for col in range(11):
-  x=-10.5+(col+.5)*1.92+(.40 if row%2 else 0);y=-10.5+(row+.5)*1.72
-  if abs(x)>11:continue
-  box('Worn terrace slab',(x,y,random.uniform(-.016,.016)),(1.88,1.68,.14),random.choices(['stone_dusk','stone_worn','stone_shadow'],[.69,.25,.06])[0],.035)
+# Preserve the original facade random sequence: floor variation has its own RNG.
+for _ in range(121):
+ random.uniform(-.016,.016);random.choices(['stone_dusk','stone_worn','stone_shadow'],[.69,.25,.06])
+floor_rng=random.Random(20261101)
+for row in range(9):
+ widths=[floor_rng.uniform(2.4,3.7) for _ in range(7)]
+ widths=[w*21.2/sum(widths) for w in widths]
+ x=-10.5
+ for col,width in enumerate(widths):
+  y=-10.5+(row+.5)*2.10
+  material='stone_worn' if (row*7+col)%11==4 else 'stone_dusk'
+  box('Quiet worn paving course',(x+width/2,y,0),(width-.016,2.10-.016,.14),material,.012)
+  x+=width
 # Thick edge of the elevated court reads as material rather than a floating plate.
 for x in range(-11,12,2):box('Terrace nosing',(x,-10.75,-.10),(1.97,.35,.35),'stone_worn',.045)
 
 # Lower study and dining wings. Portals sit inside heavy, dimensional buildings.
+lower_walls={}
 for key,x,y,r,accent in [('insurance',-5.6,2.2,1.18,'cloth_burgundy'),('rakuten',5.25,2.7,1.30,'cloth_amber')]:
  z=.35;w=4.05;top=4.75
  box(key+' raised foundation',(x,y+1.15,.10),(w+.5,3.6,.36),'stone_shadow',.06)
  for j in range(3):box(key+' entrance step',(x,y-.85+j*.25,.05+j*.10),(2*r+.85,.42,.18),'stone_worn',.035)
- wall(key+' left mass',x-w/2+.37,y+.65,z,.72,top-z,1.9)
- wall(key+' right mass',x+w/2-.37,y+.65,z,.72,top-z,1.9)
+ lower_walls[key]=wall(key+' left mass',x-w/2+.37,y+.65,z,.72,top-z,1.9)
+ lower_walls[key]+=wall(key+' right mass',x+w/2-.37,y+.65,z,.72,top-z,1.9)
  box(key+' roof beam',(x,y+.7,4.5),(w+.18,2.55,.28),'oak_smoked',.045)
  door(key,x,y-.02,z,r,2.05,accent)
  gable(key+' low roof',x,y+.9,4.65,w+.55,3.0,.85)
- lantern(x-r-.56,y-.26,2.3)
+ # Quiet architectural finish: no unused miniature cage-lantern decoration.
 
 # Left archive: narrow vertical Gothic proportions and a raised balcony.
-wall('Archive back',-5.5,6.0,.2,5.4,6.8,1.0)
+archive_back=wall('Archive back',-5.5,6.0,.2,5.4,6.8,1.0)
 box('Archive balcony',(-5.5,4.65,3.30),(5.3,2.4,.32),'stone_worn',.055)
 door('otoku',-5.3,4.25,3.48,1.12,2.1,'cloth_violet')
 gable('Archive roof',-5.45,5.3,7.02,5.65,3.3,1.05)
 for x in [-7.7,-3.3]:box('Archive buttress',(x,4.9,3.7),(.48,1.3,7.0),'stone_dusk',.04)
 
 # A central stair spine is inherited from the original cutaway silhouette.
-wall('Central tower back',0,7.35,.1,4.1,9.2,1.0)
+central_back=wall('Central tower back',0,7.35,.1,4.1,9.2,1.0)
 for x in [-1.75,1.75]:wall('Central flanking pier',x,6.2,.2,.58,8.1,1.7)
 door('sourcing',0,5.65,.20,1.32,2.25,'cloth_teal')
 box('Central lower cornice',(0,6.6,4.42),(4.5,2.75,.28),'stone_worn',.04)
@@ -227,11 +261,29 @@ for i in range(24):
 anchor('arrival-orrery',(0,-1.8,2.85),{'purpose':'quiet selection landmark, no fabricated status'})
 
 # Very few human-scale details; keep the court calm, not a prop catalogue.
-for x,y in [(-7.9,.4),(7.9,1.1)]:
- cyl('Low lantern pedestal',(x,y,.42),.24,.74,'stone_dusk',12,.03);lantern(x,y,1.00)
+# Four nonfunctional cage-lantern fixtures are deliberately omitted. Their one
+# static glass group funds the physically correct fixed clerestory lower pane.
 for x,y in [(-8.5,2.3),(7.6,4.0)]:
  box('Closed oak service chest',(x,y,.48),(.8,.64,.83),'oak_smoked',.035)
  for zz in [.2,.65]:box('Chest forged strap',(x,y-.33,zz),(.86,.045,.07),'iron_forged',.008)
+
+# Bounded native threshold pockets. Closed fronts and outer envelopes remain.
+# The archive retains its visible arched mouth, with a rectangular swept-leaf
+# chamber behind it; a continuously arched tunnel would hit the rotated tops.
+carve(archive_back,extrude_shape('_CUT_archive-mouth',arch_shape(-5.3,3.50,1.32,2.10),5.565,.25,'stone_shadow'),'Archive arched mouth')
+pocket_box(archive_back,'Archive swept-leaf pocket',-5.3,5.44,6.32,3.47,6.84,2.64)
+# Observatory keeps the original exterior Boolean mouth and solid rear crown.
+pocket_box([tower],'Observatory casement pocket',5.10,4.82,7.36,3.53,7.03,2.73)
+# Only the high casement moves. Its rear arch returns need a square swept pocket;
+# the original curved exterior mouth remains in front of this local rebate.
+pocket_box([tower],'Observatory high rear haunch rebate',5.10,4.285,7.36,5.60,7.03,2.94)
+# Lower doors retain fixed fanlights, avoiding any balcony-slab notch.
+pocket_box([tower],'Dining wood-door pocket',5.25,3.14,4.98,.32,2.37,2.88)
+pocket_box(lower_walls['rakuten'],'Dining rear jamb rebate',5.25,3.14,4.98,.32,2.37,2.88)
+pocket_box(central_back,'Workshop wood-door pocket',0,6.78,7.75,.17,2.40,2.94)
+# Original masonry joints are open gaps between blocks. A real local rear lining
+# closes the threshold pocket without extending the existing building envelope.
+box('Workshop pocket retained rear lining',(0,7.78,1.285),(2.70,.06,2.23),'stone_shadow',0)
 
 # Portal ownership is geometric: frame/mullions/latches select the same room.
 print('ARRIVAL_AUTHORING_DONE',len(static),flush=True)
@@ -247,9 +299,17 @@ for material,obs in groups.items():
  bpy.context.view_layer.objects.active=obs[0];bpy.ops.object.join();obs[0].name='architecture-'+material
 for name,obs in portal_groups.items():
  bpy.ops.object.select_all(action='DESELECT')
- for o in obs:o.select_set(True)
+ for o in obs:
+  attribute=o.data.attributes.new(name='court_motion',type='INT',domain='FACE')
+  for value in attribute.data:value.value=o.get('nativeMotion',0)
+  o.select_set(True)
  primary=next((o for o in obs if o.name==name),obs[0]);bpy.context.view_layer.objects.active=primary;bpy.ops.object.join();primary.name=name
  primary['destination']=name.removeprefix('room-').removeprefix('closed-');primary['sealed']=name.startswith('closed-');primary['roomKey']=primary['destination']
+
+# Native, semantically owned mechanisms; lower original fanlights stay fixed.
+sys.path.insert(0,ROOT)
+from split_native_portals import split_native_portals
+native_portals = split_native_portals()
 
 # Identical actual embedded image maps in Blender proof and standard glTF PBR.
 base=bpy.data.images.load(os.path.join(ROOT,'materials','stone-basecolor-v1.jpg'));base.colorspace_settings.name='sRGB'
@@ -258,22 +318,35 @@ orm=bpy.data.images.load(os.path.join(ROOT,'materials','stone-orm-v1.png'));orm.
 for key,tint in [('stone_dusk',(.45,.50,.56,1)),('stone_worn',(.49,.53,.58,1)),('stone_shadow',(.38,.43,.48,1))]:
  m=M[key];n=m.node_tree.nodes;l=m.node_tree.links;p=n.get('Principled BSDF')
  color=n.new('ShaderNodeTexImage');color.image=base;color.extension='REPEAT'
+ coord=n.new('ShaderNodeTexCoord');mapping=n.new('ShaderNodeMapping');mapping.inputs['Scale'].default_value=(.25,.25,1)
+ l.new(coord.outputs['UV'],mapping.inputs['Vector']);l.new(mapping.outputs['Vector'],color.inputs['Vector'])
  mul=n.new('ShaderNodeMixRGB');mul.blend_type='MULTIPLY';mul.inputs[0].default_value=1;mul.inputs[2].default_value=tint;l.new(color.outputs['Color'],mul.inputs[1]);l.new(mul.outputs[0],p.inputs['Base Color'])
  tex=n.new('ShaderNodeTexImage');tex.image=normal;tex.extension='REPEAT'
  nm=n.new('ShaderNodeNormalMap');nm.inputs['Strength'].default_value=.35;l.new(tex.outputs['Color'],nm.inputs['Color']);l.new(nm.outputs['Normal'],p.inputs['Normal'])
  tex=n.new('ShaderNodeTexImage');tex.image=orm;tex.extension='REPEAT';sep=n.new('ShaderNodeSeparateColor');sep.mode='RGB';l.new(tex.outputs['Color'],sep.inputs['Color']);l.new(sep.outputs['Green'],p.inputs['Roughness']);l.new(sep.outputs['Blue'],p.inputs['Metallic'])
  # Source material factors survive standard glTF export; shared maps keep cost bounded.
  m['materialIntent']='original limestone image + native baked periodic microrelief; shared PBR'
+# One original low-contrast oak albedo; preserve mean linear color, not shadow noise.
+oak_image=bpy.data.images.load(os.path.join(ROOT,'materials','oak-basecolor-v1.jpg'));oak_image.colorspace_settings.name='sRGB'
+oak_factor=json.load(open(os.path.join(ROOT,'materials','oak-basecolor-v1.json')))['factorToPreserveOriginalOakMean']
+m=M['oak_smoked'];n=m.node_tree.nodes;l=m.node_tree.links;p=n.get('Principled BSDF')
+color=n.new('ShaderNodeTexImage');color.image=oak_image;color.extension='REPEAT'
+mul=n.new('ShaderNodeMixRGB');mul.blend_type='MULTIPLY';mul.inputs[0].default_value=1;mul.inputs[2].default_value=oak_factor
+l.new(color.outputs['Color'],mul.inputs[1]);l.new(mul.outputs[0],p.inputs['Base Color'])
+m['materialIntent']='original smoked-oak albedo, mean-preserving factor; real lighting remains independent'
 for o in list(bpy.context.scene.objects):
- if o.type!='MESH' or not any(m.name.startswith('stone_') for m in o.data.materials):continue
+ if o.type!='MESH' or not any(m.name.startswith('stone_') or m.name=='oak_smoked' for m in o.data.materials):continue
  uv=o.data.uv_layers.active or o.data.uv_layers.new(name='UVMap')
  for poly in o.data.polygons:
   axis=max(range(3),key=lambda i:abs(poly.normal[i]));coords=[]
   for li in poly.loop_indices:
    p=o.matrix_world@o.data.vertices[o.data.loops[li].vertex_index].co
-   coords.append((p.y*4,p.z*4) if axis==0 else (p.x*4,p.z*4) if axis==1 else (p.x*4,p.y*4))
-  ox=math.floor(min(v[0] for v in coords));oy=math.floor(min(v[1] for v in coords))
-  for li,(u,v) in zip(poly.loop_indices,coords):uv.data[li].uv=(u-ox,v-oy)
+   if o.data.materials[poly.material_index].name=='oak_smoked':
+    coords.append((p.y*1.8,p.z*.60) if axis==0 else (p.x*1.8,p.z*.60) if axis==1 else (p.x*1.8,p.y*.60))
+   else:coords.append((p.y*4,p.z*4) if axis==0 else (p.x*4,p.z*4) if axis==1 else (p.x*4,p.y*4))
+  # World-continuous phase also survives the coarser basecolor-only transform.
+  # The authored court is small enough for signed SHORT UVs without rebasing.
+  for li,(u,v) in zip(poly.loop_indices,coords):uv.data[li].uv=(u,v)
 # Deep, restrained glass; lower actual doors are dark oak with a small warm fanlight.
 M['window_amber'].node_tree.nodes.get('Principled BSDF').inputs['Base Color'].default_value=(.16,.073,.022,1)
 M['window_amber'].node_tree.nodes.get('Principled BSDF').inputs['Emission Color'].default_value=(.40,.19,.04,1)
@@ -318,8 +391,13 @@ for o in exported:
  if o.type=='MESH':o.data.calc_loop_triangles();triangles+=len(o.data.loop_triangles)
 def yup(p):return [round(p[0],5),round(p[2],5),round(-p[1],5)]
 meta={'version':1,'units':'meters','up':'Y','origin':'courtyard floor below central stair spine','triangleCount':triangles,'materialCount':len(M),'meshCount':sum(o.type=='MESH' for o in exported),'glbBytes':os.path.getsize(os.path.join(ROOT,'arrival-court-v1-raw.glb')),'cameras':{'arrival-camera':{'position':yup(cam.location),'target':yup((-.2,2.2,3.3)),'fovVerticalDegrees':round(math.degrees(cam.data.angle_y),3)},'phone-camera':{'position':yup(phone.location),'target':yup((-3.85,1.5,3.5)),'fovVerticalDegrees':round(math.degrees(phone.data.angle_y),3)}},'anchors':{k:yup(v) for k,v in anchors.items()},'materials':list(M),'lightingIntent':'broad cool upper-left key; restrained warm window reflections; contact shadows essential; no bloom blanket','budget':{'trianglesTarget':60000,'trianglesMaximum':80000,'glbMaximumBytes':2000000,'materialsMaximum':12,'drawCallsMaximum':50},'notes':['Static original architectural prototype; not a claim of Igloo-equivalent render quality.','Original embedded PBR stone maps only; no copied models/art, external URI, user data or character replacements.','Existing reader, authentication, immediate routes and painted castle remain implementation-owned fallback.','Phone should select/focus a room, never shrink all gates to unreadable miniatures.']}
+meta['portals']=native_portals
+meta['budget'].update(trianglesMaximum=60000,primitiveGroupsTarget=64,primitiveGroupsMaximum=64,drawCallsMaximum=128)
+meta['authoredRevision']='v5-native-finish'
+meta['notes'][0]='Original architectural finish candidate with five native physically verified portals; actual WebGL continuity/material QA required.'
+meta['notes'][1]='Four original embedded standard-PBR maps: shared stone basecolor/normal/ORM and one restrained oak basecolor; no copied models/art or external URI.'
 json.dump(meta,open(os.path.join(ROOT,'arrival-court-v1-layout.json'),'w'),ensure_ascii=False,indent=2)
-json.dump({'asset':'arrival-court-v1.glb','authoring':'Original procedural mesh/material authoring using Blender 4.3.2 Python API','source':'build_arrival_court.py','sourceArtworkUsed':'Original imagegen basecolor and original native-baked material maps; no external raster/model inputs. Architectural continuity informed by existing original castle cutaway and room identities.','references':'User-provided Igloo screenshots used only for atmosphere, light/space quality analysis, not copied or embedded.','generatedRasterAssets':'Original built-in imagegen stone basecolor plus native Blender-baked technical normal/ORM maps','proofRenders':'Blender inspection renders, not shipped image replacements','licenses':'Original geometry and material definitions; no third-party assets','geometry':meta},open(os.path.join(ROOT,'arrival-court-v1-provenance.json'),'w'),ensure_ascii=False,indent=2)
+json.dump({'asset':'arrival-court-v1.glb','authoredRevision':'v5-native-finish','authoring':'Original procedural mesh/material authoring using Blender 4.3.2 Python API','source':'build_arrival_court.py','sourceRecipe':['build_arrival_court.py','split_native_portals.py','quantize_arrival_court.py','bake_stone_material.py'],'sourceArtworkUsed':'Original imagegen stone/oak basecolor and original native-baked technical maps; no external raster/model inputs. Architectural continuity informed by existing original castle cutaway and room identities.','references':'User-provided Igloo screenshots used only for atmosphere, light/space quality analysis, not copied or embedded.','generatedRasterAssets':'Original built-in imagegen stone and oak basecolors plus native Blender-baked technical normal/ORM maps','proofRenders':'Blender inspection renders, not shipped image replacements','licenses':'Original geometry and material definitions; no third-party assets','geometry':meta},open(os.path.join(ROOT,'arrival-court-v1-provenance.json'),'w'),ensure_ascii=False,indent=2)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(ROOT,'arrival-court-v1.blend'))
 print('ARRIVAL_ASSET_STATS',json.dumps({k:meta[k] for k in ['triangleCount','materialCount','meshCount','glbBytes']}),flush=True)
 if '--render' in sys.argv:

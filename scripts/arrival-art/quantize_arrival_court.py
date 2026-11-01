@@ -1,7 +1,7 @@
-"""Deterministic static glTF quantization. Original material pixels are copied
+"""Deterministic glTF mesh quantization; native EMPTY pivots remain unscaled. Original material pixels are copied
 verbatim into embedded bufferViews. No image editing/decoder/external URLs.
 """
-import struct,json,os,hashlib
+import struct,json,os,hashlib,math
 R=os.path.dirname(os.path.abspath(__file__));src=os.path.join(R,'arrival-court-v1-raw.glb');raw=open(src,'rb').read();ln=struct.unpack_from('<I',raw,12)[0];j=json.loads(raw[20:20+ln]);b=20+ln;data=raw[b+8:b+8+struct.unpack_from('<I',raw,b)[0]]
 oldacc=j['accessors'];oldviews=j['bufferViews'];blob=bytearray();acc=[];views=[]
 def read(a):
@@ -35,16 +35,38 @@ for mesh in j['meshes']:
   if uv:
    ua=len(acc);acc.append({'bufferView':view,'byteOffset':12,'componentType':5122,'count':len(packed),'type':'VEC2'});p['attributes']['TEXCOORD_0']=ua
   indx=[remap[n] for n in ix];fmt='H' if max(indx)<65536 else'I';iv=push(struct.pack('<'+fmt*len(indx),*indx),34963);ia=len(acc);acc.append({'bufferView':iv,'componentType':5123 if fmt=='H' else 5125,'count':len(indx),'type':'SCALAR'});p['indices']=ia
+node_by_name={node.get('name'):node for node in j['nodes']}
 for node in j['nodes']:
+ portal=node.get('extras',{}).get('courtPortal')
+ if portal:
+  assert not node.get('matrix') and not node.get('translation') and not node.get('rotation')
+  for hinge in portal['hinges']:
+   authored=[round(value,3)for value in hinge['pivot']];native=node_by_name[hinge['node']]
+   assert not native.get('matrix') and max(abs(a-b)for a,b in zip(native['translation'],authored))<.001
+   # Exact authored millimetres avoid float32 pivot + quantized-local seam gaps.
+   native['translation']=authored;hinge['pivot']=authored
+   leaf=node_by_name[hinge['leaf']];offset=round(portal['aperture']['center'][0]-authored[0],3)
+   expected=[offset,0,0];actual=leaf.get('translation',[0,0,0])
+   assert max(abs(a-b)for a,b in zip(actual,expected))<.001
+   leaf['translation']=expected
+   if 'handle' not in hinge:
+    assert portal['room'] in ('otoku','lottery');hinge['handle']=None
  if'mesh'in node:
   assert'matrix'not in node and not node.get('children');node['scale']=[a*.001 for a in node.get('scale',[1,1,1])]
 for cam in j.get('cameras',[]):cam['perspective'].pop('aspectRatio',None)
 tints={'stone_dusk':[.45,.50,.56,1],'stone_worn':[.49,.53,.58,1],'stone_shadow':[.38,.43,.48,1]}
+oak_factor_path=os.path.join(R,'materials','oak-basecolor-v1.json')
+if os.path.exists(oak_factor_path):tints['oak_smoked']=json.load(open(oak_factor_path))['factorToPreserveOriginalOakMean']
 for m in j.get('materials',[]):
  if m.get('name') in tints:m.setdefault('pbrMetallicRoughness',{})['baseColorFactor']=tints[m['name']]
  for info in [m.get('normalTexture'),m.get('occlusionTexture'),m.get('emissiveTexture'),m.get('pbrMetallicRoughness',{}).get('baseColorTexture'),m.get('pbrMetallicRoughness',{}).get('metallicRoughnessTexture')]:
   if info:
-   ext=info.setdefault('extensions',{}).setdefault('KHR_texture_transform',{});assert not ext.get('offset') and not ext.get('rotation');ext['scale']=[a/256 for a in ext.get('scale',[1,1])]
+   ext=info.setdefault('extensions',{}).setdefault('KHR_texture_transform',{})
+   # Preserve Blender's legitimate V-flip offset for the coarser basecolor map.
+   # Only vertex-UV units change; transform translation remains in texture units.
+   assert abs(ext.get('rotation',0))<1e-8
+   assert len(ext.get('offset',[0,0]))==2 and all(math.isfinite(a)for a in ext.get('offset',[0,0]))
+   ext['scale']=[a/256 for a in ext.get('scale',[1,1])]
 # Blender may duplicate identical sampler/source records per material.
 # Deduplicate records, not images, and remap standard material textureInfo refs.
 unique=[];texture_remap={};seen_textures={}

@@ -1,0 +1,124 @@
+{
+  "assetSha256": "ce19597525952a5847ec927eb2150eda6efd5eb4d5ec29ca4f5cf11686ab30e6",
+  "method": "<=1 degree swept convex triangle hulls + conservative .15mm SAT expansion against all overlapping static triangle AABBs",
+  "maxStepDegrees": 1,
+  "expansionMeters": 0.00015,
+  "blenderImportNumericToleranceMeters": 1e-06,
+  "rooms": {
+    "insurance": {
+      "hinges": [
+        {
+          "node": "hinge-insurance-left",
+          "intervals": 85,
+          "movingTriangles": 180,
+          "nearbyStaticTriangles": 0,
+          "analyticCentreMarginMeters": -9.536743128535363e-08
+        },
+        {
+          "node": "hinge-insurance-right",
+          "intervals": 85,
+          "movingTriangles": 180,
+          "nearbyStaticTriangles": 0,
+          "analyticCentreMarginMeters": 9.536743128535363e-08
+        }
+      ],
+      "collisions": [],
+      "collisionCount": 0,
+      "contactEnvelope": {},
+      "maxArcChordErrorMeters": 4.250484970282367e-05,
+      "candidatePairs": 0,
+      "pass": true
+    },
+    "rakuten": {
+      "hinges": [
+        {
+          "node": "hinge-rakuten-left",
+          "intervals": 85,
+          "movingTriangles": 180,
+          "nearbyStaticTriangles": 6,
+          "analyticCentreMarginMeters": 0.0
+        },
+        {
+          "node": "hinge-rakuten-right",
+          "intervals": 85,
+          "movingTriangles": 180,
+          "nearbyStaticTriangles": 10,
+          "analyticCentreMarginMeters": 0.0
+        }
+      ],
+      "collisions": [],
+      "collisionCount": 0,
+      "contactEnvelope": {},
+      "maxArcChordErrorMeters": 4.7013838717866824e-05,
+      "candidatePairs": 3848,
+      "pass": true
+    },
+    "sourcing": {
+      "hinges": [
+        {
+          "node": "hinge-sourcing-left",
+          "intervals": 85,
+          "movingTriangles": 180,
+          "nearbyStaticTriangles": 2,
+          "analyticCentreMarginMeters": 0.0
+        },
+        {
+          "node": "hinge-sourcing-right",
+          "intervals": 85,
+          "movingTriangles": 180,
+          "nearbyStaticTriangles": 2,
+          "analyticCentreMarginMeters": 0.0
+        }
+      ],
+      "collisions": [],
+      "collisionCount": 0,
+      "contactEnvelope": {},
+      "maxArcChordErrorMeters": 4.7766450741327566e-05,
+      "candidatePairs": 1408,
+      "pass": true
+    },
+    "otoku": {
+      "hinges": [
+        {
+          "node": "hinge-otoku-left",
+          "intervals": 85,
+          "movingTriangles": 164,
+          "nearbyStaticTriangles": 2,
+          "analyticCentreMarginMeters": 1.9073486345888568e-07
+        },
+        {
+          "node": "hinge-otoku-right",
+          "intervals": 85,
+          "movingTriangles": 164,
+          "nearbyStaticTriangles": 0,
+          "analyticCentreMarginMeters": -1.9073486345888568e-07
+        }
+      ],
+      "collisions": [],
+      "collisionCount": 0,
+      "contactEnvelope": {},
+      "maxArcChordErrorMeters": 4.0255451207023005e-05,
+      "candidatePairs": 40,
+      "pass": true
+    },
+    "lottery": {
+      "hinges": [
+        {
+          "node": "hinge-lottery-left",
+          "intervals": 85,
+          "movingTriangles": 216,
+          "nearbyStaticTriangles": 2,
+          "analyticCentreMarginMeters": null
+        }
+      ],
+      "collisions": [],
+      "collisionCount": 0,
+      "contactEnvelope": {},
+      "maxArcChordErrorMeters": 9.470753449110715e-05,
+      "candidatePairs": 2480,
+      "pass": true
+    }
+  },
+  "seconds": 3.9775073528289795,
+  "pass": true
+}

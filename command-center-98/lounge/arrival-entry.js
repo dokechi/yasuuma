@@ -2,7 +2,7 @@
    spatial owner is shared; no renderer, vendor or model is imported on startup. */
 import * as spatial from './spatial-atelier.js?v=20261101.5-arrival';
 
-export function installArrivalEntry(owner=spatial,loadCourt=()=>import('./arrival-atelier.js?v=20261101.5-arrival')) {
+export function installArrivalEntry(owner=spatial,loadCourt=()=>import('./arrival-atelier.js?v=20261101.6-passage')) {
  const presentation=owner.getSpatialPresentation?.(),panel=presentation?.board?.element;
  const doc=panel?.ownerDocument,win=doc?.defaultView,footer=panel?.querySelector('.board-footer');
  if(!presentation?.scene||!doc||!win||!footer)return null;

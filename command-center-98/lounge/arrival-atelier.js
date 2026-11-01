@@ -23,7 +23,7 @@ const reduced=()=>media.matches||!!reduceControl?.checked;
 const lowQuality=()=>navigator.connection?.saveData===true||(Number.isFinite(navigator.deviceMemory)&&navigator.deviceMemory<=2);
 const element=(tag,cls,text)=>{const n=doc.createElement(tag);n.className=cls||'';if(text!==undefined)n.textContent=text;return n;};
 const button=(cls,text,handler)=>{const n=element('button',cls,text);n.type='button';n.addEventListener('click',handler);return n;};
-let renderer=null,failed=false,ready=false,disposed=false,preferred=!externalLaunch,active=false,hostPaused=false,selected=null,overview=true,lastTrigger=null,projection=[],pointer=null,handedOff=false;
+let renderer=null,passageAdapter=null,failed=false,ready=false,disposed=false,preferred=!externalLaunch,active=false,hostPaused=false,selected=null,overview=true,lastTrigger=null,projection=[],pointer=null,handedOff=false;
 let snapshot=application.getLivingDesk?.()?.snapshot?.(),lastVisited=board.state.lastVisited,loadTimer=0;
 const abort=new AbortController(),originalAttributes=new Map(),buttons=new Map();
 
@@ -57,7 +57,7 @@ const all=button('arrival-overview','中庭全体',()=>{overview=true;selected=n
 detail.append(kicker,title,account,state,enter,all);
 const footer=element('footer','arrival-footer'),hint=element('p','arrival-hint','扉を選んで近くへ。行先からは、すぐ本文へ。');
 const quick=element('nav','arrival-quick');quick.setAttribute('aria-label','持ち場をすぐ開く');quick.append(element('span','arrival-quick-label','すぐ開く'));
-for(const room of rooms.filter(r=>!r.sealed)){const b=button('arrival-quick-open',room.short,()=>open(room.key,b));b.dataset.courtOpen=room.key;b.setAttribute('aria-label',room.short+'をすぐ開く');quick.append(b);}
+for(const room of rooms.filter(r=>!r.sealed)){const b=button('arrival-quick-open',room.short,()=>open(room.key,b,{instant:true}));b.dataset.courtOpen=room.key;b.setAttribute('aria-label',room.short+'をすぐ開く');quick.append(b);}
 const announcement=element('p','sr-only');announcement.setAttribute('aria-live','polite');
 footer.append(hint,quick);root.append(canvas,header,targets,detail,footer,announcement);panel.append(root);
 const launch=externalLaunch||element('button','arrival-launch','3Dの中庭');launch.type='button';if(!externalLaunch){launch.hidden=true;panel.querySelector('.board-footer').append(launch);}
@@ -80,12 +80,18 @@ function select(key){
  const room=rooms.find(r=>r.key===key);if(!room||room.sealed||!renderer||!active)return;
  selected=key;overview=false;renderer.select(key,{instant:reduced()});renderCopy();announcement.textContent=room.name+'を選びました。「入る」または「すぐ開く」で本文へ進めます。';
 }
-function open(key,trigger){
+function commitOpen(key,trigger){
  if(!rooms.some(r=>r.key===key&&!r.sealed))return;
- lastTrigger=trigger;selected=key;overview=false;menu.open=false;renderer?.select(key,{instant:true});renderer?.setActive(false);
+ lastTrigger=trigger;selected=key;overview=false;menu.open=false;
+ // A leased canvas already holds the actual painted starting pose. Canonical
+ // selection still updates below; it must not repaint a future pose first.
+ if(!passageAdapter?.state().active)renderer?.select(key,{instant:true});renderer?.setActive(false);
  // The owner retains source identity, native routing, latest intent and Back.
- // First architectural slice intentionally keeps this work path truly instant.
  baseScene.open(key,trigger,{instant:true});sync();
+}
+function open(key,trigger,options={}){
+ if(!rooms.some(r=>r.key===key&&!r.sealed))return;
+ if(passageAdapter)passageAdapter.enter(key,trigger,options);else commitOpen(key,trigger);
 }
 function hideOriginal(){
  for(const child of panel.children){if(child===root)continue;if(!originalAttributes.has(child))originalAttributes.set(child,{inert:child.inert,aria:child.getAttribute('aria-hidden')});child.inert=true;child.setAttribute('aria-hidden','true');}
@@ -125,7 +131,7 @@ function sync({force=false}={}){
  renderCopy();
 }
 function fail(reason){
- if(failed||disposed)return;failed=true;ready=false;clearTimeout(loadTimer);abort.abort();renderer?.dispose();renderer=null;root.dataset.state='fallback';releaseOriginal();syncLaunch();
+ if(failed||disposed)return;failed=true;ready=false;clearTimeout(loadTimer);abort.abort();passageAdapter?.cancel();renderer?.dispose();renderer=null;root.dataset.state='fallback';releaseOriginal();syncLaunch();
  fallbackNote.textContent='立体表示を利用できないため、いつもの城を表示しています。';fallbackNote.hidden=false;
  console.warn('Arrival court kept the established castle.',reason);
 }
@@ -153,12 +159,12 @@ const unsubscribe=board.subscribe(()=>{if(board.state.lastVisited!==lastVisited)
 const unsubscribeLiving=application.getLivingDesk?.()?.subscribe?.(value=>{snapshot=value;renderCopy();});
 const observer=new MutationObserver(()=>sync());observer.observe(panel,{attributes:true,attributeFilter:['hidden','data-view']});
 const resize=new ResizeObserver(()=>{if(active){const r=root.getBoundingClientRect();renderer?.resize(r.width,r.height);}});resize.observe(panel);
-const motionChanged=()=>{if(reduced()||lowQuality()){preferred=false;releaseOriginal();syncLaunch();if(!ready){abort.abort();root.dataset.state='fallback';}}else sync();};media.addEventListener('change',motionChanged);reduceControl?.addEventListener('change',motionChanged);navigator.connection?.addEventListener?.('change',motionChanged);
+const motionChanged=()=>{if(reduced()||lowQuality()){passageAdapter?.cancel();preferred=false;releaseOriginal();syncLaunch();if(!ready){abort.abort();root.dataset.state='fallback';}}else sync();};media.addEventListener('change',motionChanged);reduceControl?.addEventListener('change',motionChanged);navigator.connection?.addEventListener?.('change',motionChanged);
 doc.addEventListener('visibilitychange',()=>{pointer=null;renderer?.setActive(active&&!doc.hidden&&!hostPaused);});
 const hostVisibility=event=>{if(event.source!==win.parent||event.origin!==location.origin||event.data?.channel!=='cc-castle-v1'||!['pause','resume'].includes(event.data.type))return;hostPaused=event.data.type==='pause';pointer=null;renderer?.setActive(active&&!doc.hidden&&!hostPaused);};win.addEventListener('message',hostVisibility);
-win.addEventListener('pagehide',()=>{disposed=true;abort.abort();clearTimeout(loadTimer);renderer?.dispose();observer.disconnect();resize.disconnect();unsubscribe();unsubscribeLiving?.();win.removeEventListener('message',hostVisibility);},{once:true});
+win.addEventListener('pagehide',()=>{disposed=true;abort.abort();clearTimeout(loadTimer);passageAdapter?.destroy();renderer?.dispose();observer.disconnect();resize.disconnect();unsubscribe();unsubscribeLiving?.();win.removeEventListener('message',hostVisibility);},{once:true});
 // Read-only graphics diagnostics exist only after explicit courtyard opt-in.
-Object.defineProperty(win,'__arrivalCourt',{configurable:true,value:Object.freeze({snapshot:()=>({state:failed||reduced()||lowQuality()?'fallback':ready?'ready':'loading',ready,active,failed,selected,overview,projection:projection.map(p=>({...p})),renderer:renderer?.diagnostics()||null})})});
+Object.defineProperty(win,'__arrivalCourt',{configurable:true,value:Object.freeze({snapshot:()=>({state:failed||reduced()||lowQuality()?'fallback':ready?'ready':'loading',ready,active,failed,selected,overview,projection:projection.map(p=>({...p})),passage:{available:!!passageAdapter,...passageAdapter?.state()},renderer:renderer?.diagnostics()||null})})});
 renderCopy();
 
 if(reduced()||lowQuality()){
@@ -171,14 +177,20 @@ if(reduced()||lowQuality()){
   // Keep the original castle visible during loading and shader compilation.
   root.hidden=false;root.dataset.state='loading';const rect=panel.getBoundingClientRect();canvas.width=Math.max(1,rect.width);canvas.height=Math.max(1,rect.height);
   loadTimer=setTimeout(()=>fail(Error('Arrival model/compile timeout')),15000);
-  const {createCourtRenderer}=await import('./arrival-renderer.js?v=20261101.5-arrival');
-  const result=await createCourtRenderer({canvas,modelURL:new URL('./assets/arrival-court-v1.glb?v=b8167b258923',import.meta.url).href,onFrame:project,onFailure:fail,signal:abort.signal});
+  const {createCourtRenderer}=await import('./arrival-renderer.js?v=20261101.6-passage');
+  const result=await createCourtRenderer({canvas,modelURL:new URL('./assets/arrival-court-v1.glb?v=ce1959752595',import.meta.url).href,onFrame:project,onFailure:fail,signal:abort.signal});
   if(disposed||failed){result.dispose();}else{
    renderer=result;
    // A reader may have been chosen while the model was loading. Replay that
    // latest room into the still-hidden renderer, never promote the old intent.
    if(selected&&!overview)renderer.select(selected,{instant:true});
    clearTimeout(loadTimer);ready=true;root.dataset.state='ready';root.hidden=true;sync();
+   // Independently optional and never awaited by activation or a work route.
+   // No native portal metadata means the established instant path remains.
+   if(['insurance','otoku','rakuten','lottery','sourcing'].some(key=>renderer.canPassage?.(key)))import('./arrival-passage.js?v=20261101.6-passage').then(async({installArrivalPassage})=>{
+    const adapter=await installArrivalPassage({document:doc,canvas,board,renderer,route:commitOpen,reduced,currentRoom:()=>doc.getElementById('room')?.dataset.account,canPresent:key=>!disposed&&!failed&&active&&!reduced()&&!lowQuality()&&!doc.hidden&&!hostPaused&&!doc.querySelector('dialog[open]')&&!!renderer?.canPassage(key)});
+    if(disposed||failed)adapter?.destroy();else passageAdapter=adapter;
+   }).catch(error=>console.warn('Court passage unavailable; instant work routes retained.',error));
   }
  }catch(error){if(disposed||reduced()||lowQuality()){clearTimeout(loadTimer);root.dataset.state='fallback';releaseOriginal();}else fail(error);}
 }

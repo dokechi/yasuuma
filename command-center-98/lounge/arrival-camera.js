@@ -1,7 +1,7 @@
 /* Pure geometry, bounded assets and demand scheduling for the optional court.
    No browser state, routes, data requests or global animation loop. */
 export const COURT_KEYS=Object.freeze(['insurance','otoku','rakuten','lottery','sourcing','planned-5','planned-6','reserve']);
-export const COURT_BUDGET=Object.freeze({bytes:2_000_000,triangles:60_000,materials:12,pixels:1_800_000,dpr:1.5,dimension:4096,textureSide:512,texels:1_000_000,images:4});
+export const COURT_BUDGET=Object.freeze({bytes:2_000_000,triangles:60_000,materials:12,groups:64,pixels:1_800_000,dpr:1.5,dimension:4096,textureSide:512,texels:1_000_000,images:4});
 export const COURT_ATMOSPHERE=Object.freeze({exposure:.85,hemisphere:.45,fill:.2,sun:2.2,environment:.25,shadowNormalBias:.012,fogDensity:.022,fogColor:'#586774',skyWidth:256,skyHeight:128});
 // An original, quiet latitude gradient. No asset fetch, time loop or custom PBR
 // shader: the standard Three equirectangular background follows the camera.
@@ -51,10 +51,106 @@ export function createCameraMotion(initial,now=()=>performance.now()){
  return {sample,moving:(time=now())=>duration>0&&time<started+duration,to(next,{instant=false,durationMs=680}={}){if(!validPose(next))throw Error('Invalid court camera');const time=now();from=sample(time);to=copyPose(next);started=time;duration=instant?0:clamp(finite(durationMs)?durationMs:680,1,1200);return sample(time);},settle(){duration=0;from=copyPose(to);return copyPose(to);}};
 }
 export function createDemandDriver({render,request=cb=>requestAnimationFrame(cb),cancel=id=>cancelAnimationFrame(id)}){
- let active=true,disposed=false,pending=null;
- const tick=time=>{pending=null;if(disposed||!active)return;if(render(time))invalidate();};
- function invalidate(){if(!disposed&&active&&pending===null)pending=request(tick);}
- return {invalidate,setActive(value){const next=!!value;if(disposed||next===active)return;active=next;if(!active&&pending!==null){cancel(pending);pending=null;}if(active)invalidate();},dispose(){disposed=true;active=false;if(pending!==null)cancel(pending);pending=null;},state:()=>({active,disposed,pendingFrame:pending!==null})};
+ let active=true,disposed=false,pending=null,generation=0;
+ function invalidate(){if(!disposed&&active&&pending===null){const epoch=generation;pending=request(time=>{if(epoch!==generation)return;pending=null;if(disposed||!active)return;if(render(time))invalidate();});}}
+ return {invalidate,setActive(value){const next=!!value;if(disposed||next===active)return;generation++;active=next;if(!active&&pending!==null){cancel(pending);pending=null;}if(active)invalidate();},dispose(){generation++;disposed=true;active=false;if(pending!==null)cancel(pending);pending=null;},state:()=>({active,disposed,pendingFrame:pending!==null})};
+}
+// Each RAF ticket remembers the window that created it. Canvas adoption can
+// change ownerDocument; cancelling on its new window would leave an old RAF live.
+export function courtSurfaceAvailable(canvas){return canvas?.isConnected===true&&!!canvas.ownerDocument&&!canvas.ownerDocument.hidden;}
+export function createSurfaceFrames(getView,now){
+ return {
+  request(callback){const view=getView();if(!view?.requestAnimationFrame)throw Error('Court surface has no animation owner');const ticket={view,id:null};ticket.id=view.requestAnimationFrame(()=>callback(now()));return ticket;},
+  cancel(ticket){if(ticket?.view&&ticket.id!==null)ticket.view.cancelAnimationFrame(ticket.id);}
+ };
+}
+function presentationState(value){
+ if(!value||!validPose(value.pose)||!finite(value.width)||!finite(value.height)||value.width<=0||value.height<=0||value.width>1_000_000||value.height>1_000_000||!(value.room===null||COURT_KEYS.includes(value.room)))throw Error('Invalid court presentation state');
+ const pose=copyPose(value.pose);Object.freeze(pose.position);Object.freeze(pose.target);Object.freeze(pose);
+ return Object.freeze({room:value.room,pose,width:value.width,height:value.height});
+}
+// A renderer-only exclusive lease. Its owner moves/restores the SAME DOM canvas;
+// this state machine never owns DOM, route decisions, timers, or a GL context.
+export function createPresentationLeases({snapshot,version=()=>0,valid=()=>true,suspend,paint,restore,resume}){
+ let current=null,serial=0,disposed=false,lastReason='idle';
+ function close(record,{cancelled=true,direction='in',reason='finished',notify=false,resuming=true}={}){
+  if(current!==record||!record||record.closed)return false;
+  current=null;record.closed=true;lastReason=reason;
+  if(!cancelled&&direction==='out'&&version()===record.version)try{restore(record.returnState);}catch{lastReason='restore-failed';}
+  if(notify)try{record.onInvalidated?.(reason);}catch{ /* The renderer still releases its own lease. */ }
+  if(resuming&&!disposed&&!current)resume();
+  return true;
+ }
+ function invalidate(reason='cancelled'){serial++;return close(current,{reason,notify:true});}
+ function acquire({returnState,onInvalidated,resumeAtReturn=false}={}){
+  const intent=++serial;
+  close(current,{reason:'replaced',notify:true,resuming:false});
+  if(disposed||serial!==intent)return null;if(!valid()){if(!current)resume();return null;}
+  let start,saved;try{start=presentationState(snapshot());saved=returnState?presentationState(returnState):start;if(saved.width!==start.width||saved.height!==start.height)throw Error('Changed court return viewport');}catch{if(!current&&!disposed)resume();return null;}
+  const record={id:intent,version:version(),start,returnState:saved,onInvalidated,closed:false,paintCount:0};
+  current=record;lastReason='leased';
+  // Entry freezes the painted departure. Native exit may explicitly seed
+  // the saved canonical court resume pose: cancelling it must not strand the
+  // camera inside the doorway while waiting for a normal owner-window RAF.
+  try{suspend(resumeAtReturn&&returnState?saved:start);}catch{close(record,{reason:'suspend-failed',notify:true});return null;}
+  if(current!==record||disposed)return null;
+  return Object.freeze({
+   id:record.id,returnState:saved,
+   paintPose(pose,{width=start.width,height=start.height,reuseEntry=false}={}){
+    if(current!==record||record.closed||disposed)return false;
+    if(!validPose(pose)){invalidate('invalid-pose');return false;}
+    if(width!==start.width||height!==start.height){invalidate('resize');return false;}
+    if(!valid()){invalidate('surface-unavailable');return false;}
+    let drawn=false;try{drawn=paint(copyPose(pose),{width,height,reuseEntry:!!reuseEntry})!==false;}catch{drawn=false;}
+    if(current!==record||record.closed||disposed)return false;
+    if(!drawn){invalidate('paint-failed');return false;}
+    record.paintCount++;return true;
+   },
+   finish({cancelled=true,direction='in'}={}){return close(record,{cancelled:!!cancelled,direction,reason:cancelled?'cancelled':'finished'});}
+  });
+ }
+ return {acquire,invalidate,active:()=>!!current,state:()=>current?{active:true,id:current.id,room:current.returnState.room,paintCount:current.paintCount,width:current.start.width,height:current.start.height}:{active:false,reason:lastReason},dispose(){if(disposed)return;disposed=true;serial++;close(current,{reason:'disposed',notify:true,resuming:false});}};
+}
+// Reuse is permitted only for an identical last NORMAL opaque-world draw.
+// A matching camera alone is insufficient after a transparent native passage.
+export function courtEntryFrameReusable(previous,current){
+ if(!previous||!current||!current.worldOpaque||current.contextValid!==true||current.shadowDirty||!current.closed||previous.serial!==current.frameCount||!Number.isSafeInteger(current.frameCount)||current.frameCount<1||previous.generation!==current.generation||!validPose(previous.pose)||!validPose(current.pose))return false;
+ for(const key of['width','height','pixelRatio','physicalWidth','physicalHeight'])if(!finite(current[key])||current[key]<=0||previous[key]!==current[key])return false;
+ return previous.pose.fov===current.pose.fov&&['position','target'].every(key=>previous.pose[key].every((value,i)=>value===current.pose[key][i]));
+}
+// Each authored portal keeps its real architectural form. The rectangle is a
+// guaranteed opaque rectangle inside the arched opening, never its whole bbox.
+export const COURT_PORTAL_MODES=Object.freeze({insurance:'paired',otoku:'paired',rakuten:'paired',lottery:'single',sourcing:'paired'});
+export function prepareCourtPortal(spec,width,height,near=.1){
+ const vector=v=>Array.isArray(v)&&v.length===3&&v.every(finite),same=(a,b)=>vector(a)&&a.every((v,i)=>Math.abs(v-b[i])<1e-6);
+ const key=spec?.room,mode=spec?.leafMode??(key==='insurance'?'paired':null);
+ if(!spec||spec.version!==1||spec.units!=='meters'||spec.up!=='Y'||spec.axisSpace!=='world'||!Object.hasOwn(COURT_PORTAL_MODES,key)||mode!==COURT_PORTAL_MODES[key]||spec.frame!=='portal-frame-'+key||spec.approach!=='approach-'+key||(spec.waypoint!=null&&spec.waypoint!=='passage-waypoint-'+key))throw Error('Unsupported court portal');
+ const a=spec.aperture,r=spec.opaqueRect,hinges=spec.hinges,sides=mode==='single'?['left']:['left','right'],upper=key==='otoku'||key==='lottery';
+ if(!a||a.shape!=='arched'||!vector(a.center)||!same(a.normal,[0,0,1])||!same(a.right,[1,0,0])||!same(a.up,[0,1,0])||!finite(a.springY)||!r||!vector(r.min)||!vector(r.max)||r.min[0]>=r.max[0]||r.min[1]>=r.max[1]||Math.abs(r.min[2]-r.max[2])>1e-6)throw Error('Portal requires an exact opaque seal rectangle');
+ // Upper casements use a narrower rectangle within the fanlight. Each top
+ // corner must lie under the real circular arch; its bounding-box corners do not.
+ const rise=Math.max(0,r.max[1]-a.springY),extent=Math.max(Math.abs(r.min[0]-a.center[0]),Math.abs(r.max[0]-a.center[0]));
+ if((rise>0&&a.width==null)||(a.width!=null&&(!finite(a.width)||a.width<=0||a.width>10||extent*extent+rise*rise>=a.width*a.width/4)))throw Error('Opaque rectangle extends outside the native arch');
+ if(!Array.isArray(hinges)||hinges.length!==sides.length||!hinges.every((h,i)=>h&&h.node==='hinge-'+key+'-'+sides[i]&&h.leaf==='leaf-'+key+'-'+sides[i]&&(h.handle==='handle-'+key+'-'+sides[i]||(upper&&h.handle===null))&&(h.side==null||h.side===sides[i])&&vector(h.pivot)&&same(h.axis,[0,1,0])&&finite(h.openRadians)&&Math.sign(h.openRadians)===(i?-1:1)&&Math.abs(h.openRadians)>=Math.PI/9&&Math.abs(h.openRadians)<=Math.PI/2)||(mode==='paired'&&Math.abs(hinges[0].openRadians+hinges[1].openRadians)>1e-6))throw Error('Invalid native portal hinges');
+ if(!finite(width)||!finite(height)||width<=0||height<=0||!finite(near)||near<=0)throw Error('Invalid portal viewport');
+ const eye=[...a.center],fov=40,tan=Math.tan(fov*Math.PI/360),horizontal=Math.min(eye[0]-r.min[0],r.max[0]-eye[0]),vertical=Math.min(eye[1]-r.min[1],r.max[1]-eye[1]),front=r.min[2]-eye[2];
+ if(horizontal<=0||vertical<=0||front<-.1||front>.2||horizontal>5||vertical>5)throw Error('Portal eye is outside its opaque rectangle');
+ const distance=Math.min(1.1,front+.9*Math.min(horizontal/(tan*width/height),vertical/tan)),depth=distance-front;
+ if(depth<near*3)throw Error('Portal viewport cannot safely clear the near plane');
+ const crossing=spec.crossing;
+ // Native leaf bounds and retained rear masonry are checked against this pose
+ // by the renderer. No guessed universal leaf width/depth can certify clearance.
+ if(!crossing||!vector(crossing.position)||!vector(crossing.target)||crossing.position[0]!==eye[0]||crossing.position[1]!==eye[1]||crossing.target[0]!==eye[0]||crossing.target[1]!==eye[1]||crossing.position[2]>=eye[2]-near*3||crossing.position[2]<eye[2]-10||crossing.target[2]>=crossing.position[2]-.2)throw Error('Invalid portal crossing corridor');
+ return {room:key,leafMode:mode,waypointNode:spec.waypoint??null,width,height,near,eye,seal:{position:[eye[0],eye[1],eye[2]+distance],target:eye,fov},inside:{position:[...crossing.position],target:[...crossing.target],fov},coverage:{depth,horizontalHalf:depth*tan*width/height,verticalHalf:depth*tan},hinges:hinges.map((h,i)=>({node:h.node,side:sides[i],axis:[...h.axis],openRadians:h.openRadians}))};
+}
+export function courtPassageSample(start,approach,plan,progress){
+ if(!validPose(start)||!validPose(approach)||!validPose(plan?.seal)||!validPose(plan?.inside)||(plan.waypoint&&!validPose(plan.waypoint))||!finite(progress))throw Error('Invalid court passage sample');
+ const u=clamp(progress,0,1),smooth=t=>{const v=clamp(t,0,1);return v*v*(3-2*v);};
+ let approachPose;
+ if(plan.waypoint)approachPose=u<.33?interpolatePose(approach,plan.waypoint,(u-.22)/.11):interpolatePose(plan.waypoint,plan.seal,(u-.33)/.11);
+ else approachPose=interpolatePose(approach,plan.seal,(u-.22)/.22);
+ const pose=u<.22?interpolatePose(start,approach,u/.22):u<.44?approachPose:u<=.68?copyPose(plan.seal):u<.94?interpolatePose(plan.seal,plan.inside,(u-.68)/.26):copyPose(plan.inside);
+ return {u,pose,open:smooth((u-.52)/.26),portalOnly:u>=.48,phase:u<.44?'approach':u<=.52?'sealed':u<.94?'reveal':'inside'};
 }
 function imageDimensions(bytes,mime){
  const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
@@ -106,13 +202,15 @@ export function inspectCourtGLB(buffer){
  });
  const textures=data.textures||[];if(textures.length>COURT_BUDGET.images||textures.some(texture=>!Number.isSafeInteger(texture.source)||texture.source<0||texture.source>=images.length))throw Error('Invalid court texture sources');
  const triangleCounts=(data.meshes||[]).map(mesh=>(mesh.primitives||[]).reduce((sum,primitive)=>{if(primitive.mode!==undefined&&primitive.mode!==4)throw Error('Court mesh must use triangles');const accessor=data.accessors?.[primitive.indices??primitive.attributes?.POSITION],count=accessor?.count;if(!Number.isSafeInteger(count)||count<0||count%3)throw Error('Invalid court triangle indices');return sum+count/3;},0));
- const triangles=(data.nodes||[]).reduce((sum,node)=>{
+ let primitiveGroups=0;const triangles=(data.nodes||[]).reduce((sum,node)=>{
   let instances=1;const attributes=node.extensions?.EXT_mesh_gpu_instancing?.attributes;
   if(attributes){const counts=Object.values(attributes).map(index=>data.accessors?.[index]?.count);if(!counts.length||!counts.every(count=>Number.isSafeInteger(count)&&count>0&&count===counts[0]))throw Error('Invalid court instance counts');instances=counts[0];}
+  if(node.mesh!==undefined)primitiveGroups+=(data.meshes?.[node.mesh]?.primitives?.length??Infinity)*instances;
   return sum+(node.mesh===undefined?0:(triangleCounts[node.mesh]??Infinity)*instances);
  },0);
  if(!finite(triangles)||triangles>COURT_BUDGET.triangles)throw Error('Court exceeds triangle budget');
- return {json:data,bytes:buffer.byteLength,triangles,materials:(data.materials||[]).length,textureCount:textures.length,imageCount:images.length,texels,imageSizes};
+ if(!finite(primitiveGroups)||primitiveGroups>COURT_BUDGET.groups)throw Error('Court exceeds primitive group budget');
+ return {json:data,bytes:buffer.byteLength,triangles,primitiveGroups,materials:(data.materials||[]).length,textureCount:textures.length,imageCount:images.length,texels,imageSizes};
 }
 // GLTFLoader creates these URLs only for already-validated embedded image bytes.
 // No loader-supplied remote/data URI is allowed, even after validation.
