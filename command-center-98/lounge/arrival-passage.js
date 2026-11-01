@@ -23,7 +23,7 @@ export function createArrivalPassage({document:doc,canvas,board,renderer,passage
    const bounds=surface();
    if(!disposed&&!instant&&room==='insurance'&&canPresent(room)&&bounds){
     token=passage?.travel({room,direction:'in',renderer,canvas,surface:bounds});
-    if(token&&intent===serial)trip={room,returnState:token.returnState};
+    if(token&&intent===serial)trip={room,returnState:token.returnState,arrived:false};
    }
   }catch{/* Optional graphics may never prevent the normal route. */}
   if(intent!==serial)return false;
@@ -33,7 +33,7 @@ export function createArrivalPassage({document:doc,canvas,board,renderer,passage
   return !!token&&intent===serial;
  }
  function beforeExit(event){
-  if(disposed||!trip||!panel.hidden||currentRoom()!==trip.room||doc.querySelector('dialog[open]'))return;
+  if(disposed||!trip?.arrived||!panel.hidden||currentRoom()!==trip.room||doc.querySelector('dialog[open]'))return;
   const returning=event.type==='popstate'||event.type==='click'&&event.target?.closest?.('#back,#again')||event.type==='keydown'&&event.key==='Escape';
   if(!returning)return;
   // A pending entry can be interrupted by actual Back. Capture only what is
@@ -48,11 +48,15 @@ export function createArrivalPassage({document:doc,canvas,board,renderer,passage
   const intent=++serial,saved=trip,visual=departure;trip=null;departure=null;
   if(!saved)return;
   passage?.cancel();
-  if(intent!==serial||panel.dataset.view==='list'||board.state?.lastVisited!==saved.room||!canPresent(saved.room)||visual?.room!==saved.room||!visual.foreground||!visual.roomBackdrop)return;
+  if(intent!==serial||!saved.arrived||panel.dataset.view==='list'||board.state?.lastVisited!==saved.room||!canPresent(saved.room)||visual?.room!==saved.room||!visual.foreground||!visual.roomBackdrop)return;
   const bounds=surface();if(!bounds)return;
   try{passage?.travel({room:saved.room,direction:'out',renderer,canvas,surface:bounds,returnState:saved.returnState,...(visual?.room===saved.room?{foreground:visual.foreground,roomBackdrop:visual.roomBackdrop}:{})});}catch{}
  }
  const observer=new win.MutationObserver(onBoard);observer.observe(panel,{attributes:true,attributeFilter:['hidden','data-view']});
+ // A canceled journey is a deliberate fast path. In particular, Back during an
+ // unfinished approach must not flash a full room by replaying reverse from u=1.
+ let presentationDocument=doc;try{if(win.parent.location.origin===win.location.origin)presentationDocument=win.parent.document;}catch{}
+ listen(presentationDocument,'court:passage-end',event=>{if(trip&&event.detail?.room===trip.room&&event.detail.direction==='in'&&event.detail.cancelled===false)trip.arrived=true;});
  // Capture phase precedes the canonical app's bubble-phase history handler.
  listen(win,'popstate',beforeExit,true);listen(doc,'click',beforeExit,true);
  const escape=event=>{

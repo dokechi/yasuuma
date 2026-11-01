@@ -353,6 +353,8 @@ async function initialReducedCase(browser,origin){
 // production seek, readback or fake renderer hook.
 async function prepareInsurancePassage(ctx){
  await ctx.f.locator('.arrival-court[data-state=ready]').waitFor();await settled(ctx.frame);
+ const native=(await snapshot(ctx.frame)).renderer.nativePortals;
+ check(ctx.result,'insurance has a validated native portal before optional passage installation',native?.find(portal=>portal.key==='insurance')?.available===true,native);
  await ctx.frame.waitForFunction(()=>window.__arrivalCourt?.snapshot().passage?.available===true,null,{timeout:30_000});
  const target=ctx.f.locator('[data-court-room=insurance]');
  if(await target.isVisible()){await target.click();await settled(ctx.frame);}
@@ -413,7 +415,23 @@ async function interruptedPassageCase(browser,origin,kind){
  let ctx;
  try{
   ctx=await openHost(browser,origin,{label:'390-900-passage-'+kind});await prepareInsurancePassage(ctx);await beginInsurancePassage(ctx);await samplePassage(ctx,.2);
-  if(kind==='copy'){
+  if(['escape','early-back','reduce'].includes(kind)){
+   await ctx.page.evaluate(()=>{window.__testPassageStarts=[];document.addEventListener('court:passage-start',event=>window.__testPassageStarts.push(event.detail));});
+   if(kind==='escape')await ctx.f.locator('#desk-copy').press('Escape');
+   else if(kind==='reduce')await ctx.page.emulateMedia({reducedMotion:'reduce'});
+   else await back(ctx);
+   await ctx.page.locator('.court-passage').waitFor({state:'detached'});await restoredPassage(ctx,kind+' interruption');
+   if(kind!=='early-back'){
+    check(ctx.result,kind+' cancels graphics without leaving the current insurance reader',await ctx.f.locator('#room[data-account=insurance]').isVisible());
+    await reader(ctx,'insurance');await back(ctx);
+   }
+   if(kind==='reduce'){
+    await ctx.f.locator('.spatial-castle').waitFor({state:'visible'});
+    const state=await snapshot(ctx.frame);check(ctx.result,'OS reduced motion during the loan leaves a quiet original castle after Back',!state.active&&!state.renderer.pendingFrame&&!state.renderer.presentation.active&&await ctx.f.locator('.castle-quick-open[data-room=insurance]').isVisible(),state);
+   }else await settled(ctx.frame);
+   const starts=await ctx.page.evaluate(()=>window.__testPassageStarts);
+   check(ctx.result,'an interrupted arrival never invents a completed-room reverse journey',starts.length===0&&await ctx.page.locator('.court-passage').count()===0,starts);
+  }else if(kind==='copy'){
    await reader(ctx,'insurance');await ctx.page.locator('.court-passage').waitFor({state:'detached'});await restoredPassage(ctx,'copy interruption');
    check(ctx.result,'copy during travel remains an actual copy, not a route or publication',await ctx.f.locator('#room[data-account=insurance]').isVisible());
   }else if(kind==='quick'){
@@ -478,7 +496,7 @@ async function shadowDiagnostic(browser,origin,width,height){
   disabled=await chromium.launch({channel:'chromium',headless:true,args:['--disable-webgl']});await fallbackCase(disabled,origin,'no-webgl');
   await lazyCancellationCase(browser,origin);await initialReducedCase(browser,origin);
   for(const [width,height] of [[390,900],[320,640],[800,648],[1440,900]])await passageCase(browser,origin,width,height);
-  for(const kind of ['copy','quick','resize','context-loss'])await interruptedPassageCase(browser,origin,kind);
+  for(const kind of ['copy','quick','resize','context-loss','escape','early-back','reduce'])await interruptedPassageCase(browser,origin,kind);
   for(const fault of ['passage-module','passage-css'])await optionalPassageFailure(browser,origin,fault);
   // Diagnostic-only A/B. The normal four widths and all fault cases above use
   // unchanged exact-head source. No production flag, API, or asset is added.

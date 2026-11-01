@@ -74,7 +74,7 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
     for(const name of[h.leaf,h.handle]){const part=model.getObjectByName(name);if(!part||!beneath(part,node))throw Error('Missing native leaf or handle');}
     if(node.getWorldPosition(new T.Vector3()).distanceTo(new T.Vector3(...h.pivot))>.001)throw Error('Native hinge pivot does not match world metadata');
     const meshes=[];node.traverse(o=>{if(o.isMesh)meshes.push(o);});if(!meshes.length)throw Error('Native hinge has no leaf geometry');
-    const world=node.getWorldQuaternion(new T.Quaternion());return {node,initial:node.quaternion.clone(),axis:new T.Vector3(...h.axis).applyQuaternion(world.clone().invert()).normalize(),angle:h.openRadians,rotation:new T.Quaternion(),meshes};
+    const world=node.getWorldQuaternion(node.quaternion.clone());return {node,initial:node.quaternion.clone(),axis:new T.Vector3(...h.axis).applyQuaternion(world.clone().invert()).normalize(),angle:h.openRadians,rotation:node.quaternion.clone(),meshes};
    });
    if(hinges[0].node===hinges[1].node||beneath(hinges[0].node,hinges[1].node)||beneath(hinges[1].node,hinges[0].node))throw Error('Native hinges must be independent');
    const meshes=[];root.traverse(o=>{if(o.isMesh)meshes.push(o);});
