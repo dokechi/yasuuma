@@ -164,8 +164,8 @@ const contrast=sample=>{const text=rgb(sample.color),surface=rgb(sample.backgrou
      check('native stock and task quantities remain unknown rather than invented zeroes',(await roomState('sourcing')).loadedCount===null&&(await roomState('sourcing')).totalCount===null);
      await capture('sourcing-native');
      if(width<=390){
-      const business=page.locator('#sourcingTabs button[data-sourcing-sub]'),businessBefore=await page.evaluate(()=>({selected:sourcingApp.sub,items:JSON.stringify(sourcingApp.items),purchases:JSON.stringify(sourcingApp.purchases),requests:__storybookRecords.requests.filter(n=>new URL(n.url).searchParams.get('resource')==='sourcing').length}));
-      check('five existing native business destinations remain present',await business.count()===5);
+      const business=page.locator('#sourcingTabs .sourcing-tab-group button[data-sourcing-sub]:visible'),businessBefore=await page.evaluate(()=>({selected:sourcingApp.sub,items:JSON.stringify(sourcingApp.items),purchases:JSON.stringify(sourcingApp.purchases),requests:__storybookRecords.requests.filter(n=>new URL(n.url).searchParams.get('resource')==='sourcing').length}));
+      const businessKeys=await business.evaluateAll(nodes=>nodes.map(n=>n.dataset.sourcingSub)),legacy=await page.locator('#sourcingTabs .sourcing-tabs-legacy button[data-sourcing-sub]').evaluateAll(nodes=>nodes.map(n=>({key:n.dataset.sourcingSub,hidden:!n.checkVisibility()})));check('five visible native business destinations remain distinct from retained hidden legacy owners',same(businessKeys,['hold','purchases','miss','discoveries','suppliers'])&&legacy.length===3&&legacy.every(n=>n.hidden),{businessKeys,legacy});
       await business.first().focus();
       for(let index=0;index<5;index++){
        if(index)await page.keyboard.press('Tab');
