@@ -62,12 +62,49 @@ unavailable same-origin host fails open to the normal route.
 
 ## Budget and art
 
-Insurance-only partition target is **52 primitive groups**, versus PR95's48;
-this is a disclosed target, not a silent claim to remain at50. Hard validation
+The accepted insurance prototype used **52 primitive groups**, versus PR95's48.
+The full-five authoring target is at most64 (actual exported and shadow-inclusive
+render counts must be measured, not inferred from the forecast). Hard validation
 remains **2,000,000 GLB bytes / 60,000 triangles / 12 PBR materials / 64 groups**
-until measured evidence supports any separately reviewed change. Existing
+plus **128 actual render calls**, including shadow/sky work. Existing
 characters and high-resolution interiors remain unchanged. No new external
 service, paid dependency, backend read/polling, authentication or security change.
+
+## Full-five finish contract
+
+The accepted insurance slice establishes the single-context visual approach, not
+that every future mechanism is physically valid. Subsequent swept-volume checks
+found that swinging the whole lower arched fanlight could meet the balcony above.
+The final lower three portals therefore keep their existing upper arch/fanlight
+fixed and hinge only the wooden door leaves and original knobs. The archive uses
+paired leaves and the observatory one native casement. Closed fronts, room colors
+and building envelopes remain. Local rear pockets must accommodate the actual
+swept solids; metadata alone cannot claim clearance. Revised mechanisms, including
+insurance, require new all-width seal/crossing/return evidence.
+
+Material work is deliberately bounded: fewer varied paving courses, quieter
+stone color variation and one small original shared oak map if the final byte
+budget permits. No extra props, borrowed art, bloom, new room meshes or synthetic
+activity lights are needed. The existing warm study light is atmosphere only.
+
+Native sourcing keeps its existing host route. The matching same-origin document
+`cc:castle-native` event acknowledges the expected iframe hide; the compositor
+still requires the actual visible sourcing workspace before revealing it. An
+expected child-only resize is tolerated only while that native hide is valid or
+when the restored frame and parent dimensions exactly match. Real parent resize,
+orientation, hidden document or context loss always cancels presentation.
+
+On native Back, `cc:castle-home` captures the already-rendered workspace before
+the owner resets its view. The optional bounded snapshot preserves current text,
+static filters and scrolling without fetching data, moving live DOM or keeping
+handlers/IDs. Editors, unsupported content, unavailable artwork or exceeded
+budgets give immediate normal Back. A slow optional snapshot module cannot block
+publishing-room passages. Detached departure copies expire if the canonical
+return never resumes. Nothing in this layer posts, saves or edits source records.
+
+Final browser coverage includes every ordinary room entry/return, native sourcing
+hide/restore, actual nonzero reader scroll and tools foreground, direct zero-clock
+routes, interrupted/newer intent, missing enhancement and reduced-motion fallback.
 
 ## Primary API references
 

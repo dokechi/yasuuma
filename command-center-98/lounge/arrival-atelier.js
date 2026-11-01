@@ -178,7 +178,7 @@ if(reduced()||lowQuality()){
   root.hidden=false;root.dataset.state='loading';const rect=panel.getBoundingClientRect();canvas.width=Math.max(1,rect.width);canvas.height=Math.max(1,rect.height);
   loadTimer=setTimeout(()=>fail(Error('Arrival model/compile timeout')),15000);
   const {createCourtRenderer}=await import('./arrival-renderer.js?v=20261101.6-passage');
-  const result=await createCourtRenderer({canvas,modelURL:new URL('./assets/arrival-court-v1.glb?v=75e1b72b8d4a',import.meta.url).href,onFrame:project,onFailure:fail,signal:abort.signal});
+  const result=await createCourtRenderer({canvas,modelURL:new URL('./assets/arrival-court-v1.glb?v=ce1959752595',import.meta.url).href,onFrame:project,onFailure:fail,signal:abort.signal});
   if(disposed||failed){result.dispose();}else{
    renderer=result;
    // A reader may have been chosen while the model was loading. Replay that
@@ -187,7 +187,7 @@ if(reduced()||lowQuality()){
    clearTimeout(loadTimer);ready=true;root.dataset.state='ready';root.hidden=true;sync();
    // Independently optional and never awaited by activation or a work route.
    // No native portal metadata means the established instant path remains.
-   if(renderer.canPassage?.('insurance'))import('./arrival-passage.js?v=20261101.6-passage').then(async({installArrivalPassage})=>{
+   if(['insurance','otoku','rakuten','lottery','sourcing'].some(key=>renderer.canPassage?.(key)))import('./arrival-passage.js?v=20261101.6-passage').then(async({installArrivalPassage})=>{
     const adapter=await installArrivalPassage({document:doc,canvas,board,renderer,route:commitOpen,reduced,currentRoom:()=>doc.getElementById('room')?.dataset.account,canPresent:key=>!disposed&&!failed&&active&&!reduced()&&!lowQuality()&&!doc.hidden&&!hostPaused&&!doc.querySelector('dialog[open]')&&!!renderer?.canPassage(key)});
     if(disposed||failed)adapter?.destroy();else passageAdapter=adapter;
    }).catch(error=>console.warn('Court passage unavailable; instant work routes retained.',error));

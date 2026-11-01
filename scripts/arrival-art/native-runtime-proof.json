@@ -1,0 +1,494 @@
+{
+  "assetSha256": "ce19597525952a5847ec927eb2150eda6efd5eb4d5ec29ca4f5cf11686ab30e6",
+  "runtimeCameraSha256": "2feaa04de51de5535c7cfc5d31e21e9641e00fb6c78050ec9021fd3b749d1706",
+  "runtimeRendererSha256": "0f0c4f854f3cd38151c848d21173e19b53591990880c3d2c996a58ab54a161e7",
+  "method": "Exact repository runtime helpers on texture-free CPU-loaded GLB; dense seal rays use ordinary Raycaster without seam fallback; no shader/render claim.",
+  "pass": true,
+  "results": [
+    {
+      "key": "insurance",
+      "mode": "paired",
+      "geometry": {
+        "openLeafClearance": 0.3076262409770245,
+        "rearClearance": 1.3900001907348631,
+        "corridorRays": 9
+      },
+      "views": [
+        {
+          "w": 320,
+          "h": 588,
+          "seal": [
+            -5.6,
+            1.85,
+            -1.8798173160967027
+          ],
+          "inside": [
+            -5.6,
+            1.85,
+            -4.1
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 390,
+          "h": 848,
+          "seal": [
+            -5.6,
+            1.85,
+            -1.8798173160967027
+          ],
+          "inside": [
+            -5.6,
+            1.85,
+            -4.1
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 800,
+          "h": 596,
+          "seal": [
+            -5.6,
+            1.85,
+            -1.8798173160967027
+          ],
+          "inside": [
+            -5.6,
+            1.85,
+            -4.1
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 1440,
+          "h": 848,
+          "seal": [
+            -5.6,
+            1.85,
+            -1.8798173160967027
+          ],
+          "inside": [
+            -5.6,
+            1.85,
+            -4.1
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 3840,
+          "h": 1080,
+          "seal": [
+            -5.6,
+            1.85,
+            -2.032817464892582
+          ],
+          "inside": [
+            -5.6,
+            1.85,
+            -4.1
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        }
+      ],
+      "homePaths": [
+        "arrival-camera",
+        "phone-camera"
+      ],
+      "opaqueRectRays": 525,
+      "restored": true
+    },
+    {
+      "key": "otoku",
+      "mode": "paired",
+      "geometry": {
+        "openLeafClearance": 0.29739792286252875,
+        "rearClearance": 0.2200001907348632,
+        "corridorRays": 9
+      },
+      "views": [
+        {
+          "w": 320,
+          "h": 588,
+          "seal": [
+            -5.3,
+            6.05,
+            -3.9745446128717923
+          ],
+          "inside": [
+            -5.3,
+            6.05,
+            -6.1
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 390,
+          "h": 848,
+          "seal": [
+            -5.3,
+            6.05,
+            -3.9745446128717923
+          ],
+          "inside": [
+            -5.3,
+            6.05,
+            -6.1
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 800,
+          "h": 596,
+          "seal": [
+            -5.3,
+            6.05,
+            -3.9745446128717923
+          ],
+          "inside": [
+            -5.3,
+            6.05,
+            -6.1
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 1440,
+          "h": 848,
+          "seal": [
+            -5.3,
+            6.05,
+            -3.9745446128717923
+          ],
+          "inside": [
+            -5.3,
+            6.05,
+            -6.1
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 3840,
+          "h": 1080,
+          "seal": [
+            -5.3,
+            6.05,
+            -4.422726866920329
+          ],
+          "inside": [
+            -5.3,
+            6.05,
+            -6.1
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        }
+      ],
+      "homePaths": [
+        "arrival-camera",
+        "phone-camera"
+      ],
+      "opaqueRectRays": 525,
+      "restored": true
+    },
+    {
+      "key": "rakuten",
+      "mode": "paired",
+      "geometry": {
+        "openLeafClearance": 0.30808287720601424,
+        "rearClearance": 0.26000019073486325,
+        "corridorRays": 9
+      },
+      "views": [
+        {
+          "w": 320,
+          "h": 588,
+          "seal": [
+            5.25,
+            1.85,
+            -2.3798173160967027
+          ],
+          "inside": [
+            5.25,
+            1.85,
+            -4.72
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 390,
+          "h": 848,
+          "seal": [
+            5.25,
+            1.85,
+            -2.3798173160967027
+          ],
+          "inside": [
+            5.25,
+            1.85,
+            -4.72
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 800,
+          "h": 596,
+          "seal": [
+            5.25,
+            1.85,
+            -2.3798173160967027
+          ],
+          "inside": [
+            5.25,
+            1.85,
+            -4.72
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 1440,
+          "h": 848,
+          "seal": [
+            5.25,
+            1.85,
+            -2.3798173160967027
+          ],
+          "inside": [
+            5.25,
+            1.85,
+            -4.72
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 3840,
+          "h": 1080,
+          "seal": [
+            5.25,
+            1.85,
+            -2.4493628382766475
+          ],
+          "inside": [
+            5.25,
+            1.85,
+            -4.72
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        }
+      ],
+      "homePaths": [
+        "arrival-camera",
+        "phone-camera"
+      ],
+      "opaqueRectRays": 525,
+      "restored": true
+    },
+    {
+      "key": "lottery",
+      "mode": "single",
+      "geometry": {
+        "openLeafClearance": 0.3328775576104155,
+        "rearClearance": 0.2600001907348619,
+        "corridorRays": 9
+      },
+      "views": [
+        {
+          "w": 320,
+          "h": 588,
+          "seal": [
+            5.1,
+            6.15,
+            -3.32
+          ],
+          "inside": [
+            5.1,
+            6.15,
+            -7.1
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 390,
+          "h": 848,
+          "seal": [
+            5.1,
+            6.15,
+            -3.32
+          ],
+          "inside": [
+            5.1,
+            6.15,
+            -7.1
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 800,
+          "h": 596,
+          "seal": [
+            5.1,
+            6.15,
+            -3.32
+          ],
+          "inside": [
+            5.1,
+            6.15,
+            -7.1
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 1440,
+          "h": 848,
+          "seal": [
+            5.1,
+            6.15,
+            -3.496302180613431
+          ],
+          "inside": [
+            5.1,
+            6.15,
+            -7.1
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 3840,
+          "h": 1080,
+          "seal": [
+            5.1,
+            6.15,
+            -3.9527268669203295
+          ],
+          "inside": [
+            5.1,
+            6.15,
+            -7.1
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        }
+      ],
+      "homePaths": [
+        "arrival-camera",
+        "phone-camera"
+      ],
+      "opaqueRectRays": 525,
+      "restored": true
+    },
+    {
+      "key": "sourcing",
+      "mode": "paired",
+      "geometry": {
+        "openLeafClearance": 0.14815898324417986,
+        "rearClearance": 0.20000000000000018,
+        "corridorRays": 9
+      },
+      "views": [
+        {
+          "w": 320,
+          "h": 588,
+          "seal": [
+            0,
+            1.94,
+            -5.4487265031970695
+          ],
+          "inside": [
+            0,
+            1.94,
+            -7.55
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 390,
+          "h": 848,
+          "seal": [
+            0,
+            1.94,
+            -5.4487265031970695
+          ],
+          "inside": [
+            0,
+            1.94,
+            -7.55
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 800,
+          "h": 596,
+          "seal": [
+            0,
+            1.94,
+            -5.4487265031970695
+          ],
+          "inside": [
+            0,
+            1.94,
+            -7.55
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 1440,
+          "h": 848,
+          "seal": [
+            0,
+            1.94,
+            -5.4487265031970695
+          ],
+          "inside": [
+            0,
+            1.94,
+            -7.55
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        },
+        {
+          "w": 3840,
+          "h": 1080,
+          "seal": [
+            0,
+            1.94,
+            -5.4487265031970695
+          ],
+          "inside": [
+            0,
+            1.94,
+            -7.55
+          ],
+          "near": 0.1,
+          "curveSamples": 241
+        }
+      ],
+      "homePaths": [
+        "arrival-camera",
+        "phone-camera"
+      ],
+      "opaqueRectRays": 525,
+      "restored": true
+    }
+  ]
+}

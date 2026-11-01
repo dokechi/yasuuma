@@ -1,45 +1,50 @@
-# Original castle arrival court — v4 insurance continuity candidate
+# Original arrival court — v5 native continuity and material finish
 
-This is original, purpose-built geometry, not an imported/copy of Igloo's site or models. The user-supplied reference screenshots informed scale, material, quiet composition and contact-lighting goals only. It is an integration prototype; no claim of equivalent final visual quality.
+Purpose-built original architecture for the existing castle, not a copy of Igloo models or a claim of equivalent final rendering. The user’s reference informed architectural scale, contact, restrained light and quiet composition. Existing characters, room images, reader, authentication and data are unchanged.
 
-Runtime files:
-- `arrival-court-v1.glb` — canonical runtime filename; authored revision v4 insurance slice.
-- `arrival-court-v1-layout.json` — metre units, glTF Y-up cameras/targets, room/focus/approach anchors.
-- `arrival-court-v1-provenance.json` — source/material provenance and exact SHA256.
+## Runtime and source contract
 
-Authored inputs and rebuild (Blender 4.3.2, Python 3):
-```
-blender --factory-startup -b -t 8 -P bake_stone_material.py
+- `arrival-court-v1.glb`: canonical runtime filename, authored revision v5.
+- `arrival-court-v1-layout.json`: exact glTF Y-up metre coordinates, camera/anchor metadata and native portals.
+- `arrival-court-v1-provenance.json`: exact runtime SHA, all source hashes, original material provenance, explicit tradeoffs and proof hashes.
+- Hard budgets: 2,000,000 bytes; 60,000 scene-instance triangles; 12 materials; 64 primitive groups; four embedded images / at most 1M source texels. Actual shadow+main+sky draw calls, including moving-door peak, must remain <=128.
+
+The five `room-*` roots own their physical frames, leaves and handles. Three `closed-*` wings remain sealed. Native `courtPortal` extras are object-valued on each room root and copied exactly into layout `portals`. Hinge axes/pivots are world/Y-up, not Blender-local. The renderer derives local axes from native world quaternions; quantization scales only mesh nodes, never EMPTY pivots.
+
+Insurance, rakuten and sourcing retain fixed upper arches/fanlights; only their lower capped wood leaves and original knobs move. Archive has paired arched casements. Observatory has one left high clerestory leaf above Y5.603; its lower pane/grille and the dining roof remain fixed. Upper casements explicitly have `handle:null`; no invented hardware. Real 3mm head/sill gaps keep moving and fixed parts separate. Front-mounted hinge axes avoid thick-leaf centre interpenetration. Shared joints are authored at leaf-local X=0 and pivots/child offsets at exact millimetres, without overlapping leaves or tolerant rays.
+
+## Bounded material/geometry finish
+
+63 quiet, varied rectangular paving courses replace121 small squares. Original facade RNG consumption is preserved. Shared stone basecolor uses a broader mineral scale while true baked fine normal/roughness remain unchanged. One128×256 original smoked-oak basecolor adds restrained grain; a documented linear mean-preserving factor retains the original oak brightness. This is not a noise layer to conceal shadow aliasing.
+
+Native rear pockets and jamb/haunch rebates are real Boolean cuts within the old envelopes. A continuous workshop rear lining closes original masonry joints inside the existing back wall. No whole3D interior, exterior roof demolition, distant prop or camera-through-wall trick is included. Four unused miniature cage lanterns and two associated floor pedestals are explicitly omitted to keep64 groups after the fixed observatory lower pane. All room fanlights and the renderer’s actual study light remain.
+
+## Rebuild (Blender4.3.2, Python3, Node)
+
+Run from this source directory, with the repository’s pinned runtime modules available:
+
+```sh
 blender --factory-startup -b -t 8 -P build_arrival_court.py
 python quantize_arrival_court.py
+node verify_native_runtime.mjs arrival-court-v1.glb <repository>/command-center-98/lounge
+blender --factory-startup -b -t 8 -P verify_native_camera_curve.py
+python finalize_native_handoff.py
 ```
-The supplied maps already match the accepted source. The first command is optional and regenerates technical normal/ORM maps from the included original periodic material; it does not recreate the basecolor image. Add `-- --render` to the build command to make Blender inspection PNGs. No OpenImageDenoise dependency.
 
-The small original basecolor JPEG is a frozen built-in-imagegen output, downscaled only for runtime; its full prompt is in `materials/stone-basecolor-prompt.txt`. The normal is an actual tangent-space Blender bake of original periodic microrelief, not an AI picture presented as measured normals. ORM packs neutral AO=1, native baked roughness, metal=0. Identical embedded maps are used by Blender and standard glTF PBR.
+`split_native_portals.py` is called by the main build after source face semantics are attached. It preserves exterior UV/custom normals, makes real cuts/caps, and owns the native hierarchy. Do not substitute the old insurance-only splitter.
 
-The quantizer preserves topology, uses millimetre SHORT positions, signed normalized BYTE normals, signed SHORT UVs, and decoder-free KHR_mesh_quantization / KHR_texture_transform. It copies the image bytes unchanged, deduplicates identical texture records, and explicitly carries the source stone tint factors into standard PBR (Blender's MixRGB export omitted them). Maximum position quantization error is 0.5 mm.
+Frozen material images and their prompts are original authoring inputs. `bake_stone_material.py` optionally regenerates the original periodic technical normal/ORM maps, not the imagegen basecolors. Normal is a real tangent-space bake; ORM has neutral AO=1, baked roughness and metal=0. Standard glTF embeds exactly the same four maps. No external URLs, runtime custom material shader or compressed-image decoder is needed.
 
-Five `room-*` roots own their doorway frames/mullions/latches; three `closed-*` meshes are sealed wings. `focus-*` and `approach-*` are authored spatial anchors. Renderer must perform actual occlusion raycasts, preserve original room/reader/auth/data controllers, retain immediate DOM routes, and fall back to the existing painted castle if 3D is unavailable. Phone focuses the burgundy study entrance instead of shrinking all destinations into a miniature.
+The quantizer keeps topology, millimetre SHORT positions (maximum error0.5mm), normalized BYTE normals and SHORT UVs at1/256 tile. It preserves legitimate KHR_texture_transform scale/offset, deduplicates texture records, and explicitly retains source stone/oak factors. It is deterministic for a given raw export. Blender can choose a different triangulation/index order for coplanar polygons; rebuild byte equality is not promised.
 
-Do not ship the intermediate raw GLB, `.blend` source caches, or inspection PNGs as application assets. Keep this source directory and the three small maps for future maintenance. Actual WebGL lighting, focus views, quality/fallback and device QA remain the integration owner's release gate.
+## Physical verification and limits
 
-Revision v3.1 changes only the existing five textile and hanging-rail clusters by 0.46 m toward the court. Actual WebGL showed them embedded behind the pier faces. Mesh counts, materials, camera composition, portal targets and functions are unchanged; native source carries the corrected placements.
+`verify_native_runtime.mjs` uses the actual repository runtime helpers on the exact quantized GLB (texture decoding removed only in CPU memory). It checks five discoveries,25 aspect-specific seals/approaches,10 authored home paths and2,625 ordinary dense seal rays. It records exact `courtPassageSample` poses, including the overlap where camera motion begins at u=.68 while hinges finish at.78.
 
-Revision v3.2 changes only the native phone establishing camera to Y-up position[0.5,2.6,16], target[-3.85,3.5,-1.5], verticalFOV44 degrees. Source, glTF camera and layout agree; it is not a hidden renderer override. Actual WebGL composition acceptance remains pending.
+`verify_native_sweeps.py` imports the exact GLB, tests every <=1° moving-triangle interval against all nearby retained static triangles with a conservative0.15mm SAT expansion (greater than measured arc/chord error), and checks analytic paired-centre extrema. The complete angular/contact union is collected, not only the first failing angle. Blender float32 import tolerance is documented as1µm.
 
-Revision v3.3 assigns only the closed lottery textile to the existing matte cloth_teal material, keeping its green family and separating it from the intentionally open copper dome shadow policy. No new material, primitive, geometry or camera is added.
+`verify_native_camera_curve.py` runs the sweep proof, then checks every0.002-u interval for25 views. It tests a swept camera near-plane volume against the full retained world and conservative moving-triangle hulls. It does not hide architecture early. The generated `native-camera-curves.json` is temporary reproducible input, not a runtime asset. Compact proof JSONs are bound to the artifact SHA by `finalize_native_handoff.py`.
 
+Blender proof PNGs are inspection images, not browser evidence. Actual WebGL all-room/full-DPR opaque seals, uninterrupted material/shadow, physical reveal/reverse, all device widths, peak draw calls and preserved fast/reduced/fallback paths remain mandatory integration gates. Do not claim success from CPU or Blender alone.
 
-## Native insurance portal (v4 vertical slice)
-
-`split_insurance_portal.py`, called by the main build after static joining, partitions **only** the existing insurance body, fanlight, wood bars and knobs. It bisects and caps the centre cut, preserving original exterior UVs/custom normals and existing materials. The static arch, iron reveal, burgundy textile and rail stay in place. No new room imagery, lighting, camera, decoration or material is included.
-
-The ownership root is now an EMPTY `room-insurance`, with an object-valued `courtPortal` glTF extras contract. Children are `portal-frame-insurance`, two native `hinge-insurance-{left,right}` empties, and their `leaf-insurance-*` / `handle-insurance-*` mesh children. Axes and pivots in extras are **world/Y-up**, not Blender-local. Renderer derives the appropriate local axis from the native world quaternion. Mesh-only quantization scale does not alter EMPTY pivots.
-
-Closed native appearance matches v3.3. The existing arched silhouette is NOT a fully opaque rectangle: only `opaqueRect` is guaranteed within the closed leaf union. Use the exact exported metadata to derive a viewport-covering seal, verify full-alpha rendered pixels before switching world/DOM layers, and keep exterior lighting continuous through the seal. The inward hinge angles are left +85 degrees / right -85 degrees around world Y. Final crossing eye Z=-4.10 puts the open leaves (minimum Z approximately -3.92017) physically behind the eye. No final door fade or disappearance is needed.
-
-Native geometry checks: each frame/leaf/handle closed and manifold; 525 safe-rectangle CPU rays covered; 441 ultrawide final-crossing rays clear; all five unchanged approach targets remain honest first-hit room geometry. These are topology/CPU and Blender inspection checks, **not actual WebGL midframe acceptance**. Remaining release gate: the single adopted live canvas, opaque seal/lighting continuity, static real reader handoff and exact reverse path at all four sizes, including reduced/instant/failure paths.
-
-Budget: 54,440 triangles (+76 cut/cap triangles), 52 primitive groups (approved insurance target; hard maximum 64), 12 unchanged PBR materials, three unchanged embedded maps / 118,784 source texels. Runtime GLB must remain below 2,000,000 bytes and 60,000 triangles. Other 15 meshes and both cameras remain unchanged from final v3.3.
-
-A clean portable rebuild reproduced the exact native nodes/extras, camera transforms, named material definitions and all quantized position/normal/UV vertex sets, with the same byte/triangle/group totals. Blender can choose a different triangulation/index ordering for coplanar n-gons, so a rebuild is geometrically equivalent but is not promised to have the identical GLB SHA. The supplied provenance binds the shipped artifact exactly; the quantizer is deterministic for the same raw export.
+Do not ship `.blend`, raw GLB, proof PNGs, temporary camera curves or caches as app assets. Ship the GLB/layout/provenance and preserve the source scripts, README, compact proofs and four small maps with their provenance in the repository’s authoring directory.

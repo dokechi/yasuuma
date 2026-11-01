@@ -1,0 +1,15 @@
+{
+  "rawBytes": 3577244,
+  "quantizedBytes": 1899056,
+  "verticesBefore": 99954,
+  "verticesAfter": 99151,
+  "texturedVertices": 66528,
+  "drawGroups": 64,
+  "embeddedImages": 4,
+  "embeddedImageBytes": 79399,
+  "maxPositionErrorMeters": 0.0004999999999997229,
+  "positionPrecisionMeters": 0.001,
+  "uvPrecisionTiles": 0.00390625,
+  "sha256": "ce19597525952a5847ec927eb2150eda6efd5eb4d5ec29ca4f5cf11686ab30e6",
+  "triangleTopologyUnchanged": true
+}

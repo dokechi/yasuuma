@@ -1,7 +1,7 @@
 /* Optional real geometry and light. The existing application owns all routes,
    records and accessible controls. This module never reads user storage. */
 import * as T from './vendor/three-r187/court-three.js?v=20261101.5-arrival';
-import {COURT_KEYS,COURT_BUDGET,COURT_ATMOSPHERE,courtSkyPixels,fitCourtShadow,closedCourtShadowMaterial,renderDimensions,createCameraMotion,createDemandDriver,createSurfaceFrames,courtSurfaceAvailable,createPresentationLeases,prepareCourtPortal,courtPassageSample,courtEntryFrameReusable,copyPose,orbitPose,focusPose,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from './arrival-camera.js?v=20261101.6-passage';
+import {COURT_KEYS,COURT_BUDGET,COURT_ATMOSPHERE,courtSkyPixels,fitCourtShadow,closedCourtShadowMaterial,renderDimensions,createCameraMotion,createDemandDriver,createSurfaceFrames,courtSurfaceAvailable,createPresentationLeases,prepareCourtPortal,COURT_PORTAL_MODES,courtPassageSample,courtEntryFrameReusable,copyPose,orbitPose,focusPose,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from './arrival-camera.js?v=20261101.6-passage';
 
 export class CourtRendererError extends Error{constructor(code,message,cause){super(message,{cause});this.name='CourtRendererError';this.code=code;}}
 const abortError=()=>new DOMException('Court initialization cancelled','AbortError');
@@ -13,6 +13,96 @@ const boundedRead=async response=>{
  const data=new Uint8Array(length);let offset=0;for(const chunk of chunks){data.set(chunk,offset);offset+=chunk.byteLength;}return data.buffer;
 };
 
+
+const beneath=(object,ancestor)=>{for(let node=object;node;node=node.parent)if(node===ancestor)return true;return false;};
+const hasMesh=object=>{let found=false;object?.traverse(node=>{if(node.isMesh)found=true;});return found;};
+// CPU-only native inspection. Temporarily opening leaves never renders, allocates
+// materials, or changes the caller's closed pose. Source/asset tests separately
+// certify the complete angular sweep against the authored static architecture.
+export function inspectNativeCourtPortal(model,root,key,near=.1){
+ const spec=root?.userData.courtPortal;
+ if(!Object.hasOwn(COURT_PORTAL_MODES,key)||spec?.room!==key)throw Error('Missing native room portal');
+ const plan=prepareCourtPortal(spec,1,1,near),frame=model.getObjectByName(spec.frame),approach=model.getObjectByName(spec.approach);
+ if(!frame||!beneath(frame,root)||!hasMesh(frame))throw Error('Missing native portal frame');
+ if(!approach)throw Error('Missing native portal approach');
+ const waypoint=plan.waypointNode?model.getObjectByName(plan.waypointNode):null;
+ if(plan.waypointNode&&!waypoint)throw Error('Missing native passage waypoint');
+ const hinges=spec.hinges.map(h=>{
+  const node=model.getObjectByName(h.node);if(!node||!beneath(node,root)||node===root)throw Error('Missing native hinge');
+  const leaf=model.getObjectByName(h.leaf);if(!leaf||!beneath(leaf,node)||!hasMesh(leaf))throw Error('Missing native leaf geometry');
+  if(h.handle!==null){const handle=model.getObjectByName(h.handle);if(!handle||!beneath(handle,node)||!hasMesh(handle))throw Error('Missing native handle');}
+  if(node.getWorldPosition(new T.Vector3()).distanceTo(new T.Vector3(...h.pivot))>.001)throw Error('Native hinge pivot does not match world metadata');
+  const meshes=[];node.traverse(o=>{if(o.isMesh)meshes.push(o);});
+  const world=node.getWorldQuaternion(node.quaternion.clone());return {node,leaf,initial:node.quaternion.clone(),axis:new T.Vector3(...h.axis).applyQuaternion(world.clone().invert()).normalize(),angle:h.openRadians,rotation:node.quaternion.clone(),meshes};
+ });
+ for(let i=0;i<hinges.length;i++)for(let j=i+1;j<hinges.length;j++)if(beneath(hinges[i].node,hinges[j].node)||beneath(hinges[j].node,hinges[i].node))throw Error('Native hinges must be independent');
+ const meshes=[];root.traverse(o=>{if(o.isMesh)meshes.push(o);});
+ for(const mesh of meshes)for(const mat of Array.isArray(mesh.material)?mesh.material:[mesh.material])if(!mat||mat.transparent||mat.opacity!==1||mat.alphaTest>0||mat.transmission>0)throw Error('Portal seal must be opaque native material');
+ let openLeafClearance=Infinity,rearClearance=Infinity;
+ try{
+  for(const h of hinges)h.node.quaternion.copy(h.initial).multiply(h.rotation.setFromAxisAngle(h.axis,h.angle));model.updateMatrixWorld(true);
+  for(const h of hinges){const bounds=new T.Box3().setFromObject(h.node),clearance=bounds.min.z-plan.inside.position[2];if(!Number.isFinite(clearance)||clearance<near)throw Error('Native crossing remains in the open leaf envelope');openLeafClearance=Math.min(openLeafClearance,clearance);}
+  const ray=new T.Raycaster();ray.near=.001;ray.far=20;
+  // Include the open leaves AND fixed fanlight/jamb, never hide them from this
+  // check. The center must meet genuine retained rear masonry; a side ray may
+  // exit an open niche, but no ray may meet a surface before the eye clears.
+  const required=plan.seal.position[2]-plan.inside.position[2];
+  for(const dx of[-near,0,near])for(const dy of[-near,0,near]){
+   ray.set(new T.Vector3(plan.eye[0]+dx,plan.eye[1]+dy,plan.seal.position[2]),new T.Vector3(0,0,-1));
+   const hit=ray.intersectObject(model,true)[0];if((hit&&hit.distance<required+near)||(!hit&&dx===0&&dy===0))throw Error('Native crossing corridor is blocked or has no retained rear surface');if(hit)rearClearance=Math.min(rearClearance,hit.distance-required);
+  }
+ }finally{for(const h of hinges)h.node.quaternion.copy(h.initial);model.updateMatrixWorld(true);}
+ return {root,spec,leafMode:plan.leafMode,hinges,meshes,approach:approach.getWorldPosition(new T.Vector3()).toArray(),waypoint:waypoint?.getWorldPosition(new T.Vector3()).toArray()||null,geometry:{openLeafClearance,rearClearance,corridorRays:9},plan:null,planSize:'',reason:null};
+}
+export function validateCourtApproachPath(model,points,near=.1){
+ if(!Array.isArray(points)||points.length<2||points.length>3||!points.every(p=>Array.isArray(p)&&p.length===3&&p.every(Number.isFinite))||!Number.isFinite(near)||near<=0)throw Error('Invalid native approach corridor');
+ const ray=new T.Raycaster();ray.near=.001;
+ for(let i=1;i<points.length;i++){
+  const from=new T.Vector3(...points[i-1]),to=new T.Vector3(...points[i]),direction=to.clone().sub(from),distance=direction.length();if(distance<1e-6)continue;direction.normalize();ray.far=distance+near;
+  for(const dx of[-near,0,near])for(const dy of[-near,0,near]){ray.set(from.clone().add(new T.Vector3(dx,dy,0)),direction);if(ray.intersectObject(model,true).length)throw Error('Native approach crosses solid architecture');}
+ }
+ return true;
+}
+
+function worldLeafHit(root,raycaster){
+ const a=new T.Vector3(),b=new T.Vector3(),c=new T.Vector3(),point=new T.Vector3();let closest=null;
+ root.traverse(mesh=>{
+  if(!mesh.isMesh||mesh.isInstancedMesh||mesh.visible===false)return;
+  const geometry=mesh.geometry,positions=geometry.attributes.position,index=geometry.index,count=index?.count||positions.count;
+  for(let i=0;i<count;i+=3){
+   const group=Array.isArray(mesh.material)?geometry.groups.find(g=>i>=g.start&&i<g.start+g.count):null,material=Array.isArray(mesh.material)?mesh.material[group?.materialIndex??0]:mesh.material;if(!material||material.visible===false)continue;
+   a.fromBufferAttribute(positions,index?index.getX(i):i).applyMatrix4(mesh.matrixWorld);b.fromBufferAttribute(positions,index?index.getX(i+1):i+1).applyMatrix4(mesh.matrixWorld);c.fromBufferAttribute(positions,index?index.getX(i+2):i+2).applyMatrix4(mesh.matrixWorld);
+   const hit=material.side===T.BackSide?raycaster.ray.intersectTriangle(c,b,a,true,point):raycaster.ray.intersectTriangle(a,b,c,material.side!==2,point);
+   if(!hit)continue;const distance=raycaster.ray.origin.distanceTo(hit);if(distance<raycaster.near||distance>raycaster.far||closest&&distance>=closest.distance)continue;
+   closest={object:mesh,distance,point:hit.clone()};
+  }
+ });return closest;
+}
+// Inverse-local Raycaster arithmetic can lose an EXACT shared capped edge.
+// Only that paired optical seam gets a second, world-space triangle test: no
+// ray perturbation, epsilon, enlarged geometry, or bounds-only acceptance.
+export function courtPortalSealHit(model,record,raycaster){
+ const hits=raycaster.intersectObject(model,true),key=record.spec.room;if(courtRoomAtHit(hits)===key)return {ok:true,method:'local',distance:hits[0]?.distance};
+ const failed={ok:false,method:'blocked'};if(record.leafMode!=='paired'||record.hinges.length!==2)return failed;
+ const centre=record.spec.aperture.center[0],ray=raycaster.ray;if(ray.origin.x!==centre||ray.direction.x!==0)return failed;
+ const left=record.hinges[0].leaf,right=record.hinges[1].leaf;
+ if(new T.Box3().setFromObject(left).max.x!==centre||new T.Box3().setFromObject(right).min.x!==centre)return failed;
+ const l=worldLeafHit(left,raycaster),r=worldLeafHit(right,raycaster);
+ if(!l||!r||!l.point.equals(r.point)||l.distance!==r.distance||(hits[0]&&hits[0].distance<=l.distance))return failed;
+ return {ok:true,method:'world-seam',distance:l.distance};
+}
+
+export function prepareNativeCourtPortalPlan(model,record,width,height,near=.1,far=120){
+ const plan=prepareCourtPortal(record.spec,width,height,near);
+ if(record.waypoint)plan.waypoint={position:[...record.waypoint],target:[...plan.eye],fov:40};
+ validateCourtApproachPath(model,[record.approach,...(record.waypoint?[record.waypoint]:[]),plan.seal.position],near);
+ const check=new T.PerspectiveCamera(plan.seal.fov,width/height,near,far);check.position.fromArray(plan.seal.position);check.lookAt(...plan.seal.target);check.updateMatrixWorld();
+ // The real closed portal, not its metadata bbox, must be the first opaque
+ // surface at every corner/edge/center of this actual viewport's sealed view.
+ const ray=new T.Raycaster();for(const x of[-.999,0,.999])for(const y of[-.999,0,.999]){ray.setFromCamera(new T.Vector2(x,y),check);if(!courtPortalSealHit(model,record,ray).ok)throw Error('Native portal does not cover its safe seal');}
+ return plan;
+}
+
 export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFailure=()=>{},signal}={}){
  if(!canvas?.getContext)throw new CourtRendererError('canvas','A visible court canvas is required');
  if(signal?.aborted)throw abortError();
@@ -22,7 +112,7 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
  let deadline=0,stopReject;const stopped=new Promise((_,reject)=>{stopReject=reject;});stopped.catch(()=>{});
  const loadAbort=new AbortController(),anchors=new Map(),homePoses=new Map(),roomPoses=new Map(),portals=new Map();
  const raycaster=new T.Raycaster(),point=new T.Vector3(),bufferSize=new T.Vector2();
- let assetInfo=null,meshTriangles=0,materialCount=0,closedShadowMaterials=0,shadowBounds=null,drawCalls=0,renderedTriangles=0,pose=null,shadowRefreshes=0,passageView=null,visualGeneration=0,lastNormalPaint=null,lastPaintMode=null,reusedEntryFrames=0;
+ let assetInfo=null,meshTriangles=0,materialCount=0,closedShadowMaterials=0,shadowBounds=null,drawCalls=0,peakDrawCalls=0,renderedTriangles=0,pose=null,shadowRefreshes=0,passageView=null,visualGeneration=0,lastNormalPaint=null,lastPaintMode=null,reusedEntryFrames=0,lastPassageRefusal=null;
  function release(reason=abortError()){
   if(disposed)return;disposed=true;active=false;lastNormalPaint=null;ready=false;clearTimeout(deadline);loadAbort.abort();driver?.dispose();leases?.dispose();
   canvas.removeEventListener('webglcontextlost',lost,true);signal?.removeEventListener('abort',aborted);stopReject(reason);
@@ -55,7 +145,7 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
   if(disposed||!model)return false;
   try{
    applyPose(value,!manual);const updateShadow=sun?.shadow.needsUpdate===true;renderer.render(scene,camera);if(updateShadow&&sun.shadow.needsUpdate===false)shadowRefreshes++;if(renderer.getContext().isContextLost())throw new CourtRendererError('context-lost','The court graphics context is unavailable');
-   const info=renderer.info.render;drawCalls=info.calls;renderedTriangles=info.triangles;frameCount++;lastPaintMode=manual?'presentation':'normal';
+   const info=renderer.info.render;drawCalls=info.calls;peakDrawCalls=Math.max(peakDrawCalls,drawCalls);renderedTriangles=info.triangles;frameCount++;lastPaintMode=manual?'presentation':'normal';
    if(!manual&&opaqueWorld())lastNormalPaint={serial:frameCount,generation:visualGeneration,pose:copyPose(pose),width:dimensions.width,height:dimensions.height,pixelRatio:dimensions.pixelRatio,physicalWidth:dimensions.physicalWidth,physicalHeight:dimensions.physicalHeight};
    if(!manual)onFrame({rooms:project(),camera:copyPose(pose),selected});return true;
   }catch(error){fail(error instanceof CourtRendererError?error:new CourtRendererError('render','The court could not draw safely',error));return false;}
@@ -64,40 +154,23 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
   if(disposed||!active||leases?.active()||!model||!courtSurfaceAvailable(canvas))return false;
   return renderPose(motion.sample(time))&&motion.moving(time);
  }
- const beneath=(object,ancestor)=>{for(let n=object;n;n=n.parent)if(n===ancestor)return true;return false;};
  function discoverPortal(){
-  const root=anchors.get('insurance')?.door,spec=root?.userData.courtPortal;if(!spec)return;
-  try{
-   prepareCourtPortal(spec,1,1,camera.near);
-   const frame=model.getObjectByName(spec.frame);if(!frame||!beneath(frame,root))throw Error('Missing native portal frame');
-   let framed=false;frame.traverse(o=>{if(o.isMesh)framed=true;});if(!framed)throw Error('Native portal frame has no geometry');
-   const hinges=spec.hinges.map(h=>{
-    const node=model.getObjectByName(h.node);if(!node||!beneath(node,root)||node===root)throw Error('Missing native hinge');
-    for(const name of[h.leaf,h.handle]){const part=model.getObjectByName(name);if(!part||!beneath(part,node))throw Error('Missing native leaf or handle');}
-    if(node.getWorldPosition(new T.Vector3()).distanceTo(new T.Vector3(...h.pivot))>.001)throw Error('Native hinge pivot does not match world metadata');
-    const meshes=[];node.traverse(o=>{if(o.isMesh)meshes.push(o);});if(!meshes.length)throw Error('Native hinge has no leaf geometry');
-    const world=node.getWorldQuaternion(node.quaternion.clone());return {node,initial:node.quaternion.clone(),axis:new T.Vector3(...h.axis).applyQuaternion(world.clone().invert()).normalize(),angle:h.openRadians,rotation:node.quaternion.clone(),meshes};
-   });
-   if(hinges[0].node===hinges[1].node||beneath(hinges[0].node,hinges[1].node)||beneath(hinges[1].node,hinges[0].node))throw Error('Native hinges must be independent');
-   const meshes=[];root.traverse(o=>{if(o.isMesh)meshes.push(o);});
-   for(const mesh of meshes)for(const mat of Array.isArray(mesh.material)?mesh.material:[mesh.material])if(!mat||mat.transparent||mat.opacity!==1||mat.alphaTest>0||mat.transmission>0)throw Error('Portal seal must be opaque native material');
-   portals.set('insurance',{root,spec,hinges,meshes,plan:null,planSize:'',reason:null});
-  }catch(error){portals.set('insurance',{reason:String(error.message||error)});}
+  for(const key of Object.keys(COURT_PORTAL_MODES)){
+   const root=anchors.get(key)?.door;if(!root?.userData.courtPortal)continue;
+   try{portals.set(key,inspectNativeCourtPortal(model,root,key,camera.near));}
+   catch(error){portals.set(key,{reason:String(error.message||error)});}
+  }
  }
  function portalPlan(key){
   const record=portals.get(key);if(!record||record.reason||disposed||!ready)return null;
-  const size=dimensions.width+'x'+dimensions.height;if(record.planSize===size)return record.plan;
-  try{
-   const plan=prepareCourtPortal(record.spec,dimensions.width,dimensions.height,camera.near);
-   const check=new T.PerspectiveCamera(plan.seal.fov,dimensions.width/dimensions.height,camera.near,camera.far);check.position.fromArray(plan.seal.position);check.lookAt(...plan.seal.target);check.updateMatrixWorld();
-   // Native geometry, not merely metadata: the closed portal must be the first
-   // opaque surface at all corners/edges/center of the intended sealed view.
-   const ray=new T.Raycaster();for(const x of[-.999,0,.999])for(const y of[-.999,0,.999]){ray.setFromCamera(new T.Vector2(x,y),check);if(courtRoomAtHit(ray.intersectObject(model,true))!==key)throw Error('Native portal does not cover its safe seal');}
-   record.plan=plan;record.planSize=size;record.planReason=null;return plan;
-  }catch(error){record.plan=null;record.planSize=size;record.planReason=String(error.message||error);return null;}
+  const size=dimensions.width+'x'+dimensions.height;if(record.planSize===size)return record.plan;if(leases?.active())return null;
+  try{const plan=prepareNativeCourtPortalPlan(model,record,dimensions.width,dimensions.height,camera.near,camera.far);record.plan=plan;record.planSize=size;record.planReason=null;return plan;}
+  catch(error){record.plan=null;record.planSize=size;record.planReason=String(error.message||error);return null;}
  }
  function beginPassage({room,returnState,onInvalidated}={}){
   const plan=portalPlan(room),record=portals.get(room);if(!plan||!record)return null;
+  try{validateCourtApproachPath(model,[(returnState?.pose||pose).position,record.approach],camera.near);lastPassageRefusal=null;}
+  catch(error){lastPassageRefusal={room,reason:String(error.message||error)};return null;}
   let lease=null,restored=false,layered=false,lastOpen=0;
   let captured=false,background=null,clearAlpha=1,cameraMask=1,shadowMask=1;const layers=[];
   function restoreNative(){
@@ -111,7 +184,7 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
   if(!lease)return null;
   background=scene.background;clearAlpha=renderer.getClearAlpha();cameraMask=camera.layers.mask;shadowMask=sun.shadow.camera.layers.mask;
   for(const mesh of record.meshes)layers.push([mesh,mesh.layers.mask]);scene.traverse(o=>{if(o.isLight)layers.push([o,o.layers.mask]);});captured=true;
-  const approach={position:[...(roomPoses.get(room)?.position||lease.returnState.pose.position)],target:[...plan.eye],fov:40};
+  const approach={position:[...record.approach],target:[...plan.eye],fov:40};
   return Object.freeze({returnState:lease.returnState,
    paint(progress,viewport){
     if(restored||!leases.active())return false;
@@ -197,10 +270,10 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
    setActive(value){if(disposed)return;active=!!value;if(!active)motion.settle();driver.setActive(active&&!leases.active()&&courtSurfaceAvailable(canvas));},
    acquirePresentation(options){return leases.acquire(options);},
    canPassage(key){return !!portalPlan(key);},
-   prepareDoor(key){const plan=portalPlan(key);return plan?{room:key,width:plan.width,height:plan.height,seal:copyPose(plan.seal),inside:copyPose(plan.inside),coverage:{...plan.coverage}}:null;},
+   prepareDoor(key){const plan=portalPlan(key);return plan?{room:key,leafMode:plan.leafMode,hingeCount:plan.hinges.length,width:plan.width,height:plan.height,seal:copyPose(plan.seal),inside:copyPose(plan.inside),coverage:{...plan.coverage}}:null;},
    beginPassage,
    pick(x,y){if(disposed||!active||leases.active()||!Number.isFinite(x)||!Number.isFinite(y)||Math.abs(x)>1||Math.abs(y)>1)return null;return roomAt(x,y);},
-   diagnostics(){const size=renderer?.getDrawingBufferSize(bufferSize);return {webgl2:true,ready,disposed,contextLost,active,presentation:leases?.state()||{active:false},reusedEntryFrames,normalPaintSerial:lastNormalPaint?.serial??null,lastPaintMode,visualGeneration,surfaceOwner:canvas.ownerDocument===win.document?'court':'adopted',frameCount,meshTriangles,materialCount,primitiveGroups:assetInfo?.primitiveGroups||0,nativePortals:[...portals].map(([key,value])=>({key,available:!value.reason&&!value.planReason,reason:value.reason||value.planReason||null})),passage:passageView?{...passageView,hinges:portals.get(passageView.room)?.hinges.map(h=>({node:h.node.name,quaternion:h.node.quaternion.toArray(),angle:h.node.quaternion.angleTo(h.initial)}))}:null,transparentBackground:scene?.background===null,mainLayerMask:camera?.layers.mask,shadowLayerMask:sun.shadow.camera.layers.mask,shadowRefreshes,clearAlpha:renderer?.getClearAlpha(),shadowEnabled:renderer?.shadowMap.enabled===true,shadowFilter:renderer?.shadowMap.type===T.PCFShadowMap?'pcf':'other',shadowMapSize:sun.shadow.mapSize.x,shadowRadius:sun.shadow.radius,closedShadowMaterials,shadowBounds:shadowBounds?{...shadowBounds}:null,staticShadow:sun.shadow.autoUpdate===false,doorLight:{position:lamp.position.toArray(),intensity:lamp.intensity,distance:lamp.distance,castsShadow:lamp.castShadow},atmosphere:{...COURT_ATMOSPHERE},runtimeSkyTextures:sky?1:0,runtimeSkyTexels:sky?COURT_ATMOSPHERE.skyWidth*COURT_ATMOSPHERE.skyHeight:0,drawCalls,renderedTriangles,assetTextureCount:assetInfo?.textureCount||0,assetTexels:assetInfo?.texels||0,gpuTextures:renderer?.info.memory.textures||0,assetBytes:assetInfo?.bytes||0,physicalPixels:dimensions?.physicalPixels||0,physicalWidth:size?.x||0,physicalHeight:size?.y||0,pixelRatio:dimensions?.pixelRatio||0,width:dimensions?.width||0,height:dimensions?.height||0,pendingFrame:driver?.state().pendingFrame||false,selected,camera:pose?copyPose(pose):null,projectedRooms:projected.map(value=>({...value}))};},
+   diagnostics(){const size=renderer?.getDrawingBufferSize(bufferSize);return {webgl2:true,ready,disposed,contextLost,active,presentation:leases?.state()||{active:false},reusedEntryFrames,normalPaintSerial:lastNormalPaint?.serial??null,lastPaintMode,visualGeneration,lastPassageRefusal:lastPassageRefusal?{...lastPassageRefusal}:null,surfaceOwner:canvas.ownerDocument===win.document?'court':'adopted',frameCount,meshTriangles,materialCount,primitiveGroups:assetInfo?.primitiveGroups||0,nativePortals:[...portals].map(([key,value])=>({key,leafMode:value.leafMode||null,hingeCount:value.hinges?.length||0,geometry:value.geometry?{...value.geometry}:null,available:!value.reason&&!value.planReason,reason:value.reason||value.planReason||null})),passage:passageView?{...passageView,hinges:portals.get(passageView.room)?.hinges.map(h=>({node:h.node.name,quaternion:h.node.quaternion.toArray(),angle:h.node.quaternion.angleTo(h.initial)}))}:null,transparentBackground:scene?.background===null,mainLayerMask:camera?.layers.mask,shadowLayerMask:sun.shadow.camera.layers.mask,shadowRefreshes,clearAlpha:renderer?.getClearAlpha(),shadowEnabled:renderer?.shadowMap.enabled===true,shadowFilter:renderer?.shadowMap.type===T.PCFShadowMap?'pcf':'other',shadowMapSize:sun.shadow.mapSize.x,shadowRadius:sun.shadow.radius,closedShadowMaterials,shadowBounds:shadowBounds?{...shadowBounds}:null,staticShadow:sun.shadow.autoUpdate===false,doorLight:{position:lamp.position.toArray(),intensity:lamp.intensity,distance:lamp.distance,castsShadow:lamp.castShadow},atmosphere:{...COURT_ATMOSPHERE},runtimeSkyTextures:sky?1:0,runtimeSkyTexels:sky?COURT_ATMOSPHERE.skyWidth*COURT_ATMOSPHERE.skyHeight:0,drawCalls,peakDrawCalls,renderedTriangles,assetTextureCount:assetInfo?.textureCount||0,assetTexels:assetInfo?.texels||0,gpuTextures:renderer?.info.memory.textures||0,assetBytes:assetInfo?.bytes||0,physicalPixels:dimensions?.physicalPixels||0,physicalWidth:size?.x||0,physicalHeight:size?.y||0,pixelRatio:dimensions?.pixelRatio||0,width:dimensions?.width||0,height:dimensions?.height||0,pendingFrame:driver?.state().pendingFrame||false,selected,camera:pose?copyPose(pose):null,projectedRooms:projected.map(value=>({...value}))};},
    dispose
   };
  }catch(error){fail(error,false);throw error;}

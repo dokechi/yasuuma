@@ -1,0 +1,262 @@
+{
+  "assetSha256": "ce19597525952a5847ec927eb2150eda6efd5eb4d5ec29ca4f5cf11686ab30e6",
+  "runtimeCameraSha256": "2feaa04de51de5535c7cfc5d31e21e9641e00fb6c78050ec9021fd3b749d1706",
+  "method": "Exact runtime courtPassageSample poses; each .002-u interval uses swept near-plane camera box and conservative swept triangle hulls; includes retained full world, fixed fanlights, all moving leaves and handles. No world hiding in the proof.",
+  "nearMeters": 0.1,
+  "maxProgressStep": 0.002,
+  "expansionMeters": 0.00015,
+  "views": [
+    {
+      "room": "insurance",
+      "width": 320,
+      "height": 588,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 4.087932581316791e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "insurance",
+      "width": 390,
+      "height": 848,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 4.087932581316791e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "insurance",
+      "width": 800,
+      "height": 596,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 4.087932581316791e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "insurance",
+      "width": 1440,
+      "height": 848,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 4.087932581316791e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "insurance",
+      "width": 3840,
+      "height": 1080,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 4.087932581316791e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "otoku",
+      "width": 320,
+      "height": 588,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 3.8715951642070055e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "otoku",
+      "width": 390,
+      "height": 848,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 3.8715951642070055e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "otoku",
+      "width": 800,
+      "height": 596,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 3.8715951642070055e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "otoku",
+      "width": 1440,
+      "height": 848,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 3.8715951642070055e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "otoku",
+      "width": 3840,
+      "height": 1080,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 3.8715951642070055e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "rakuten",
+      "width": 320,
+      "height": 588,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 4.521587640263392e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "rakuten",
+      "width": 390,
+      "height": 848,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 4.521587640263392e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "rakuten",
+      "width": 800,
+      "height": 596,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 4.521587640263392e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "rakuten",
+      "width": 1440,
+      "height": 848,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 4.521587640263392e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "rakuten",
+      "width": 3840,
+      "height": 1080,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 4.521587640263392e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "lottery",
+      "width": 320,
+      "height": 588,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 9.108560991256983e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "lottery",
+      "width": 390,
+      "height": 848,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 9.108560991256983e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "lottery",
+      "width": 800,
+      "height": 596,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 9.108560991256983e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "lottery",
+      "width": 1440,
+      "height": 848,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 9.108560991256983e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "lottery",
+      "width": 3840,
+      "height": 1080,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 9.108560991256983e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "sourcing",
+      "width": 320,
+      "height": 588,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 4.5939706091082754e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "sourcing",
+      "width": 390,
+      "height": 848,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 4.5939706091082754e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "sourcing",
+      "width": 800,
+      "height": 596,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 4.5939706091082754e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "sourcing",
+      "width": 1440,
+      "height": 848,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 4.5939706091082754e-05,
+      "collisions": [],
+      "pass": true
+    },
+    {
+      "room": "sourcing",
+      "width": 3840,
+      "height": 1080,
+      "intervals": 240,
+      "triangleTests": 0,
+      "maxArcChordErrorMeters": 4.5939706091082754e-05,
+      "collisions": [],
+      "pass": true
+    }
+  ],
+  "pass": true,
+  "seconds": 8.020902156829834
+}

@@ -2,6 +2,7 @@
    This module never creates a graphics context, routes, fetches, or moves reader
    content. The application commits its real destination independently. */
 const leases = new WeakMap();
+const rooms = new Set(['insurance', 'otoku', 'rakuten', 'lottery', 'sourcing']);
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
 const detached = (node, doc) => node?.nodeType === 1 && node.ownerDocument === doc && !node.isConnected && !node.parentNode;
@@ -50,24 +51,50 @@ export function createCourtPassage({document: doc = globalThis.document, reduced
    if (node) {
     node.inert = true; node.setAttribute('aria-hidden', 'true'); node.style.pointerEvents = 'none'; slot.append(node);
     // Setting scrollTop while detached clamps to zero in actual browsers.
-    for (const scroller of [node, ...node.querySelectorAll('[data-journey-scroll-top]')]) {
+    for (const scroller of [node, ...node.querySelectorAll('[data-journey-scroll-top],[data-court-scroll-left]')]) {
      const top = Number(scroller.getAttribute('data-journey-scroll-top'));
      if (scroller.hasAttribute('data-journey-scroll-top') && finite(top) && top >= 0) scroller.scrollTop = Math.min(top, 1e8);
+     const left = Number(scroller.getAttribute('data-court-scroll-left'));
+     if (scroller.hasAttribute('data-court-scroll-left') && finite(left) && left >= 0) scroller.scrollLeft = Math.min(left, 1e8);
     }
    }
   }
   return true;
  }
+ function frameHidden(record) {
+  const frame = record.sourceFrame;
+  if (!frame) return false;
+  try { const style = win.getComputedStyle(frame); return frame.hidden || style.display === 'none' || style.visibility === 'hidden'; } catch { return true; }
+ }
+ function hostSizeMatches(record) { return win.innerWidth === record.hostWidth && win.innerHeight === record.hostHeight; }
+ function expectedNativeHide(record) {
+  return record.nativeHideAcknowledged && record.sourceFrame?.isConnected && record.sourceFrame.contentDocument === record.sourceDocument && hostSizeMatches(record) && !doc.hidden && !record.sourceDocument.hidden && frameHidden(record);
+ }
+ function unchangedReturnFrame(record) {
+  if (record.room !== 'sourcing' || record.direction !== 'out' || !record.sourceFrame?.isConnected || frameHidden(record) || !hostSizeMatches(record)) return false;
+  try {
+   const rect = record.sourceFrame.getBoundingClientRect(), view = record.sourceDocument.defaultView, surface = record.surface;
+   return ['left', 'top', 'width', 'height'].every(key => rect[key] === surface[key]) && view.innerWidth === surface.width && view.innerHeight === surface.height;
+  } catch { return false; }
+ }
+ function acknowledgeNativeHide(record) {
+  // Only the route adapter holding this token can acknowledge the existing
+  // matching cc:castle-native event. This is not a generic pause exemption.
+  if (current !== record || record.released || record.room !== 'sourcing' || record.direction !== 'in' || !record.sourceFrame?.isConnected || record.sourceFrame.ownerDocument !== doc || record.sourceFrame.contentDocument !== record.sourceDocument || !hostSizeMatches(record) || doc.hidden || record.sourceDocument.hidden) return false;
+  record.nativeHideAcknowledged = true; return true;
+ }
  function paint(record, elapsed) {
   if (current !== record || record.released) return false;
-  if (!canMove() || record.sourceDocument.hidden || !record.parent.isConnected) { release(record); return false; }
+  if (!canMove() || record.sourceDocument.hidden || !record.parent.isConnected || !hostSizeMatches(record) || record.sourceFrame && (!record.sourceFrame.isConnected || frameHidden(record) && !expectedNativeHide(record))) { release(record); return false; }
   const time = clamp(finite(elapsed) ? elapsed : 0, 0, record.duration);
-  // A paused ordinary WAAPI clock keeps its last composited frame. Repainting
-  // identical geometry every RAF needlessly occupies the GPU (and software GL).
-  // Lifecycle checks above still run, and invalidation listeners stay live.
-  if (record.lastPaintedTime === time) return true;
   const u = record.direction === 'out' ? 1 - time / record.duration : time / record.duration;
   try {
+   // Host acknowledgement is intent, not evidence that the native workspace
+   // exists. Recheck even while paused; never expose the child placeholder.
+   if (record.room === 'sourcing' && record.direction === 'in' && u >= .48 && (!record.nativeHideAcknowledged || record.nativeVisible?.() !== true)) { release(record); return false; }
+   // A paused ordinary WAAPI clock retains its frame without occupying the GPU.
+   // All lifecycle and native-visibility checks still run above this dedup.
+   if (record.lastPaintedTime === time) return true;
    const result = record.handle.paint(u, {width: record.surface.width, height: record.surface.height});
    if (!result || result.ok !== true) { release(record); return false; }
    if (current !== record || record.released) return false;
@@ -83,9 +110,12 @@ export function createCourtPassage({document: doc = globalThis.document, reduced
  }
  function travel(spec = {}) {
   const intent = ++serial; release(current);
-  if (serial !== intent || !canMove() || spec.quick || spec.room !== 'insurance' || !['in', 'out'].includes(spec.direction)) return null;
+  if (serial !== intent || !canMove() || spec.quick || !rooms.has(spec.room) || !['in', 'out'].includes(spec.direction)) return null;
   const {canvas, renderer, surface} = spec, sourceDocument = canvas?.ownerDocument;
+  let sourceFrame = null;
   try {
+   sourceFrame = sourceDocument?.defaultView?.frameElement || null;
+   if (sourceFrame && (sourceFrame.ownerDocument !== doc || !sourceFrame.isConnected || sourceFrame.hidden || win.getComputedStyle(sourceFrame).display === 'none')) return null;
    if (canvas?.tagName !== 'CANVAS' || !canvas.isConnected || !canvas.parentNode || leases.has(canvas) || typeof renderer?.beginPassage !== 'function' || sourceDocument.hidden || sourceDocument.defaultView.location.origin !== win.location.origin) return null;
   } catch { return null; }
   if (!surface || !['left', 'top', 'width', 'height'].every(key => finite(surface[key])) || surface.width <= 0 || surface.height <= 0 || surface.width > 20000 || surface.height > 20000 || Math.abs(surface.left) > 20000 || Math.abs(surface.top) > 20000) return null;
@@ -99,7 +129,7 @@ export function createCourtPassage({document: doc = globalThis.document, reduced
   Object.assign(layer.style, {left: surface.left + 'px', top: surface.top + 'px', width: surface.width + 'px', height: surface.height + 'px', pointerEvents: 'none'});
   const backdrop = doc.createElement('div'), foreground = doc.createElement('div'); backdrop.className = 'court-passage-backdrop'; foreground.className = 'court-passage-foreground';
   layer.append(backdrop, foreground);
-  const record = {layer, backdrop, foreground, canvas, sourceDocument, surface: {...surface}, room: spec.room, direction: spec.direction, duration, parent: canvas.parentNode, next: canvas.nextSibling, style: canvas.getAttribute('style'), marker: sourceDocument.createComment('court-passage: original canvas position'), handle: null, clock: null, listeners: [], raf: 0, watchdog: 0, released: false, started: false, progress: spec.direction === 'out' ? 1 : 0, phase: 'preparing'};
+  const record = {layer, backdrop, foreground, canvas, sourceDocument, sourceFrame, hostWidth: win.innerWidth, hostHeight: win.innerHeight, nativeHideAcknowledged: false, nativeVisible: typeof spec.nativeVisible === 'function' ? spec.nativeVisible : null, surface: {...surface}, room: spec.room, direction: spec.direction, duration, parent: canvas.parentNode, next: canvas.nextSibling, style: canvas.getAttribute('style'), marker: sourceDocument.createComment('court-passage: original canvas position'), handle: null, clock: null, listeners: [], raf: 0, watchdog: 0, released: false, started: false, progress: spec.direction === 'out' ? 1 : 0, phase: 'preparing'};
   current = record; leases.set(canvas, record);
   const listen = (target, type, callback, options) => { target.addEventListener(type, callback, options); record.listeners.push(() => target.removeEventListener(type, callback, options)); };
   try {
@@ -124,7 +154,10 @@ export function createCourtPassage({document: doc = globalThis.document, reduced
     for (const type of ['pointerdown', 'keydown', 'input', 'copy', 'cut', 'paste']) listen(observed, type, interrupt, true);
     listen(observed, 'visibilitychange', () => { if (observed.hidden && current === record) cancel(); });
     listen(observed.defaultView, 'pagehide', interrupt);
-    listen(observed.defaultView, 'resize', interrupt);
+    listen(observed.defaultView, 'resize', event => {
+     if (observed !== doc && (expectedNativeHide(record) || unchangedReturnFrame(record))) return;
+     interrupt(event);
+    });
     listen(observed.defaultView, 'orientationchange', interrupt);
    }
    listen(canvas, 'webglcontextlost', interrupt, true);
@@ -136,7 +169,7 @@ export function createCourtPassage({document: doc = globalThis.document, reduced
    record.watchdog = win.setTimeout(() => { if (current === record) cancel(); }, duration + 6000);
    record.started = true; notify('court:passage-start', record);
    if (current !== record || record.released) return null;
-   return Object.freeze({returnState: record.handle.returnState, setRoom: values => setRoom(record, values), cancel() { if (current === record) cancel(); }});
+   return Object.freeze({returnState: record.handle.returnState, setRoom: values => setRoom(record, values), acknowledgeNativeHide: () => acknowledgeNativeHide(record), cancel() { if (current === record) cancel(); }});
   } catch { release(record); return null; }
  }
  const motion = () => { if (quiet?.matches) cancel(); };

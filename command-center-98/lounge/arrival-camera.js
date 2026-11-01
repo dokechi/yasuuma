@@ -118,27 +118,38 @@ export function courtEntryFrameReusable(previous,current){
  for(const key of['width','height','pixelRatio','physicalWidth','physicalHeight'])if(!finite(current[key])||current[key]<=0||previous[key]!==current[key])return false;
  return previous.pose.fov===current.pose.fov&&['position','target'].every(key=>previous.pose[key].every((value,i)=>value===current.pose[key][i]));
 }
-// The first native passage is deliberately a validated insurance-only slice.
-// Bounds describe a guaranteed opaque rectangle BELOW the arch, not its bbox.
+// Each authored portal keeps its real architectural form. The rectangle is a
+// guaranteed opaque rectangle inside the arched opening, never its whole bbox.
+export const COURT_PORTAL_MODES=Object.freeze({insurance:'paired',otoku:'paired',rakuten:'paired',lottery:'single',sourcing:'paired'});
 export function prepareCourtPortal(spec,width,height,near=.1){
  const vector=v=>Array.isArray(v)&&v.length===3&&v.every(finite),same=(a,b)=>vector(a)&&a.every((v,i)=>Math.abs(v-b[i])<1e-6);
- if(!spec||spec.version!==1||spec.units!=='meters'||spec.up!=='Y'||spec.axisSpace!=='world'||spec.room!=='insurance'||spec.frame!=='portal-frame-insurance'||spec.approach!=='approach-insurance')throw Error('Unsupported court portal');
- const a=spec.aperture,r=spec.opaqueRect,hinges=spec.hinges;
- if(!a||a.shape!=='arched'||!vector(a.center)||!same(a.normal,[0,0,1])||!same(a.right,[1,0,0])||!same(a.up,[0,1,0])||!finite(a.springY)||!r||!vector(r.min)||!vector(r.max)||r.min[0]>=r.max[0]||r.min[1]>=r.max[1]||Math.abs(r.min[2]-r.max[2])>1e-6||r.max[1]>=a.springY)throw Error('Portal requires an exact opaque seal rectangle');
- if(!Array.isArray(hinges)||hinges.length!==2||!hinges.every((h,i)=>h.node==='hinge-insurance-'+(i?'right':'left')&&h.leaf==='leaf-insurance-'+(i?'right':'left')&&h.handle==='handle-insurance-'+(i?'right':'left')&&vector(h.pivot)&&same(h.axis,[0,1,0])&&finite(h.openRadians)&&Math.sign(h.openRadians)===(i?-1:1)&&Math.abs(h.openRadians)>=1&&Math.abs(h.openRadians)<=Math.PI/2))throw Error('Invalid native portal hinges');
+ const key=spec?.room,mode=spec?.leafMode??(key==='insurance'?'paired':null);
+ if(!spec||spec.version!==1||spec.units!=='meters'||spec.up!=='Y'||spec.axisSpace!=='world'||!Object.hasOwn(COURT_PORTAL_MODES,key)||mode!==COURT_PORTAL_MODES[key]||spec.frame!=='portal-frame-'+key||spec.approach!=='approach-'+key||(spec.waypoint!=null&&spec.waypoint!=='passage-waypoint-'+key))throw Error('Unsupported court portal');
+ const a=spec.aperture,r=spec.opaqueRect,hinges=spec.hinges,sides=mode==='single'?['left']:['left','right'],upper=key==='otoku'||key==='lottery';
+ if(!a||a.shape!=='arched'||!vector(a.center)||!same(a.normal,[0,0,1])||!same(a.right,[1,0,0])||!same(a.up,[0,1,0])||!finite(a.springY)||!r||!vector(r.min)||!vector(r.max)||r.min[0]>=r.max[0]||r.min[1]>=r.max[1]||Math.abs(r.min[2]-r.max[2])>1e-6)throw Error('Portal requires an exact opaque seal rectangle');
+ // Upper casements use a narrower rectangle within the fanlight. Each top
+ // corner must lie under the real circular arch; its bounding-box corners do not.
+ const rise=Math.max(0,r.max[1]-a.springY),extent=Math.max(Math.abs(r.min[0]-a.center[0]),Math.abs(r.max[0]-a.center[0]));
+ if((rise>0&&a.width==null)||(a.width!=null&&(!finite(a.width)||a.width<=0||a.width>10||extent*extent+rise*rise>=a.width*a.width/4)))throw Error('Opaque rectangle extends outside the native arch');
+ if(!Array.isArray(hinges)||hinges.length!==sides.length||!hinges.every((h,i)=>h&&h.node==='hinge-'+key+'-'+sides[i]&&h.leaf==='leaf-'+key+'-'+sides[i]&&(h.handle==='handle-'+key+'-'+sides[i]||(upper&&h.handle===null))&&(h.side==null||h.side===sides[i])&&vector(h.pivot)&&same(h.axis,[0,1,0])&&finite(h.openRadians)&&Math.sign(h.openRadians)===(i?-1:1)&&Math.abs(h.openRadians)>=Math.PI/9&&Math.abs(h.openRadians)<=Math.PI/2)||(mode==='paired'&&Math.abs(hinges[0].openRadians+hinges[1].openRadians)>1e-6))throw Error('Invalid native portal hinges');
  if(!finite(width)||!finite(height)||width<=0||height<=0||!finite(near)||near<=0)throw Error('Invalid portal viewport');
  const eye=[...a.center],fov=40,tan=Math.tan(fov*Math.PI/360),horizontal=Math.min(eye[0]-r.min[0],r.max[0]-eye[0]),vertical=Math.min(eye[1]-r.min[1],r.max[1]-eye[1]),front=r.min[2]-eye[2];
  if(horizontal<=0||vertical<=0||front<-.1||front>.2||horizontal>5||vertical>5)throw Error('Portal eye is outside its opaque rectangle');
  const distance=Math.min(1.1,front+.9*Math.min(horizontal/(tan*width/height),vertical/tan)),depth=distance-front;
  if(depth<near*3)throw Error('Portal viewport cannot safely clear the near plane');
  const crossing=spec.crossing;
- if(!crossing||!vector(crossing.position)||!vector(crossing.target)||crossing.position[0]!==eye[0]||crossing.position[1]!==eye[1]||crossing.target[0]!==eye[0]||crossing.target[1]!==eye[1]||crossing.position[2]>=eye[2]-1.2||crossing.target[2]>=crossing.position[2]-.2)throw Error('Invalid portal crossing corridor');
- return {room:spec.room,width,height,near,eye,seal:{position:[eye[0],eye[1],eye[2]+distance],target:eye,fov},inside:{position:[...crossing.position],target:[...crossing.target],fov},coverage:{depth,horizontalHalf:depth*tan*width/height,verticalHalf:depth*tan},hinges:hinges.map(h=>({node:h.node,axis:[...h.axis],openRadians:h.openRadians}))};
+ // Native leaf bounds and retained rear masonry are checked against this pose
+ // by the renderer. No guessed universal leaf width/depth can certify clearance.
+ if(!crossing||!vector(crossing.position)||!vector(crossing.target)||crossing.position[0]!==eye[0]||crossing.position[1]!==eye[1]||crossing.target[0]!==eye[0]||crossing.target[1]!==eye[1]||crossing.position[2]>=eye[2]-near*3||crossing.position[2]<eye[2]-10||crossing.target[2]>=crossing.position[2]-.2)throw Error('Invalid portal crossing corridor');
+ return {room:key,leafMode:mode,waypointNode:spec.waypoint??null,width,height,near,eye,seal:{position:[eye[0],eye[1],eye[2]+distance],target:eye,fov},inside:{position:[...crossing.position],target:[...crossing.target],fov},coverage:{depth,horizontalHalf:depth*tan*width/height,verticalHalf:depth*tan},hinges:hinges.map((h,i)=>({node:h.node,side:sides[i],axis:[...h.axis],openRadians:h.openRadians}))};
 }
 export function courtPassageSample(start,approach,plan,progress){
- if(!validPose(start)||!validPose(approach)||!validPose(plan?.seal)||!validPose(plan?.inside)||!finite(progress))throw Error('Invalid court passage sample');
+ if(!validPose(start)||!validPose(approach)||!validPose(plan?.seal)||!validPose(plan?.inside)||(plan.waypoint&&!validPose(plan.waypoint))||!finite(progress))throw Error('Invalid court passage sample');
  const u=clamp(progress,0,1),smooth=t=>{const v=clamp(t,0,1);return v*v*(3-2*v);};
- const pose=u<.22?interpolatePose(start,approach,u/.22):u<.44?interpolatePose(approach,plan.seal,(u-.22)/.22):u<=.68?copyPose(plan.seal):u<.94?interpolatePose(plan.seal,plan.inside,(u-.68)/.26):copyPose(plan.inside);
+ let approachPose;
+ if(plan.waypoint)approachPose=u<.33?interpolatePose(approach,plan.waypoint,(u-.22)/.11):interpolatePose(plan.waypoint,plan.seal,(u-.33)/.11);
+ else approachPose=interpolatePose(approach,plan.seal,(u-.22)/.22);
+ const pose=u<.22?interpolatePose(start,approach,u/.22):u<.44?approachPose:u<=.68?copyPose(plan.seal):u<.94?interpolatePose(plan.seal,plan.inside,(u-.68)/.26):copyPose(plan.inside);
  return {u,pose,open:smooth((u-.52)/.26),portalOnly:u>=.48,phase:u<.44?'approach':u<=.52?'sealed':u<.94?'reveal':'inside'};
 }
 function imageDimensions(bytes,mime){

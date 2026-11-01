@@ -3,10 +3,10 @@
   "units": "meters",
   "up": "Y",
   "origin": "courtyard floor below central stair spine",
-  "triangleCount": 54440,
+  "triangleCount": 51488,
   "materialCount": 12,
-  "meshCount": 20,
-  "glbBytes": 1987916,
+  "meshCount": 30,
+  "glbBytes": 1899056,
   "cameras": {
     "arrival-camera": {
       "position": [
@@ -25,14 +25,14 @@
       "position": [
         0.5,
         2.6,
-        16
+        16.0
       ],
       "target": [
         -3.85,
         3.5,
         -1.5
       ],
-      "fovVerticalDegrees": 44
+      "fovVerticalDegrees": 44.0
     }
   },
   "anchors": {
@@ -153,62 +153,15 @@
     "glbMaximumBytes": 2000000,
     "materialsMaximum": 12,
     "drawCallsMaximum": 128,
-    "primitiveGroupsTarget": 52,
+    "primitiveGroupsTarget": 64,
     "primitiveGroupsMaximum": 64
   },
   "notes": [
-    "Static original architectural prototype; not a claim of Igloo-equivalent render quality.",
-    "Original embedded PBR stone maps only; no copied models/art, external URI, user data or character replacements.",
+    "Original five-portal architectural finish candidate; actual WebGL material/midframe acceptance remains an integration gate.",
+    "Four original embedded standard-PBR maps: stone basecolor/normal/ORM and one smoked-oak basecolor. No copied assets, external image URI, or user-data changes.",
     "Existing reader, authentication, immediate routes and painted castle remain implementation-owned fallback.",
-    "Phone should select/focus a room, never shrink all gates to unreadable miniatures.",
-    "Insurance only native hinge/leaf/cap partition. Actual adopted-canvas opaque seal and midframe art gate remains pending."
+    "Phone should select/focus a room, never shrink all gates to unreadable miniatures."
   ],
-  "authoredRevision": "v4-insurance-native",
-  "asset": "arrival-court-v1.glb",
-  "runtimeBytes": 1987916,
-  "runtimeSha256": "75e1b72b8d4a848b2437eecce7ea6c1919818152d79e27cfaafe8e533c581ae2",
-  "drawGroups": 52,
-  "textureCount": 3,
-  "imageCount": 3,
-  "quantization": {
-    "rawBytes": 3797132,
-    "quantizedBytes": 1987916,
-    "verticesBefore": 106810,
-    "verticesAfter": 106004,
-    "texturedVertices": 68464,
-    "drawGroups": 52,
-    "embeddedImages": 3,
-    "embeddedImageBytes": 75206,
-    "maxPositionErrorMeters": 0.0005000000000000004,
-    "positionPrecisionMeters": 0.001,
-    "uvPrecisionTiles": 0.00390625,
-    "sha256": "75e1b72b8d4a848b2437eecce7ea6c1919818152d79e27cfaafe8e533c581ae2",
-    "triangleTopologyUnchanged": true
-  },
-  "textures": [
-    {
-      "path": "materials/stone-basecolor-v1.jpg",
-      "width": 256,
-      "height": 256,
-      "bytes": 13677,
-      "sha256": "eec44631a738f38588528a56e796a763c73c4cfb4b3459961983f36cd999cdcd"
-    },
-    {
-      "path": "materials/stone-normal-v1.png",
-      "width": 192,
-      "height": 192,
-      "bytes": 46402,
-      "sha256": "3d2becf4165c8070659d8c4b1c1f061a7c00c81662b77b684564839c6ad9bda6"
-    },
-    {
-      "path": "materials/stone-orm-v1.png",
-      "width": 128,
-      "height": 128,
-      "bytes": 15127,
-      "sha256": "4f0701a658b7afac85b01a3527f0a2ea2da019d3f6b6384be8572e429d55c393"
-    }
-  ],
-  "decodedSourceTexels": 118784,
   "portals": {
     "insurance": {
       "version": 1,
@@ -216,9 +169,10 @@
       "units": "meters",
       "up": "Y",
       "axisSpace": "world",
+      "leafMode": "paired",
       "eye": [
         -5.6,
-        1.94,
+        1.85,
         -2.82
       ],
       "frame": "portal-frame-insurance",
@@ -235,7 +189,7 @@
           "pivot": [
             -6.7,
             0.35,
-            -2.82
+            -2.68
           ],
           "openRadians": 1.4835298641951802
         },
@@ -251,7 +205,7 @@
           "pivot": [
             -4.5,
             0.35,
-            -2.82
+            -2.68
           ],
           "openRadians": -1.4835298641951802
         }
@@ -260,7 +214,7 @@
         "shape": "arched",
         "center": [
           -5.6,
-          1.94,
+          1.85,
           -2.82
         ],
         "right": [
@@ -278,19 +232,19 @@
           0,
           1
         ],
-        "width": 2.2,
-        "height": 3.115,
+        "width": 2.1999999999999997,
+        "height": 3.1149999999999993,
         "springY": 2.4
       },
       "opaqueRect": {
         "min": [
-          -6.66,
-          0.45,
+          -6.659999999999999,
+          0.44999999999999996,
           -2.77
         ],
         "max": [
           -4.54,
-          2.39,
+          2.21,
           -2.77
         ]
       },
@@ -299,21 +253,607 @@
         "preferredDistance": 1.1,
         "coverageMargin": 0.1,
         "fovDegrees": 40,
-        "eyeHeight": 1.94
+        "eyeHeight": 1.85
       },
       "crossing": {
         "position": [
           -5.6,
-          1.94,
+          1.85,
           -4.1
         ],
         "target": [
           -5.6,
-          1.94,
+          1.85,
           -5.6
         ],
         "fovDegrees": 40
+      },
+      "fixedFanlight": {
+        "node": "portal-frame-insurance",
+        "movingWoodTopY": 2.247,
+        "headClearanceMeters": 0.003
+      },
+      "closedLeafBounds": {
+        "left": {
+          "min": [
+            -6.699999809265137,
+            0.38499999046325684,
+            -2.869999885559082
+          ],
+          "max": [
+            -5.599999904632568,
+            2.247000217437744,
+            -2.697499990463257
+          ]
+        },
+        "right": {
+          "min": [
+            -5.599999904632568,
+            0.38499999046325684,
+            -2.869999885559082
+          ],
+          "max": [
+            -4.5,
+            2.247000217437744,
+            -2.697499990463257
+          ]
+        }
       }
+    },
+    "rakuten": {
+      "version": 1,
+      "room": "rakuten",
+      "units": "meters",
+      "up": "Y",
+      "axisSpace": "world",
+      "leafMode": "paired",
+      "eye": [
+        5.25,
+        1.85,
+        -3.32
+      ],
+      "frame": "portal-frame-rakuten",
+      "hinges": [
+        {
+          "node": "hinge-rakuten-left",
+          "leaf": "leaf-rakuten-left",
+          "handle": "handle-rakuten-left",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "pivot": [
+            4.03,
+            0.35,
+            -3.18
+          ],
+          "openRadians": 1.4835298641951802
+        },
+        {
+          "node": "hinge-rakuten-right",
+          "leaf": "leaf-rakuten-right",
+          "handle": "handle-rakuten-right",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "pivot": [
+            6.47,
+            0.35,
+            -3.18
+          ],
+          "openRadians": -1.4835298641951802
+        }
+      ],
+      "aperture": {
+        "shape": "arched",
+        "center": [
+          5.25,
+          1.85,
+          -3.32
+        ],
+        "right": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "width": 2.44,
+        "height": 3.2349999999999994,
+        "springY": 2.4
+      },
+      "opaqueRect": {
+        "min": [
+          4.07,
+          0.44999999999999996,
+          -3.27
+        ],
+        "max": [
+          6.43,
+          2.21,
+          -3.27
+        ]
+      },
+      "approach": "approach-rakuten",
+      "seal": {
+        "preferredDistance": 1.1,
+        "coverageMargin": 0.1,
+        "fovDegrees": 40,
+        "eyeHeight": 1.85
+      },
+      "crossing": {
+        "position": [
+          5.25,
+          1.85,
+          -4.72
+        ],
+        "target": [
+          5.25,
+          1.85,
+          -6.22
+        ],
+        "fovDegrees": 40
+      },
+      "fixedFanlight": {
+        "node": "portal-frame-rakuten",
+        "movingWoodTopY": 2.247,
+        "headClearanceMeters": 0.003
+      },
+      "closedLeafBounds": {
+        "left": {
+          "min": [
+            4.03000020980835,
+            0.38499999046325684,
+            -3.369999885559082
+          ],
+          "max": [
+            5.25,
+            2.246999979019165,
+            -3.197499990463257
+          ]
+        },
+        "right": {
+          "min": [
+            5.25,
+            0.38499999046325684,
+            -3.369999885559082
+          ],
+          "max": [
+            6.46999979019165,
+            2.246999979019165,
+            -3.197499990463257
+          ]
+        }
+      }
+    },
+    "sourcing": {
+      "version": 1,
+      "room": "sourcing",
+      "units": "meters",
+      "up": "Y",
+      "axisSpace": "world",
+      "leafMode": "paired",
+      "eye": [
+        0.0,
+        1.94,
+        -6.29
+      ],
+      "frame": "portal-frame-sourcing",
+      "hinges": [
+        {
+          "node": "hinge-sourcing-left",
+          "leaf": "leaf-sourcing-left",
+          "handle": "handle-sourcing-left",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "pivot": [
+            -1.24,
+            0.2,
+            -6.15
+          ],
+          "openRadians": 1.4835298641951802
+        },
+        {
+          "node": "hinge-sourcing-right",
+          "leaf": "leaf-sourcing-right",
+          "handle": "handle-sourcing-right",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "pivot": [
+            1.24,
+            0.2,
+            -6.15
+          ],
+          "openRadians": -1.4835298641951802
+        }
+      ],
+      "aperture": {
+        "shape": "arched",
+        "center": [
+          0.0,
+          1.94,
+          -6.29
+        ],
+        "right": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "width": 2.48,
+        "height": 3.455,
+        "springY": 2.45
+      },
+      "opaqueRect": {
+        "min": [
+          -1.2,
+          0.30000000000000004,
+          -6.24
+        ],
+        "max": [
+          1.2,
+          2.26,
+          -6.24
+        ]
+      },
+      "approach": "approach-sourcing",
+      "seal": {
+        "preferredDistance": 1.1,
+        "coverageMargin": 0.1,
+        "fovDegrees": 40,
+        "eyeHeight": 1.94
+      },
+      "crossing": {
+        "position": [
+          0.0,
+          1.94,
+          -7.55
+        ],
+        "target": [
+          0.0,
+          1.94,
+          -9.05
+        ],
+        "fovDegrees": 40
+      },
+      "fixedFanlight": {
+        "node": "portal-frame-sourcing",
+        "movingWoodTopY": 2.2969999999999997,
+        "headClearanceMeters": 0.003
+      },
+      "closedLeafBounds": {
+        "left": {
+          "min": [
+            -1.2400000095367432,
+            0.23499999940395355,
+            -6.340000152587891
+          ],
+          "max": [
+            0.0,
+            2.296999931335449,
+            -6.167500019073486
+          ]
+        },
+        "right": {
+          "min": [
+            0.0,
+            0.23499999940395355,
+            -6.340000152587891
+          ],
+          "max": [
+            1.2400000095367432,
+            2.296999931335449,
+            -6.167500019073486
+          ]
+        }
+      }
+    },
+    "otoku": {
+      "version": 1,
+      "room": "otoku",
+      "units": "meters",
+      "up": "Y",
+      "axisSpace": "world",
+      "leafMode": "paired",
+      "eye": [
+        -5.3,
+        6.05,
+        -4.89
+      ],
+      "frame": "portal-frame-otoku",
+      "hinges": [
+        {
+          "node": "hinge-otoku-left",
+          "leaf": "leaf-otoku-left",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "pivot": [
+            -6.34,
+            3.48,
+            -4.75
+          ],
+          "openRadians": 1.4835298641951802,
+          "handle": null
+        },
+        {
+          "node": "hinge-otoku-right",
+          "leaf": "leaf-otoku-right",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "pivot": [
+            -4.26,
+            3.48,
+            -4.75
+          ],
+          "openRadians": -1.4835298641951802,
+          "handle": null
+        }
+      ],
+      "aperture": {
+        "shape": "arched",
+        "center": [
+          -5.3,
+          6.05,
+          -4.89
+        ],
+        "right": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "width": 2.08,
+        "height": 3.105,
+        "springY": 5.58
+      },
+      "opaqueRect": {
+        "min": [
+          -5.8999999999999995,
+          5.6,
+          -4.84
+        ],
+        "max": [
+          -4.7,
+          6.4,
+          -4.84
+        ]
+      },
+      "approach": "approach-otoku",
+      "seal": {
+        "preferredDistance": 1.1,
+        "coverageMargin": 0.1,
+        "fovDegrees": 40,
+        "eyeHeight": 6.05
+      },
+      "crossing": {
+        "position": [
+          -5.3,
+          6.05,
+          -6.1
+        ],
+        "target": [
+          -5.3,
+          6.05,
+          -7.6
+        ],
+        "fovDegrees": 40
+      },
+      "closedLeafBounds": {
+        "left": {
+          "min": [
+            -6.340000152587891,
+            3.515000104904175,
+            -4.940000057220459
+          ],
+          "max": [
+            -5.300000190734863,
+            6.619999885559082,
+            -4.767500400543213
+          ]
+        },
+        "right": {
+          "min": [
+            -5.300000190734863,
+            3.515000104904175,
+            -4.940000057220459
+          ],
+          "max": [
+            -4.260000228881836,
+            6.619999885559082,
+            -4.767500400543213
+          ]
+        }
+      }
+    },
+    "lottery": {
+      "version": 1,
+      "room": "lottery",
+      "units": "meters",
+      "up": "Y",
+      "axisSpace": "world",
+      "leafMode": "single",
+      "eye": [
+        5.1,
+        6.15,
+        -4.42
+      ],
+      "frame": "portal-frame-lottery",
+      "hinges": [
+        {
+          "node": "hinge-lottery-left",
+          "leaf": "leaf-lottery-left",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "pivot": [
+            3.86,
+            5.6,
+            -4.28
+          ],
+          "openRadians": 1.4835298641951802,
+          "handle": null
+        }
+      ],
+      "aperture": {
+        "shape": "arched",
+        "center": [
+          5.1,
+          6.15,
+          -4.42
+        ],
+        "right": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "width": 2.48,
+        "height": 3.325,
+        "springY": 5.67
+      },
+      "opaqueRect": {
+        "min": [
+          4.5,
+          5.72,
+          -4.37
+        ],
+        "max": [
+          5.699999999999999,
+          6.58,
+          -4.37
+        ]
+      },
+      "approach": "approach-lottery",
+      "seal": {
+        "preferredDistance": 1.1,
+        "coverageMargin": 0.1,
+        "fovDegrees": 40,
+        "eyeHeight": 6.15
+      },
+      "crossing": {
+        "position": [
+          5.1,
+          6.15,
+          -7.1
+        ],
+        "target": [
+          5.1,
+          6.15,
+          -8.6
+        ],
+        "fovDegrees": 40
+      },
+      "fixedLowerPane": {
+        "node": "portal-frame-lottery",
+        "stationaryBelowY": 5.6,
+        "movingPaneBottomY": 5.603,
+        "sillClearanceMeters": 0.003
+      },
+      "closedLeafBounds": {
+        "left": {
+          "min": [
+            3.859999656677246,
+            5.603000164031982,
+            -4.46999979019165
+          ],
+          "max": [
+            6.340000152587891,
+            6.909999847412109,
+            -4.297500133514404
+          ]
+        }
+      }
+    }
+  },
+  "authoredRevision": "v5-native-finish",
+  "runtimeSha256": "ce19597525952a5847ec927eb2150eda6efd5eb4d5ec29ca4f5cf11686ab30e6",
+  "runtimeBytes": 1899056,
+  "quantization": {
+    "rawBytes": 3577244,
+    "quantizedBytes": 1899056,
+    "verticesBefore": 99954,
+    "verticesAfter": 99151,
+    "texturedVertices": 66528,
+    "drawGroups": 64,
+    "embeddedImages": 4,
+    "embeddedImageBytes": 79399,
+    "maxPositionErrorMeters": 0.0004999999999997229,
+    "positionPrecisionMeters": 0.001,
+    "uvPrecisionTiles": 0.00390625,
+    "sha256": "ce19597525952a5847ec927eb2150eda6efd5eb4d5ec29ca4f5cf11686ab30e6",
+    "triangleTopologyUnchanged": true
+  },
+  "drawGroups": 64,
+  "physicalProofs": {
+    "native-swept-volume-proof.json": {
+      "sha256": "e93d897b7509d35cfdb400cd1550a1b81437b367da7b5d22306a3be6fbb2ee81",
+      "assetSha256": "ce19597525952a5847ec927eb2150eda6efd5eb4d5ec29ca4f5cf11686ab30e6",
+      "pass": true,
+      "method": "<=1 degree swept convex triangle hulls + conservative .15mm SAT expansion against all overlapping static triangle AABBs"
+    },
+    "native-runtime-proof.json": {
+      "sha256": "7929407f64145f00caf75092f52729c09929cf24dde4949dfe675924cf4578cb",
+      "assetSha256": "ce19597525952a5847ec927eb2150eda6efd5eb4d5ec29ca4f5cf11686ab30e6",
+      "pass": true,
+      "method": "Exact repository runtime helpers on texture-free CPU-loaded GLB; dense seal rays use ordinary Raycaster without seam fallback; no shader/render claim."
+    },
+    "native-camera-curve-proof.json": {
+      "sha256": "02fd2f8c946f64830030fd5cf0659a153914cbb21929c84390063cd38475acbe",
+      "assetSha256": "ce19597525952a5847ec927eb2150eda6efd5eb4d5ec29ca4f5cf11686ab30e6",
+      "pass": true,
+      "method": "Exact runtime courtPassageSample poses; each .002-u interval uses swept near-plane camera box and conservative swept triangle hulls; includes retained full world, fixed fanlights, all moving leaves and handles. No world hiding in the proof."
     }
   }
 }
