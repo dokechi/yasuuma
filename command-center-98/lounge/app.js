@@ -21,9 +21,51 @@ const rooms = [
 ];
 let phase='town', current=null, world=null, audio=null, desk=null;
 let entrySound=null,entryAnimated=false,effectsGain=null,effectsVolume=.5,music=null,interactionSound=null,feedback=null;
-let nextContextRoom=null;
-function openContext(place){accountContext=accountRooms[place]||null;const id=({kyun:'red',choi:'purple',otoku:'purple',rakuten:'purple',lottery:'purple',fp:'silver',shiire:'orange'})[place];if(!id)return;if(phase==='town')enterRoom(id,true);else if(phase==='room'){nextContextRoom=id;goBack();}}
-let entryStart=0, roomTimer=0, replayAfterBack=null;
+let nextContextRoom=null, replayAfterBack=null, historyBackPending=false;
+let navigationIntent=0, routeOptions=null, entryFromHistory=false, entryResumeDraft;
+const accountRoomIds={insurance:'red',otoku:'purple',rakuten:'purple',lottery:'purple',fp:'silver',sourcing:'orange'};
+const roomAccounts={red:'insurance',purple:'otoku',silver:'fp',orange:'sourcing'};
+const accountPlaces={insurance:'kyun',otoku:'otoku',rakuten:'rakuten',lottery:'lottery',fp:'fp',sourcing:'shiire'};
+const validDraftId=value=>typeof value==='string'&&value.length>0&&value.length<=1000&&!/[\u0000-\u001f\u007f]/.test(value);
+function historyRoute(state){
+ if(!state||typeof state!=='object')return null;
+ const account=state.shireitoAccount??roomAccounts[state.shireitoRoom];
+ if(typeof account!=='string'||typeof state.shireitoRoom!=='string'||!Object.hasOwn(accountRoomIds,account)||accountRoomIds[account]!==state.shireitoRoom)return null;
+ let draft=validDraftId(state.shireitoDraft)?state.shireitoDraft:undefined;
+ const saved=draft&&desk?.notebook.get(draft);
+ if(saved&&(saved.place!==accountPlaces[account]||accountRooms[accountPlaces[account]]&&saved.source?.account!==account))draft=undefined;
+ return {shireitoRoom:state.shireitoRoom,shireitoAccount:account,...(draft?{shireitoDraft:draft}:{})};
+}
+function currentHistoryRoute(){
+ const state={shireitoRoom:current?.id,shireitoAccount:room.dataset.account};
+ const selected=!$('desk-article').hidden&&$('desk-list').querySelector('.manuscript-card[aria-pressed="true"]')?.dataset.draftId;
+ if(validDraftId(selected))state.shireitoDraft=selected;
+ return historyRoute(state);
+}
+function rememberHistory(){
+ if(phase!=='room')return;
+ const next=currentHistoryRoute(),saved=historyRoute(history.state);
+ if(!next||!saved||next.shireitoAccount!==saved.shireitoAccount||next.shireitoRoom!==saved.shireitoRoom)return;
+ const value={...history.state,...next};if(!next.shireitoDraft)delete value.shireitoDraft;
+ if(JSON.stringify(value)!==JSON.stringify(history.state))history.replaceState(value,'');
+}
+function restoreHistoryRoute(state,{fromHistory=true,instant=true}={}){
+ const target=historyRoute(state);if(!target)return false;
+ const previous=routeOptions;routeOptions={fromHistory,instant,...(target.shireitoAccount==='fp'?{resumeDraft:target.shireitoDraft}:{})};
+ try{
+  if(target.shireitoAccount==='fp'){desk?.accountBoard.hide();accountContext=null;enterRoom('silver',instant);}
+  else desk?.accountBoard.open(target.shireitoAccount,target.shireitoDraft,{resume:true});
+ }finally{routeOptions=previous;}
+ return true;
+}
+function openContext(place){
+ const context=accountRooms[place]||null,id=({kyun:'red',choi:'purple',otoku:'purple',rakuten:'purple',lottery:'purple',fp:'silver',shiire:'orange'})[place];if(!id)return;
+ const instant=routeOptions?.instant??true;
+ if(phase==='entering')goBack(false,true,true);
+ if(phase==='town'){accountContext=context;enterRoom(id,instant);}
+ else if(phase==='room'){nextContextRoom={id,context,instant};goBack(false,false,true);}
+}
+let entryStart=0, roomTimer=0;
 const labels=new Map();
 for(const r of rooms){
   const b=document.createElement('button');
@@ -63,6 +105,8 @@ function arrivalSound(){if(settings.sound&&!document.hidden){audioReady();entryS
 function enterRoom(id,instant=false){
   if(phase!=='town')return;
   current=rooms.find(r=>r.id===id);if(!current)return;if(accountContext)current={...current,name:accountContext.name,sub:accountContext.name+'の作業部屋',en:'YOUR ACCOUNT ROOM',focus:'50% 35%'};
+  desk?.accountBoard.hide();
+  const token=++navigationIntent;nextContextRoom=null;replayAfterBack=null;entryFromHistory=routeOptions?.fromHistory===true;entryResumeDraft=routeOptions?.resumeDraft;
   const r=current; phase='entering';entryStart=performance.now();
   app.dataset.phase=phase;app.dataset.entering=id;app.classList.add('leaving');app.style.removeProperty('--entry-light');
   room.dataset.account=accountContext?.key||({orange:'sourcing',silver:'fp',red:'insurance',purple:'otoku'})[id];
@@ -71,34 +115,55 @@ function enterRoom(id,instant=false){
   $('announcer').textContent=r.name+'へ移動しています';
   const duration=instant||settings.reduce?0:({quick:650,normal:1000,slow:1400}[settings.pace]);
   entryAnimated=duration>0;app.style.setProperty('--entry-duration',duration+'ms');
-  if(duration===0){showRoom();return}
+  if(duration===0){showRoom(token);return}
   if(settings.sound){audioReady();entrySound?.begin(id,duration);}
   world?.enter(id,duration);
-  roomTimer=setTimeout(showRoom,duration);
+  roomTimer=setTimeout(()=>showRoom(token),duration);
 }
-function showRoom(){
-  if(phase!=='entering')return;
+function showRoom(token){
+  if(phase!=='entering'||token!==navigationIntent)return;
   phase='room';app.dataset.phase=phase;
   room.hidden=false;app.classList.remove('leaving');app.classList.add('room-mode');app.classList.remove('town-mode');
   app.style.removeProperty('--entry-light');
   if(entryAnimated&&!settings.reduce)room.classList.add('entered');
-  if(history.state?.shireitoRoom!==current.id)history.pushState({shireitoRoom:current.id},'', '#'+current.id);
   arrivalSound(); $('back').focus({preventScroll:true});$('announcer').textContent=current.name+'に入りました';
   world?.pause();
-  desk?.enter(current.id);
+  desk?.enter(current.id,entryResumeDraft?{resumeDraft:entryResumeDraft}:undefined);
+  const target=currentHistoryRoute(),saved=historyRoute(history.state);
+  if(!entryFromHistory&&target&&(saved?.shireitoRoom!==target.shireitoRoom||saved?.shireitoAccount!==target.shireitoAccount))history.pushState(target,'','#'+current.id);
+  else rememberHistory();
 }
-function goBack(replay=false,fromHistory=false){
+function goBack(replay=false,fromHistory=false,preservePending=false){
+  ++navigationIntent;
+  if(!preservePending){nextContextRoom=null;replayAfterBack=null;}
   if(phase==='town')return;
-  entrySound?.cancel();
-  if(!fromHistory&&history.state?.shireitoRoom){if(replay)replayAfterBack=current.id;history.back();return;}
+  entrySound?.cancel();if(!fromHistory)rememberHistory();
+  const replayRoute=currentHistoryRoute();
+  if(!fromHistory&&history.state?.shireitoRoom){
+    if(replay)replayAfterBack=replayRoute;
+    if(!historyBackPending){historyBackPending=true;history.back();}
+    return;
+  }
   desk?.leave();
+  // Supplementary FP can be the first room opened, before any account visit.
+  if(storybookPresentation&&desk?.accountBoard.element.hidden)desk.accountBoard.show();
   clearTimeout(roomTimer);phase='town';app.dataset.phase=phase;room.hidden=true;room.classList.remove('entered');app.classList.remove('room-mode','leaving');app.classList.add('town-mode');
   world?.reset();labels.get(current?.id)?.focus({preventScroll:true});$('announcer').textContent='司令塔に戻りました';
-  if(replay){const id=current.id;requestAnimationFrame(()=>requestAnimationFrame(()=>enterRoom(id)))}
+  if(replay&&replayRoute){const token=navigationIntent;requestAnimationFrame(()=>{if(token===navigationIntent&&phase==='town')restoreHistoryRoute(replayRoute,{fromHistory:false,instant:false});});}
 }
-window.addEventListener('popstate',ev=>{if(phase!=='town')goBack(false,true);if(nextContextRoom){const id=nextContextRoom;nextContextRoom=null;requestAnimationFrame(()=>enterRoom(id));}else if(replayAfterBack){const id=replayAfterBack;replayAfterBack=null;requestAnimationFrame(()=>enterRoom(id))}else if(ev.state?.shireitoRoom){enterRoom(ev.state.shireitoRoom,true)}});
+window.addEventListener('popstate',ev=>{
+ const queued=nextContextRoom,replay=replayAfterBack;nextContextRoom=null;replayAfterBack=null;historyBackPending=false;
+ ++navigationIntent;if(phase!=='town')goBack(false,true,true);
+ const token=navigationIntent;
+ if(queued||replay)requestAnimationFrame(()=>{
+  if(token!==navigationIntent||phase!=='town')return;
+  if(queued){accountContext=queued.context;enterRoom(queued.id,queued.instant);}
+  else restoreHistoryRoute(replay,{fromHistory:false,instant:false});
+ });
+ else restoreHistoryRoute(ev.state);
+});
 $('back').addEventListener('click',()=>goBack());$('again').addEventListener('click',()=>goBack(true));
-document.querySelectorAll('.quick').forEach(b=>b.addEventListener('click',()=>enterRoom(b.dataset.room,true)));
+document.querySelectorAll('.quick').forEach(b=>b.addEventListener('click',()=>{accountContext=null;enterRoom(b.dataset.room,true);}));
 $('sound').addEventListener('click',()=>{settings.sound=!settings.sound;if(!settings.sound)silenceEffects();saveSettings();syncSettings();if(settings.sound)playFeedback('latch')});
 $('settings-open').addEventListener('click',()=>{$('settings').showModal();world?.pause()});
 $('settings-close').addEventListener('click',()=>$('settings').close());
@@ -109,6 +174,11 @@ document.querySelectorAll('[name=pace]').forEach(i=>i.addEventListener('change',
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.querySelector('dialog[open]'))goBack()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){world?.pause();silenceEffects();audio?.suspend().catch(()=>{})}else if(phase==='town'&&!$('settings').open)world?.resume()});
 desk=createDesk({onLounge:()=>{if(storybookPresentation){desk.accountBoard.show();$('settings-open').click();return;}initializeWorld();},onOpenRoom:openContext,onHome:()=>goBack(),onPause:()=>{world?.pause();silenceEffects();audio?.suspend().catch(()=>{});app.classList.add('is-away');},onResume:()=>{app.classList.remove('is-away');if(phase==='town'&&!$('settings').open)world?.resume();},onSettings:()=>$('settings-open').click(),onFeedback:playFeedback});
+// The existing owner renders the selected card (including variants). Store only
+// its ID in the current browser entry, never manuscript text or another model.
+const selectionHistory=new MutationObserver(rememberHistory);
+selectionHistory.observe($('desk-list'),{childList:true,subtree:true,attributes:true,attributeFilter:['aria-pressed','data-draft-id']});
+window.addEventListener('pagehide',event=>{if(!event.persisted)selectionHistory.disconnect();});
 music=createMusicControls({autoplay:false,getEffects:()=>({enabled:settings.sound}),setEffects:change=>{if(typeof change.volume==='number'){effectsVolume=change.volume;if(effectsGain)effectsGain.gain.value=effectsVolume/.5;}if(typeof change.enabled==='boolean'){settings.sound=change.enabled;if(!settings.sound)silenceEffects();saveSettings();syncSettings();}if(change.preview&&settings.sound)playFeedback('latch');},onStatus:text=>$('bgmStatus').textContent=text});
 feedback=createInteractionFeedback({play:playFeedback,active:()=>!app.classList.contains('is-away'),reduced:()=>settings.reduce||reducedMedia.matches,room:()=>current?.id||'red'});
 document.querySelectorAll('[data-feedback-preview]').forEach(b=>b.addEventListener('click',()=>playFeedback(b.dataset.feedbackPreview)));

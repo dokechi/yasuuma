@@ -1,5 +1,5 @@
 /* Real production host, synthetic same-origin records, no production login or
-   writes. Existing PR93 motion suites remain separate and unchanged. */
+   writes. Current book routes are real; retained classic motion has separate fixtures. */
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium}=require('playwright-core');
@@ -38,7 +38,7 @@ function probe(){
  try{localStorage.setItem('living-owner-note','untouched');}catch{}
  window.addEventListener('message',event=>{if(event.origin===location.origin&&event.source===parent&&event.data?.channel==='cc-castle-v1'&&event.data.type==='records'&&Array.isArray(event.data.drafts)&&event.data.complete===true)window.__livingProbe.records=structuredClone(event.data);});
  if(navigator.clipboard?.writeText){const write=navigator.clipboard.writeText.bind(navigator.clipboard);navigator.clipboard.writeText=text=>{__livingProbe.clipboard.push(String(text));return write(text);};}
- new MutationObserver(changes=>{for(const change of changes)for(const node of change.addedNodes){if(node.nodeType!==1||!node.matches('.castle-journey')||!__livingProbe.freezeNext)continue;__livingProbe.freezeNext=false;queueMicrotask(()=>{__livingProbe.held=node;for(const animation of node.getAnimations({subtree:true}))animation.pause();});}}).observe(document,{childList:true,subtree:true});
+ new MutationObserver(changes=>{for(const change of changes)for(const node of change.addedNodes){if(node.nodeType!==1||!node.matches('.storybook-journey')||!__livingProbe.freezeNext)continue;__livingProbe.freezeNext=false;queueMicrotask(()=>{__livingProbe.held=node;for(const animation of node.getAnimations({subtree:true}))animation.pause();});}}).observe(document,{childList:true,subtree:true});
 }
 (async()=>{
  fs.mkdirSync(out,{recursive:true});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
@@ -55,7 +55,7 @@ function probe(){
   const screenshot=async name=>{const filename=`${width}-${height}-${name}.png`;await page.screenshot({path:path.join(out,filename)});result.frames.push(filename);};
   await page.goto(origin+'/command-center-98/app-v130.html');
   await page.waitForFunction(()=>window.CCCastle?.unified&&!document.getElementById('ccCastleFrame').hidden);
-  const f=page.frameLocator('#ccCastleFrame');await f.locator('.castle-quick-open[data-room=insurance]').waitFor();
+  const f=page.frameLocator('#ccCastleFrame');await f.locator('[data-story-instant=insurance]').waitFor();
   const cf=page.frames().find(frame=>frame.url().includes('/lounge/'));
   await cf.evaluate(async()=>{await document.fonts.ready;const source=document.querySelector('script[src^="app.js"]').src;window.__livingDesk=(await import(source)).getLivingDesk();});
   await cf.waitForFunction(()=>window.__livingDesk?.snapshot().complete===true&&window.__livingProbe.records?.drafts.length>0);
@@ -64,12 +64,12 @@ function probe(){
   const originalPayload=await cf.evaluate(()=>structuredClone(__livingProbe.records));
   const send=payload=>page.evaluate(payload=>document.getElementById('ccCastleFrame').contentWindow.postMessage({channel:'cc-castle-v1',...payload},location.origin),payload);
   const settle=()=>cf.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-  const waitReader=async key=>{await f.locator(`#room[data-account=${key}][data-spatial-desk=ready]`).waitFor();await f.locator('.living-toggle').waitFor();await f.locator('#draft-body').waitFor();await f.locator('#room[data-spatial-scene=interior]').waitFor();await f.locator('.spatial-desk-actor').evaluate(node=>node.decode());await settle();};
-  const quick=async key=>{await f.locator(`.castle-quick-open[data-room=${key}]`).click();await waitReader(key);};
+  const waitReader=async key=>{await f.locator(`#room[data-account=${key}][data-spatial-desk=ready]`).waitFor();await f.locator('.living-toggle').waitFor();await f.locator('#draft-body').waitFor();await f.locator('#room[data-story-scene=ready]').waitFor();await f.locator('.spatial-desk-actor').evaluate(node=>node.decode());assert.equal(await f.locator(`.spatial-study-scene .story-paper-art[data-story-room=${key}]`).count(),1);assert.ok((await f.locator('.spatial-desk-actor').getAttribute('src')).endsWith('/storybook-'+key+'-actor-v1.webp'));await settle();};
+  const quick=async key=>{await f.locator(`[data-story-instant=${key}]`).click();await waitReader(key);};
   const showTools=async()=>{await f.locator('.living-toggle').click();await f.locator('#room[data-living-view=tools]').waitFor();await f.locator('#living-workbench').waitFor();await settle();};
   const closeTools=async()=>{await f.locator('.living-toggle').click();await f.locator('#room:not([data-living-view])').waitFor();await settle();};
   const currentIdentity=()=>cf.evaluate(()=>({room:document.getElementById('room').dataset.account,draft:__livingDesk.snapshot().rooms.find(r=>r.current)?.current,body:document.getElementById('draft-body').textContent,scroll:document.getElementById('desk-scroll').scrollTop}));
-  await f.locator('.castle-stage img').evaluateAll(nodes=>Promise.all(nodes.map(node=>node.decode())));
+  await f.locator('.storybook[data-ready=true][data-story-scene=ready]').waitFor();await f.locator('.story-art-host .story-paper-art[data-story-room=insurance] .story-actor-image').evaluate(node=>node.decode());
   check('home marks only loaded source scope and leaves sourcing uncounted',(await roomState('insurance')).loadedCount===2&&(await roomState('sourcing')).loadedCount===null);
   await screenshot('home');
   await quick('insurance');
@@ -176,10 +176,13 @@ function probe(){
    // source is the visible tools plane, not a hidden paper or blank room.
    await f.locator('#back').click();await f.locator('.account-board:not([hidden])').waitFor();
    await page.emulateMedia({reducedMotion:'no-preference'});
-   await f.locator('.castle-experience-settings').click();await f.locator('#settings[open]').waitFor();
+   await f.locator('.story-tool').getByText('設定',{exact:true}).click();await f.locator('#settings[open]').waitFor();
    await f.locator('#reduce-setting').uncheck();await f.locator('#settings-close').click();
-   await f.locator('.castle-room-hotspot[data-room=lottery]').click();await waitReader('lottery');
-   await page.waitForFunction(()=>!document.querySelector('.castle-journey'));
+   await f.locator('[data-story-chapter=lottery]').click();await f.locator('.story-art-host .story-paper-art[data-story-room=lottery] .story-actor-image').evaluate(node=>node.decode());
+   // This remains a normal-motion lottery route, not an insurance-only stand-in.
+   // It intentionally requires all-chapter passage support before it can pass.
+   await f.locator('[data-story-open=lottery]').click();await waitReader('lottery');
+   await page.waitForFunction(()=>!document.querySelector('.storybook-journey'));
    await showTools();
    const materialProperties=['border-top','border-right','border-bottom','border-left','rotate','translate','scale'];
    const departureMaterials=await f.locator('.living-object-art').evaluateAll((nodes,properties)=>nodes.map(node=>properties.map(property=>getComputedStyle(node).getPropertyValue(property))),materialProperties);
@@ -187,13 +190,13 @@ function probe(){
    await page.waitForFunction(()=>__livingProbe.held?.isConnected);
    await page.evaluate(()=>{for(const animation of __livingProbe.held.getAnimations({subtree:true})){animation.pause();animation.currentTime=0;}});
    await screenshot('tools-return-contact');
-   check('return capture has the visible tools content',await page.locator('.castle-journey').textContent().then(text=>/持ち場メモ|原稿の本棚/.test(text)));
-   const capturedMaterials=await page.locator('.castle-journey [data-journey-part=paper] button').evaluateAll((nodes,properties)=>nodes.filter(node=>node.querySelector('strong')&&node.querySelector('span')).map(node=>properties.map(property=>getComputedStyle(node.querySelector('span')).getPropertyValue(property))),materialProperties);
+   check('return capture has the visible tools content',await page.locator('.storybook-journey').textContent().then(text=>/持ち場メモ|原稿の本棚/.test(text)));
+   const capturedMaterials=await page.locator('.storybook-journey-flat-source [data-journey-part=paper] button').evaluateAll((nodes,properties)=>nodes.filter(node=>node.querySelector('strong')&&node.querySelector('span')).map(node=>properties.map(property=>getComputedStyle(node.querySelector('span')).getPropertyValue(property))),materialProperties);
    check('return contact keeps every object border and independent material transform',JSON.stringify(capturedMaterials)===JSON.stringify(departureMaterials),{departureMaterials,capturedMaterials});
-   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('.castle-journey'));await f.locator('.account-board:not([hidden])').waitFor();
-   check('interrupted tools return leaves no overlay and keeps the selected room',await f.locator('.castle-room-hotspot[data-room=lottery]').getAttribute('data-last-visited')==='true');
+   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('.storybook-journey'));await f.locator('.account-board:not([hidden])').waitFor();
+   check('interrupted tools return leaves no overlay and keeps the selected room',await f.locator('[data-story-chapter=lottery]').getAttribute('aria-pressed')==='true'&&await f.locator('[data-story-instant=lottery]').getAttribute('aria-current')==='location'&&await cf.evaluate(()=>__storybook.snapshot().selected)==='lottery');
   }else{await f.locator('#back').click();await f.locator('.account-board:not([hidden])').waitFor();}
-  await f.locator('.castle-quick-open[data-room=sourcing]').click();await page.locator('body.lounge-workspace #loungeWorkspaceHeader:not([hidden])').waitFor();
+  await f.locator('[data-story-instant=sourcing]').click();await page.locator('body.lounge-workspace #loungeWorkspaceHeader:not([hidden])').waitFor();
   check('native sourcing remains the existing immediate work surface',await page.locator('#mainWindow').getAttribute('data-cc-view')==='sourcing'&&await page.locator('#ccCastleFrame').isHidden());
   await page.locator('[data-lounge-home]').click();await f.locator('.account-board:not([hidden])').waitFor();
   check('existing owner local note survives all tool flows',await cf.evaluate(()=>localStorage.getItem('living-owner-note'))==='untouched');
@@ -206,15 +209,15 @@ function probe(){
    await context.route('**/living-room-model.js*',route=>route.abort());
    await page.goto(origin+'/command-center-98/app-v130.html');
    await page.waitForFunction(()=>window.CCCastle?.unified&&!document.getElementById('ccCastleFrame').hidden);
-   const fallback=page.frameLocator('#ccCastleFrame');await fallback.locator('.castle-quick-open[data-room=insurance]').waitFor();
-   await fallback.locator('.castle-quick-open[data-room=insurance]').click();
+   const fallback=page.frameLocator('#ccCastleFrame');await fallback.locator('[data-story-instant=insurance]').waitFor();
+   await fallback.locator('[data-story-instant=insurance]').click();
    await fallback.locator('#draft-body').filter({hasText:'insurance の合成原稿です。'}).waitFor();
    check('missing optional model leaves the original reader without living controls',await fallback.locator('.living-toggle').count()===0&&await fallback.locator('#desk-copy').isEnabled());
    await fallback.locator('#desk-copy').click();await fallback.locator('#desk-operation').getByText('本文をコピーしました。',{exact:true}).waitFor();
    check('missing optional model preserves exact manuscript copy',(await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n')===rows[0].payload.draft);
    await screenshot('optional-model-fallback');
    await fallback.locator('#back').click();await fallback.locator('.account-board:not([hidden])').waitFor();
-   await fallback.locator('.castle-quick-open[data-room=sourcing]').click();await page.locator('body.lounge-workspace #loungeWorkspaceHeader:not([hidden])').waitFor();
+   await fallback.locator('[data-story-instant=sourcing]').click();await page.locator('body.lounge-workspace #loungeWorkspaceHeader:not([hidden])').waitFor();
    check('missing optional model preserves native sourcing',await page.locator('#mainWindow').getAttribute('data-cc-view')==='sourcing');
    check('optional model failure has no uncaught exception or unexpected transport',errors.length===0&&blocked.length===0,{errors,blocked});
   }

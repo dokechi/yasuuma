@@ -44,7 +44,7 @@ function setup(t,options={}){
 }
 test('default entry is tiny and performs no court/vendor/model import or persistence before explicit tap',async t=>{
  const h=setup(t);await flush();assert.equal(h.imports,0);assert.equal(h.button.textContent,'3Dの中庭');assert.equal(h.button.parentElement.className,'board-footer');assert.equal(h.button.disabled,false);assert.equal(h.button.style.minHeight,'44px');assert.equal(h.sourceUnchanged(),true);
- assert.doesNotMatch(source,/arrival-renderer|vendor\/|\.glb|localStorage|sessionStorage|\bfetch\s*\(/);assert.match(source,/spatial-atelier\.js\?v=20261101\.5-arrival/);assert.match(source,/arrival-atelier\.js\?v=20261101\.6-passage/);
+ assert.doesNotMatch(source,/arrival-renderer|vendor\/|\.glb|localStorage|sessionStorage|\bfetch\s*\(/);assert.match(source,/spatial-atelier\.js\?v=20261101\.8-storybook/);assert.match(source,/arrival-atelier\.js\?v=20261101\.8-storybook/);
 });
 test('single explicit intent waits for first-frame contract without blocking old controls; double click imports once',async t=>{
  const h=setup(t,{pending:true});h.button.click();h.button.click();assert.equal(h.imports,1);assert.equal(h.activations,0);assert.equal(h.button.getAttribute('aria-busy'),'true');assert.equal(h.panel.inert,undefined);assert.equal(h.doc.querySelector('.room-open').disabled,false);

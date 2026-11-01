@@ -77,7 +77,7 @@ const server=http.createServer((req,res)=>{
    await lounge.locator('.spatial-desk-actor').evaluate(image=>image.decode());
    assert.match(await lounge.locator('.spatial-desk-actor').getAttribute('src'),new RegExp('storybook-'+key+'-actor-v1\\.webp'));
    assert.equal(await lounge.locator('.spatial-study-scene .story-paper-art[data-story-room='+key+']').count(),1);
-   assert.equal(await lounge.locator('.spatial-account-identity p').textContent(),handles[key]);
+   assert.equal(await lounge.locator('.spatial-account-identity > h3 + p').textContent(),handles[key]);
    await lounge.locator('#draft-body').waitFor();assert.equal(await lounge.locator('#draft-body').textContent(),bodies[key]);
    const reader=await lounge.locator('#desk-scroll').evaluate(n=>({font:parseFloat(getComputedStyle(document.getElementById('draft-body')).fontSize),height:n.clientHeight,bodyTop:document.getElementById('draft-body').getBoundingClientRect().top,viewport:innerHeight,overflow:document.documentElement.scrollWidth>innerWidth,actions:[...document.querySelectorAll('#desk-copy,#desk-done')].map(button=>{const r=button.getBoundingClientRect();return {height:r.height,width:r.width,top:r.top,bottom:r.bottom};})}));
    assert.ok(reader.font>=16&&reader.height>=180&&reader.bodyTop<reader.viewport-80&&!reader.overflow&&reader.actions.every(r=>r.height>=44&&r.width>=44&&r.top>=0&&r.bottom<=reader.viewport),JSON.stringify({key,...reader}));

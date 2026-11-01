@@ -19,7 +19,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  // the owner render so held revisions and seen marks describe the shown paper.
  function emitLiving(){if(!summarizeLivingRooms||livingQueued)return;livingQueued=true;queueMicrotask(()=>{livingQueued=false;const value=livingSnapshot(),signature=JSON.stringify(value);if(signature===livingSignature)return;livingSignature=signature;for(const listener of livingSubscribers)listener(value);});}
 
- const board=createAccountBoard({host:document.body,rows:()=>notebook.all(),open:(account,id)=>{returnToAccounts=true;requested={place:account.place,id};if(id)selections.set(account.place,id);onOpenRoom(account.place);},onLounge:()=>{returnToAccounts=false;onLounge();},onLegacy:showLegacy,onRefresh:()=>{if(embedded){setStatus('保存原稿を読み込み中…',{loading:true});send('refresh');}else window.top.location.href=productionURL;}});
+ const board=createAccountBoard({host:document.body,rows:()=>notebook.all(),open:(account,id,options)=>{returnToAccounts=true;requested={place:account.place,id,...(options?.resume===true?{resume:true}:{})};if(id)selections.set(account.place,id);onOpenRoom(account.place);},onLounge:()=>{returnToAccounts=false;onLounge();},onLegacy:showLegacy,onRefresh:()=>{if(embedded){setStatus('保存原稿を読み込み中…',{loading:true});send('refresh');}else window.top.location.href=productionURL;}});
  $('account-board-open').addEventListener('click',()=>board.show());
  function showLegacy(){
   const dialog=el('dialog',undefined,'legacy-account-archive'),header=el('header');header.append(el('h2','旧データの保管庫'),button('閉じる',()=>dialog.close()));dialog.append(header,el('p','過去のアカウント・投稿先未確定の保存記録です。現在のアカウントには混ぜず、閲覧用として保持しています。'));
@@ -129,7 +129,13 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   savePosition();active=next;selections.set(place,id);render({restore:true});
   if(pending&&!holdsActiveText(active,pending.drafts,pending.complete))applyPending();
  }
- function enter(roomId){
+ function enter(roomId,{resumeDraft}={}){
+  // History may resume a supplementary FP manuscript without creating a new
+  // account route. Resolve its ID through this owner, never foreign-account DOM.
+  if(typeof resumeDraft==='string'){
+   const saved=notebook.get(resumeDraft);
+   if(saved&&saved.place===placeForRoom[roomId]){requested={place:saved.place,id:saved.id,resume:true};selections.set(saved.place,saved.id);}
+  }
   send('reading-room',{active:true});
   savePosition();rememberView();if(externalNotes&&notebook.persistent()){notebook.sync();externalNotes=false;}place=roomId==='purple'?(['choi','otoku','rakuten','lottery'].includes(requested?.place)?requested.place:'otoku'):placeForRoom[roomId];active=null;const view=requested?.id&&!requested.resume?{query:'',filter:'all'}:resumeView(views.get(place)||notebook.pref('view:'+place,null));query=view.query;filter=view.filter;$('desk-query').value=query;
   notebook.visit(place);$('desk-title').textContent=place==='shiire'?'仕入れの持ち場':['kyun','otoku','rakuten','lottery'].includes(place)?placeNames[place]:'保存原稿';$('desk-kicker').textContent=place==='fp'?'SCRIPTS & CONTENT':place==='shiire'?'THE MERCHANT’S DESK':'YOUR MANUSCRIPTS';

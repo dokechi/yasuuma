@@ -16,6 +16,10 @@ body.storybook-atelier #app.hybrid-hall{background:var(--sb-paper)!important;col
 .storybook button{border:var(--sb-outline);border-radius:2px;box-shadow:none}
 .storybook :is(button,summary):focus-visible,.storybook-atelier a:focus-visible{outline:3px solid var(--sb-ink);outline-offset:4px}
 .storybook button:disabled{cursor:default}
+/* The retained board's dark hover surface belongs only to the archive. */
+.storybook-atelier .account-board .storybook button:hover:not(:disabled){background:var(--sb-paper);color:var(--sb-ink);border-color:var(--sb-ink)}
+.storybook-atelier .account-board .storybook .story-chapter-tab[aria-pressed=true]{background:var(--sb-paper);color:var(--sb-ink);border-top-color:var(--sb-ink)}
+.storybook-atelier .account-board .storybook .story-open-scene:hover:not(:disabled){background:transparent;border-color:transparent}
 .story-cover{flex:none;display:flex;align-items:center;justify-content:space-between;gap:20px;max-width:1320px;width:100%;margin:0 auto}
 .story-wordmark{display:flex;align-items:baseline;gap:14px}.storybook .story-wordmark h1{font:850 26px/1.2 var(--sb-font);letter-spacing:.04em;margin:0}.story-kicker{font-size:11px;letter-spacing:.12em;font-weight:750}.story-utilities{display:flex;gap:8px}.storybook .story-tool{padding:8px 14px;background:var(--sb-paper);border-radius:999px;font-size:13px;font-weight:650}
 .story-chapters{flex:none;display:flex;align-items:end;justify-content:center;gap:8px;max-width:960px;width:100%;margin:2px auto -12px;position:relative;z-index:3;box-sizing:border-box}

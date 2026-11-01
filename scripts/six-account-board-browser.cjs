@@ -44,8 +44,14 @@ async function capture(page,file){await page.frames()[1].evaluate(()=>Promise.al
   // bookmarks remain reachable inside the spread; phone pages may scroll, never shrink.
 
   await frame.locator('.story-preparing summary').click();
-  const targets=await frame.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect(),v=n.disabled?document.querySelector('.story-preparing-body').getBoundingClientRect():document.querySelector('.story-chapters').getBoundingClientRect();return {name:n.getAttribute('aria-label'),width:r.width,height:r.height,inside:r.left>=v.left-1&&r.top>=v.top-1&&r.right<=v.right+1&&r.bottom<=v.bottom+1};}));
-  assert.ok(targets.every(r=>r.name&&r.width>=44&&r.height>=44&&r.inside),JSON.stringify(targets));
+  const targets=[];
+  for(const target of await frame.locator('[data-story-destination]').all()){
+   // A selected bookmark intentionally extends onto the page, beyond the nav's
+   // layout box. Prove its real painted target, not that obsolete container box.
+   await target.scrollIntoViewIfNeeded();
+   targets.push(await target.evaluate(n=>{const r=n.getBoundingClientRect(),points=[[.1,.1],[.9,.1],[.5,.5],[.1,.9],[.9,.9]];return {name:n.getAttribute('aria-label'),width:r.width,height:r.height,inside:r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight,hit:points.every(([x,y])=>{const hit=document.elementFromPoint(r.left+r.width*x,r.top+r.height*y);return hit===n||n.contains(hit);})};}));
+  }
+  assert.ok(targets.every(r=>r.name&&r.width>=44&&r.height>=44&&r.inside&&r.hit),JSON.stringify(targets));
   assert.equal(await frame.locator('[data-story-destination]:visible').count(),8);
   await frame.locator('.story-preparing summary').click();
   const quick=await frame.locator('[data-story-instant]').evaluateAll(nodes=>nodes.map(n=>({width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height})));

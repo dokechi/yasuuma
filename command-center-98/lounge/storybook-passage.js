@@ -14,7 +14,7 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
  if(!win||!panel||!scene?.element||!spatialDesk||!journey)throw Error('The existing book and reader must be mounted first.');
  let host=win,target=doc,frame=null;
  try{if(win.parent!==win){if(win.parent.location.origin!==win.location.origin)return null;host=win.parent;target=host.document;frame=win.frameElement;if(!frame||frame.contentDocument!==doc)return null;}}catch{return null;}
- let disposed=false,epoch=0,trip=null,departure=null,timer=0,raf=0,previousHidden=panel.hidden;
+ let disposed=false,epoch=0,trip=null,departure=null,timer=0,raf=0,captureWait=null,previousHidden=panel.hidden;
  const listeners=[];
  const listen=(node,type,fn,options)=>{node.addEventListener(type,fn,options);listeners.push(()=>node.removeEventListener(type,fn,options));};
  const reduced=()=>!!doc.querySelector('#reduce-setting')?.checked||win.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
@@ -28,7 +28,8 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
  const closedDialog=()=>!doc.querySelector('dialog[open]')&&!target.querySelector('dialog[open]');
  const ready=()=>!disposed&&!reduced()&&closedDialog()&&scene.snapshot?.().chapterReady==='ready';
  function forget(){host.clearTimeout(timer);timer=0;departure=null;}
- function cancel(){epoch++;trip=null;forget();win.cancelAnimationFrame(raf);raf=0;journey.cancel();}
+ function stopCapture(){captureWait?.();captureWait=null;win.cancelAnimationFrame(raf);raf=0;}
+ function cancel(){epoch++;stopCapture();trip=null;forget();win.cancelAnimationFrame(raf);raf=0;journey.cancel();}
  function rootPage(color){const page=target.createElement('div');page.className='story-passage-page';page.inert=true;page.setAttribute('aria-hidden','true');Object.assign(page.style,{position:'absolute',inset:'0',overflow:'hidden',background:color||'#F7F8F2',pointerEvents:'none'});return page;}
  function color(node){const value=win.getComputedStyle(node).backgroundColor;return value&&value!=='transparent'&&value!=='rgba(0, 0, 0, 0)'?value:'#F7F8F2';}
  function bookAt(){
@@ -114,26 +115,35 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
   const page=pageAt(room,bounds);return page?{scene:page,foreground}:null;
  }
  function onTravel(intent={}){
-  const serial=++epoch;trip=null;forget();win.cancelAnimationFrame(raf);raf=0;journey.cancel();
+  const serial=++epoch;stopCapture();trip=null;forget();journey.cancel();
   if(serial!==epoch||disposed||intent.instant||intent.room!=='insurance'||panel.hidden||panel.dataset.view==='list'||!ready())return false;
   try{
    const bounds=surface();if(!bounds)return false;
    const sourceScene=pageAt(intent.room,bounds,{home:true,intent});if(!sourceScene||serial!==epoch)return false;
    const duration=pace();if(serial!==epoch)return false;
-   const token=journey.travel({room:intent.room,direction:'in',surface:bounds,sourceScene,sourceDocument:doc,duration});
+   const deadline=host.performance.now()+duration*.4;
+   const token=journey.travel({room:intent.room,direction:'in',surface:bounds,sourceScene,sourceDocument:doc,uprightDestination:true,duration});
    if(!token||serial!==epoch){token?.cancel();return false;}
    trip={room:intent.room,surface:bounds,arrived:false,token};const saved=trip;
-   let attempts=0;
+   let initialLayoutRetry=true,captured=false;
    const settle=()=>{
-    if(serial!==epoch||trip!==saved||disposed)return;
+    if(serial!==epoch||trip!==saved||disposed||captured)return;
     try{
-     if(!journey.state().active||!sameBox(bounds,surface())||!ready()){cancel();return;}
+     const state=journey.state();if(!state.active||!sameBox(bounds,surface())||!ready()||host.performance.now()>=deadline||state.progress>=.4){cancel();return;}
      // The caller commits board.open synchronously. Two microtasks let the
      // existing spatial/room observers mount their real DOM before this read.
-     if(panel.hidden&&currentRoom()===saved.room){const visual=capture(saved.room,bounds);if(visual){if(serial===epoch&&trip===saved){const attached=token.setDestination(visual);if(serial===epoch&&trip===saved&&!attached)cancel();}return;}}
+     if(panel.hidden&&currentRoom()===saved.room){const visual=capture(saved.room,bounds);if(visual){if(serial===epoch&&trip===saved){if(host.performance.now()>=deadline||journey.state().progress>=.4){cancel();return;}const attached=token.setDestination(visual);if(serial===epoch&&trip===saved){if(attached){captured=true;stopCapture();}else cancel();}}return;}}
     }catch{if(serial===epoch)cancel();return;}
-    if(++attempts>=3){cancel();return;}raf=win.requestAnimationFrame(settle);
+    if(initialLayoutRetry){initialLayoutRetry=false;raf=win.requestAnimationFrame(settle);}
    };
+   // A newly mounted IMG completes in a later task even when the same asset
+   // was already painted at home. Readiness is an event, not three RAFs. Wait
+   // only inside this already-running turn's pre-handoff window; never hold a
+   // route, extend the animation, or reveal an incomplete destination.
+   const liveRoom=doc.querySelector('#room'),wake=()=>win.queueMicrotask(settle);
+   const readiness=new win.MutationObserver(wake);if(liveRoom){readiness.observe(liveRoom,{attributes:true,attributeFilter:['hidden','data-account','data-spatial-desk','data-story-scene'],childList:true});liveRoom.addEventListener('load',wake,true);liveRoom.addEventListener('error',wake,true);}
+   const expiry=host.setTimeout(()=>{if(serial===epoch&&trip===saved)cancel();},Math.max(0,deadline-host.performance.now()));
+   captureWait=()=>{host.clearTimeout(expiry);readiness.disconnect();liveRoom?.removeEventListener('load',wake,true);liveRoom?.removeEventListener('error',wake,true);};
    win.queueMicrotask(()=>win.queueMicrotask(settle));return true;
   }catch{if(serial===epoch)cancel();return false;}
  }
@@ -163,7 +173,7 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
  const observer=new win.MutationObserver(onBoard);observer.observe(panel,{attributes:true,attributeFilter:['hidden','data-view']});
  listen(target,'storybook:journey-end',event=>{
   if(event.detail?.direction!=='in'||!trip||event.detail.room!==trip.room)return;
-  if(event.detail.cancelled){trip=null;forget();}else{trip.token=null;trip.arrived=true;}
+  if(event.detail.cancelled){stopCapture();trip=null;forget();}else{trip.token=null;trip.arrived=true;}
  });
  listen(doc,'click',beforeExit,true);listen(win,'popstate',beforeExit,true);
  const escape=event=>{if(event.key==='Escape'&&journey.state().active){event.preventDefault();event.stopImmediatePropagation();cancel();return;}if(event.currentTarget===doc)beforeExit(event);};

@@ -101,7 +101,7 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
   const inputs=[['sourceScene',true],['destinationScene',true],['sourceForeground',false],['foreground',false]],nodes=inputs.map(([key])=>spec[key]).filter(Boolean);
   if(!spec.sourceScene||nodes.length!==new Set(nodes).size||inputs.some(([key,decorative])=>spec[key]!=null&&!safeSnapshot(spec[key],decorative)))return null;
   const allowed=canMove();if(intent!==serial||!allowed||owners.has(doc))return null;
-  const duration=finite(spec.duration)?clamp(spec.duration,260,1100):620,sign=spec.direction==='out'?-1:1;
+  const duration=finite(spec.duration)?clamp(spec.duration,260,1100):620,sign=spec.direction==='out'?-1:1,uprightSource=!!spec.sourceForeground,uprightDestination=spec.uprightDestination===true||!!spec.foreground;
   const layer=make('stage');layer.classList.add('storybook-journey');layer.dataset.room=spec.room;layer.dataset.direction=spec.direction;layer.dataset.phase='press';layer.inert=true;layer.setAttribute('aria-hidden','true');
   Object.assign(layer.style,{left:surface.left+'px',top:surface.top+'px',width:surface.width+'px',height:surface.height+'px',pointerEvents:'none'});
   const source=make('source'),incoming=make('destination'),flatSource=make('flat-source'),flatDestination=make('flat-destination'),cover=make('cover'),edge=make('edge');
@@ -122,8 +122,8 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
    doc.body.append(layer);attach(source,spec.sourceScene);if(spec.destinationScene)attach(incoming,spec.destinationScene);if(spec.sourceForeground)attach(flatSource,spec.sourceForeground);if(spec.foreground)attach(flatDestination,spec.foreground);
    // The original illustration and all its independent object transforms ride
    // ONE outer paper carrier. We never rotate or rebuild manuscript text.
-   animate(source,[{offset:0,transform:'translateX(0%) rotateY(0deg)',visibility:'visible'},{offset:.13,transform:`translateX(${-sign*1}%) rotateY(${-sign*3}deg)`},{offset:.4,transform:`translateX(${-sign*13}%) rotateY(${-sign*28}deg)`},{offset:.5,transform:`translateX(${-sign*22}%) rotateY(${-sign*48}deg)`,visibility:'visible'},{offset:.501,visibility:'hidden'},{offset:1,transform:`translateX(${-sign*40}%) rotateY(${-sign*75}deg)`,visibility:'hidden'}],'storybook-source');
-   animate(incoming,[{offset:0,transform:`translateX(${sign*9}%) rotateY(${sign*18}deg)`,visibility:'hidden'},{offset:.499,visibility:'hidden'},{offset:.5,transform:`translateX(${sign*9}%) rotateY(${sign*18}deg)`,visibility:'visible'},{offset:.9,transform:'translateX(0%) rotateY(0deg)'},{offset:1,transform:'translateX(0%) rotateY(0deg)',visibility:'visible'}],'storybook-destination');
+   animate(source,[{offset:0,transform:'translateX(0%) rotateY(0deg)',visibility:'visible'},{offset:.13,transform:uprightSource?'translateX(0%) rotateY(0deg)':`translateX(${-sign*1}%) rotateY(${-sign*3}deg)`},{offset:.4,transform:uprightSource?'translateX(0%) rotateY(0deg)':`translateX(${-sign*13}%) rotateY(${-sign*28}deg)`},{offset:.5,transform:`translateX(${-sign*22}%) rotateY(${-sign*48}deg)`,visibility:'visible'},{offset:.501,visibility:'hidden'},{offset:1,transform:`translateX(${-sign*40}%) rotateY(${-sign*75}deg)`,visibility:'hidden'}],'storybook-source');
+   animate(incoming,[{offset:0,transform:`translateX(${sign*9}%) rotateY(${sign*18}deg)`,visibility:'hidden'},{offset:.499,visibility:'hidden'},{offset:.5,transform:`translateX(${sign*9}%) rotateY(${sign*18}deg)`,visibility:'visible'},{offset:uprightDestination ? .56 : .9,transform:'translateX(0%) rotateY(0deg)'},{offset:1,transform:'translateX(0%) rotateY(0deg)',visibility:'visible'}],'storybook-destination');
    // A fully opaque three-segment paper underside covers the exact handoff.
    // The small segment offsets make the edge curl rather than crossfade.
    folds.forEach((fold,index)=>{

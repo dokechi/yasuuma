@@ -22,9 +22,9 @@ body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] {
 }
 /* One physical spread, not a portrait beside a floating application card. The
    two leaves share an outline, page edges and a stitched paper hinge. */
-body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'][data-account='otoku'] { --sb-leaf-ground: var(--sb-lilac,#DFA4E1); }
-body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'][data-account='rakuten'] { --sb-leaf-ground: var(--sb-gold,#FEB60A); }
-body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'][data-account='lottery'] { --sb-leaf-ground: var(--sb-sky,#6DBDDD); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'][data-account='otoku'] { --sb-leaf-ground: var(--sb-mint,#63D9A5); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'][data-account='rakuten'] { --sb-leaf-ground: var(--sb-pink,#F4A7CB); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'][data-account='lottery'] { --sb-leaf-ground: var(--sb-lilac,#DFA4E1); }
 body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready']::before {
   content: ''; position: absolute; z-index: -1; pointer-events: none;
   inset: var(--sb-book-top) var(--sb-book-edge) 24px;
