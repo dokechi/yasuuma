@@ -1,0 +1,21 @@
+/* Original working-storybook palette. Representative colors were studied from
+   official reference imagery; these are not KOKUYO brand specifications. */
+:root {
+ --sb-lime:#AAF618; --sb-gold:#FEB60A;
+ --sb-ink:#173a35; --sb-paper:#f7f8f2; --sb-white:#fffef9;
+ --sb-coral:#f15f50; --sb-orange:#ee8b54; --sb-sun:#f5cf5d;
+ --sb-jade:#17b982; --sb-mint:#63d9a5; --sb-forest:#02672f;
+ --sb-teal:#106762; --sb-leaf:#9fea58; --sb-sky:#6dbddd;
+ --sb-blue:#70a8ec; --sb-cobalt:#4d70e3; --sb-pink:#f4a7cb; --sb-lilac:#dfa4e1;
+ --sb-sage:#e0e6cc; --sb-mist:#dcecc8; --sb-blush:#ece1e9;
+ --sb-periwinkle:#c0ceeb; --sb-sand:#f0e3da;
+ --sb-muted:#52645e; --sb-line:rgba(23,58,53,.22); --sb-shadow:rgba(23,58,53,.16);
+ --sb-page:var(--sb-sage); --sb-accent:var(--sb-coral); --sb-contrast:var(--sb-forest);
+ --sb-outline:1.5px solid var(--sb-ink);
+ --sb-font:system-ui,-apple-system,"Noto Sans JP","Hiragino Kaku Gothic ProN",sans-serif;
+}
+[data-story-chapter=insurance], [data-story-room=insurance], .storybook-atelier #room[data-account=insurance] {--sb-page:var(--sb-sage);--sb-accent:var(--sb-coral);--sb-contrast:var(--sb-forest);--sb-scenery:var(--sb-sky)}
+[data-story-chapter=otoku], [data-story-room=otoku], .storybook-atelier #room[data-account=otoku] {--sb-page:var(--sb-periwinkle);--sb-accent:var(--sb-jade);--sb-contrast:var(--sb-teal);--sb-scenery:var(--sb-lilac)}
+[data-story-chapter=rakuten], [data-story-room=rakuten], .storybook-atelier #room[data-account=rakuten] {--sb-page:var(--sb-sand);--sb-accent:var(--sb-sun);--sb-contrast:var(--sb-forest);--sb-scenery:var(--sb-orange)}
+[data-story-chapter=lottery], [data-story-room=lottery], .storybook-atelier #room[data-account=lottery] {--sb-page:var(--sb-blush);--sb-accent:var(--sb-cobalt);--sb-contrast:var(--sb-teal);--sb-scenery:var(--sb-leaf)}
+[data-story-chapter=sourcing], [data-story-room=sourcing], .storybook-host[data-story-room=sourcing] {--sb-page:var(--sb-mist);--sb-accent:var(--sb-jade);--sb-contrast:var(--sb-teal);--sb-scenery:var(--sb-orange)}

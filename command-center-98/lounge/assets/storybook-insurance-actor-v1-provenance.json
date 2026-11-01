@@ -1,0 +1,25 @@
+{
+  "mode": "built-in image_gen background-extraction",
+  "source": "insurance-proof-v2.png",
+  "prompt": "insurance-actor-v1-prompt.txt",
+  "nativeOutput": "insurance-actor-v1.png",
+  "webAsset": "insurance-actor-v1.webp",
+  "encoding": "mechanical PNG→WebP conversion, Pillow quality90 method6 exact=True; no resize/color/alpha edits",
+  "width": 1536,
+  "height": 1024,
+  "sha256": "446b0755d56156a8c993eff1ff239d4544a923ff1cbf6ee9e080b34916f7dd84",
+  "retained": "same adult woman, clothing, pose, letter, chair, desk, working papers/desktop props",
+  "removed": "room scenery and pagefloor; SVG builds original independent scenery",
+  "stageMapping": {
+    "viewBox": [
+      0,
+      0,
+      1000,
+      750
+    ],
+    "xPercent": 0,
+    "yPercent": 10.8,
+    "widthPercent": 100,
+    "heightPercent": 88.8889
+  }
+}

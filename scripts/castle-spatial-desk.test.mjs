@@ -258,3 +258,79 @@ test('CSS is gated to mounted atelier rooms, preserves hidden controls, and remo
   // This jsdom version miscomputes some !important cascades. Do not claim a
   // computed-visibility/contrast pass here; the real Chrome suite owns that.
 });
+
+
+test('explicit paper presentation never fetches legacy art and keeps four identities and the original reader', async t => {
+  const b = setup(t);
+  const roomPresentation = Object.fromEntries(accounts.map(key => [key, {name: key + 'の章', actorURL: './assets/storybook-' + key + '.webp', fallbackColor: '#ECE1E9'}]));
+  const api = b.install({roomPresentation});
+  for (const key of accounts) {
+    await b.enter(key);
+    assert.equal(b.room.dataset.spatialScene, 'paper');
+    assert.equal(b.$('.spatial-study-scene').style.backgroundImage, 'none');
+    assert.equal(b.$('.spatial-study-scene').style.backgroundColor, 'rgb(236, 225, 233)');
+    assert.ok(b.$('.spatial-desk-actor').src.endsWith('/storybook-' + key + '.webp'));
+    assert.equal(b.$('.spatial-room-description').textContent, key + 'の章');
+    assert.equal(b.$('.spatial-account-identity p').textContent, publishingAccounts.find(account => account.key === key).handle);
+    assert.ok(b.images.every(image => !image.src), 'no master or unconfigured scene request');
+    b.$('#desk-copy').click();
+  }
+  assert.equal(b.calls.copy, 4);
+  api.destroy(); assert.equal(b.desk.innerHTML, b.before); b.unchanged();
+});
+
+test('paper presentation decodes new scenes independently, ignores late room results, and retains paper on failure', async t => {
+  const b = setup(t), roomPresentation = Object.fromEntries(accounts.map(key => [key, {name: key + 'の章'}]));
+  b.install({roomPresentation, roomScenes: sceneConfig}); await b.enter('insurance');
+  assert.equal(b.$('.spatial-desk-actor').hidden, true); assert.equal(b.$('.spatial-desk-actor').hasAttribute('src'), false);
+  const first = b.images.find(image => image.src.endsWith('test-scene-insurance.webp'));
+  const delayed = deferred(); first.decoding = delayed.promise; const loading = first.load();
+  await b.enter('otoku'); delayed.resolve(); await loading;
+  assert.equal(b.room.dataset.spatialScene, 'paper'); assert.equal(b.$('.spatial-study-scene').style.backgroundImage, 'none');
+  b.images.find(image => image.src.endsWith('test-scene-otoku.webp')).fail();
+  assert.equal(b.room.dataset.spatialScene, 'paper'); assert.equal(b.$('.spatial-study-scene').dataset.interiorStatus, 'failed');
+  await b.enter('insurance'); assert.equal(b.room.dataset.spatialScene, 'interior');
+  assert.match(b.$('.spatial-study-scene').style.backgroundImage, /test-scene-insurance/);
+  assert.ok(b.images.every(image => !image.src.includes('castle-')), 'new rooms do not request legacy art even on failure');
+  b.unchanged();
+});
+
+test('invalid presentation metadata fails before changing the DOM or loading art', t => {
+  const b = setup(t);
+  for (const value of [{actorURL:'https://other.invalid/actor.webp'},{actorURL:'../actor.webp'},{actorURL:'data:image/png,x'},{fallbackColor:'url(bad)'},{name:''}]) {
+    assert.throws(() => b.install({roomPresentation: {insurance: value}}), /Room actor|fallback|name/);
+    assert.equal(b.desk.innerHTML, b.before); assert.equal(b.images.length, 0);
+  }
+  b.unchanged();
+});
+
+
+test('storybook reader and native presentation sheets parse, stay opt-in, and avoid legacy image dependencies', t => {
+  const b = setup(t);
+  for (const file of ['../command-center-98/lounge/storybook-reader.css', '../command-center-98/storybook-workspace.css']) {
+    const source = fs.readFileSync(new URL(file, import.meta.url), 'utf8');
+    const style = b.doc.createElement('style'); style.textContent = source; b.doc.head.append(style);
+    assert.ok(style.sheet, file);
+    assert.doesNotMatch(source, /castle-(?:cutaway|interior)|desk-actor\.webp|assets\/(?:red|orange|purple|silver)\.webp/);
+    const rules = [];
+    const walk = list => { for (const rule of list) { if (rule.selectorText) rules.push(rule); if (rule.cssRules) walk(rule.cssRules); } };
+    walk(style.sheet.cssRules); assert.ok(rules.length > 50);
+    for (const rule of rules) assert.match(rule.selectorText, /^body\.storybook-(?:atelier|host)/, rule.selectorText);
+  }
+  b.unchanged();
+});
+
+test('storybook paper preserves readable text, actionable controls, hidden state and compact mobile notebook geometry', t => {
+  const b = setup(t), style = b.doc.createElement('style');
+  style.textContent = fs.readFileSync(new URL('../command-center-98/lounge/storybook-reader.css', import.meta.url), 'utf8'); b.doc.head.append(style);
+  const all = []; const walk = rules => { for (const r of rules) { if(r.selectorText)all.push(r); if(r.cssRules)walk(r.cssRules); } }; walk(style.sheet.cssRules);
+  const rulesFor = suffix => all.filter(r => r.selectorText.endsWith(suffix));
+  assert.ok(rulesFor(' #draft-body').every(r => Number.parseInt(r.style.getPropertyValue('font-size')) >= 16));
+  assert.ok(rulesFor(' .reader-actions button').some(r => r.style.getPropertyValue('min-height') === '44px'));
+  assert.ok(rulesFor(' .reading-desk').some(r => r.style.getPropertyValue('border-left').includes('12px')));
+  assert.ok(all.some(r => r.style.getPropertyValue('--sb-reader-inset').startsWith('116px')));
+  const hidden = all.find(r => r.selectorText === 'body.storybook-atelier [hidden]');
+  assert.equal(hidden.style.getPropertyValue('display'), 'none'); assert.equal(hidden.style.getPropertyPriority('display'), 'important');
+  assert.equal(all.find(r => r.selectorText === 'body.storybook-atelier').style.getPropertyValue('--storybook-reader-ready'), '1');
+  b.unchanged();
+});

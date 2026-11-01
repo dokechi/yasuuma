@@ -1,0 +1,239 @@
+/* The manuscript is a real, upright notebook leaf. The surrounding illustration
+   can change; selection, controls, saved text and dialog owners do not. */
+body.storybook-atelier { --storybook-reader-ready: 1; color-scheme: light; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] {
+  --sb-reader-inset: 86px 4% 28px 37%;
+  --spatial-paper: var(--sb-paper,#F7F8F2);
+  --spatial-ink: var(--sb-ink,#173A35);
+  --spatial-title: var(--sb-ink,#173A35);
+  --spatial-muted: #365B54;
+  --spatial-accent: var(--sb-accent,var(--sb-coral,#F15F50));
+  --spatial-rail: var(--sb-page,#ECE1E9);
+  --living-cloth: var(--sb-accent,var(--sb-coral,#F15F50));
+  --living-cloth-light: var(--sb-pink,#F4A7CB);
+  --living-metal: var(--sb-sun,#F5CF5D);
+  --living-metal-light: var(--sb-paper,#F7F8F2);
+  overflow: clip; background: var(--sb-page,#ECE1E9); color: var(--sb-ink,#173A35);
+  font-family: system-ui,-apple-system,'Noto Sans JP',sans-serif;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-writing-surface { display: none; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-study-scene::after {
+  background: none;
+  border: 16px solid var(--sb-page,#ECE1E9);
+  border-right-width: 0;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'][data-spatial-scene='paper'] .spatial-study-scene::after {
+  background: repeating-linear-gradient(0deg,transparent 0 37px,#173A3515 37px 38px);
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-desk-actor {
+  left: 1%; bottom: 4%; width: 36%; height: 71%;
+  object-position: center bottom; filter: drop-shadow(3px 4px 0 #173A3526);
+  -webkit-mask-image: none; mask-image: none;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .back-button,
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.spatial-desk-nav button,.spatial-work>summary,.spatial-room-name,.living-toggle) {
+  min-height: 44px; border: 1.5px solid var(--sb-ink,#173A35); border-radius: 4px;
+  color: var(--sb-ink,#173A35); background: var(--sb-paper,#F7F8F2);
+  box-shadow: 2px 3px 0 var(--sb-ink,#173A35); text-shadow: none;
+  font: 700 14px/1.45 system-ui,-apple-system,'Noto Sans JP',sans-serif;
+  letter-spacing: 0; padding: 9px 13px;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .back-button { top: 16px; left: 22px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-desk-nav { top: 16px; right: 4%; gap: 10px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-open { background: var(--sb-lime,#AAF618); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work>summary { background: var(--sb-mint,#63D9A5); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .room-caption {
+  left: 24px; top: 96px; right: auto; width: 29%; max-width: 370px;
+  display: flex; align-items: flex-start; flex-wrap: wrap; gap: 12px;
+  text-shadow: none; padding: 0; background: none;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-room-name {
+  max-width: 100%; text-align: left; background: var(--sb-paper,#F7F8F2); border-left: 7px solid var(--sb-accent,var(--sb-coral,#F15F50));
+  color: var(--sb-ink,#173A35); font-size: 18px;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-toggle { margin: 0; background: var(--sb-paper,#F7F8F2); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-toggle[aria-expanded='true'] { background: var(--sb-sun,#F5CF5D); }
+
+/* A colored cloth binding, visible stacked leaves and a margin rule establish
+   notebook structure. Text stays flat; no perspective or image-baked copy. */
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reading-desk {
+  inset: var(--sb-reader-inset); border: 1.5px solid var(--sb-ink,#173A35);
+  border-left: 12px solid var(--sb-accent,var(--sb-coral,#F15F50));
+  border-radius: 7px 14px 7px 3px; overflow: hidden;
+  background: var(--sb-paper,#F7F8F2);
+  box-shadow: -1px 0 0 1px var(--sb-ink,#173A35),4px 5px 0 var(--sb-paper,#F7F8F2),5px 6px 0 1px var(--sb-ink,#173A35),9px 10px 0 var(--sb-accent,var(--sb-coral,#F15F50));
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reading-desk::before {
+  display: block; content: ''; position: absolute; z-index: 3;
+  left: 13px; top: 0; bottom: 0; width: 1px; border: 0;
+  background: var(--sb-coral,#F15F50); opacity: .45; pointer-events: none;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .manuscript-reader { background: var(--sb-paper,#F7F8F2); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-scroll { padding: 24px 30px 30px 32px; scrollbar-color: var(--sb-teal,#106762) var(--sb-paper,#F7F8F2); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] #draft-title {
+  margin: 0 0 16px; color: var(--sb-ink,#173A35);
+  font: 750 clamp(22px,2vw,29px)/1.5 system-ui,-apple-system,'Noto Sans JP',sans-serif;
+  letter-spacing: .01em; overflow-wrap: anywhere;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] #draft-body { color: var(--sb-ink,#173A35); font-size: 16px; line-height: 1.9; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(#draft-links a,.draft-body a) { color: var(--sb-teal,#106762); text-underline-offset: 3px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions {
+  gap: 8px; padding: 11px 14px 11px 24px;
+  border-top: 1.5px solid var(--sb-ink,#173A35); background: var(--sb-sky,#6DBDDD);
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions button {
+  min-height: 44px; border: 1.5px solid var(--sb-ink,#173A35); border-radius: 4px;
+  background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35);
+  box-shadow: 1px 2px 0 var(--sb-ink,#173A35); font-size: 14px;
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions #desk-copy { background: var(--sb-teal,#106762); color: var(--sb-paper,#F7F8F2); border-color: var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions #desk-pin { background: var(--sb-sun,#F5CF5D); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions #desk-done { background: var(--sb-lime,#AAF618); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] #desk-operation { padding: 8px 16px 8px 24px; color: var(--sb-ink,#173A35); background: var(--sb-paper,#F7F8F2); font-size: 13px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .desk-pending { background: var(--sb-sun,#F5CF5D)!important; color: var(--sb-ink,#173A35); border: 1.5px solid var(--sb-ink,#173A35)!important; font-size: 14px!important; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.desk-empty,.desk-count,#draft-meta,#draft-kind) { color: #365B54; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .desk-variants { padding-left: 26px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .desk-variants button { min-height: 44px; font-size: 14px; background: var(--sb-paper,#F7F8F2); border: 1px solid var(--sb-ink,#173A35); color: var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .desk-variants [aria-pressed='true'] { background: var(--sb-sun,#F5CF5D); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'].desk-focused .reading-desk { left: 18%; }
+
+/* The secondary toolbox remains a disclosure, not a toolbar over the page. */
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work-body {
+  top: 54px; padding: 18px; border: 1.5px solid var(--sb-ink,#173A35); border-top: 8px solid var(--sb-lime,#AAF618);
+  border-radius: 3px 8px 3px 3px; background: var(--sb-paper,#F7F8F2);
+  box-shadow: 4px 5px 0 var(--sb-ink,#173A35); color: var(--sb-ink,#173A35);
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work-body :is(h3,strong,p,span,small,label,summary,button,input,select,textarea) { color: var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work-body :is(button,input,select,textarea) { border: 1px solid var(--sb-ink,#173A35); border-radius: 4px; background: var(--sb-paper,#F7F8F2); font-size: 14px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work-body a { color: var(--sb-teal,#106762); font-size: 14px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work-body :is(#draft-meta,#draft-kind,.desk-state) { font-size: 13px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work-body h3 { font: 750 18px/1.5 system-ui,sans-serif; }
+
+/* All top-layer pages use the same ink and paper, including owner-created
+   copy/history, favorites, posting, search, settings and room records. */
+body.storybook-atelier :is(dialog,#settings,.desk-dialog,.qol-dialog,.living-dialog) {
+  --reader-paper: var(--sb-paper,#F7F8F2); --reader-ink: var(--sb-ink,#173A35); --reader-muted: #365B54;
+  border: 1.5px solid var(--sb-ink,#173A35); border-radius: 5px 12px 5px 5px;
+  background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35);
+  box-shadow: 5px 6px 0 var(--sb-ink,#173A35);
+  font-family: system-ui,-apple-system,'Noto Sans JP',sans-serif;
+  max-width: calc(100vw - 24px); max-height: calc(100dvh - 28px);
+}
+body.storybook-atelier dialog::backdrop { background: #173A3575; backdrop-filter: none; }
+body.storybook-atelier :is(dialog,#settings) :is(h2,h3,h4) { color: var(--sb-ink,#173A35); font-family: system-ui,-apple-system,'Noto Sans JP',sans-serif; font-weight: 750; letter-spacing: .01em; }
+body.storybook-atelier :is(dialog,#settings) h2 { font-size: 22px; line-height: 1.5; }
+body.storybook-atelier :is(dialog,#settings) :is(p,label,legend,li) { color: var(--sb-ink,#173A35); font-size: 14px; line-height: 1.75; }
+body.storybook-atelier :is(dialog,#settings) :is(small,.qol-note,.settings-note,.living-dialog-note,.living-object-detail) { color: #365B54; font-size: 12px; opacity: 1; }
+body.storybook-atelier :is(dialog,#settings) :is(button,summary) { min-height: 44px; font: 650 14px/1.5 system-ui,sans-serif; }
+body.storybook-atelier :is(dialog,#settings) button { border: 1px solid var(--sb-ink,#173A35); border-radius: 4px; padding: 10px 13px; color: var(--sb-ink,#173A35); background: var(--sb-paper,#F7F8F2); }
+body.storybook-atelier :is(dialog,#settings) :is(input:not([type=radio]):not([type=checkbox]),textarea,select) { min-height: 44px; border: 1.5px solid var(--sb-ink,#173A35); border-radius: 4px; background: #fff; color: var(--sb-ink,#173A35); font: 16px/1.7 system-ui,sans-serif; }
+body.storybook-atelier :is(dialog,#settings) a { color: var(--sb-teal,#106762); text-underline-offset: 3px; }
+body.storybook-atelier :is(dialog,#settings) :is([aria-pressed='true'],[aria-current='page']) { color: var(--sb-ink,#173A35); background: var(--sb-sun,#F5CF5D); border-color: var(--sb-ink,#173A35); }
+body.storybook-atelier :is(.hall-preview,.later-preview,.posting-step pre,.hall-related>div,.work-list li,#posting-readiness,.posting-readiness,.living-dialog-note) { color: var(--sb-ink,#173A35); background: var(--sb-page,#E0E6CC); font-size: 14px; line-height: 1.8; border-radius: 4px; }
+body.storybook-atelier :is(#hall-detail,#later-detail) :is(small,strong,span),
+body.storybook-atelier :is(#hall-results,#later-list,.living-records) :is(small,span) { color: #365B54; font-size: 13px; opacity: 1; }
+body.storybook-atelier :is(#hall-results,#later-list,.living-records) strong { color: var(--sb-ink,#173A35); font-size: 16px; }
+body.storybook-atelier :is(.qol-actions button:first-child,#posting-copy-all) { background: var(--sb-teal,#106762); color: var(--sb-paper,#F7F8F2); }
+body.storybook-atelier :is(.dialog-heading,.living-dialog-heading) { background: var(--sb-sun,#F5CF5D); color: var(--sb-ink,#173A35); border-color: var(--sb-ink,#173A35); }
+body.storybook-atelier #settings { background-image: none; }
+body.storybook-atelier #settings :is(fieldset,.segmented label,.setting-line,.service-links) { border-color: #173A3545; background: transparent; }
+body.storybook-atelier #settings .segmented label:has(input:checked) { background: var(--sb-mint,#63D9A5); color: var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #settings .segmented label:has(input:checked) small,
+body.storybook-atelier #settings .setting-line small { color: #365B54; font-size: 12px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.spatial-shelf-dialog,.spatial-room-dialog) { border: 1.5px solid var(--sb-ink,#173A35); border-radius: 4px 12px 4px 4px; background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35); box-shadow: 5px 6px 0 var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.spatial-shelf-dialog,.spatial-room-dialog)::backdrop { background: #173A3575; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-heading { border-color: var(--sb-ink,#173A35); border-top: 7px solid var(--sb-accent,var(--sb-coral,#F15F50)); background: var(--sb-lime,#AAF618); color: var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-heading h2 { font: 750 21px/1.5 system-ui,sans-serif; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.spatial-shelf-dialog,.spatial-room-dialog) button { min-height: 44px; background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35); border: 1px solid var(--sb-ink,#173A35); font-size: 14px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-dialog .manuscript-shelf { background: var(--sb-paper,#F7F8F2); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-dialog .manuscript-card { border-left: 6px solid var(--sb-accent,var(--sb-coral,#F15F50)); border-radius: 2px 8px 2px 2px; box-shadow: 2px 3px 0 #173A3530; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-dialog :is(.manuscript-card small,.manuscript-card span,.desk-count) { color: #365B54; font-size: 13px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.spatial-shelf-dialog,.spatial-room-dialog) [aria-pressed='true'],
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-quick-destinations button[aria-current='page'] { background: var(--sb-sun,#F5CF5D); color: var(--sb-ink,#173A35); border: 2px solid var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-account-identity { border-color: #173A3540; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-account-identity h3 { font: 750 22px/1.5 system-ui,sans-serif; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.spatial-account-identity p,.spatial-quick-destinations button span) { color: #365B54; }
+
+/* Interactive room objects become crisp paper constructions, not miniature
+   stained-wood props. The existing scope labels/counts remain real live text. */
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'][data-living-view='tools'] .living-workbench {
+  inset: var(--sb-reader-inset); padding: 20px; border: 1.5px solid var(--sb-ink,#173A35);
+  border-left: 12px solid var(--sb-accent,var(--sb-coral,#F15F50)); border-radius: 7px 14px 7px 3px;
+  background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35);
+  box-shadow: 5px 6px 0 var(--sb-ink,#173A35); scrollbar-color: var(--sb-teal,#106762) var(--sb-paper,#F7F8F2);
+}
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing { background: var(--sb-page,#ECE1E9); border: 1px solid var(--sb-ink,#173A35); border-left: 5px solid var(--sb-accent,var(--sb-coral,#F15F50)); box-shadow: 2px 3px 0 #173A3530; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing :is(h3,small,p) { color: var(--sb-ink,#173A35); font-family: system-ui,sans-serif; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.living-reader-return,.living-bench-footer button,.living-object strong) { border: 1px solid var(--sb-ink,#173A35); border-radius: 4px; color: var(--sb-ink,#173A35); background: var(--sb-sun,#F5CF5D); box-shadow: 1px 2px 0 #173A3540; font-size: 14px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.living-object-detail,.living-bench-footer p) { color: #365B54; font-size: 13px; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-bench-footer { border-color: #173A3540; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-object-art { filter: drop-shadow(3px 4px 0 #173A3530); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-art-back { display: none; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='shelf'] .living-object-art { border: 3px solid var(--sb-ink,#173A35); border-radius: 6px 6px 1px 1px; background: var(--sb-sky,#6DBDDD); box-shadow: 4px 4px 0 var(--sb-cobalt,#4D70E3); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='shelf'] .living-art-front { background: repeating-linear-gradient(90deg,var(--sb-coral,#F15F50) 0 18%,var(--sb-ink,#173A35) 18% 19%,var(--sb-sun,#F5CF5D) 19% 37%,var(--sb-ink,#173A35) 37% 38%,var(--sb-lilac,#DFA4E1) 38% 62%,var(--sb-ink,#173A35) 62% 63%,var(--sb-jade,#17B982) 63% 82%,var(--sb-ink,#173A35) 82% 83%,var(--sb-pink,#F4A7CB) 83%); box-shadow: none; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='shelf'] .living-art-detail { border: 1px solid var(--sb-ink,#173A35); background: var(--sb-blue,#70A8EC); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='notice'] .living-object-art { border: 2px solid var(--sb-ink,#173A35); background: var(--sb-coral,#F15F50); box-shadow: 4px 4px 0 var(--sb-pink,#F4A7CB); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='notice'] .living-art-front { border-color: var(--sb-ink,#173A35); background: repeating-linear-gradient(0deg,var(--sb-paper,#F7F8F2) 0 12px,#173A3530 12px 13px); box-shadow: none; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='notice'] .living-art-detail { background: var(--sb-sun,#F5CF5D); border: 1px solid var(--sb-ink,#173A35); box-shadow: none; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='desk'] .living-object-art { border-color: var(--sb-ink,#173A35); background: repeating-linear-gradient(0deg,var(--sb-paper,#F7F8F2) 0 13px,#173A3520 13px 14px); box-shadow: 3px 3px 0 var(--sb-sky,#6DBDDD),4px 4px 0 var(--sb-ink,#173A35),7px 7px 0 var(--sb-paper,#F7F8F2); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='desk'] .living-art-front { background: var(--sb-coral,#F15F50); border-color: var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='desk'] .living-art-detail { display: none; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='chest'] .living-object-art { border: 2px solid var(--sb-ink,#173A35); border-radius: 8px; background: var(--sb-lilac,#DFA4E1); box-shadow: 4px 4px 0 var(--sb-cobalt,#4D70E3); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='chest'] .living-art-front { background: var(--sb-pink,#F4A7CB); border-color: var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] [data-object='chest'] .living-art-detail { background: var(--sb-sun,#F5CF5D); border-color: var(--sb-ink,#173A35); box-shadow: none; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-object:disabled strong { color: #365B54; background: var(--sb-page,#ECE1E9); }
+body.storybook-atelier :is(button,a,input,textarea,select,summary,#desk-scroll):focus-visible { outline: 3px solid var(--sb-teal,#106762); outline-offset: 3px; box-shadow: 0 0 0 6px var(--sb-paper,#F7F8F2); }
+body.storybook-atelier [hidden] { display: none!important; }
+
+@media (max-width:1000px) and (min-width:601px) {
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] { --sb-reader-inset: 80px 22px 22px 28%; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .room-caption { left: 14px; top: 88px; width: 22%; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-room-name { font-size: 16px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-desk-actor { left: -4%; width: 36%; height: 65%; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-scroll { padding: 20px 20px 26px 28px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions { padding: 10px 10px 10px 22px; }
+}
+@media (max-width:600px) {
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] { --sb-reader-inset: 116px 12px max(14px,env(safe-area-inset-bottom)) 8px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .back-button { top: max(8px,env(safe-area-inset-top)); left: 8px; padding: 9px 8px; font-size: 13px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-desk-nav { top: max(8px,env(safe-area-inset-top)); right: 10px; gap: 6px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.spatial-desk-nav>button,.spatial-work>summary) { padding: 9px 8px; min-width: 44px; font-size: 13px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work>summary { gap: 3px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .room-caption { top: 62px; left: 8px; right: 83px; width: auto; max-width: none; display: grid; grid-template-columns: minmax(0,1fr) 44px; gap: 6px; align-items: start; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-room-name { min-width: 0; max-width: 100%; width: 100%; font-size: 14px; padding: 10px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-toggle { width: 44px; min-width: 44px; padding: 10px 3px; font-size: 13px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-desk-actor { left: auto; right: 0; top: 49px; bottom: auto; width: 79px; height: 112px; object-fit: contain; object-position: center top; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-study-scene::after { border-width: 6px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reading-desk,
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'].desk-focused .reading-desk { inset: var(--sb-reader-inset); border-left-width: 7px; border-radius: 4px 10px 4px 2px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reading-desk::before { left: 9px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-scroll { padding: 16px 14px 22px 20px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] #draft-title { font-size: 20px; line-height: 1.5; margin-bottom: 12px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] #draft-body { font-size: 16px; line-height: 1.85; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions { gap: 6px; padding: 8px 8px 8px 16px; grid-template-columns: minmax(0,1fr) 44px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions button { padding: 8px; font-size: 14px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions #desk-done { grid-column: 1 / -1; font-size: 14px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] #desk-operation { padding: 7px 12px 7px 20px; font-size: 12px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .desk-variants { padding: 6px 10px 0 18px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-work-body { top: 52px; right: 0; width: calc(100vw - 22px); padding: 14px; max-height: calc(100dvh - 82px); }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'][data-living-view='tools'] .living-workbench { inset: var(--sb-reader-inset); padding: 14px 10px; border-left-width: 7px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-briefing { padding: 12px; }
+  body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .living-objects { gap: 16px 8px; }
+  body.storybook-atelier :is(dialog,#settings) { max-width: calc(100vw - 20px); }
+  body.storybook-atelier :is(#hall-results,#later-list) { max-height: 160px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  body.storybook-atelier :is(.spatial-desk-actor,.spatial-study-scene,.reading-desk,.living-object,.living-object-art) { animation: none!important; transition: none!important; }
+}
+
+/* Retained legacy rules use !important for selected manuscripts and pending
+   notices. Override those specific material declarations, not their behavior. */
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-dialog .manuscript-card { background: var(--sb-paper,#F7F8F2)!important; border-color: var(--sb-ink,#173A35)!important; border-left: 6px solid var(--sb-accent,var(--sb-coral,#F15F50))!important; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-dialog .manuscript-card[aria-pressed='true'] { background: var(--sb-lime,#AAF618)!important; border-color: var(--sb-ink,#173A35)!important; border-left-color: var(--sb-ink,#173A35)!important; box-shadow: 2px 3px 0 var(--sb-ink,#173A35); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions #desk-copy:hover { background: var(--sb-teal,#106762)!important; }
+
+body.storybook-atelier.spatial-atelier #settings :is(.audio-panel,.audio-settings>summary,.system-action) { background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35); border-color: var(--sb-ink,#173A35); box-shadow: none; backdrop-filter: none; }
+body.storybook-atelier.spatial-atelier #settings :is(.audio-panel p,.music-credit p,.audio-panel output) { font-size: 13px; color: #365B54; }
+body.storybook-atelier.spatial-atelier #settings input { accent-color: var(--sb-teal,#106762); }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reading-desk :is(textarea,input,select) { min-height: 44px; background: #fff; color: var(--sb-ink,#173A35); border: 1px solid var(--sb-ink,#173A35); border-radius: 4px; font: 16px/1.75 system-ui,sans-serif; }
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] :is(.cc-post-learning button,#desk-prior button) { min-height: 44px; padding: 10px 12px; background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35); border: 1px solid var(--sb-ink,#173A35); font-size: 14px; }

@@ -1,11 +1,12 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
 import {createMusicControls} from './music.js?v=20261030.8-integrated';
-import {createDesk} from './desk.js?v=20261101.7-chusen1101';
+import {createDesk} from './desk.js?v=20261101.8-storybook';
 import {createInteractionSound} from './interaction-sound.js?v=20261022.26-audio';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261101.1-living';
 const $ = (id) => document.getElementById(id);
 let accountContext=null;
 const accountRooms={kyun:{key:'insurance',name:'保険'},otoku:{key:'otoku',name:'まだ安く買えるはず'},rakuten:{key:'rakuten',name:'楽天犬'},lottery:{key:'lottery',name:'抽選日記',artKey:'planned-4'}};
+const storybookPresentation=document.body.classList.contains('storybook-atelier');
 const app = $('app');
 const room = $('room');
 const reducedMedia = matchMedia('(prefers-reduced-motion: reduce)');
@@ -27,7 +28,7 @@ const labels=new Map();
 for(const r of rooms){
   const b=document.createElement('button');
   b.className='place-label'; b.dataset.room=r.id; b.setAttribute('aria-label',r.name+'に入る');
-  b.innerHTML=`<img src="assets/${r.id}-face.webp" alt=""><span><small>${r.sub}</small><strong>${r.name}</strong></span><span class="arrow" aria-hidden="true">›</span>`;
+  b.innerHTML=`${storybookPresentation?'':`<img src="assets/${r.id}-face.webp" alt="">`}<span><small>${r.sub}</small><strong>${r.name}</strong></span><span class="arrow" aria-hidden="true">›</span>`;
   b.addEventListener('pointerenter',()=>world?.highlight(r.id));
   b.addEventListener('pointerleave',()=>world?.highlight(null));
   b.addEventListener('focus',()=>world?.highlight(r.id));
@@ -65,7 +66,7 @@ function enterRoom(id,instant=false){
   const r=current; phase='entering';entryStart=performance.now();
   app.dataset.phase=phase;app.dataset.entering=id;app.classList.add('leaving');app.style.removeProperty('--entry-light');
   room.dataset.account=accountContext?.key||({orange:'sourcing',silver:'fp',red:'insurance',purple:'otoku'})[id];
-  $('room-art').src=accountContext?`assets/panel-${accountContext.artKey||accountContext.key}.webp`:`assets/${id}.webp`;$('room-art').alt=r.sub+'にいる'+r.name+'の案内役';$('room-art').style.objectPosition=r.focus;
+  if(storybookPresentation)$('room-art').removeAttribute('src');else $('room-art').src=accountContext?`assets/panel-${accountContext.artKey||accountContext.key}.webp`:`assets/${id}.webp`;$('room-art').alt=r.sub+'にいる'+r.name+'の案内役';$('room-art').style.objectPosition=r.focus;
   $('room-title').textContent=r.name;$('room-location').textContent=r.en;
   $('announcer').textContent=r.name+'へ移動しています';
   const duration=instant||settings.reduce?0:({quick:650,normal:1000,slow:1400}[settings.pace]);

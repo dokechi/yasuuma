@@ -1,0 +1,20 @@
+:root{--storybook-journey-ready:1}
+/* Illustrated paper, not another graphics context. Only the fresh decoration
+   turns; supplied manuscript/companion foregrounds remain a flat solid plane. */
+.storybook-journey{--page-paper:var(--sb-paper,#F7F8F2);--page-ink:var(--sb-ink,#173A35);--page-accent:var(--sb-coral,#F15F50);position:fixed;z-index:260;overflow:hidden;isolation:isolate;contain:layout paint style;background:var(--page-paper);perspective:1400px;perspective-origin:50% 50%;pointer-events:none!important}
+.storybook-journey[data-room=otoku]{--page-paper:var(--sb-paper,#F7F8F2);--page-accent:var(--sb-jade,#17B982)}
+.storybook-journey[data-room=rakuten]{--page-paper:var(--sb-paper,#F7F8F2);--page-accent:var(--sb-sun,#F5CF5D)}
+.storybook-journey[data-room=lottery]{--page-paper:var(--sb-paper,#F7F8F2);--page-accent:var(--sb-cobalt,#4D70E3)}
+.storybook-journey[data-room=sourcing]{--page-paper:var(--sb-paper,#F7F8F2);--page-accent:var(--sb-jade,#17B982)}
+.storybook-journey *{pointer-events:none!important}
+.storybook-journey-source,.storybook-journey-destination,.storybook-journey-flat-source,.storybook-journey-flat-destination,.storybook-journey-cover{position:absolute;inset:0;transform-style:preserve-3d}
+.storybook-journey-source,.storybook-journey-destination{background:var(--page-paper);backface-visibility:hidden}
+.storybook-journey-source{z-index:2}.storybook-journey-destination{z-index:1;visibility:hidden}
+.storybook-journey-source>*,.storybook-journey-destination>*,.storybook-journey-flat-source>*,.storybook-journey-flat-destination>*{position:absolute;inset:0}
+.storybook-journey-flat-source,.storybook-journey-flat-destination{z-index:3;transform:none;transform-style:flat;overflow:hidden}
+.storybook-journey-flat-destination{visibility:hidden}
+.storybook-journey-cover{z-index:4;transform-style:preserve-3d}
+.storybook-journey-fold{position:absolute;top:-1px;bottom:-1px;width:calc(33.3333333333% + 1px);background:var(--page-paper);background-image:linear-gradient(90deg,#173A3510,transparent 8%,transparent 93%,#173A350c);border-top:1px solid #173A3533;border-bottom:1px solid #173A3533;box-shadow:-3px 2px 7px #173A3518;backface-visibility:visible;transform:translateX(330%) rotateY(104deg)}
+.storybook-journey-fold:after{content:"";position:absolute;left:0;right:0;bottom:8px;height:2px;background:var(--page-accent);opacity:.55}
+.storybook-journey-edge{position:absolute;z-index:5;inset:0;border:1px solid #173A3555;box-shadow:inset 0 -3px #173A3515;opacity:0}
+@media(prefers-reduced-motion:reduce){.storybook-journey{display:none!important}}
