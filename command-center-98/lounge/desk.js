@@ -1,8 +1,8 @@
-import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261101.1-living';
-import {createConveniences} from './qol.js?v=20261101.1-living';
+import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261101.7-chusen1101';
+import {createConveniences} from './qol.js?v=20261101.7-chusen1101';
 import {resumeView,postingReadiness} from './qol-model.js?v=20261031.1-lottery';
 import {createNotebook,safeLink} from './notebook.js?v=20261031.1-lottery';
-import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261101.1-living';
+import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261101.7-chusen1101';
 
 export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{},onOpenRoom=()=>{},onLounge=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;

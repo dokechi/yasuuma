@@ -237,9 +237,9 @@
  
  async function insuranceDesk(key='insurance'){
  const lottery=key==='lottery',savings=['otoku','rakuten','lottery'].includes(key),rakuten=key==='rakuten';
- const box=e('dialog',undefined,'manual-operation-review');box.append(e('h2',lottery?'抽選｜@kousaka_san_':rakuten?'楽天犬｜@bonya0914':savings?'まだ安く買えるはず｜@thats_a_steal0601':'保険｜@sucker0508'));
+ const box=e('dialog',undefined,'manual-operation-review');box.append(e('h2',lottery?'抽選日記｜@chusen1101':rakuten?'楽天犬｜@bonya0914':savings?'まだ安く買えるはず｜@thats_a_steal0601':'保険｜@sucker0508'));
  const imageControllers=[];const close=e('button','閉じる');close.onclick=()=>{imageControllers.forEach(c=>c?.destroy());box.close();box.remove();};box.append(close);
- const archive=e('a',savings?'Threadsアカウントを開く':'過去原稿を開く');archive.href=lottery?'https://www.threads.com/@kousaka_san_':rakuten?'https://www.threads.com/@bonya0914':savings?'https://www.threads.com/@thats_a_steal0601':'https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit';archive.target='_blank';archive.rel='noopener';box.append(archive);
+ const archive=e('a',savings?'Threadsアカウントを開く':'過去原稿を開く');archive.href=lottery?'https://www.threads.com/@chusen1101':rakuten?'https://www.threads.com/@bonya0914':savings?'https://www.threads.com/@thats_a_steal0601':'https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit';archive.target='_blank';archive.rel='noopener';box.append(archive);
  const status=e('p','原稿を読み込んでいます…');box.append(status);doc.body.append(box);box.showModal();
  try{
  const u=new URL('https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-retro-api');u.searchParams.set('resource','task-events');u.searchParams.set('taskId',lottery?'lottery-threads-v1':rakuten?'rakuten-threads-v1':savings?'otoku-threads-v1':'insurance-threads-v1');u.searchParams.set('limit','100');

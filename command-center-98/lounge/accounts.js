@@ -3,7 +3,7 @@ export const publishingAccounts=Object.freeze([
  {key:'insurance',place:'kyun',name:'保険',handle:'@sucker0508',tone:'rose'},
  {key:'otoku',place:'otoku',name:'まだ安く買えるはず',handle:'@thats_a_steal0601',tone:'violet'},
  {key:'rakuten',place:'rakuten',name:'楽天犬',handle:'@bonya0914',tone:'amber'},
- {key:'lottery',place:'lottery',name:'抽選',handle:'@kousaka_san_',tone:'green',artKey:'planned-4'},
+ {key:'lottery',place:'lottery',name:'抽選日記',handle:'@chusen1101',tone:'green',artKey:'planned-4'},
  ...[5,6].map(n=>({key:'planned-'+n,name:'アカウント '+n,pending:true}))
 ]);
 export function draftsForAccount(rows,account){

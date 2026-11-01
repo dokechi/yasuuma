@@ -1,11 +1,11 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
 import {createMusicControls} from './music.js?v=20261030.8-integrated';
-import {createDesk} from './desk.js?v=20261101.1-living';
+import {createDesk} from './desk.js?v=20261101.7-chusen1101';
 import {createInteractionSound} from './interaction-sound.js?v=20261022.26-audio';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261101.1-living';
 const $ = (id) => document.getElementById(id);
 let accountContext=null;
-const accountRooms={kyun:{key:'insurance',name:'保険'},otoku:{key:'otoku',name:'まだ安く買えるはず'},rakuten:{key:'rakuten',name:'楽天犬'},lottery:{key:'lottery',name:'抽選',artKey:'planned-4'}};
+const accountRooms={kyun:{key:'insurance',name:'保険'},otoku:{key:'otoku',name:'まだ安く買えるはず'},rakuten:{key:'rakuten',name:'楽天犬'},lottery:{key:'lottery',name:'抽選日記',artKey:'planned-4'}};
 const app = $('app');
 const room = $('room');
 const reducedMedia = matchMedia('(prefers-reduced-motion: reduce)');
