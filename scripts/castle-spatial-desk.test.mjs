@@ -365,3 +365,12 @@ test('storybook paper preserves readable text, actionable controls, hidden state
   assert.equal(all.find(r => r.selectorText === 'body.storybook-atelier').style.getPropertyValue('--storybook-reader-ready'), '1');
   b.unchanged();
 });
+
+test('working facing-leaf dock borrows the exact shelf, mobile dialog returns it, account change/destroy restores owner',async t=>{
+ const b=setup(t),dock=b.doc.createElement('aside');dock.className='workbook-list';b.room.append(dock);const api=b.install({shelfDock:dock});
+ await b.enter('insurance');assert.equal(b.shelf.parentNode,dock);assert.equal(b.$('#desk-query'),b.nodes['desk-query']);b.$('#desk-query').value='一';b.$('#desk-list').scrollTop=31;
+ api.openShelf();assert.equal(b.shelf.closest('dialog').id,'spatial-shelf-dialog');api.closeShelf();await flush();assert.equal(b.shelf.parentNode,dock);assert.equal(b.$('#desk-query').value,'一');assert.equal(b.$('#desk-list').scrollTop,31);
+ await b.enter('lottery');assert.equal(b.shelf.parentNode,dock);api.destroy();assert.equal(b.desk.innerHTML,b.before);assert.equal(b.shelf.closest('#desk'),b.desk);b.unchanged();
+});
+test('invalid facing-leaf dock fails before moving existing owner controls',t=>{const b=setup(t),outside=b.doc.createElement('aside');assert.throws(()=>b.install({shelfDock:outside}),/Shelf dock/);assert.equal(b.desk.innerHTML,b.before);b.unchanged();});
+test('mounted work-first failure notice does not automatically cover usable cached paper with the legacy drawer',async t=>{const b=setup(t);b.doc.body.dataset.workbookReady='true';b.install();await b.enter('insurance');const paper=b.$('#desk'),work=b.$('.spatial-work');b.$('#desk-status').textContent='保存原稿の読取に失敗しました。保存分は利用できます。';await flush();assert.equal(work.open,false);assert.match(b.$('#desk-status').textContent,/失敗/);assert.equal(b.$('#desk'),paper);assert.equal(b.article.hidden,false);b.unchanged();delete b.doc.body.dataset.workbookReady;b.$('#desk-status').textContent='別の通信エラーです';await flush();assert.equal(work.open,true,'missing working navigation retains the legacy disclosure');});

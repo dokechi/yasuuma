@@ -2,7 +2,7 @@ name: Eight panel home regression
 on:
   pull_request:
     branches: [main]
-    paths: ['command-center-98/**', 'scripts/six-account-board*', 'scripts/eight-panel-dom.test.mjs', 'scripts/legacy-account-isolation.test.mjs', 'scripts/living-room.test.mjs', 'scripts/enterprise-atelier-browser.cjs', '.github/workflows/eight-panel-home.yml']
+    paths: ['scripts/storybook-workbench-entry*', 'scripts/storybook-archive-entry.cjs', 'command-center-98/**', 'scripts/six-account-board*', 'scripts/eight-panel-dom.test.mjs', 'scripts/legacy-account-isolation.test.mjs', 'scripts/living-room.test.mjs', 'scripts/enterprise-atelier-browser.cjs', '.github/workflows/eight-panel-home.yml']
 permissions:
   contents: read
 jobs:

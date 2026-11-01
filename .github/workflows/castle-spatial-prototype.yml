@@ -4,7 +4,7 @@ on:
     branches: ['codex/castle-spatial-prototype-20261031', 'codex/castle-immersive-journeys-20261031', 'codex/castle-living-tools-20261031']
   pull_request:
     branches: [main]
-    paths: ['command-center-98/**', 'scripts/castle-spatial*', 'scripts/castle-immersive*', 'scripts/castle-journey*', 'scripts/castle-foreground*', 'scripts/castle-living*', '.github/workflows/castle-spatial-prototype.yml']
+    paths: ['scripts/storybook-workbench-entry*', 'scripts/storybook-archive-entry.cjs', 'command-center-98/**', 'scripts/castle-spatial*', 'scripts/castle-immersive*', 'scripts/castle-journey*', 'scripts/castle-foreground*', 'scripts/castle-living*', '.github/workflows/castle-spatial-prototype.yml']
 permissions:
   contents: read
 jobs:

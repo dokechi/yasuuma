@@ -10,7 +10,7 @@ const flush=()=>new Promise(resolve=>setImmediate(resolve));
 const keys=['insurance','otoku','rakuten','lottery','sourcing'];
 
 function setup(t,{delayedBack=false,...options}={}) {
- const dom=new JSDOM('<!doctype html><body><button id="back">戻る</button><button id="town-search">検索</button><button id="town-later">あとで</button><button id="settings-open">設定</button><section class="account-board" data-view="tiles"><button class="board-primary">原稿一覧</button><button class="board-refresh">更新</button></section><article id="original-reader"><h2>既存の原稿</h2><p>保存された本文を変更しません。</p></article></body>',{url:'https://storybook.invalid/lounge/',pretendToBeVisual:true});
+ const dom=new JSDOM('<!doctype html><body><button id="back">戻る</button><button id="lounge-search">検索</button><button id="lounge-later">あとで</button><button id="settings-open">設定</button><section class="account-board" data-view="tiles"><button class="board-primary">原稿一覧</button><button class="board-refresh">更新</button></section><article id="original-reader"><h2>既存の原稿</h2><p>保存された本文を変更しません。</p></article></body>',{url:'https://storybook.invalid/lounge/',pretendToBeVisual:true});
  const win=dom.window,doc=win.document,host=doc.querySelector('.account-board'),subscribers=new Set(),instances=[];
  const calls={routes:[],travel:[],cancel:0,back:0,refresh:0,list:0,search:0,later:0,settings:0,fetch:0,storage:0};
  const destinations=Object.freeze([...publishingAccounts,{key:'sourcing',place:'shiire',name:'仕入れ',tone:'green'},{key:'reserve',name:'予備の持ち場',pending:true}].map(account=>Object.freeze({...account,status:account.pending?'未設定':account.key==='sourcing'?'管理画面へ':'原稿を確認'})));
@@ -22,7 +22,7 @@ function setup(t,{delayedBack=false,...options}={}) {
  host.querySelector('.board-primary').addEventListener('click',()=>{calls.list++;host.dataset.view=host.dataset.view==='list'?'tiles':'list';});
  host.querySelector('.board-refresh').addEventListener('click',()=>calls.refresh++);
  doc.getElementById('back').addEventListener('click',()=>{calls.back++;if(!delayedBack)show();});
- for(const [id,key]of [['town-search','search'],['town-later','later'],['settings-open','settings']])doc.getElementById(id).addEventListener('click',()=>calls[key]++);
+ for(const [id,key]of [['lounge-search','search'],['lounge-later','later'],['settings-open','settings']])doc.getElementById(id).addEventListener('click',()=>calls[key]++);
  win.fetch=()=>{calls.fetch++;throw Error('Unexpected transport');};
  win.Storage.prototype.setItem=function(){calls.storage++;throw Error('Unexpected persistence');};
  const mount=extra=>{const instance=mountStorybook({document:doc,board,onTravel:value=>calls.travel.push(value),onCancel:()=>calls.cancel++,...options,...extra});instances.push(instance);return instance;};

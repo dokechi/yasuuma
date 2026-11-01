@@ -16,7 +16,7 @@ jobs:
       - run: node --check scripts/storybook-browser.cjs
       - run: node command-center-98/app-loader.test.cjs
       - run: npm install --prefix "$RUNNER_TEMP/storybook-unit" --ignore-scripts --no-audit --no-fund jsdom@26.1.0 linkedom@0.18.13
-      - run: NODE_PATH="$RUNNER_TEMP/storybook-unit/node_modules" node --test scripts/storybook-*.test.mjs scripts/castle-spatial-desk.test.mjs scripts/castle-living-model.test.mjs scripts/castle-living-room.test.mjs scripts/eight-panel-dom.test.mjs
+      - run: NODE_PATH="$RUNNER_TEMP/storybook-unit/node_modules" node --test scripts/storybook-*.test.mjs scripts/storybook-workbench-entry.test.cjs scripts/castle-spatial-desk.test.mjs scripts/castle-living-model.test.mjs scripts/castle-living-room.test.mjs scripts/eight-panel-dom.test.mjs
   actual-default:
     name: Storybook default (${{ matrix.width }}x${{ matrix.height }})
     runs-on: ubuntu-latest
@@ -111,4 +111,47 @@ jobs:
         with:
           name: storybook-fallback-${{ matrix.width }}-${{ matrix.height }}
           path: artifacts/storybook-fallback/${{ matrix.width }}-${{ matrix.height }}
+          if-no-files-found: error
+
+  work-first:
+    name: Working first page (${{ matrix.width }}x${{ matrix.height }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {width: 320, height: 640}
+          - {width: 390, height: 900}
+          - {width: 800, height: 648}
+          - {width: 1440, height: 900}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --check scripts/storybook-work-first-browser.cjs && node --check scripts/storybook-working-motion-browser.cjs
+      - run: npm install --prefix "$RUNNER_TEMP/work-first" --ignore-scripts --no-audit --no-fund playwright-core@1.62.1 pngjs@7.0.0
+      - run: node "$RUNNER_TEMP/work-first/node_modules/playwright-core/cli.js" install --with-deps --no-shell chromium
+      - run: sudo apt-get update -qq && sudo apt-get install -y fonts-noto-cjk
+      - run: NODE_PATH="$RUNNER_TEMP/work-first/node_modules" node scripts/storybook-work-first-browser.cjs
+        env:
+          STORY_WIDTH: ${{ matrix.width }}
+          STORY_HEIGHT: ${{ matrix.height }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: storybook-work-first-${{ matrix.width }}-${{ matrix.height }}
+          path: artifacts/storybook-work-first/${{ matrix.width }}-${{ matrix.height }}
+          if-no-files-found: error
+      - run: NODE_PATH="$RUNNER_TEMP/work-first/node_modules" node scripts/storybook-working-motion-browser.cjs
+        if: ${{ !cancelled() }}
+        env:
+          STORY_WIDTH: ${{ matrix.width }}
+          STORY_HEIGHT: ${{ matrix.height }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: storybook-working-motion-${{ matrix.width }}-${{ matrix.height }}
+          path: artifacts/storybook-working-motion/${{ matrix.width }}-${{ matrix.height }}
           if-no-files-found: error

@@ -4,7 +4,7 @@ on:
     branches: ['codex/castle-arrival-court-20261031']
   pull_request:
     branches: [main]
-    paths: ['command-center-98/lounge/arrival-*', 'command-center-98/lounge/court-passage*', 'command-center-98/lounge/court-native-snapshot.js', 'command-center-98/lounge/index.html', 'command-center-98/lounge/spatial-atelier.js', 'command-center-98/castle-parent.js', 'command-center-98/lounge/vendor/three-r187/**', 'command-center-98/lounge/assets/*court*', 'scripts/castle-court*', 'scripts/arrival-passage.test.mjs', 'scripts/court-passage.test.mjs', 'scripts/court-native-snapshot.test.mjs', 'scripts/build-castle-court-vendor.mjs', 'scripts/arrival-art/**', '.github/workflows/castle-court-prototype.yml']
+    paths: ['scripts/storybook-workbench-entry*', 'scripts/storybook-archive-entry.cjs', 'command-center-98/lounge/arrival-*', 'command-center-98/lounge/court-passage*', 'command-center-98/lounge/court-native-snapshot.js', 'command-center-98/lounge/index.html', 'command-center-98/lounge/spatial-atelier.js', 'command-center-98/castle-parent.js', 'command-center-98/lounge/vendor/three-r187/**', 'command-center-98/lounge/assets/*court*', 'scripts/castle-court*', 'scripts/arrival-passage.test.mjs', 'scripts/court-passage.test.mjs', 'scripts/court-native-snapshot.test.mjs', 'scripts/build-castle-court-vendor.mjs', 'scripts/arrival-art/**', '.github/workflows/castle-court-prototype.yml']
 permissions:
   contents: read
 jobs:

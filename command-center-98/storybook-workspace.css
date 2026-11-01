@@ -175,3 +175,18 @@ body.storybook-host.lounge-workspace #mainWindow .ledger-month-tab.selected:is(:
    keyboard state; old dark-theme hover rules must not recolor this chapter. */
 body.storybook-host.lounge-workspace #mainWindow :is(button.push-button,.sourcing-tabs button):is(:hover,:focus-visible,:active){background:#F7F8F2!important;color:#173A35!important;border-color:#173A35!important}
 body.storybook-host.lounge-workspace #mainWindow :is(button.selected,.sourcing-tabs button.selected,button[aria-pressed='true']):is(:hover,:focus-visible,:active){background:#F5CF5D!important;color:#173A35!important;border-color:#173A35!important}
+/* The same five bookmarks remain reachable inside the native working chapter.
+   Existing utility buttons keep their handlers; on phone they share one strip
+   instead of adding another cover-sized header. */
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header .workbook-native-chapters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:0 0 12px;max-width:760px}
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header .workbook-native-chapters button{min-height:48px;min-width:44px;background:#F7F8F2;color:#173A35;border:1.5px solid #173A35;border-top:6px solid #AAF618;border-radius:4px 4px 0 0;padding:6px 8px;box-shadow:0 2px #173A35;white-space:nowrap}
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header .workbook-native-chapters button:nth-child(2){border-top-color:#63D9A5}body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header .workbook-native-chapters button:nth-child(3){border-top-color:#F4A7CB}body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header .workbook-native-chapters button:nth-child(4){border-top-color:#DFA4E1}body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header .workbook-native-chapters button:nth-child(5){border-top-color:#6DBDDD;background:#6DBDDD}
+@media(max-width:600px){
+ body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header{padding:10px;min-height:0}
+ body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header .workbook-native-chapters{display:grid;gap:4px;margin-bottom:10px;width:100%}
+ body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header .workbook-native-chapters button{min-width:0;min-height:44px;padding:5px 2px;font-size:12px}
+ body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header>nav:not(.workbook-native-chapters){display:flex;flex-direction:row;justify-content:flex-start;align-items:center;min-width:0;width:100%;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:6px;padding:2px 2px 6px;max-width:100%;scroll-padding-inline:2px;scrollbar-width:thin}
+ body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header>nav:not(.workbook-native-chapters)>div{display:contents}
+ body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header>nav:not(.workbook-native-chapters) button{flex:0 0 auto;white-space:nowrap;min-width:44px;min-height:44px;padding:7px 10px;font-size:12px}
+ body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header[data-story-art=ready] .lounge-workspace-caption{margin-top:7px;padding:4px 10px}
+}

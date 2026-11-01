@@ -1,6 +1,6 @@
 /* Only the original already-rendered sourcing illustration may accompany its
    bounded native workspace snapshot. No source moves, record reads or writes. */
-import {captureNativeWorkspace} from './court-native-snapshot.js?v=20261101.8-storybook';
+import {captureNativeWorkspace} from './court-native-snapshot.js?v=20261101.9-workbook';
 export function createStorybookNativeSnapshot({document:doc=globalThis.document,capture=captureNativeWorkspace,onReady=()=>{}}={}){
  const win=doc?.defaultView,header=doc?.getElementById('loungeWorkspaceHeader');if(!win||!header)return null;
  const expected=new URL('./lounge/assets/storybook-sourcing-actor-v1.webp',doc.baseURI).href;

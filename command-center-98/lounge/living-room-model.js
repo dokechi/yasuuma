@@ -1,9 +1,9 @@
 /* Read-only presentation of records already available to this browser.
    No requests, timers, writes, inferred inventory, or claims of remote posting. */
-import {publishingAccounts,draftsForAccount} from './accounts.js?v=20261101.8-storybook';
+import {publishingAccounts,draftsForAccount} from './accounts.js?v=20261101.9-workbook';
 import {groupDrafts,dayInJapan} from './notebook.js?v=20261031.1-lottery';
 import {seenRevision,currentPosted} from './qol-model.js?v=20261031.1-lottery';
-import {holdsActiveText} from './desk-model.js?v=20261101.8-storybook';
+import {holdsActiveText} from './desk-model.js?v=20261101.9-workbook';
 
 const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const validTime = value => Number.isFinite(value) && value > 0 && Number.isFinite(new Date(value).getTime());

@@ -26,8 +26,8 @@
     "./spatial-workspace.css?v=20261101.1-living",
     "./lounge-feedback.css?v=20261021.5-boot",
     "./overseas-profit-readiness.css?v=20261023.1-profit-route",
-    "./storybook-presentation.css?v=20261101.8-storybook",
-    "./storybook-workspace.css?v=20261101.8-storybook"
+    "./storybook-presentation.css?v=20261101.9-workbook",
+    "./storybook-workspace.css?v=20261101.9-workbook"
   ],
   "scripts": [
     "./sourcing-atomic-save.js?v=20261011.atomic2",
@@ -100,9 +100,9 @@
     "./rpg-workspaces.js?v=20261017.33-unified",
     "./rpg-daily-store.js?v=20261015.1",
     "./rpg-daily-desk.js?v=20261017.33-unified",
-    "./castle-parent.js?v=20261101.8-storybook",
-    "./castle-journey-host.js?v=20261101.1-living",
+    "./castle-parent.js?v=20261101.9-workbook",
+    "./castle-journey-host.js?v=20261101.9-workbook",
     "./lounge-workspace.js?v=20261021.8-hall",
-    "./storybook-workspace-art.js?v=20261101.8-storybook"
+    "./storybook-workspace-art.js?v=20261101.9-workbook"
   ]
 }

@@ -3,6 +3,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium}=require('playwright-core');
+const {openStorybookOverview,closeReaderWork,toggleLivingTools}=require('./storybook-workbench-entry.cjs');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'artifacts/castle-living');
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg'};
 const accounts=['insurance','otoku','rakuten','lottery'];
@@ -55,7 +56,7 @@ function probe(){
   const screenshot=async name=>{const filename=`${width}-${height}-${name}.png`;await page.screenshot({path:path.join(out,filename)});result.frames.push(filename);};
   await page.goto(origin+'/command-center-98/app-v130.html');
   await page.waitForFunction(()=>window.CCCastle?.unified&&!document.getElementById('ccCastleFrame').hidden);
-  const f=page.frameLocator('#ccCastleFrame');await f.locator('[data-story-instant=insurance]').waitFor();
+  const f=page.frameLocator('#ccCastleFrame');await openStorybookOverview(f);await f.locator('[data-story-instant=insurance]').waitFor();
   const cf=page.frames().find(frame=>frame.url().includes('/lounge/'));
   await cf.evaluate(async()=>{await document.fonts.ready;const source=document.querySelector('script[src^="app.js"]').src;window.__livingDesk=(await import(source)).getLivingDesk();});
   await cf.waitForFunction(()=>window.__livingDesk?.snapshot().complete===true&&window.__livingProbe.records?.drafts.length>0);
@@ -64,10 +65,10 @@ function probe(){
   const originalPayload=await cf.evaluate(()=>structuredClone(__livingProbe.records));
   const send=payload=>page.evaluate(payload=>document.getElementById('ccCastleFrame').contentWindow.postMessage({channel:'cc-castle-v1',...payload},location.origin),payload);
   const settle=()=>cf.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-  const waitReader=async key=>{await f.locator(`#room[data-account=${key}][data-spatial-desk=ready]`).waitFor();await f.locator('.living-toggle').waitFor();await f.locator('#draft-body').waitFor();await f.locator('#room[data-story-scene=ready]').waitFor();await f.locator('.spatial-desk-actor').evaluate(node=>node.decode());assert.equal(await f.locator(`.spatial-study-scene .story-paper-art[data-story-room=${key}]`).count(),1);assert.ok((await f.locator('.spatial-desk-actor').getAttribute('src')).endsWith('/storybook-'+key+'-actor-v1.webp'));await settle();};
+  const waitReader=async key=>{await f.locator(`#room[data-account=${key}][data-spatial-desk=ready]`).waitFor();await f.locator('[data-working-tools]').waitFor();await f.locator('#draft-body').waitFor();await f.locator('#room[data-story-scene=ready]').waitFor();await f.locator('.spatial-desk-actor').evaluate(node=>node.decode());assert.equal(await f.locator(`.spatial-study-scene .story-paper-art[data-story-room=${key}]`).count(),1);assert.ok((await f.locator('.spatial-desk-actor').getAttribute('src')).endsWith('/storybook-'+key+'-actor-v1.webp'));await settle();};
   const quick=async key=>{await f.locator(`[data-story-instant=${key}]`).click();await waitReader(key);};
-  const showTools=async()=>{await f.locator('.living-toggle').click();await f.locator('#room[data-living-view=tools]').waitFor();await f.locator('#living-workbench').waitFor();await settle();};
-  const closeTools=async()=>{await f.locator('.living-toggle').click();await f.locator('#room:not([data-living-view])').waitFor();await settle();};
+  const showTools=async()=>{await toggleLivingTools(f);await f.locator('#room[data-living-view=tools]').waitFor();await f.locator('#living-workbench').waitFor();await settle();};
+  const closeTools=async()=>{await toggleLivingTools(f);await f.locator('#room:not([data-living-view])').waitFor();await settle();};
   const currentIdentity=()=>cf.evaluate(()=>({room:document.getElementById('room').dataset.account,draft:__livingDesk.snapshot().rooms.find(r=>r.current)?.current,body:document.getElementById('draft-body').textContent,scroll:document.getElementById('desk-scroll').scrollTop}));
   await f.locator('.storybook[data-ready=true][data-story-scene=ready]').waitFor();await f.locator('.story-art-host .story-paper-art[data-story-room=insurance] .story-actor-image').evaluate(node=>node.decode());
   check('home marks only loaded source scope and leaves sourcing uncounted',(await roomState('insurance')).loadedCount===2&&(await roomState('sourcing')).loadedCount===null);
@@ -80,7 +81,7 @@ function probe(){
   await cf.evaluate(()=>{window.__paperIdentity=document.getElementById('desk');window.__bodyIdentity=document.getElementById('draft-body');document.getElementById('desk-scroll').scrollTop=150;});
   const before=await currentIdentity();
   await showTools();
-  const toolsGeometry=await f.locator('#living-workbench').evaluate(node=>({inert:document.getElementById('desk').inert,hidden:document.getElementById('desk').getAttribute('aria-hidden'),scroll:document.getElementById('desk-scroll').scrollTop,overflow:document.documentElement.scrollWidth>innerWidth,objects:[...node.querySelectorAll('[data-object]')].map(b=>({key:b.dataset.object,width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height,label:b.getAttribute('aria-label')})),toggle:(()=>{const r=document.querySelector('.living-toggle').getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height,width:r.width};})()}));
+  const toolsGeometry=await f.locator('#living-workbench').evaluate(node=>({inert:document.getElementById('desk').inert,hidden:document.getElementById('desk').getAttribute('aria-hidden'),scroll:document.getElementById('desk-scroll').scrollTop,overflow:document.documentElement.scrollWidth>innerWidth,objects:[...node.querySelectorAll('[data-object]')].map(b=>({key:b.dataset.object,width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height,label:b.getAttribute('aria-label')})),toggle:(()=>{const r=document.querySelector('[data-working-tools]').getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height,width:r.width};})()}));
   check('room objects keep hidden paper inert and preserve its scroll',toolsGeometry.inert&&toolsGeometry.hidden==='true'&&toolsGeometry.scroll===before.scroll,toolsGeometry);
   check('four useful objects have readable purpose and 44px targets',toolsGeometry.objects.length===4&&toolsGeometry.objects.every(object=>object.width>=44&&object.height>=44&&object.label?.length>5)&&!toolsGeometry.overflow,toolsGeometry.objects);
   check('instant return toggle remains in the actual host viewport',toolsGeometry.toggle.height>=44&&toolsGeometry.toggle.width>=44&&toolsGeometry.toggle.top>=0&&toolsGeometry.toggle.bottom<=height-52,toolsGeometry.toggle);
@@ -142,7 +143,7 @@ function probe(){
   check('incoming changed revision is held while exploring, not silently applied',(await currentIdentity()).body===before.body&&(await state()).provisional===true&&(await roomState('insurance')).totalCount===null);
   // The error drawer is intentionally disclosed by the existing reader. Close
   // it explicitly before selecting the room notice, as a person would.
-  if(await f.locator('.spatial-work[open]').count())await f.locator('.spatial-work>summary').click();
+  await closeReaderWork(page,f);
   await f.locator('[data-object=notice]').click();await f.locator('.living-apply-update').waitFor();
   check('notice identifies a held update and keeps cache scope explicit',/まだ置き換えていません/.test(await f.locator('.living-dialog-note').textContent())&&/未確認/.test(await f.locator('.living-dialog-note').textContent()));
   await f.locator('.living-apply-update').focus();
@@ -157,7 +158,7 @@ function probe(){
   check('updated copy belongs to the current source without posting',(await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n')===target.body&&(await roomState('insurance')).postedCount===0);
   // Each publishing account uses its own records and material/room identity.
   for(const key of ['otoku','rakuten','lottery']){
-   await showTools();await f.locator('.spatial-room-name').click();await f.locator(`.spatial-destination[data-destination=${key}]`).click();await waitReader(key);
+   await showTools();await f.locator(`[data-working-chapter=${key}]`).click();await waitReader(key);
    check(key+' direct switch resets tools and preserves account isolation',await f.locator('#living-workbench').isHidden()&&(await currentIdentity()).draft.source.account===key&&(await roomState(key)).favoriteCount===0);
    await showTools();await screenshot(key+'-tools');
    await f.locator('[data-object=desk]').click();await f.locator('#room:not([data-living-view])').waitFor();
@@ -169,12 +170,12 @@ function probe(){
   await showTools();await f.locator('[data-object=chest]').click();await page.keyboard.press('Escape');await closeTools();await showTools();await f.locator('[data-object=notice]').click();await page.keyboard.press('Escape');await closeTools();await settle();
   check('local objects and status summaries add no backend requests',await page.evaluate(()=>__livingRecords.requests.length)===requestsBefore,{requestsBefore,requestsAfter:await page.evaluate(()=>__livingRecords.requests.length)});
   // Same-room close/reopen does not carry a hidden dialog or stale view.
-  await showTools();await f.locator('#back').click();await f.locator('.account-board:not([hidden])').waitFor();await quick('lottery');
+  await showTools();await openStorybookOverview(f);await f.locator('.account-board:not([hidden])').waitFor();await quick('lottery');
   check('leaving tools and reopening the same room starts in the reader',await f.locator('#living-workbench').isHidden()&&await f.locator('#living-record-dialog[open]').count()===0&&!await f.locator('#desk').evaluate(node=>node.inert));
   if(width===390){
    // Capture normal-motion return contact for independent art review. The
    // source is the visible tools plane, not a hidden paper or blank room.
-   await f.locator('#back').click();await f.locator('.account-board:not([hidden])').waitFor();
+   await openStorybookOverview(f);await f.locator('.account-board:not([hidden])').waitFor();
    await page.emulateMedia({reducedMotion:'no-preference'});
    await f.locator('.story-tool').getByText('設定',{exact:true}).click();await f.locator('#settings[open]').waitFor();
    await f.locator('#reduce-setting').uncheck();await f.locator('#settings-close').click();
@@ -186,7 +187,7 @@ function probe(){
    await showTools();
    const materialProperties=['border-top','border-right','border-bottom','border-left','rotate','translate','scale'];
    const departureMaterials=await f.locator('.living-object-art').evaluateAll((nodes,properties)=>nodes.map(node=>properties.map(property=>getComputedStyle(node).getPropertyValue(property))),materialProperties);
-   await page.evaluate(()=>__livingProbe.freezeNext=true);await f.locator('#back').click();
+   await page.evaluate(()=>__livingProbe.freezeNext=true);await openStorybookOverview(f);
    await page.waitForFunction(()=>__livingProbe.held?.isConnected);
    await page.evaluate(()=>{for(const animation of __livingProbe.held.getAnimations({subtree:true})){animation.pause();animation.currentTime=0;}});
    await screenshot('tools-return-contact');
@@ -195,7 +196,7 @@ function probe(){
    check('return contact keeps every object border and independent material transform',JSON.stringify(capturedMaterials)===JSON.stringify(departureMaterials),{departureMaterials,capturedMaterials});
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('.storybook-journey'));await f.locator('.account-board:not([hidden])').waitFor();
    check('interrupted tools return leaves no overlay and keeps the selected room',await f.locator('[data-story-chapter=lottery]').getAttribute('aria-pressed')==='true'&&await f.locator('[data-story-instant=lottery]').getAttribute('aria-current')==='location'&&await cf.evaluate(()=>__storybook.snapshot().selected)==='lottery');
-  }else{await f.locator('#back').click();await f.locator('.account-board:not([hidden])').waitFor();}
+  }else{await openStorybookOverview(f);await f.locator('.account-board:not([hidden])').waitFor();}
   await f.locator('[data-story-instant=sourcing]').click();await page.locator('body.lounge-workspace #loungeWorkspaceHeader:not([hidden])').waitFor();
   check('native sourcing remains the existing immediate work surface',await page.locator('#mainWindow').getAttribute('data-cc-view')==='sourcing'&&await page.locator('#ccCastleFrame').isHidden());
   await page.locator('[data-lounge-home]').click();await f.locator('.account-board:not([hidden])').waitFor();
@@ -206,17 +207,18 @@ function probe(){
   if(width===390){
    // Losing only the optional read-only model must not block proven navigation,
    // manuscript copy, or the native source-preserving workshop route.
+   await f.locator('[data-story-instant=insurance]').click();await waitReader('insurance');
    await context.route('**/living-room-model.js*',route=>route.abort());
    await page.goto(origin+'/command-center-98/app-v130.html');
    await page.waitForFunction(()=>window.CCCastle?.unified&&!document.getElementById('ccCastleFrame').hidden);
-   const fallback=page.frameLocator('#ccCastleFrame');await fallback.locator('[data-story-instant=insurance]').waitFor();
+   const fallback=page.frameLocator('#ccCastleFrame');await openStorybookOverview(fallback);await fallback.locator('[data-story-instant=insurance]').waitFor();
    await fallback.locator('[data-story-instant=insurance]').click();
    await fallback.locator('#draft-body').filter({hasText:'insurance の合成原稿です。'}).waitFor();
    check('missing optional model leaves the original reader without living controls',await fallback.locator('.living-toggle').count()===0&&await fallback.locator('#desk-copy').isEnabled());
    await fallback.locator('#desk-copy').click();await fallback.locator('#desk-operation').getByText('本文をコピーしました。',{exact:true}).waitFor();
    check('missing optional model preserves exact manuscript copy',(await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n')===rows[0].payload.draft);
    await screenshot('optional-model-fallback');
-   await fallback.locator('#back').click();await fallback.locator('.account-board:not([hidden])').waitFor();
+   await openStorybookOverview(fallback);await fallback.locator('.account-board:not([hidden])').waitFor();
    await fallback.locator('[data-story-instant=sourcing]').click();await page.locator('body.lounge-workspace #loungeWorkspaceHeader:not([hidden])').waitFor();
    check('missing optional model preserves native sourcing',await page.locator('#mainWindow').getAttribute('data-cc-view')==='sourcing');
    check('optional model failure has no uncaught exception or unexpected transport',errors.length===0&&blocked.length===0,{errors,blocked});

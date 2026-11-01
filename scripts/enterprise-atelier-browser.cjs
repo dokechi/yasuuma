@@ -1,6 +1,7 @@
 /* Deterministic UI QA only: local fixture records, no production API or writes. */
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium}=require('playwright-core');
+const {openStorybookOverview,openReaderWork,toggleLivingTools}=require('./storybook-workbench-entry.cjs');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'artifacts/enterprise-atelier');
 const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http://localhost').pathname;if(pathname==='/fixture.html')return res.writeHead(200,{'Content-Type':'text/html'}).end('<style>body{margin:0}iframe{width:100vw;height:100dvh;border:0;display:block}</style><iframe src="/command-center-98/lounge/index.html"></iframe>');const file=path.join(root,pathname);if(!file.startsWith(root+path.sep))return res.writeHead(403).end();fs.readFile(file,(err,data)=>err?res.writeHead(404).end():res.writeHead(200,{'Content-Type':file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/octet-stream'}).end(data));});
 const rows=['insurance','otoku','rakuten','lottery'].flatMap((account,i)=>Array.from({length:8},(_,j)=>({id:account+j,place:account==='insurance'?'kyun':account,title:['保険を見直す前に、確認したいこと','少しでも安く買うための選び方','暮らしに合う楽天のお得情報','参加前に確かめたい抽選の条件'][i]+' '+(j+1),body:('保存された本文です。アカウントを取り違えず、内容を確認してからコピーできます。\n\n').repeat(8),kind:'投稿本文',checkedAt:'2026-10-30',source:{id:account+j,account},posting:{main:account+'本文'},createdAt:1,updatedAt:10-j})));
@@ -16,10 +17,10 @@ rows[8].posting={main:rows[8].body,reply:'条件と出典の補足です。保�
   await page.addInitScript(()=>{HTMLMediaElement.prototype.play=()=>Promise.resolve();Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>{window.__copied=text;}}});});
   await page.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());
   await page.goto(origin+'/fixture.html');const frame=page.frameLocator('iframe'),cf=page.frames().find(f=>f.url().includes('/lounge/'));
-  await frame.locator('[data-story-destination]').first().waitFor();
+  await openStorybookOverview(frame);await frame.locator('[data-story-destination]').first().waitFor();
   const send=data=>page.evaluate(data=>document.querySelector('iframe').contentWindow.postMessage({channel:'cc-castle-v1',...data},location.origin),data);
   const screenshot=name=>page.screenshot({path:path.join(out,`${width}-${height}-${name}.png`)});
-  const openWork=async()=>{if(!await frame.locator('.spatial-work').evaluate(n=>n.open))await frame.locator('.spatial-work > summary').click();};
+  const openWork=()=>openReaderWork(frame);
   const returnToBoard=async()=>{await openWork();await frame.locator('#desk-routes').getByRole('button',{name:'← 司令塔へ',exact:true}).click();await frame.locator('.account-board').waitFor();};
   const waitRoom=async account=>{
    await frame.locator('#room[data-account='+account+'][data-spatial-desk=ready][data-story-scene=ready]').waitFor();
@@ -76,13 +77,13 @@ rows[8].posting={main:rows[8].body,reply:'条件と出典の補足です。保�
   assert.equal(await frame.locator('#desk-scroll').evaluate(n=>n===document.activeElement),true);
   assert.ok(await frame.locator('#draft-body').evaluate(n=>{const title=document.getElementById('draft-title').getBoundingClientRect(),body=n.getBoundingClientRect();return title.top>=0&&body.top<innerHeight-80;}),'heading and first body line visible without blind page scroll');
   if(width<=700)await screenshot('reading');
-  await frame.locator('.spatial-shelf-open').click();await frame.locator('#spatial-shelf-dialog[open]').waitFor();
+  await toggleLivingTools(frame);await frame.locator('[data-object=shelf]').click();await frame.locator('#spatial-shelf-dialog[open]').waitFor();
   await frame.locator('#desk-query').fill('確認したいこと 2');
   assert.equal(await frame.locator('#desk-list .manuscript-card').count(),1);
   await frame.locator('#desk-query').fill('');
   await frame.getByRole('button',{name:'原稿棚を閉じる',exact:true}).click();
   await frame.locator('#spatial-shelf-dialog').waitFor({state:'hidden'});
-  assert.equal(await frame.locator('.spatial-shelf-open').evaluate(n=>n===document.activeElement),true);
+  assert.equal(await frame.locator('[data-object=shelf]').evaluate(n=>n===document.activeElement),true);await toggleLivingTools(frame);
   await frame.locator('#desk-copy').click();
   assert.equal(await cf.evaluate(()=>window.__copied),rows[0].body);
   await returnToBoard();assert.equal(await insurance.evaluate(n=>n===document.activeElement),true);

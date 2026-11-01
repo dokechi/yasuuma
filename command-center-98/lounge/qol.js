@@ -1,5 +1,5 @@
-import {createHallTools} from './hall-tools.js?v=20261101.8-storybook';
-import {placeNames} from './desk-model.js?v=20261101.8-storybook';
+import {createHallTools} from './hall-tools.js?v=20261101.9-workbook';
+import {placeNames} from './desk-model.js?v=20261101.9-workbook';
 import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261031.1-lottery';
 import {isLegacyPublishingDraft,postingAssets} from './notebook.js?v=20261031.1-lottery';
 
@@ -27,7 +27,7 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
   post.disabled=!current;later.disabled=!current;later.textContent=current&&items().some(x=>x.draft.id===current.id)?'あとで箱に保存済み':'あとで考える';post.hidden=!!current&&current.place==='shiire';
   if($('posting-dialog').open)renderPost();hall.refresh();
  }
- function update(d){current=d;hall.update(d);if(d){markSeen(d);}refresh();onChange();}
+ function update(d,{markSeen:acknowledged=true}={}){current=d;hall.update(d);if(d&&acknowledged){markSeen(d);}refresh();onChange();}
  function renderTray(){
   const rows=items(),list=$('later-list'),detail=$('later-detail');list.replaceChildren();detail.replaceChildren();$('later-empty').hidden=!!rows.length;$('later-undo').disabled=!notebook.canUndo();
   if(!rows.some(x=>x.draft.id===selectedLater))selectedLater=rows[0]?.draft.id||'';
@@ -67,5 +67,5 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
  $('install-close').addEventListener('click',()=>$('install-dialog').close());
  function installState(value){install=value||{};installButton.hidden=install.state==='standalone';installButton.textContent=install.state==='available'?'アプリとして追加':'ホーム画面に追加';if(install.state==='dismissed'){$('install-dialog').showModal();}if(install.state==='installed')installButton.hidden=true;}
  function nativeLater(value){if(!value||!roomForPlace[value.place]||typeof value.title!=='string')return;const d={id:'native-'+value.place+'-'+(['sourcing','watches','cards'].includes(value.native)?value.native:'sourcing'),place:value.place,title:value.title.slice(0,200),body:String(value.body||'この持ち場をあとで確認する。').slice(0,3000),kind:'持ち場のメモ',native:['sourcing','watches','cards'].includes(value.native)?value.native:'sourcing'};add(d);showTray(d.id);}
- refresh();return {update,status,refresh,showTray,installState,nativeLater,showSearch:hall.showSearch,workMarks:hall.marks};
+ refresh();return {update,acknowledge:()=>{if(current)markSeen(current);onChange();},status,refresh,showTray,installState,nativeLater,showSearch:hall.showSearch,workMarks:hall.marks};
 }

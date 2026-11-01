@@ -1,6 +1,6 @@
 /* Spatial publishing desks. No data requests, persistence, or source-record changes.
    The entry opts in with body.spatial-atelier and calls this installer. */
-import {publishingAccounts} from './accounts.js?v=20261101.8-storybook';
+import {publishingAccounts} from './accounts.js?v=20261101.9-workbook';
 
 // Observed rectangles from command-castle-cutaway-v1-zones.json. The same
 // master artwork underlies the overview and these four publishing rooms.
@@ -12,13 +12,14 @@ const rooms = Object.freeze({
 });
 const installations = new WeakMap();
 
-export function installSpatialDesk({document: doc = globalThis.document, openRoom, roomScenes = {}, roomPresentation = {}} = {}) {
+export function installSpatialDesk({document: doc = globalThis.document, openRoom, roomScenes = {}, roomPresentation = {}, shelfDock = null} = {}) {
   if (installations.has(doc)) return installations.get(doc);
   const win = doc.defaultView;
   const room = doc.getElementById('room');
   const desk = doc.getElementById('desk');
   const shelf = room?.querySelector('.manuscript-shelf');
   if (!win || !room || !desk || !shelf) throw new Error('Spatial desk needs the existing lounge reader.');
+  if (shelfDock && (shelfDock.ownerDocument !== doc || !room.contains(shelfDock) || shelfDock.contains(desk))) throw new Error('Shelf dock must belong to the existing room.');
   const assetRoot = new URL('./assets/', import.meta.url);
   const masterURL = new URL('castle-cutaway-v1.webp', assetRoot).href;
   const assetURL = (value, label) => {
@@ -146,9 +147,10 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
     if (!active) return;
     metadata.hidden = !!article?.hidden;
     const message = status?.textContent || '';
-    // Preserve the existing reader's automatic failure disclosure even though
-    // its original status details now lives inside the secondary-tools drawer.
-    if (message !== lastStatus && /失敗|未確認|できません|エラー/.test(message)) work.open = true;
+    // Legacy/fallback readers keep their automatic failure disclosure. The
+    // mounted work-first header exposes a visible nonblocking warning instead;
+    // opening a drawer automatically must not cover usable cached text/actions.
+    if (doc.body.dataset.workbookReady!=='true' && message !== lastStatus && /失敗|未確認|できません|エラー/.test(message)) work.open = true;
     lastStatus = message;
   };
   const restoreShelf = () => {
@@ -369,6 +371,10 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
       for (const selector of ['.desk-toolbar', '#reader-qol', '.desk-footer', '#draft-kind', '#draft-meta', '#desk-connect']) {
         move(desk.querySelector(selector), ['#draft-kind', '#draft-meta'].includes(selector) ? metadata : workBody);
       }
+      // Working-first books keep the exact shelf visible on the facing leaf.
+      // The same move stack restores it before account changes or teardown;
+      // the existing mobile dialog may borrow it and return to this dock.
+      if (shelfDock) move(shelf, shelfDock);
       workBody.append(metadata);
       lastStatus = null;
       syncState();

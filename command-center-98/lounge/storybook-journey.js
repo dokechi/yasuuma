@@ -117,8 +117,8 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
   const inputs=[['sourceScene',true],['destinationScene',true],['sourceForeground',false],['foreground',false]],nodes=inputs.map(([key])=>spec[key]).filter(Boolean);
   if(!spec.sourceScene||nodes.length!==new Set(nodes).size||inputs.some(([key,decorative])=>spec[key]!=null&&!safeSnapshot(spec[key],decorative,native)))return null;
   const allowed=canMove();if(intent!==serial||!allowed||owners.has(doc))return null;
-  const duration=finite(spec.duration)?clamp(spec.duration,260,1100):620,sign=spec.direction==='out'?-1:1,uprightSource=!!spec.sourceForeground,uprightDestination=spec.uprightDestination===true||!!spec.foreground;
-  const layer=make('stage');layer.classList.add('storybook-journey');layer.dataset.room=spec.room;layer.dataset.direction=spec.direction;layer.dataset.phase='press';layer.inert=true;layer.setAttribute('aria-hidden','true');
+  const duration=finite(spec.duration)?clamp(spec.duration,260,1100):620,sign=spec.direction==='switch'&&spec.turnSign===-1?-1:spec.direction==='out'?-1:1,uprightSource=!!spec.sourceForeground,uprightDestination=spec.uprightDestination===true||!!spec.foreground;
+  const layer=make('stage');layer.classList.add('storybook-journey');layer.dataset.room=spec.room;layer.dataset.direction=spec.direction;layer.dataset.turnSign=String(sign);layer.dataset.phase='press';layer.inert=true;layer.setAttribute('aria-hidden','true');
   Object.assign(layer.style,{left:surface.left+'px',top:surface.top+'px',width:surface.width+'px',height:surface.height+'px',pointerEvents:'none'});
   const source=make('source'),incoming=make('destination'),flatSource=make('flat-source'),flatDestination=make('flat-destination'),cover=make('cover'),edge=make('edge');
   source.style.transformOrigin=(sign===1?'0%':'100%')+' 50%';incoming.style.transformOrigin=(sign===1?'100%':'0%')+' 50%';

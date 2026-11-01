@@ -1,7 +1,7 @@
 /* A short-lived paper presentation around the existing account/reader owners.
    No routing, manuscript writes, live DOM moves, media, or saved preferences. */
-import {createStorybookJourney} from './storybook-journey.js?v=20261101.8-storybook';
-import {captureCastleForeground} from './castle-foreground.js?v=20261101.1-living';
+import {createStorybookJourney} from './storybook-journey.js?v=20261101.9-workbook';
+import {captureCastleForeground} from './castle-foreground.js?v=20261101.9-workbook';
 
 export const storybookPassageDuration=pace=>pace==='quick'?380:pace==='slow'?850:620;
 const installations=new WeakMap(),publishingRooms=new Set(['insurance','otoku','rakuten','lottery']);
@@ -14,7 +14,7 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
  if(!win||!panel||!scene?.element||!spatialDesk||!journey)throw Error('The existing book and reader must be mounted first.');
  let host=win,target=doc,frame=null;
  try{if(win.parent!==win){if(win.parent.location.origin!==win.location.origin)return null;host=win.parent;target=host.document;frame=win.frameElement;if(!frame||frame.contentDocument!==doc)return null;}}catch{return null;}
- let disposed=false,epoch=0,trip=null,departure=null,timer=0,raf=0,captureWait=null,wakeCapture=null,returnSurface=null,rafOwner=win,previousHidden=panel.hidden;
+ let disposed=false,epoch=0,trip=null,departure=null,timer=0,raf=0,captureWait=null,wakeCapture=null,returnSurface=null,rafOwner=win,previousHidden=panel.hidden,workCapture=null;
  const listeners=[];
  const listen=(node,type,fn,options)=>{node.addEventListener(type,fn,options);listeners.push(()=>node.removeEventListener(type,fn,options));};
  const reduced=()=>!!doc.querySelector('#reduce-setting')?.checked||win.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
@@ -104,12 +104,17 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
   const roomNode=doc.querySelector('#room'),artHost=home?scene.element.querySelector('.story-art-host'):roomNode?.querySelector('.spatial-study-scene');
   const live=artHost?.querySelector('.story-paper-art'),r=boxOf(live),container=boxOf(artHost);
   const intentionallyHidden=!home&&hiddenReaderIllustration(roomNode,artHost,live);
-  if(home&&live?.dataset.storyRoom&&live.dataset.storyRoom!==room)return null;
+  if(live?.dataset.storyRoom&&live.dataset.storyRoom!==room)return null;
   if(!intentionallyHidden&&(!r||!container||!imagesPainted(live)))return null;
   const page=rootPage(color(home?scene.element:roomNode)),book=home?bookAt():null;if(home&&!book)return null;
   if(book)page.append(book.node);else readerBookAt(roomNode,page);
   if(intentionallyHidden)return page;
   const art=freshArt(room,home,intent,live.dataset.storyLayout);if(!art)return null;
+  // The authored prop identity stays fresh, but its painted pose may include
+  // the optional plant/paper breeze. Freeze that exact local pose before adding
+  // the separate page hinge; never restart a neutral pose at contact.
+  const liveProps=[...live.querySelectorAll('.story-prop[data-prop]')];
+  if(liveProps.length){const freshProps=[...art.querySelectorAll('.story-prop[data-prop]')],seen=new Set();for(const prop of freshProps){const key=prop.dataset.prop,matches=liveProps.filter(node=>node.dataset.prop===key);if(seen.has(key)||matches.length!==1)return null;seen.add(key);const painted=win.getComputedStyle(matches[0]);for(const property of ['transform','translate','rotate','scale','transform-origin','opacity']){const value=painted.getPropertyValue(property);if(value)prop.style.setProperty(property,value);}prop.style.animation='none';prop.style.transition='none';}}
   const position=target.createElement('div');position.className='story-passage-art-position';
   // Geometry is child-viewport relative; the full parent-frame surface supplies
   // its one translation. Preserve every prop's own transform and coordinates.
@@ -128,6 +133,49 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
   const foreground=captureForeground(doc,{document:target,offsetX:0,offsetY:0,surfaceTop:0});
   if(!foreground?.querySelector('[data-journey-part=paper]'))return null;
   const page=pageAt(room,bounds);return page?{scene:page,foreground}:null;
+ }
+ function workSurface(){
+  const frameBounds=surface(),room=doc.querySelector('#room'),r=boxOf(room),header=boxOf(doc.querySelector('.workbook-header'));
+  if(!frameBounds||!r||room.hidden)return null;
+  const left=Math.max(0,r.left),top=Math.max(0,r.top,header?header.top+header.height:0),right=Math.min(win.innerWidth,r.left+r.width),bottom=Math.min(win.innerHeight,r.top+r.height);
+  if(right<=left||bottom<=top)return null;
+  return {frame:frameBounds,local:{left,top,width:right-left,height:bottom-top},visual:{left:frameBounds.left+left,top:frameBounds.top+top,width:right-left,height:bottom-top}};
+ }
+ function captureWork(room,bounds,stage='destination'){
+  const started=host.performance.now();let failure=null;const record=reason=>{if(workCapture){workCapture.attempts++;workCapture.last={room,stage,reason,elapsed:host.performance.now()-started,failure};}return null;};
+  const liveRoom=doc.querySelector('#room'),dock=liveRoom?.querySelector('.workbook-list');
+  if(!bounds||!dock||liveRoom.hidden||liveRoom.dataset.account!==room||liveRoom.dataset.spatialDesk!=='ready'||liveRoom.dataset.livingView==='tools')return record('room-not-ready');
+  const extraRoots=[],dockStyle=win.getComputedStyle(dock),dockVisible=!dock.hidden&&dockStyle.display!=='none'&&dockStyle.visibility!=='hidden'&&!!boxOf(dock);
+  if(dockVisible){const shelf=dock.querySelector(':scope > .manuscript-shelf');if(!shelf||!boxOf(shelf))return record('shelf-not-ready');extraRoots.push({element:shelf,part:'list'});}
+  const foreground=captureForeground(doc,{document:target,offsetX:-bounds.local.left||0,offsetY:-bounds.local.top||0,surfaceTop:0,strict:true,extraRoots,onFailure:value=>{failure=value;}});
+  if(!foreground?.querySelector('[data-journey-part=paper]')||dockVisible&&!foreground.querySelector('[data-journey-part=list]'))return record('foreground');
+  const fresh=pageAt(room,bounds.frame);if(!fresh)return record('art-not-ready');
+  // Clip only the real work area. The permanent chapter header remains live;
+  // all fresh book/prop coordinates are shifted once by that measured origin.
+  const page=rootPage(color(liveRoom)),position=target.createElement('div');position.className='story-passage-work-surface';Object.assign(position.style,{position:'absolute',left:-bounds.local.left+'px',top:-bounds.local.top+'px',width:win.innerWidth+'px',height:win.innerHeight+'px',pointerEvents:'none'});position.append(fresh);page.append(position);
+  record('ready');return {scene:page,foreground};
+ }
+ function onTurn(intent={}){
+  workCapture={attempts:0,last:null,abort:null};
+  const serial=++epoch;stopCapture();trip=null;returnSurface=null;forget();journey.cancel();
+  const from=currentRoom();
+  if(serial!==epoch||disposed||intent.instant||!publishingRooms.has(from)||!publishingRooms.has(intent.room)||intent.room===from||intent.sourceRoom&&intent.sourceRoom!==from||!['next','previous'].includes(intent.direction)||!panel.hidden||reduced()||!closedDialog())return false;
+  try{
+   rafOwner=win;const bounds=workSurface(),source=captureWork(from,bounds,'source');if(!source||serial!==epoch)return false;
+   const duration=pace(),deadline=host.performance.now()+duration*.4;if(serial!==epoch)return false;
+   const token=journey.travel({room:intent.room,direction:'switch',turnSign:intent.direction==='previous'?-1:1,surface:bounds.visual,sourceScene:source.scene,sourceForeground:source.foreground,sourceDocument:doc,uprightDestination:true,duration});
+   if(!token||serial!==epoch){token?.cancel();return false;}
+   trip={room:intent.room,surface:bounds.frame,visualSurface:bounds.visual,hostSize:hostSize(),arrived:false,native:false,returning:false,turn:true,token};const saved=trip;let captured=false,initialLayoutRetry=true;
+   const settle=()=>{
+    if(serial!==epoch||trip!==saved||disposed||captured)return;
+    try{const state=journey.state(),next=workSurface();if(!state.active||!sameBox(bounds.frame,next?.frame)||!sameBox(bounds.visual,next?.visual)||reduced()||!closedDialog()||host.performance.now()>=deadline||state.progress>=.4){workCapture.abort=!state.active?'inactive':!sameBox(bounds.frame,next?.frame)||!sameBox(bounds.visual,next?.visual)?'surface':reduced()?'reduced':!closedDialog()?'dialog':'deadline-before';cancel();return;}
+     if(currentRoom()===saved.room){const visual=captureWork(saved.room,next);if(visual){if(serial!==epoch||trip!==saved)return;if(host.performance.now()>=deadline||journey.state().progress>=.4){workCapture.abort='deadline-after';cancel();return;}if(token.setDestination(visual)){captured=true;stopCapture();}else{workCapture.abort='destination-rejected';cancel();}return;}}
+    }catch{if(serial===epoch)cancel();return;}
+    if(initialLayoutRetry){initialLayoutRetry=false;raf=win.requestAnimationFrame(settle);}
+   };
+   const room=doc.querySelector('#room'),wake=()=>host.queueMicrotask(settle);wakeCapture=wake;const readiness=new win.MutationObserver(wake);readiness.observe(room,{attributes:true,attributeFilter:['hidden','data-account','data-spatial-desk','data-story-scene','data-workbook-ready'],childList:true,subtree:true});room.addEventListener('load',wake,true);room.addEventListener('error',wake,true);
+   const expiry=host.setTimeout(()=>{if(serial===epoch&&trip===saved){workCapture.abort='deadline-timer';cancel();}},Math.max(0,deadline-host.performance.now()));captureWait=()=>{host.clearTimeout(expiry);readiness.disconnect();room.removeEventListener('load',wake,true);room.removeEventListener('error',wake,true);};win.queueMicrotask(()=>win.queueMicrotask(settle));return true;
+  }catch{if(serial===epoch)cancel();return false;}
  }
  function onTravel(intent={}){
   const serial=++epoch;stopCapture();trip=null;returnSurface=null;forget();journey.cancel();
@@ -192,6 +240,7 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
  const observer=new win.MutationObserver(onBoard);observer.observe(panel,{attributes:true,attributeFilter:['hidden','data-view']});
  listen(target,'storybook:journey-end',event=>{
   if(event.detail?.direction==='out')returnSurface=null;
+  if(event.detail?.direction==='switch'&&trip?.turn&&event.detail.room===trip.room){stopCapture();trip=null;forget();return;}
   if(event.detail?.direction!=='in'||!trip||event.detail.room!==trip.room)return;
   if(event.detail.cancelled){stopCapture();trip=null;forget();}else{trip.token=null;trip.arrived=trip.room!=='sourcing'||trip.native;}
  });
@@ -222,8 +271,11 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
   listen(win,'message',event=>{if(event.source===host&&event.origin===win.location.origin&&event.data?.channel==='cc-castle-v1'&&['search-open','later-context','reading-settings'].includes(event.data.type))cancel();});
  }
 
+ // Local tools can stop a live cosmetic without erasing an already completed
+ // cover entry. A later Back must snapshot the current tools/text, not replay it.
+ function interrupt(){if(disposed)return false;if(journey.state().active||departure||trip&&!trip.arrived){cancel();return true;}return false;}
  function destroy(){if(disposed)return;disposed=true;cancel();observer.disconnect();unsubscribe?.();for(const off of listeners.splice(0))off();journey.destroy();}
- return {onTravel,cancel,destroy,snapshot:()=>({active:!!journey.state().active,returnRoom:trip?.room||null,pendingReturn:!!departure,phase:journey.state().phase||'idle'})};
+ return {onTravel,onTurn,cancel,interrupt,destroy,snapshot:()=>({active:!!journey.state().active,returnRoom:trip?.turn?null:trip?.room||null,pendingReturn:!!departure,phase:journey.state().phase||'idle',workCapture:workCapture?{...workCapture,last:workCapture.last?{...workCapture.last,failure:workCapture.last.failure?{...workCapture.last.failure}:null}:null}:null})};
 }
 
 export function installStorybookPassage(options={}){
@@ -237,7 +289,7 @@ export function installStorybookPassage(options={}){
  const mountNative=()=>{if(nativeDisposed||nativeFailed||nativeSnapshot||!nativeFactory||!target.getElementById('loungeWorkspaceHeader'))return !!nativeSnapshot;try{nativeSnapshot=nativeFactory({document:target,onReady:()=>target.dispatchEvent(new host.CustomEvent('storybook:native-snapshot-ready'))});}catch{nativeFailed=true;}if(nativeSnapshot||nativeFailed)stopNativeWait();return !!nativeSnapshot;};
  const firstNative=()=>mountNative();if(target!==doc)target.addEventListener('cc:castle-native',firstNative,{once:true});
  const nativeVisible=()=>{const frame=win.frameElement,main=target.getElementById('mainWindow'),header=target.getElementById('loungeWorkspaceHeader');if(!frame?.isConnected||frame.contentDocument!==doc||!frame.hidden||target.hidden||!target.body.classList.contains('lounge-workspace')||main?.dataset.ccView!=='sourcing'||!header?.isConnected||header.hidden||!main.contains(header))return false;return [main,header].every(node=>{const r=node.getBoundingClientRect(),style=host.getComputedStyle(node);return r.width>0&&r.height>0&&style.display!=='none'&&style.visibility!=='hidden';});};
- if(target!==doc)import('./storybook-native-snapshot.js?v=20261101.8-storybook').then(({createStorybookNativeSnapshot})=>{
+ if(target!==doc)import('./storybook-native-snapshot.js?v=20261101.9-workbook').then(({createStorybookNativeSnapshot})=>{
   if(nativeDisposed)return;nativeFactory=createStorybookNativeSnapshot;if(mountNative())return;
   // The parent loads its native header after creating the child frame. Observe
   // that real bounded bootstrap once; never poll, re-import, or await a route.
@@ -247,7 +299,7 @@ export function installStorybookPassage(options={}){
  let link=null,timer=0;
  // Loading a tiny optional parent stylesheet never postpones a work route.
  if(host.getComputedStyle(target.documentElement).getPropertyValue('--storybook-journey-ready').trim()!=='1'){
-  link=target.createElement('link');link.rel='stylesheet';link.href=new URL('./storybook-journey.css?v=20261101.8-storybook',import.meta.url).href;
+  link=target.createElement('link');link.rel='stylesheet';link.href=new URL('./storybook-journey.css?v=20261101.9-workbook',import.meta.url).href;
   const finish=failed=>{host.clearTimeout(timer);timer=0;if(failed){link?.remove();link=null;}};
   link.onload=()=>finish(false);link.onerror=()=>finish(true);timer=host.setTimeout(()=>finish(true),5000);target.head.append(link);
  }

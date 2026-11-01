@@ -1,7 +1,7 @@
 /* Optional architectural courtyard. Existing owners keep all records,
    routing and paper. Nothing here reads an API or changes source records. */
-import * as spatial from './spatial-atelier.js?v=20261101.8-storybook';
-import * as application from './app.js?v=20261101.8-storybook';
+import * as spatial from './spatial-atelier.js?v=20261101.9-workbook';
+import * as application from './app.js?v=20261101.9-workbook';
 
 const rooms=[
  {key:'insurance',short:'保険',name:'手紙の書斎'},
@@ -187,7 +187,7 @@ if(reduced()||lowQuality()){
    clearTimeout(loadTimer);ready=true;root.dataset.state='ready';root.hidden=true;sync();
    // Independently optional and never awaited by activation or a work route.
    // No native portal metadata means the established instant path remains.
-   if(['insurance','otoku','rakuten','lottery','sourcing'].some(key=>renderer.canPassage?.(key)))import('./arrival-passage.js?v=20261101.8-storybook').then(async({installArrivalPassage})=>{
+   if(['insurance','otoku','rakuten','lottery','sourcing'].some(key=>renderer.canPassage?.(key)))import('./arrival-passage.js?v=20261101.9-workbook').then(async({installArrivalPassage})=>{
     const adapter=await installArrivalPassage({document:doc,canvas,board,renderer,route:commitOpen,reduced,currentRoom:()=>doc.getElementById('room')?.dataset.account,canPresent:key=>!disposed&&!failed&&active&&!reduced()&&!lowQuality()&&!doc.hidden&&!hostPaused&&!doc.querySelector('dialog[open]')&&!!renderer?.canPassage(key)});
     if(disposed||failed)adapter?.destroy();else passageAdapter=adapter;
    }).catch(error=>console.warn('Court passage unavailable; instant work routes retained.',error));
