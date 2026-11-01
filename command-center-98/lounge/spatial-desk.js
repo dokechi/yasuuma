@@ -63,6 +63,8 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
     if (text) node.textContent = text;
     return node;
   };
+  const illustration = make('div', 'spatial-illustration-stage');
+  illustration.setAttribute('aria-hidden', 'true');
   const scene = make('div', 'spatial-study-scene');
   const surface = make('div', 'spatial-writing-surface');
   const actor = make('img', 'spatial-desk-actor');
@@ -318,7 +320,7 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
     restoreMoves();
     delete room.dataset.spatialDesk;
     delete room.dataset.spatialScene;
-    for (const node of [scene, surface, actor, nav, dialog, identity, picker]) node.remove();
+    for (const node of [scene, surface, actor, illustration, nav, dialog, identity, picker]) node.remove();
   };
   const sync = () => {
     if (destroyed) return;
@@ -357,7 +359,10 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
         if (button.dataset.destination === next) button.setAttribute('aria-current', 'page');
         else button.removeAttribute('aria-current');
       }
-      room.prepend(scene, surface, actor);
+      // Optional paper presentations share one normalized art stage. The live
+      // manuscript and every existing control stay outside decorative layers.
+      if (presentation) { illustration.append(scene, actor); room.prepend(illustration, surface); }
+      else room.prepend(scene, surface, actor);
       room.append(nav, dialog, picker);
       room.querySelector('.room-caption')?.append(identity);
       room.dataset.spatialDesk = 'ready';
@@ -373,7 +378,15 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
       prepareInterior(next);
     }
   };
-  const observer = new win.MutationObserver(() => { sync(); syncState(); });
+  const observer = new win.MutationObserver(() => {
+    try { sync(); syncState(); }
+    catch (error) {
+      // A room normally opens after installation. Late presentation failures
+      // need the same exact rollback as initial failures, not a half-moved desk.
+      api.destroy();
+      win.console?.warn('Reader presentation unavailable; original controls restored.', error);
+    }
+  });
   observer.observe(room, {attributes: true, attributeFilter: ['data-account', 'hidden']});
   observer.observe(doc.body, {attributes: true, attributeFilter: ['class']});
   if (article) observer.observe(article, {attributes: true, attributeFilter: ['hidden']});

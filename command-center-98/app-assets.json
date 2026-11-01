@@ -102,6 +102,7 @@
     "./rpg-daily-desk.js?v=20261017.33-unified",
     "./castle-parent.js?v=20261101.8-storybook",
     "./castle-journey-host.js?v=20261101.1-living",
-    "./lounge-workspace.js?v=20261021.8-hall"
+    "./lounge-workspace.js?v=20261021.8-hall",
+    "./storybook-workspace-art.js?v=20261101.8-storybook"
   ]
 }

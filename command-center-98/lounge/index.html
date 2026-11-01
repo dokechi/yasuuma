@@ -22,6 +22,31 @@
   <link rel="stylesheet" href="storybook-home.css?v=20261101.8-storybook">
   <link rel="stylesheet" href="storybook-reader.css?v=20261101.8-storybook">
   <link rel="stylesheet" href="storybook-journey.css?v=20261101.8-storybook">
+  <style id="storybook-critical">
+    /* Independent static safety leaf. It never claims enhancement readiness. */
+    body.storybook-atelier{--sb-ink:#173A35;--sb-paper:#F7F8F2;--sb-lime:#AAF618;--sb-gold:#FEB60A;background:#F7F8F2;color:#173A35}
+    body.storybook-atelier [hidden]{display:none!important}
+    body.storybook-atelier :is(#world,#town,#entry-wash,#labels,.door-threshold){display:none!important}
+    body.storybook-atelier .account-board:not(.storybook-mounted){background:#F7F8F2!important;color:#173A35;padding:18px!important;overflow:auto}
+    body.storybook-atelier .account-board:not(.storybook-mounted)>:is(.account-sky,.room-atmosphere,.room-foyer){display:none!important}
+    body.storybook-atelier .account-board:not(.storybook-mounted) :is(.account-board-heading,.account-board-status,.board-footer){color:#173A35;text-shadow:none;background:transparent}
+    body.storybook-atelier .account-board:not(.storybook-mounted) .account-board-heading :is(small,p){display:none}
+    body.storybook-atelier .account-board:not(.storybook-mounted) .account-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));height:auto;min-height:0;overflow:visible;gap:12px;padding:8px 2px 16px}
+    body.storybook-atelier .account-board:not(.storybook-mounted) .account-tile{display:flex;min-height:144px;height:auto;aspect-ratio:auto;padding:14px;border:1.5px solid #173A35;border-left:7px solid #FEB60A;border-radius:2px;background:#F7F8F2;color:#173A35;box-shadow:3px 4px 0 #173A3520;text-shadow:none}
+    body.storybook-atelier .account-board:not(.storybook-mounted) .account-tile:nth-child(even){border-left-color:#AAF618}
+    body.storybook-atelier .account-board:not(.storybook-mounted) .account-tile :is(img,.portal-frame,.portal-crest),body.storybook-atelier .account-board:not(.storybook-mounted) .account-tile::after{display:none}
+    body.storybook-atelier .account-board:not(.storybook-mounted) .account-tile-caption{position:static;display:flex;flex-direction:column;padding:0;gap:5px}
+    body.storybook-atelier .account-board:not(.storybook-mounted) .account-tile-caption :is(strong,small,span){color:#173A35;opacity:1;text-shadow:none;font:500 12px/1.6 system-ui,sans-serif}
+    body.storybook-atelier .account-board:not(.storybook-mounted) .account-tile-caption strong{font-size:16px;font-weight:750}
+    body.storybook-atelier .account-board:not(.storybook-mounted) button{min-height:44px;color:#173A35;font-family:system-ui,sans-serif}
+    body.storybook-atelier #room:not([data-spatial-desk=ready]){--desk-art-width:0px;background:#F7F8F2;color:#173A35;overflow:auto}
+    body.storybook-atelier #room:not([data-spatial-desk=ready]) :is(#room-art,.room-shade,.room-architecture,.room-caption){display:none}
+    body.storybook-atelier #room:not([data-spatial-desk=ready]) .reading-desk{left:8px;right:8px;top:64px;border:1.5px solid #173A35;border-left:7px solid #AAF618;background:#F7F8F2;color:#173A35}
+    body.storybook-atelier #room:not([data-spatial-desk=ready]) :is(.desk-toolbar,.manuscript-reader,.manuscript-shelf){background:#F7F8F2;color:#173A35}
+    body.storybook-atelier #room:not([data-spatial-desk=ready]) #draft-body{font-size:16px;line-height:1.85;color:#173A35}
+    body.storybook-atelier #room:not([data-spatial-desk=ready]) :is(button,input,select,summary){min-height:44px;font-size:14px}
+    @media(max-width:780px){body.storybook-atelier #room:not([data-spatial-desk=ready]) .reading-desk{margin-top:68px;inset:auto}}
+  </style>
 </head>
 <body class="spatial-atelier storybook-atelier">
   <main id="app" class="town-mode hybrid-hall manor-lounge board-home">

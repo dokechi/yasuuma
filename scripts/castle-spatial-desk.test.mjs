@@ -217,6 +217,30 @@ test('a partial initial mount rolls back moved nodes, listeners and registration
   replacement.destroy(); assert.equal(b.desk.innerHTML, b.before); b.unchanged();
 });
 
+test('a late observer mount failure restores the working reader and permits a clean reinstall', async t => {
+  const b = setup(t), warnings = [], errors = [];
+  b.win.console.warn = (...args) => warnings.push(args);
+  b.win.addEventListener('error', event => { errors.push(event.error); event.preventDefault(); });
+  b.install({roomPresentation: {insurance: {name: '保険の章'}}});
+  const append = b.win.Element.prototype.append, failure = new Error('late presentation mount failure');
+  b.win.Element.prototype.append = function (...nodes) {
+    if (this.className === 'spatial-work-body' && nodes.some(node => node.id === 'reader-qol')) throw failure;
+    return append.apply(this, nodes);
+  };
+  try { await b.enter('insurance'); }
+  finally { b.win.Element.prototype.append = append; }
+  assert.deepEqual(errors, [], 'an optional observer failure is handled, not an uncaught browser error');
+  assert.equal(warnings.length, 1); assert.equal(warnings[0][1], failure);
+  assert.equal(b.desk.innerHTML, b.before, 'the original toolbar, metadata and status return to their exact positions');
+  assert.equal(b.room.dataset.spatialDesk, undefined); assert.equal(b.$('.spatial-illustration-stage'), null);
+  assert.equal(b.$('.spatial-desk-nav'), null); assert.equal(b.$('.spatial-room-name'), null);
+  assert.ok(b.observers.every(observer => observer.disconnected));
+  b.nodes['desk-copy'].click(); assert.equal(b.calls.copy, 1); assert.equal(b.calls.copied, b.rows[0].body);
+  const replacement = b.install({roomPresentation: {insurance: {name: '保険の章'}}});
+  assert.equal(b.room.dataset.spatialDesk, 'ready'); replacement.destroy();
+  assert.equal(b.desk.innerHTML, b.before); b.unchanged();
+});
+
 test('scene configuration rejects remote/non-asset URLs and arbitrary CSS instead of loading them', t => {
   const b = setup(t);
   for (const url of ['https://untrusted.invalid/room.webp', '../index.html', './assets/../../private.webp', 'data:image/png;base64,AA']) {
@@ -268,6 +292,9 @@ test('explicit paper presentation never fetches legacy art and keeps four identi
     await b.enter(key);
     assert.equal(b.room.dataset.spatialScene, 'paper');
     assert.equal(b.$('.spatial-study-scene').style.backgroundImage, 'none');
+    assert.equal(b.$('.spatial-study-scene').parentElement, b.$('.spatial-illustration-stage'));
+    assert.equal(b.$('.spatial-desk-actor').parentElement, b.$('.spatial-illustration-stage'));
+    assert.equal(b.doc.querySelectorAll('.spatial-illustration-stage').length, 1);
     assert.equal(b.$('.spatial-study-scene').style.backgroundColor, 'rgb(236, 225, 233)');
     assert.ok(b.$('.spatial-desk-actor').src.endsWith('/storybook-' + key + '.webp'));
     assert.equal(b.$('.spatial-room-description').textContent, key + 'の章');
@@ -327,8 +354,12 @@ test('storybook paper preserves readable text, actionable controls, hidden state
   const rulesFor = suffix => all.filter(r => r.selectorText.endsWith(suffix));
   assert.ok(rulesFor(' #draft-body').every(r => Number.parseInt(r.style.getPropertyValue('font-size')) >= 16));
   assert.ok(rulesFor(' .reader-actions button').some(r => r.style.getPropertyValue('min-height') === '44px'));
-  assert.ok(rulesFor(' .reading-desk').some(r => r.style.getPropertyValue('border-left').includes('12px')));
-  assert.ok(all.some(r => r.style.getPropertyValue('--sb-reader-inset').startsWith('116px')));
+  assert.ok(rulesFor(' .reading-desk').some(r => r.style.getPropertyValue('border') === '0' && r.style.getPropertyValue('box-shadow') === 'none'), 'the manuscript is a leaf, not an independent card');
+  assert.ok(all.some(r => r.selectorText.endsWith("#room[data-spatial-desk='ready']::before") && r.style.getPropertyValue('background').includes('--sb-book-split')), 'one shared open-book plane holds both leaves');
+  assert.ok(all.some(r => r.style.getPropertyValue('--sb-reader-inset').startsWith('112px')));
+  assert.ok(rulesFor(' .spatial-illustration-stage').some(r => r.style.getPropertyValue('display') === 'none'), 'mobile omits the tiny decorative cameo');
+  assert.ok(rulesFor(' .living-toggle').some(r => r.style.getPropertyValue('width') === '76px' && r.style.getPropertyValue('white-space') === 'nowrap'), 'the two-character tool label remains horizontal');
+  assert.ok(rulesFor(' .spatial-desk-actor').some(r => r.style.getPropertyValue('left') === '-40%' && r.style.getPropertyValue('width') === '140%'), 'actor and page art use the same authored canvas coordinates');
   const hidden = all.find(r => r.selectorText === 'body.storybook-atelier [hidden]');
   assert.equal(hidden.style.getPropertyValue('display'), 'none'); assert.equal(hidden.style.getPropertyPriority('display'), 'important');
   assert.equal(all.find(r => r.selectorText === 'body.storybook-atelier').style.getPropertyValue('--storybook-reader-ready'), '1');

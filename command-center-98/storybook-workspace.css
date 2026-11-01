@@ -127,3 +127,11 @@ body.storybook-host .purchase-drill-window button { min-width: 44px; min-height:
 /* The persistent request shortcut is a paper margin, not a dark app toolbar. */
 body.storybook-host #requestProgressShortcut{background:#F7F8F2!important;border-bottom:1px solid #173A3538!important;color:#173A35!important;box-shadow:none!important}
 body.storybook-host #requestProgressOpen{background:#DCECC8!important;color:#173A35!important;border:1px solid #173A35!important;border-radius:3px!important;box-shadow:none!important;font-family:system-ui,sans-serif!important}
+/* A fresh paper stage belongs to this native chapter, never to the ledger DOM. */
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader[data-story-art=ready]{min-height:280px;background:linear-gradient(90deg,#EE8B54 0 50%,#6DBDDD 50%);border:1.5px solid #173A35;border-radius:5px 5px 16px 16px;padding:16px 20px 24px;box-shadow:0 4px #F7F8F2,0 5px #173A3560}
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader::before{display:none}
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader nav{position:relative;z-index:3}
+body.storybook-host.lounge-workspace #loungeWorkspaceHeader[data-story-art=ready] .lounge-workspace-caption{position:relative;z-index:2;max-width:55%;margin-top:28px;padding:12px;background:#F7F8F2;display:inline-block}
+body.storybook-host .story-workspace-art{position:absolute;right:4%;bottom:10px;width:240px;height:220px;pointer-events:none;overflow:hidden}
+body.storybook-host .story-workspace-art .story-paper-art{width:100%;height:100%;position:relative}
+@media(max-width:600px){body.storybook-host.lounge-workspace #loungeWorkspaceHeader[data-story-art=ready]{padding:12px;display:flex;flex-direction:column;min-height:0}body.storybook-host.lounge-workspace #loungeWorkspaceHeader[data-story-art=ready] .lounge-workspace-caption{max-width:none;margin-top:14px;align-self:flex-start}body.storybook-host .story-workspace-art{position:relative;right:auto;bottom:auto;align-self:center;width:min(100%,280px);height:230px;margin:8px 0 0}}

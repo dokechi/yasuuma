@@ -1,6 +1,7 @@
 /* Original working-storybook palette. Representative colors were studied from
    official reference imagery; these are not KOKUYO brand specifications. */
 :root {
+ --storybook-palette-ready:1;
  --sb-lime:#AAF618; --sb-gold:#FEB60A;
  --sb-ink:#173a35; --sb-paper:#f7f8f2; --sb-white:#fffef9;
  --sb-coral:#f15f50; --sb-orange:#ee8b54; --sb-sun:#f5cf5d;
