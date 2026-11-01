@@ -51,3 +51,7 @@ body{--arrival-court-ready:1}
  .arrival-court[data-overview=true] .arrival-detail{max-width:calc(100% - 32px);padding:10px 13px}
  .arrival-court[data-overview=true] .arrival-detail h2{font-size:18px}
 }
+
+/* Selected account information is a real opaque reading plane, never a ghost of
+   a marker underneath it. Its physical door remains available via the entry. */
+.arrival-detail{background:#f3f0e9f5}

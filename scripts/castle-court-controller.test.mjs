@@ -158,3 +158,17 @@ test('redundant owner view mutations while court is already active do not steal 
  dialog.close();await flush();const summary=h.doc.querySelector('.arrival-menu summary');assert.equal(h.doc.activeElement,summary);
  h.panel.dataset.view='rooms';await flush();assert.equal(h.doc.activeElement,summary);assert.equal(h.snapshot().active,true);
 });
+
+test('UI planes suppress only overlapping projected controls, preserve physical visibility, and hand off focus safely',async t=>{
+ const h=await setup(t);await h.finished;
+ const rect=(left=0,top=0,width=0,height=0)=>({left,top,right:left+width,bottom:top+height,width,height,x:left,y:top});
+ for(const node of h.doc.querySelectorAll('.arrival-identity,.arrival-utilities,.arrival-detail,.arrival-footer,.arrival-menu-items'))node.getBoundingClientRect=()=>rect();
+ const points=[{key:'insurance',x:180,y:220,visible:true},{key:'otoku',x:280,y:350,visible:true}];
+ h.init.onFrame({rooms:points});const target=h.doc.querySelector('[data-court-room=insurance]');assert.equal(target.hidden,false);
+ target.click();target.focus();h.doc.querySelector('.arrival-detail').getBoundingClientRect=()=>rect(160,200,80,80);h.init.onFrame({rooms:points});
+ let point=h.snapshot().projection.find(p=>p.key==='insurance');assert.equal(point.visible,true);assert.equal(point.uiOccluded,true);assert.equal(point.uiObstructions[0].name,'arrival-detail');assert.equal(target.hidden,true);assert.equal(h.doc.activeElement,h.doc.querySelector('.arrival-enter'));
+ h.doc.querySelector('.arrival-detail').getBoundingClientRect=()=>rect();h.init.onFrame({rooms:points});
+ point=h.snapshot().projection.find(p=>p.key==='insurance');assert.equal(point.visible,true);assert.equal(point.uiOccluded,false);assert.deepEqual(point.uiObstructions,[]);assert.equal(target.hidden,false);assert.equal(h.doc.activeElement,h.doc.querySelector('.arrival-enter'),'clearing a plane must not steal the replacement control focus');
+ const other=h.doc.querySelector('[data-court-room=otoku]');other.focus();h.doc.querySelector('.arrival-footer').getBoundingClientRect=()=>rect(260,330,70,70);h.init.onFrame({rooms:points});
+ assert.equal(other.hidden,true);assert.equal(h.doc.activeElement,h.doc.querySelector('[data-court-open=otoku]'));assert.equal(h.sourceUnchanged(),true);
+});

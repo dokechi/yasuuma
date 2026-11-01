@@ -63,14 +63,21 @@ async function settled(frame){await frame.waitForFunction(()=>{const value=windo
 async function capture(ctx,name){
  const file=`${ctx.result.label}-${name}.png`;await ctx.page.screenshot({path:path.join(out,file)});ctx.result.frames.push(file);
 }
-async function openHost(browser,origin,{width=390,height=900,label,fault=null,reducedMotion='no-preference'}={}){
+async function openHost(browser,origin,{width=390,height=900,label,fault=null,shadowOff=false,reducedMotion='no-preference'}={}){
  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,hasTouch:width<=800,reducedMotion,serviceWorkers:'block',permissions:['clipboard-read','clipboard-write']});
  const page=await context.newPage(),result={label:label||`${width}-${height}`,width,height,checks:[],frames:[],errors:[],blocked:[],expectedFaults:[]};results.push(result);
+ if(shadowOff){result.diagnosticOnly=true;result.sourceSubstitutions=[];}
  page.on('pageerror',error=>result.errors.push(error.message));
  page.on('console',message=>{if(message.type()==='warning'||message.type()==='error')(result.console||=[]).push(message.text());});
  await context.route('**/*',route=>{
   const request=route.request(),url=new URL(request.url());
   if(url.origin!==origin||!['GET','HEAD'].includes(request.method())){result.blocked.push({url:url.href,method:request.method()});return route.abort();}
+  if(shadowOff&&url.pathname.endsWith('/arrival-renderer.js')){
+   const original=fs.readFileSync(path.join(root,'command-center-98/lounge/arrival-renderer.js'),'utf8'),needle='renderer.shadowMap.enabled=true';
+   assert.equal(original.split(needle).length-1,1,'owned diagnostic substitution has one exact source target');
+   result.sourceSubstitutions.push({path:url.pathname,from:needle,to:'renderer.shadowMap.enabled=false'});
+   return route.fulfill({status:200,contentType:'text/javascript',body:original.replace(needle,'renderer.shadowMap.enabled=false')});
+  }
   if(fault==='invalid-model'&&url.pathname.endsWith('/arrival-court-v1.glb')){result.expectedFaults.push(url.pathname);return route.fulfill({status:200,contentType:'model/gltf-binary',body:Buffer.from('invalid synthetic GLB')});}
   if((fault==='model'&&url.pathname.endsWith('/arrival-court-v1.glb'))||(fault==='module'&&url.pathname.endsWith('/arrival-renderer.js'))){result.expectedFaults.push(url.pathname);return route.abort();}
   return route.continue();
@@ -185,18 +192,20 @@ async function normalCase(browser,origin,width,height){
   const movingKey=await f.locator('.arrival-target:not([hidden]):not(:disabled)').evaluateAll(nodes=>nodes.map(node=>node.dataset.courtRoom).find(key=>['insurance','otoku','rakuten','lottery'].includes(key)));
   check(result,'a visible publishing entrance can begin a real camera move',!!movingKey,{movingKey});
   await frame.evaluate(key=>{
-   window.__courtMotionProbe={record:null};
+   window.__courtMotionProbe={record:null};const initialFrame=window.__arrivalCourt.snapshot().renderer.frameCount;
    const observer=new MutationObserver(()=>{
-    const state=window.__arrivalCourt.snapshot();if(!state.renderer?.pendingFrame||state.renderer.selected!==key)return;
+    const state=window.__arrivalCourt.snapshot();if(!state.renderer?.pendingFrame||state.renderer.selected!==key||state.renderer.frameCount<=initialFrame)return;
     const root=document.querySelector('.arrival-court').getBoundingClientRect();
-    const targets=state.projection.map(point=>{const button=document.querySelector('[data-court-room="'+point.key+'"]'),rect=button.getBoundingClientRect(),hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);return {key:point.key,visible:!button.hidden,disabled:button.disabled,hit:hit?.closest('[data-court-room]')?.dataset.courtRoom||hit?.className||null,delta:Math.max(Math.abs(rect.left+rect.width/2-root.left-point.x),Math.abs(rect.top+rect.height/2-root.top-point.y))};});
-    window.__courtMotionProbe.record={pendingFrame:state.renderer.pendingFrame,selected:state.selected,camera:state.renderer.camera,targets};observer.disconnect();
-   });observer.observe(document.querySelector('.arrival-targets'),{subtree:true,attributes:true,attributeFilter:['style']});
+    const planes=[...document.querySelectorAll('.arrival-identity,.arrival-utilities,.arrival-detail,.arrival-footer,.arrival-menu[open] .arrival-menu-items')].map(node=>{const r=node.getBoundingClientRect();return {name:node.className,left:r.left-root.left,right:r.right-root.left,top:r.top-root.top,bottom:r.bottom-root.top,width:r.width,height:r.height};}).filter(r=>r.width>0&&r.height>0);
+    const targets=state.projection.map(point=>{const button=document.querySelector('[data-court-room="'+point.key+'"]'),rect=button.getBoundingClientRect(),hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);const overlaps=planes.filter(r=>point.x+22>r.left&&point.x-22<r.right&&point.y+22>r.top&&point.y-22<r.bottom),obstructions=point.uiObstructions||[];return {key:point.key,visible:!button.hidden,physicalVisible:point.visible,inSafeBounds:point.x>=22&&point.x<=root.width-22&&point.y>=80&&point.y<=root.height-114,uiOccluded:point.uiOccluded,uiReasonMeasured:point.uiOccluded===!!overlaps.length&&obstructions.length===overlaps.length&&obstructions.every(r=>overlaps.some(a=>a.name===r.name&&['left','right','top','bottom'].every(k=>Math.abs(a[k]-r[k])<.1))),disabled:button.disabled,center:{x:rect.left+rect.width/2,y:rect.top+rect.height/2},hit:hit?.closest('[data-court-room]')?.dataset.courtRoom||hit?.className||null,hitElement:hit?{tag:hit.tagName,id:hit.id,html:hit.outerHTML.slice(0,300)}:null,delta:Math.max(Math.abs(rect.left+rect.width/2-root.left-point.x),Math.abs(rect.top+rect.height/2-root.top-point.y))};});
+    window.__courtMotionProbe.record={pendingFrame:state.renderer.pendingFrame,initialFrame,frameCount:state.renderer.frameCount,selected:state.selected,camera:state.renderer.camera,targets};observer.disconnect();
+   });observer.observe(document.querySelector('.arrival-targets'),{subtree:true,attributes:true,attributeFilter:['style','hidden']});
   },movingKey);
   await f.locator('[data-court-room="'+movingKey+'"]').focus();await page.keyboard.press('Enter');
   await frame.waitForFunction(()=>window.__courtMotionProbe.record,null,{timeout:10_000});
   const moving=await frame.evaluate(()=>window.__courtMotionProbe.record);
-  check(result,'during real motion all painted entrance targets share the same camera projection',moving.pendingFrame&&moving.targets.length===8&&moving.targets.filter(target=>target.visible).length>0&&moving.targets.filter(target=>target.visible).every(target=>target.delta<.6),moving);
+  check(result,'during real motion all painted entrance targets share the same camera projection',moving.pendingFrame&&moving.targets.length===8&&moving.targets.some(target=>target.physicalVisible)&&moving.targets.filter(target=>target.visible).every(target=>target.delta<.6),moving);
+  check(result,'moving hidden targets have independently measured UI occlusion or physical bounds reasons',moving.targets.every(target=>target.uiReasonMeasured&&(target.visible?target.physicalVisible&&target.inSafeBounds&&!target.uiOccluded:!target.physicalVisible||!target.inSafeBounds||target.uiOccluded)),moving.targets);
   check(result,'during real motion visible active entrances remain the actual pointer targets',moving.targets.filter(target=>target.visible&&!target.disabled).every(target=>target.hit===target.key),moving.targets);
   const latestKey=movingKey==='insurance'?'otoku':'insurance';await f.locator('[data-court-open="'+latestKey+'"]').focus();await page.keyboard.press('Enter');await reader(ctx,latestKey);await capture(ctx,'interrupted-camera-reader');
   await back(ctx);await f.locator('.arrival-court[data-state=ready]').waitFor();await settled(frame);
@@ -206,8 +215,8 @@ async function normalCase(browser,origin,width,height){
    if(await f.locator('.arrival-overview').isVisible()){await f.locator('.arrival-overview').click();await settled(frame);}
    const focus=f.locator(`[data-court-room="${key}"]`).first();
    if(!await focus.isVisible()){
-    const hiddenTarget=await frame.evaluate(key=>{const state=window.__arrivalCourt.snapshot(),point=state.projection.find(point=>point.key===key),root=document.querySelector('.arrival-court');return {point,width:root.clientWidth,height:root.clientHeight};},key);
-    const p=hiddenTarget.point;check(result,key+' offscreen aperture does not receive a misleading visible hitbox',p&&(!p.visible||p.x<22||p.x>hiddenTarget.width-22||p.y<80||p.y>hiddenTarget.height-114),hiddenTarget);continue;
+    const hiddenTarget=await frame.evaluate(key=>{const state=window.__arrivalCourt.snapshot(),point=state.projection.find(point=>point.key===key),root=document.querySelector('.arrival-court');const origin=root.getBoundingClientRect(),overlaps=[...document.querySelectorAll('.arrival-identity,.arrival-utilities,.arrival-detail,.arrival-footer,.arrival-menu[open] .arrival-menu-items')].map(node=>{const r=node.getBoundingClientRect();return {name:node.className,left:r.left-origin.left,right:r.right-origin.left,top:r.top-origin.top,bottom:r.bottom-origin.top,width:r.width,height:r.height};}).filter(r=>r.width>0&&r.height>0&&point.x+22>r.left&&point.x-22<r.right&&point.y+22>r.top&&point.y-22<r.bottom),reasons=point.uiObstructions||[];return {point,width:root.clientWidth,height:root.clientHeight,uiReasonMeasured:point.uiOccluded===true&&overlaps.length>0&&reasons.length===overlaps.length&&reasons.every(r=>overlaps.some(a=>a.name===r.name&&['left','right','top','bottom'].every(k=>Math.abs(a[k]-r[k])<.1)))};},key);
+    const p=hiddenTarget.point;check(result,key+' offscreen aperture does not receive a misleading visible hitbox',p&&(!p.visible||p.x<22||p.x>hiddenTarget.width-22||p.y<80||p.y>hiddenTarget.height-114||hiddenTarget.uiReasonMeasured),hiddenTarget);continue;
    }
    await focus.click();await settled(frame);focusedCount++;
    const selected=await snapshot(frame);check(result,'camera focuses the requested visible '+key,selected.renderer.selected===key&&selected.projection.find(point=>point.key===key)?.visible===true,{selected:selected.selected,renderer:selected.renderer});
@@ -286,6 +295,24 @@ async function fallbackCase(browser,origin,fault){
  }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
 }
 
+async function shadowDiagnostic(browser,origin,width,height){
+ let ctx;
+ try{
+  ctx=await openHost(browser,origin,{width,height,label:`${width}-${height}-shadow-off`,shadowOff:true});
+  await ctx.f.locator('.arrival-court[data-state=ready]').waitFor({timeout:30_000});await settled(ctx.frame);
+  const value=await snapshot(ctx.frame);
+  check(ctx.result,'diagnostic-only fresh context really rendered geometry with shadows disabled',value.renderer.webgl2===true&&value.renderer.frameCount>0&&value.renderer.shadowEnabled===false,value.renderer);
+  check(ctx.result,'diagnostic source substitution was exact and isolated',ctx.result.sourceSubstitutions.length===1,ctx.result.sourceSubstitutions);
+  await capture(ctx,'arrival');
+  if(width===1440){
+   await ctx.f.locator('[data-court-open=insurance]').click();await ctx.f.locator('#room[data-account=insurance][data-spatial-desk=ready]').waitFor();await back(ctx);await settled(ctx.frame);
+   check(ctx.result,'shadow diagnostic uses the actual insurance approach', (await snapshot(ctx.frame)).renderer.selected==='insurance');
+   await capture(ctx,'insurance-focus');
+  }
+  await unchanged(ctx);console.log(`PASS ${ctx.result.label}: isolated shadow diagnostic, not the normal exact-head rendering gate.`);
+ }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
+}
+
 (async()=>{
  fs.mkdirSync(out,{recursive:true});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const origin='http://127.0.0.1:'+server.address().port;
@@ -300,6 +327,9 @@ async function fallbackCase(browser,origin,fault){
   for(const [width,height] of [[390,900],[320,640],[800,648],[1440,900]])await normalCase(browser,origin,width,height);
   for(const fault of ['model','invalid-model','module','context-loss'])await fallbackCase(browser,origin,fault);
   disabled=await chromium.launch({channel:'chromium',headless:true,args:['--disable-webgl']});await fallbackCase(disabled,origin,'no-webgl');
+  // Diagnostic-only A/B. The normal four widths and all fault cases above use
+  // unchanged exact-head source. No production flag, API, or asset is added.
+  await shadowDiagnostic(browser,origin,1440,900);await shadowDiagnostic(browser,origin,390,900);
  }finally{
   fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({environment,results,failures},null,2));
   await disabled?.close();await browser?.close();server.close();

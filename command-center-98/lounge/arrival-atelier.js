@@ -39,7 +39,7 @@ const settings=button('','音・演出',()=>{menu.open=false;panel.querySelector
 const classic=button('','いつもの城へ',()=>{menu.open=false;preferred=false;sync();launch.focus({preventScroll:true});});
 const admin=button('','ラウンジ・管理へ',()=>{menu.open=false;panel.querySelector('.board-lounge')?.click();});
 const sealed=element('p','arrival-sealed','西の閉鎖翼・東の閉鎖翼・小塔は未設定です。');
-menuItems.append(refresh,settings,classic,admin,sealed);menu.append(summary,menuItems);utilities.append(listButton,menu);header.append(identity,utilities);
+menuItems.append(refresh,settings,classic,admin,sealed);menu.append(summary,menuItems);menu.addEventListener('toggle',()=>{if(active&&projection.length)project({rooms:projection});});utilities.append(listButton,menu);header.append(identity,utilities);
 
 const targets=element('nav','arrival-targets');targets.setAttribute('aria-label','建築の入口を選ぶ');
 for(const room of rooms){
@@ -73,6 +73,7 @@ function renderCopy(){
  enter.hidden=!room||!!room.sealed;enter.textContent=room?room.short+'へ入る':'持ち場へ入る';all.hidden=overview;
  for(const [key,b]of buttons){b.dataset.selected=String(key===selected);b.setAttribute('aria-current',key===selected?'location':'false');const r=rooms.find(r=>r.key===key);b.setAttribute('aria-label',r.short+(r.sealed?'、未設定の閉鎖翼':key===selected&&!overview?'へ入る':'の入口を選ぶ'));}
  refresh.disabled=board.state.loading;refresh.textContent=board.state.loading?'保存原稿を確認中…':'保存原稿を更新';
+ if(active&&projection.length)project({rooms:projection});
 }
 function select(key){
  const room=rooms.find(r=>r.key===key);if(!room||room.sealed||!renderer||!active)return;
@@ -114,10 +115,21 @@ function fail(reason){
  console.warn('Arrival court kept the established castle.',reason);
 }
 function project(frame){
- projection=frame.rooms||[];
- const w=root.clientWidth,h=root.clientHeight;
- for(const room of projection){const b=buttons.get(room.key);if(!b)continue;b.hidden=!room.visible||room.x<22||room.x>w-22||room.y<80||room.y>h-114;if(!b.hidden){b.style.left=(room.x-22)+'px';b.style.top=(room.y-22)+'px';}}
+ projection=(frame.rooms||[]).map(room=>({...room}));
+ const w=root.clientWidth,h=root.clientHeight,origin=root.getBoundingClientRect();
+ const planes=[identity,utilities,detail,footer,...(menu.open?[menuItems]:[])].map(node=>{
+  const rect=node.getBoundingClientRect();return {name:node.className,left:rect.left-origin.left,top:rect.top-origin.top,right:rect.right-origin.left,bottom:rect.bottom-origin.top,width:rect.width,height:rect.height};
+ }).filter(rect=>rect.width>0&&rect.height>0);
+ for(const room of projection){
+  const b=buttons.get(room.key);if(!b)continue;
+  const blocked=planes.filter(rect=>room.x+22>rect.left&&room.x-22<rect.right&&room.y+22>rect.top&&room.y-22<rect.bottom);
+  room.uiOccluded=blocked.length>0;room.uiObstructions=blocked.map(rect=>({...rect}));
+  b.hidden=!room.visible||room.x<22||room.x>w-22||room.y<80||room.y>h-114||room.uiOccluded;
+  if(!b.hidden){b.style.left=(room.x-22)+'px';b.style.top=(room.y-22)+'px';}
+  else if(active&&doc.activeElement===b){const destination=selected===room.key&&!enter.hidden?enter:quick.querySelector('[data-court-open="'+room.key+'"]');destination?.focus({preventScroll:true});}
+ }
 }
+
 function pointerDown(event){if(!active||event.button!==0)return;pointer={id:event.pointerId,x:event.clientX,y:event.clientY,lastX:event.clientX,dragged:false,moved:false};}
 function pointerMove(event){if(!pointer||pointer.id!==event.pointerId||!active)return;const dx=event.clientX-pointer.x,dy=event.clientY-pointer.y;if(Math.hypot(dx,dy)>8)pointer.moved=true;if(!pointer.dragged&&Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)*1.4){pointer.dragged=true;canvas.setPointerCapture(event.pointerId);}if(pointer.dragged){renderer.nudge(event.clientX-pointer.lastX);event.preventDefault();}pointer.lastX=event.clientX;}
 function pointerUp(event){if(!pointer||pointer.id!==event.pointerId)return;const old=pointer;pointer=null;if(canvas.hasPointerCapture?.(event.pointerId))canvas.releasePointerCapture(event.pointerId);if(old.dragged||old.moved||Math.hypot(event.clientX-old.x,event.clientY-old.y)>8||!active)return;const rect=canvas.getBoundingClientRect(),key=renderer?.pick((event.clientX-rect.left)/rect.width*2-1,1-(event.clientY-rect.top)/rect.height*2);if(key)selected===key&&!overview?open(key,buttons.get(key)||enter):select(key);}
