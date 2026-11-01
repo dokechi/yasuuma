@@ -120,19 +120,20 @@ const server=http.createServer((req,res)=>{
   assert.match(await nativeActor.getAttribute('src'),/storybook-sourcing-actor-v1\.webp/);assert.equal(await nativeActor.evaluate(image=>image.complete&&image.naturalWidth>0),true);
   assert.equal(await nativeArt.isVisible(),width>600,'native illustration is visible on Fold/desktop and intentionally hidden on phones');
   assert.equal(await nativeActor.isVisible(),width>600,'actor follows the native illustration visibility contract');
-  // v167 wraps these saved sourcing fixtures in their original disclosure.
-  // Measure a real source title, not a generic caption or an empty-state label.
-  await page.locator('#sourcingBody .cc-item-summary > strong').filter({hasText:/^仕入れ候補 [1-3]$/}).first().waitFor();
+  // The existing native route opens purchases, not the candidate/hold tab.
+  // Measure its exact seeded purchase record without forcing a different view.
+  await page.locator('#sourcingBody .purchase-product > b').filter({hasText:/^検証用購入商品$/}).waitFor();
   const initialWork=await page.evaluate(()=>{
    const stage=document.querySelector('.story-workspace-art'),tabs=[...document.querySelectorAll('#sourcingTabs button[data-sourcing-sub]')].filter(n=>n.checkVisibility());
-   const tab=tabs[0],rect=tab?.getBoundingClientRect(),hit=rect&&document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
-   const information=[...document.querySelectorAll('#sourcingBody .cc-item-summary > strong')].filter(n=>n.checkVisibility()&&/^仕入れ候補 [1-3]$/.test(n.textContent.trim())).map(n=>({text:n.textContent.trim(),rect:n.getBoundingClientRect().toJSON()}));
-   return {stageVisible:!!stage?.checkVisibility(),decorative:stage?.inert&&stage?.getAttribute('aria-hidden')==='true',tab:{key:tab?.dataset.sourcingSub,rect:rect?.toJSON(),hit:hit===tab||!!tab?.contains(hit)},information,viewport:innerHeight,scrollY};
+   const selected=tabs.filter(n=>n.classList.contains('selected')),tab=selected.find(n=>n.dataset.sourcingSub==='purchases'),rect=tab?.getBoundingClientRect(),hit=rect&&document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+   const information=[...document.querySelectorAll('#ledgerProfitSummary .purchase-paid-line > span')].filter(n=>n.checkVisibility()&&n.textContent.trim()==='1注文 · 2点').map(n=>({text:n.textContent.trim(),rect:n.getBoundingClientRect().toJSON()}));
+   return {stageVisible:!!stage?.checkVisibility(),decorative:stage?.inert&&stage?.getAttribute('aria-hidden')==='true',selectedTabs:selected.map(n=>n.dataset.sourcingSub),tab:{key:tab?.dataset.sourcingSub,rect:rect?.toJSON(),hit:hit===tab||!!tab?.contains(hit)},information,viewport:innerHeight,scrollY};
   });
   assert.equal(initialWork.decorative,true,'the native illustration remains inert and out of the accessibility tree');
   assert.equal(initialWork.stageVisible,width>600);
+  assert.deepEqual(initialWork.selectedTabs,['purchases'],'instant entry keeps the canonical selected native purchase ledger');
   assert.ok(initialWork.tab.key&&initialWork.tab.rect?.width>=44&&initialWork.tab.rect.height>=44,'real native sourcing tab remains a 44px action: '+JSON.stringify(initialWork));
-  if(width<=600)assert.ok(initialWork.scrollY===0&&initialWork.tab.rect.top>=0&&initialWork.tab.rect.bottom<=initialWork.viewport&&initialWork.tab.hit&&initialWork.information.some(n=>n.rect.top<initialWork.viewport&&n.rect.bottom>0),'phone instant entry must expose an unobstructed work tab and real work information before scrolling: '+JSON.stringify(initialWork));
+  if(width<=600)assert.ok(initialWork.scrollY===0&&initialWork.tab.rect.top>=0&&initialWork.tab.rect.bottom<=initialWork.viewport&&initialWork.tab.rect.left>=0&&initialWork.tab.rect.right<=width&&initialWork.tab.hit&&initialWork.information.some(n=>n.rect.height>0&&n.rect.top>=0&&n.rect.bottom<=initialWork.viewport&&n.rect.left>=0&&n.rect.right<=width),'phone instant entry must expose the full unobstructed purchase tab and exact record-derived 1-order/2-unit summary before scrolling: '+JSON.stringify(initialWork));
   const geometry=await page.locator('#loungeWorkspaceHeader').evaluate(n=>({overflow:document.documentElement.scrollWidth>innerWidth,buttons:[...n.querySelectorAll('button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height,left:b.getBoundingClientRect().left,right:b.getBoundingClientRect().right})),background:getComputedStyle(document.body).backgroundImage,sceneCount:document.querySelectorAll('.story-workspace-art .story-paper-art[data-story-room=sourcing]').length,actor:document.querySelector('.story-workspace-art .story-actor-image')?.src}));
   assert.equal(geometry.overflow,false);assert.ok(geometry.buttons.every(b=>b.height>=44&&b.left>=0&&b.right<=width+1),JSON.stringify(geometry));assert.equal(geometry.sceneCount,1);assert.match(geometry.actor,/storybook-sourcing-actor-v1\.webp/);assert.doesNotMatch(geometry.background,/castle-interior|sourcing-desk-actor/);
   await page.screenshot({path:path.join(out,`${width}-${height}-sourcing.png`)});
