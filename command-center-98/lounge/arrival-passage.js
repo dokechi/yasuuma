@@ -21,7 +21,7 @@ export function createArrivalPassage({document:doc,canvas,board,renderer,passage
   let token=null;
   try{
    const bounds=surface();
-   if(!disposed&&!instant&&room==='insurance'&&canPresent()&&bounds){
+   if(!disposed&&!instant&&room==='insurance'&&canPresent(room)&&bounds){
     token=passage?.travel({room,direction:'in',renderer,canvas,surface:bounds});
     if(token&&intent===serial)trip={room,returnState:token.returnState};
    }
@@ -48,7 +48,7 @@ export function createArrivalPassage({document:doc,canvas,board,renderer,passage
   const intent=++serial,saved=trip,visual=departure;trip=null;departure=null;
   if(!saved)return;
   passage?.cancel();
-  if(intent!==serial||panel.dataset.view==='list'||board.state?.lastVisited!==saved.room||!canPresent()||visual?.room!==saved.room||!visual.foreground||!visual.roomBackdrop)return;
+  if(intent!==serial||panel.dataset.view==='list'||board.state?.lastVisited!==saved.room||!canPresent(saved.room)||visual?.room!==saved.room||!visual.foreground||!visual.roomBackdrop)return;
   const bounds=surface();if(!bounds)return;
   try{passage?.travel({room:saved.room,direction:'out',renderer,canvas,surface:bounds,returnState:saved.returnState,...(visual?.room===saved.room?{foreground:visual.foreground,roomBackdrop:visual.roomBackdrop}:{})});}catch{}
  }
@@ -60,6 +60,7 @@ export function createArrivalPassage({document:doc,canvas,board,renderer,passage
   beforeExit(event);
  };
  listen(doc,'keydown',escape,true);
+ try{if(win.parent!==win&&win.parent.location.origin===win.location.origin)listen(win.parent.document,'keydown',event=>{if(event.key==='Escape'&&passage?.state().active){event.preventDefault();event.stopImmediatePropagation();passage.cancel();}},true);}catch{}
  const unsubscribe=board.subscribe?.(()=>{
   if(trip&&board.state?.lastVisited!==trip.room){trip=null;departure=null;passage?.cancel();}
  });
@@ -69,4 +70,45 @@ export function createArrivalPassage({document:doc,canvas,board,renderer,passage
  listen(win,'pagehide',destroy,{once:true});
  function destroy(){if(disposed)return;disposed=true;clear();observer.disconnect();unsubscribe?.();for(const off of listeners.splice(0))off();passage?.destroy();}
  return {enter,cancel:clear,destroy,state:()=>({returnRoom:trip?.room||null,active:!!passage?.state().active})};
+}
+
+// A return needs the room that is actually on screen, not a second invented
+// interior or a live DOM move. Only its already-loaded decorative background and
+// the established bounded, inert foreground snapshot are retained briefly.
+export function captureArrivalRoom(source,{document:target,surface,captureForeground}={}){
+ const win=source?.defaultView,room=source?.querySelector('#room'),scene=room?.querySelector('.spatial-study-scene');
+ if(!win||!target||!surface||!scene||room.hidden||typeof captureForeground!=='function')return null;
+ const frame=win.frameElement?.getBoundingClientRect(),offsetX=(frame?.left||0)-surface.left,offsetY=(frame?.top||0)-surface.top;
+ const rect=room.getBoundingClientRect();if(!rect.width||!rect.height)return null;
+ const backdrop=target.createElement('div');backdrop.inert=true;backdrop.setAttribute('aria-hidden','true');
+ Object.assign(backdrop.style,{position:'absolute',left:rect.left+offsetX+'px',top:rect.top+offsetY+'px',width:rect.width+'px',height:rect.height+'px',overflow:'hidden',background:win.getComputedStyle(room).backgroundColor,pointerEvents:'none'});
+ const copyBackground=(style,node)=>{for(const key of ['background-color','background-image','background-position','background-size','background-repeat','background-origin','background-clip','opacity','filter'])node.style.setProperty(key,style.getPropertyValue(key));};
+ const art=target.createElement('div'),sceneRect=scene.getBoundingClientRect();
+ Object.assign(art.style,{position:'absolute',left:sceneRect.left-rect.left+'px',top:sceneRect.top-rect.top+'px',width:sceneRect.width+'px',height:sceneRect.height+'px',pointerEvents:'none'});copyBackground(win.getComputedStyle(scene),art);
+ const shade=target.createElement('div');Object.assign(shade.style,{position:'absolute',inset:'0',pointerEvents:'none'});copyBackground(win.getComputedStyle(scene,'::after'),shade);art.append(shade);backdrop.append(art);
+ const foreground=captureForeground(source,{document:target,offsetX,offsetY,surfaceTop:0});
+ return foreground?{foreground,roomBackdrop:backdrop}:null;
+}
+
+export async function installArrivalPassage(options={}){
+ const {document:doc,canvas,board,renderer,reduced=()=>false}=options,win=doc?.defaultView;
+ if(!win||!canvas||!board?.element)return null;
+ let target,host;
+ try{host=win.parent;target=host.document;if(host.location.origin!==win.location.origin)return null;}catch{return null;}
+ const [{createCourtPassage},{captureCastleForeground}]=await Promise.all([import('./court-passage.js?v=20261101.6-passage'),import('./castle-foreground.js?v=20261101.1-living')]);
+ if(host.getComputedStyle(target.documentElement).getPropertyValue('--court-passage-ready').trim()!=='1')await new Promise((resolve,reject)=>{
+  const link=target.createElement('link');link.rel='stylesheet';link.href=new URL('./court-passage.css?v=20261101.6-passage',import.meta.url).href;
+  const timer=host.setTimeout(()=>{link.remove();reject(Error('Passage style timeout'));},5000);
+  link.onload=()=>{host.clearTimeout(timer);resolve();};link.onerror=()=>{host.clearTimeout(timer);link.remove();reject(Error('Passage style unavailable'));};target.head.append(link);
+ });
+ if(host.getComputedStyle(target.documentElement).getPropertyValue('--court-passage-ready').trim()!=='1')return null;
+ const passage=createCourtPassage({document:target,reducedMotion:reduced});
+ const capture=()=>{
+  const frame=win.frameElement?.getBoundingClientRect();
+  // The canvas is back in its original hidden court while reading. Its rendered
+  // size is therefore the current iframe viewport, never a zero hidden rect.
+  const surface={left:frame?.left||0,top:frame?.top||0,width:frame?.width||win.innerWidth,height:frame?.height||win.innerHeight};
+  return captureArrivalRoom(doc,{document:target,surface,captureForeground:captureCastleForeground});
+ };
+ return createArrivalPassage({...options,renderer,passage,capture});
 }

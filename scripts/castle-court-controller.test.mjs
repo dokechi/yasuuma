@@ -11,11 +11,12 @@ const executable=original
  .replace(/^import \* as application from [^\n]+;\n/m,'')
  .replace(/^export function (activateCourt|getCourtState)\b/gm,'function $1')
  .replace(/import\('\.\/arrival-renderer\.js[^']*'\)/g,'__loadRenderer()')
+ .replace(/import\('\.\/arrival-passage\.js[^']*'\)/g,'__loadPassage()')
  .replaceAll('import.meta.url','__moduleURL');
 assert.notEqual(executable,original);
 assert.doesNotMatch(executable,/^import /m,'only the two owner namespace imports are replaced');
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
-const run=new AsyncFunction('window','document','matchMedia','navigator','MutationObserver','ResizeObserver','AbortController','getComputedStyle','spatial','application','__loadRenderer','__moduleURL','fetch','location',executable+'\nreturn {activateCourt,getCourtState};');
+const run=new AsyncFunction('window','document','matchMedia','navigator','MutationObserver','ResizeObserver','AbortController','getComputedStyle','spatial','application','__loadRenderer','__loadPassage','__moduleURL','fetch','location',executable+'\nreturn {activateCourt,getCourtState};');
 const flush=async()=>{await Promise.resolve();await new Promise(resolve=>setImmediate(resolve));};
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
 
@@ -38,15 +39,29 @@ async function setup(t,options={}){
  const board={element:panel,state,subscribe(fn){subscribers.add(fn);fn();return()=>subscribers.delete(fn);}};
  const scene={open(key,trigger,routeOptions){opened.push({key,trigger,options:routeOptions});state.lastVisited=key;for(const fn of subscribers)fn();panel.hidden=true;}};
  const renderer={resizeCalls:[],selectCalls:[],disposeCalls:0,resize(w,h){this.resizeCalls.push([w,h]);},select(key,opts){this.selectCalls.push({key,opts});graphics.selected=key;},home(){graphics.selected=null;},nudge(){},setActive(value){graphics.active=!!value;},pick(){return 'insurance';},diagnostics(){return {...graphics};},dispose(){this.disposeCalls++;graphics.disposed=true;graphics.active=false;}};
+ const passageCalls=[];let passageActive=false,passageImports=0;
+ if(options.nativePassage)renderer.canPassage=key=>key==='insurance';
+ const loadPassage=async()=>{passageImports++;if(options.passageFailure)throw Error('Synthetic optional passage failure');return {installArrivalPassage:async opts=>({enter(key,trigger,entryOptions){passageCalls.push({key,options:entryOptions});passageActive=!entryOptions.instant&&key==='insurance';opts.route(key,trigger);},state:()=>({active:passageActive,returnRoom:passageActive?'insurance':null}),cancel(){passageActive=false;},destroy(){passageActive=false;}})};};
  let imports=0,init=null;
  const load=async()=>{imports++;if(options.moduleFailure)throw Error('synthetic optional module failure');return {createCourtRenderer:async opts=>{init=opts;if(options.pending)await gate.promise;return renderer;}};};
  const transport=[];const fetch=win.fetch=(...args)=>{transport.push(args);throw Error('Controller must not issue network requests');};
  const spatial={getSpatialPresentation:()=>({board,scene})},application={getLivingDesk:()=>({snapshot:()=>stored,subscribe(fn){fn(stored);return()=>{};}})};
  if(options.focusOriginal)doc.querySelector('.castle-quick-open').focus();
- const finished=run(win,doc,()=>media,win.navigator,win.MutationObserver,ResizeObserver,win.AbortController,win.getComputedStyle.bind(win),spatial,application,load,'https://castle.invalid/lounge/arrival-atelier.js',fetch,win.location);
+ const finished=run(win,doc,()=>media,win.navigator,win.MutationObserver,ResizeObserver,win.AbortController,win.getComputedStyle.bind(win),spatial,application,load,loadPassage,'https://castle.invalid/lounge/arrival-atelier.js',fetch,win.location);
  await flush();
- return {win,doc,panel,originalChildren,finished,gate,renderer,graphics,opened,emitMedia,resizeObservers,ownerOpen:key=>scene.open(key,doc.querySelector('.castle-quick-open[data-room='+key+']'),{instant:true}),get imports(){return imports;},get init(){return init;},snapshot:()=>win.__arrivalCourt.snapshot(),sourceUnchanged:()=>JSON.stringify(stored)===sourceBefore&&transport.length===0&&win.localStorage.length===0,back:async()=>{panel.hidden=false;await flush();}};
+ return {win,doc,panel,originalChildren,finished,gate,renderer,graphics,opened,passageCalls,get passageImports(){return passageImports;},emitMedia,resizeObservers,ownerOpen:key=>scene.open(key,doc.querySelector('.castle-quick-open[data-room='+key+']'),{instant:true}),get imports(){return imports;},get init(){return init;},snapshot:()=>win.__arrivalCourt.snapshot(),sourceUnchanged:()=>JSON.stringify(stored)===sourceBefore&&transport.length===0&&win.localStorage.length===0,back:async()=>{panel.hidden=false;await flush();}};
 }
+
+test('native door entry commits immediately without prepainting a future camera; direct rail stays truly instant',async t=>{
+ const h=await setup(t,{nativePassage:true});await h.finished;await flush();assert.equal(h.passageImports,1);assert.equal(h.snapshot().passage.available,true);
+ h.doc.querySelector('[data-court-room=insurance]').click();const before=h.renderer.selectCalls.length;
+ h.doc.querySelector('.arrival-enter').click();assert.equal(h.opened.at(-1).key,'insurance');assert.deepEqual(h.passageCalls.at(-1),{key:'insurance',options:{}});assert.equal(h.renderer.selectCalls.length,before+1,'only canonical owner selection, no premature presentation select');
+ await h.back();h.doc.querySelector('[data-court-open=otoku]').click();assert.deepEqual(h.passageCalls.at(-1),{key:'otoku',options:{instant:true}});assert.equal(h.opened.at(-1).key,'otoku');assert.equal(h.sourceUnchanged(),true);
+});
+test('optional passage module failure retains ready courtyard and existing reader routing',async t=>{
+ const h=await setup(t,{nativePassage:true,passageFailure:true});await h.finished;await flush();assert.equal(h.snapshot().ready,true);assert.equal(h.snapshot().failed,false);assert.equal(h.snapshot().passage.available,false);
+ h.doc.querySelector('[data-court-open=insurance]').click();assert.equal(h.opened.at(-1).key,'insurance');assert.equal(h.sourceUnchanged(),true);
+});
 
 test('loading enhancement leaves the proven castle accessible; only successful first-frame contract isolates it',async t=>{
  const h=await setup(t,{pending:true});assert.equal(h.imports,1);assert.equal(h.snapshot().ready,false);

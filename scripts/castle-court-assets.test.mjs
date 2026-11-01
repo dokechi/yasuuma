@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
-import {inspectCourtGLB,courtRoomAtHit,disposeCourtResources} from '../command-center-98/lounge/arrival-camera.js';
+import {inspectCourtGLB,courtRoomAtHit,disposeCourtResources,prepareCourtPortal} from '../command-center-98/lounge/arrival-camera.js';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 // Asset-owner contract is intentionally explicit: no network or missing-asset skip.
@@ -102,7 +102,7 @@ test('triangle accounting includes repeated nodes and GPU instances',()=>{
  json.nodes[0].children=[0];assert.throws(()=>triangleCount(json),/cyclic/);
 });
 
-test('all five authored approaches hit their own real doorway before any roof or wall',async t=>{
+async function geometryScene(t){
  const bytes=fs.readFileSync(asset),{json,bin}=parseGLB(bytes);
  // Validate ORIGINAL embedded textures/budgets first. CPU geometry inspection
  // then removes only material map bindings in a detached JSON copy, so Node
@@ -116,6 +116,11 @@ test('all five authored approaches hit their own real doorway before any roof or
  const T=await import('../command-center-98/lounge/vendor/three-r187/court-three.js');
  const {scene}=await new T.GLTFLoader().parseAsync(cpu.buffer.slice(cpu.byteOffset,cpu.byteOffset+cpu.byteLength),'');t.after(()=>disposeCourtResources(scene));scene.updateMatrixWorld(true);
  for(const key of [...keys,'planned-5','planned-6','reserve']){const door=scene.getObjectByName('room-'+key)||scene.getObjectByName('closed-'+key);assert.ok(door,'physical destination '+key);door.traverse(node=>{if(node.isMesh)node.userData.courtRoom=key;});}
+ return {T,scene,bytes};
+}
+
+test('all five authored approaches hit their own real doorway before any roof or wall',async t=>{
+ const {T,scene,bytes}=await geometryScene(t);
  const results=[];
  for(const key of keys){
   const focus=scene.getObjectByName('focus-'+key),approach=scene.getObjectByName('approach-'+key);assert.ok(focus&&approach,'authored focus and approach '+key);
@@ -126,4 +131,46 @@ test('all five authored approaches hit their own real doorway before any roof or
  }
  assert.equal(crypto.createHash('sha256').update(fs.readFileSync(asset)).digest('hex'),crypto.createHash('sha256').update(bytes).digest('hex'),'CPU proof never changes the canonical GLB');
  console.log('COURT_APPROACH_RAYS '+JSON.stringify(results));
+});
+
+
+test('native insurance leaves physically seal the viewport and clear the crossing corridor',async t=>{
+ const {T,scene}=await geometryScene(t),portal=scene.getObjectByName('room-insurance'),spec=portal.userData.courtPortal;
+ assert.ok(spec,'native portal metadata exists');
+ assert.deepEqual(spec.hinges.map(hinge=>hinge.node),['hinge-insurance-left','hinge-insurance-right'],'exactly two native hinges');
+ assert.ok(scene.getObjectByName(spec.frame),'native arch frame exists');
+ const isDescendant=(node,parent)=>{for(let current=node;current;current=current.parent)if(current===parent)return true;return false;};
+ for(const hinge of spec.hinges){
+  const node=scene.getObjectByName(hinge.node),leaf=scene.getObjectByName(hinge.leaf),handle=scene.getObjectByName(hinge.handle);
+  assert.ok(node&&leaf&&handle&&isDescendant(node,portal)&&isDescendant(leaf,node)&&isDescendant(handle,node),'physical leaf and handle belong to their real hinge');
+  assert.ok(node.getWorldPosition(new T.Vector3()).distanceTo(new T.Vector3(...hinge.pivot))<=.001,'authored hinge pivot matches metadata within 1mm');
+  assert.ok(Math.abs(Math.abs(hinge.openRadians)-85*Math.PI/180)<1e-6,'authored leaf opens 85 degrees');
+ }
+ const ray=new T.Raycaster(),rect=spec.opaqueRect;let closedSamples=0;
+ for(let yi=0;yi<=20;yi++)for(let xi=0;xi<=24;xi++){
+  const x=rect.min[0]+(rect.max[0]-rect.min[0])*xi/24,y=rect.min[1]+(rect.max[1]-rect.min[1])*yi/20;
+  ray.set(new T.Vector3(x,y,rect.min[2]+1),new T.Vector3(0,0,-1));
+  assert.equal(courtRoomAtHit(ray.intersectObject(portal,true)),'insurance',`opaque safe rectangle has no hole at ${x},${y}`);closedSamples++;
+ }
+ assert.equal(closedSamples,525);
+ const seals=[];
+ for(const [width,height]of [[320,588],[390,848],[800,596],[1440,848],[3840,1080]]){
+  const plan=prepareCourtPortal(spec,width,height),camera=new T.PerspectiveCamera(plan.seal.fov,width/height,.1,120);
+  camera.position.fromArray(plan.seal.position);camera.lookAt(...plan.seal.target);camera.updateMatrixWorld();
+  for(const x of[-.999,0,.999])for(const y of[-.999,0,.999]){ray.setFromCamera(new T.Vector2(x,y),camera);assert.equal(courtRoomAtHit(ray.intersectObject(scene,true)),'insurance',`closed portal covers ${width}x${height} at ${x},${y}`);}
+  seals.push({width,height,coverage:plan.coverage});
+ }
+ for(const hinge of spec.hinges){
+  const node=scene.getObjectByName(hinge.node),inverse=node.getWorldQuaternion(node.quaternion.clone()).invert(),axis=new T.Vector3(...hinge.axis).applyQuaternion(inverse);
+  node.quaternion.multiply(node.quaternion.clone().setFromAxisAngle(axis,hinge.openRadians));
+ }
+ scene.updateMatrixWorld(true);
+ for(const hinge of spec.hinges)assert.ok(new T.Box3().setFromObject(scene.getObjectByName(hinge.node)).min.z>spec.crossing.position[2],'opened native leaf is physically behind the crossing eye');
+ const inside=new T.PerspectiveCamera(40,3.2,.1,120);inside.position.fromArray(spec.crossing.position);inside.lookAt(...spec.crossing.target);inside.updateMatrixWorld();let cleared=0;
+ for(let yi=0;yi<=20;yi++)for(let xi=0;xi<=20;xi++){
+  ray.setFromCamera(new T.Vector2(-1+xi/10,-1+yi/10),inside);
+  assert.equal(ray.intersectObject(portal,true).length,0,'no native frame or open leaf remains in front of the crossed camera');cleared++;
+ }
+ assert.equal(cleared,441);
+ console.log('COURT_NATIVE_PORTAL_GEOMETRY '+JSON.stringify({closedSamples,seals,crossingClearRays:cleared,shaderProof:false}));
 });

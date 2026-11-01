@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
-import {createArrivalPassage} from '../command-center-98/lounge/arrival-passage.js';
+import {createArrivalPassage,captureArrivalRoom} from '../command-center-98/lounge/arrival-passage.js';
 const require=createRequire(import.meta.url),{JSDOM}=require('jsdom');
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 function fixture(t,{available=true,begin=true,capture=true,routeError=false}={}){
@@ -29,3 +29,12 @@ test('Fold resize clears saved cosmetic geometry without mutating the selected r
 test('dialog Escape and list return never synthesize an unrelated room departure',async t=>{const h=fixture(t);h.adapter.enter('insurance');await flush();h.passage.cancel();const dialog=h.doc.createElement('dialog');dialog.open=true;h.doc.body.append(dialog);h.doc.dispatchEvent(new h.win.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert.equal(h.captured,0);dialog.remove();h.panel.dataset.view='list';await h.back();assert.equal(h.calls.length,1);});
 test('canonical route exception cancels the lease rather than stranding the canvas',t=>{const h=fixture(t,{routeError:true});assert.throws(()=>h.adapter.enter('insurance'),/owner/);assert.deepEqual(h.adapter.state(),{returnRoom:null,active:false});});
 test('a newer route from cancellation notification wins over stale Back cosmetics',async t=>{const h=fixture(t);h.adapter.enter('insurance');await flush();const cancel=h.passage.cancel;let newer=false;h.passage.cancel=()=>{cancel();if(!newer){newer=true;h.adapter.enter('otoku',null,{instant:true});}};await h.back();assert.equal(h.routes.at(-1).room,'otoku');assert.equal(h.calls.filter(x=>x.direction==='out').length,0);assert.equal(h.panel.hidden,true);});
+test('departure captures the already-rendered room background and precise parent-space foreground without moving live DOM',t=>{
+ const dom=new JSDOM('<!doctype html><body><section id="room" style="background-color:rgb(57,42,36)"><div class="spatial-study-scene" style="background-image:url(https://castle.test/room.webp);background-size:cover;background-position:center"></div><article>Existing text</article></section></body>',{url:'https://castle.test/lounge/'}),target=new JSDOM('<body></body>',{url:'https://castle.test/'});t.after(()=>{dom.window.close();target.window.close();});
+ const doc=dom.window.document,room=doc.querySelector('#room'),scene=doc.querySelector('.spatial-study-scene'),before=room.innerHTML;
+ room.getBoundingClientRect=scene.getBoundingClientRect=()=>({left:0,top:0,width:390,height:848});
+ const computed=dom.window.getComputedStyle.bind(dom.window);dom.window.getComputedStyle=(node,pseudo)=>pseudo?{getPropertyValue:key=>key==='background-image'?'linear-gradient(#241c2466, transparent)':''}:computed(node);
+ let supplied;const result=captureArrivalRoom(doc,{document:target.window.document,surface:{left:0,top:52,width:390,height:848},captureForeground(source,options){assert.equal(source,doc);supplied=options;return target.window.document.createElement('div');}});
+ assert.ok(result.foreground);assert.equal(result.roomBackdrop.isConnected,false);assert.equal(result.roomBackdrop.ownerDocument,target.window.document);assert.equal(result.roomBackdrop.inert,true);assert.equal(result.roomBackdrop.style.top,'-52px');assert.equal(supplied.offsetY,-52);assert.equal(supplied.surfaceTop,0);assert.match(result.roomBackdrop.firstElementChild.style.backgroundImage,/room.webp/);assert.equal(room.innerHTML,before);assert.equal(target.window.document.body.childElementCount,0);
+ room.hidden=true;assert.equal(captureArrivalRoom(doc,{document:target.window.document,surface:{},captureForeground:()=>null}),null);
+});

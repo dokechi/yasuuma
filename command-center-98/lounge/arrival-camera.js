@@ -1,7 +1,7 @@
 /* Pure geometry, bounded assets and demand scheduling for the optional court.
    No browser state, routes, data requests or global animation loop. */
 export const COURT_KEYS=Object.freeze(['insurance','otoku','rakuten','lottery','sourcing','planned-5','planned-6','reserve']);
-export const COURT_BUDGET=Object.freeze({bytes:2_000_000,triangles:60_000,materials:12,pixels:1_800_000,dpr:1.5,dimension:4096,textureSide:512,texels:1_000_000,images:4});
+export const COURT_BUDGET=Object.freeze({bytes:2_000_000,triangles:60_000,materials:12,groups:64,pixels:1_800_000,dpr:1.5,dimension:4096,textureSide:512,texels:1_000_000,images:4});
 export const COURT_ATMOSPHERE=Object.freeze({exposure:.85,hemisphere:.45,fill:.2,sun:2.2,environment:.25,shadowNormalBias:.012,fogDensity:.022,fogColor:'#586774',skyWidth:256,skyHeight:128});
 // An original, quiet latitude gradient. No asset fetch, time loop or custom PBR
 // shader: the standard Three equirectangular background follows the camera.
@@ -108,6 +108,29 @@ export function createPresentationLeases({snapshot,version=()=>0,valid=()=>true,
  }
  return {acquire,invalidate,active:()=>!!current,state:()=>current?{active:true,id:current.id,room:current.returnState.room,paintCount:current.paintCount,width:current.start.width,height:current.start.height}:{active:false,reason:lastReason},dispose(){if(disposed)return;disposed=true;serial++;close(current,{reason:'disposed',notify:true,resuming:false});}};
 }
+// The first native passage is deliberately a validated insurance-only slice.
+// Bounds describe a guaranteed opaque rectangle BELOW the arch, not its bbox.
+export function prepareCourtPortal(spec,width,height,near=.1){
+ const vector=v=>Array.isArray(v)&&v.length===3&&v.every(finite),same=(a,b)=>vector(a)&&a.every((v,i)=>Math.abs(v-b[i])<1e-6);
+ if(!spec||spec.version!==1||spec.units!=='meters'||spec.up!=='Y'||spec.axisSpace!=='world'||spec.room!=='insurance'||spec.frame!=='portal-frame-insurance'||spec.approach!=='approach-insurance')throw Error('Unsupported court portal');
+ const a=spec.aperture,r=spec.opaqueRect,hinges=spec.hinges;
+ if(!a||a.shape!=='arched'||!vector(a.center)||!same(a.normal,[0,0,1])||!same(a.right,[1,0,0])||!same(a.up,[0,1,0])||!finite(a.springY)||!r||!vector(r.min)||!vector(r.max)||r.min[0]>=r.max[0]||r.min[1]>=r.max[1]||Math.abs(r.min[2]-r.max[2])>1e-6||r.max[1]>=a.springY)throw Error('Portal requires an exact opaque seal rectangle');
+ if(!Array.isArray(hinges)||hinges.length!==2||!hinges.every((h,i)=>h.node==='hinge-insurance-'+(i?'right':'left')&&h.leaf==='leaf-insurance-'+(i?'right':'left')&&h.handle==='handle-insurance-'+(i?'right':'left')&&vector(h.pivot)&&same(h.axis,[0,1,0])&&finite(h.openRadians)&&Math.sign(h.openRadians)===(i?-1:1)&&Math.abs(h.openRadians)>=1&&Math.abs(h.openRadians)<=Math.PI/2))throw Error('Invalid native portal hinges');
+ if(!finite(width)||!finite(height)||width<=0||height<=0||!finite(near)||near<=0)throw Error('Invalid portal viewport');
+ const eye=[...a.center],fov=40,tan=Math.tan(fov*Math.PI/360),horizontal=Math.min(eye[0]-r.min[0],r.max[0]-eye[0]),vertical=Math.min(eye[1]-r.min[1],r.max[1]-eye[1]),front=r.min[2]-eye[2];
+ if(horizontal<=0||vertical<=0||front<-.1||front>.2||horizontal>5||vertical>5)throw Error('Portal eye is outside its opaque rectangle');
+ const distance=Math.min(1.1,front+.9*Math.min(horizontal/(tan*width/height),vertical/tan)),depth=distance-front;
+ if(depth<near*3)throw Error('Portal viewport cannot safely clear the near plane');
+ const crossing=spec.crossing;
+ if(!crossing||!vector(crossing.position)||!vector(crossing.target)||crossing.position[0]!==eye[0]||crossing.position[1]!==eye[1]||crossing.target[0]!==eye[0]||crossing.target[1]!==eye[1]||crossing.position[2]>=eye[2]-1.2||crossing.target[2]>=crossing.position[2]-.2)throw Error('Invalid portal crossing corridor');
+ return {room:spec.room,width,height,near,eye,seal:{position:[eye[0],eye[1],eye[2]+distance],target:eye,fov},inside:{position:[...crossing.position],target:[...crossing.target],fov},coverage:{depth,horizontalHalf:depth*tan*width/height,verticalHalf:depth*tan},hinges:hinges.map(h=>({node:h.node,axis:[...h.axis],openRadians:h.openRadians}))};
+}
+export function courtPassageSample(start,approach,plan,progress){
+ if(!validPose(start)||!validPose(approach)||!validPose(plan?.seal)||!validPose(plan?.inside)||!finite(progress))throw Error('Invalid court passage sample');
+ const u=clamp(progress,0,1),smooth=t=>{const v=clamp(t,0,1);return v*v*(3-2*v);};
+ const pose=u<.22?interpolatePose(start,approach,u/.22):u<.44?interpolatePose(approach,plan.seal,(u-.22)/.22):u<=.68?copyPose(plan.seal):u<.94?interpolatePose(plan.seal,plan.inside,(u-.68)/.26):copyPose(plan.inside);
+ return {u,pose,open:smooth((u-.52)/.26),portalOnly:u>=.48,phase:u<.44?'approach':u<=.52?'sealed':u<.94?'reveal':'inside'};
+}
 function imageDimensions(bytes,mime){
  const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
  if(mime==='image/png'){
@@ -158,13 +181,15 @@ export function inspectCourtGLB(buffer){
  });
  const textures=data.textures||[];if(textures.length>COURT_BUDGET.images||textures.some(texture=>!Number.isSafeInteger(texture.source)||texture.source<0||texture.source>=images.length))throw Error('Invalid court texture sources');
  const triangleCounts=(data.meshes||[]).map(mesh=>(mesh.primitives||[]).reduce((sum,primitive)=>{if(primitive.mode!==undefined&&primitive.mode!==4)throw Error('Court mesh must use triangles');const accessor=data.accessors?.[primitive.indices??primitive.attributes?.POSITION],count=accessor?.count;if(!Number.isSafeInteger(count)||count<0||count%3)throw Error('Invalid court triangle indices');return sum+count/3;},0));
- const triangles=(data.nodes||[]).reduce((sum,node)=>{
+ let primitiveGroups=0;const triangles=(data.nodes||[]).reduce((sum,node)=>{
   let instances=1;const attributes=node.extensions?.EXT_mesh_gpu_instancing?.attributes;
   if(attributes){const counts=Object.values(attributes).map(index=>data.accessors?.[index]?.count);if(!counts.length||!counts.every(count=>Number.isSafeInteger(count)&&count>0&&count===counts[0]))throw Error('Invalid court instance counts');instances=counts[0];}
+  if(node.mesh!==undefined)primitiveGroups+=(data.meshes?.[node.mesh]?.primitives?.length??Infinity)*instances;
   return sum+(node.mesh===undefined?0:(triangleCounts[node.mesh]??Infinity)*instances);
  },0);
  if(!finite(triangles)||triangles>COURT_BUDGET.triangles)throw Error('Court exceeds triangle budget');
- return {json:data,bytes:buffer.byteLength,triangles,materials:(data.materials||[]).length,textureCount:textures.length,imageCount:images.length,texels,imageSizes};
+ if(!finite(primitiveGroups)||primitiveGroups>COURT_BUDGET.groups)throw Error('Court exceeds primitive group budget');
+ return {json:data,bytes:buffer.byteLength,triangles,primitiveGroups,materials:(data.materials||[]).length,textureCount:textures.length,imageCount:images.length,texels,imageSizes};
 }
 // GLTFLoader creates these URLs only for already-validated embedded image bytes.
 // No loader-supplied remote/data URI is allowed, even after validation.

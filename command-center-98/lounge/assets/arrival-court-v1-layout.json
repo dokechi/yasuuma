@@ -3,10 +3,10 @@
   "units": "meters",
   "up": "Y",
   "origin": "courtyard floor below central stair spine",
-  "triangleCount": 54364,
+  "triangleCount": 54440,
   "materialCount": 12,
-  "meshCount": 16,
-  "glbBytes": 1981880,
+  "meshCount": 20,
+  "glbBytes": 1987916,
   "cameras": {
     "arrival-camera": {
       "position": [
@@ -149,37 +149,40 @@
   "lightingIntent": "broad cool upper-left key; restrained warm window reflections; contact shadows essential; no bloom blanket",
   "budget": {
     "trianglesTarget": 60000,
-    "trianglesMaximum": 80000,
+    "trianglesMaximum": 60000,
     "glbMaximumBytes": 2000000,
     "materialsMaximum": 12,
-    "drawCallsMaximum": 50
+    "drawCallsMaximum": 128,
+    "primitiveGroupsTarget": 52,
+    "primitiveGroupsMaximum": 64
   },
   "notes": [
     "Static original architectural prototype; not a claim of Igloo-equivalent render quality.",
     "Original embedded PBR stone maps only; no copied models/art, external URI, user data or character replacements.",
     "Existing reader, authentication, immediate routes and painted castle remain implementation-owned fallback.",
-    "Phone should select/focus a room, never shrink all gates to unreadable miniatures."
+    "Phone should select/focus a room, never shrink all gates to unreadable miniatures.",
+    "Insurance only native hinge/leaf/cap partition. Actual adopted-canvas opaque seal and midframe art gate remains pending."
   ],
-  "authoredRevision": "v3.3",
+  "authoredRevision": "v4-insurance-native",
   "asset": "arrival-court-v1.glb",
-  "runtimeBytes": 1981880,
-  "runtimeSha256": "b8167b25892380bf0ed18fba1d90522a7bb96e6e80a468a7b511e8b0fc6e06bb",
-  "drawGroups": 48,
+  "runtimeBytes": 1987916,
+  "runtimeSha256": "75e1b72b8d4a848b2437eecce7ea6c1919818152d79e27cfaafe8e533c581ae2",
+  "drawGroups": 52,
   "textureCount": 3,
   "imageCount": 3,
   "quantization": {
-    "rawBytes": 3785380,
-    "quantizedBytes": 1981880,
-    "verticesBefore": 106666,
-    "verticesAfter": 105860,
+    "rawBytes": 3797132,
+    "quantizedBytes": 1987916,
+    "verticesBefore": 106810,
+    "verticesAfter": 106004,
     "texturedVertices": 68464,
-    "drawGroups": 48,
+    "drawGroups": 52,
     "embeddedImages": 3,
     "embeddedImageBytes": 75206,
-    "maxPositionErrorMeters": 0.0004999999999997229,
+    "maxPositionErrorMeters": 0.0005000000000000004,
     "positionPrecisionMeters": 0.001,
     "uvPrecisionTiles": 0.00390625,
-    "sha256": "b8167b25892380bf0ed18fba1d90522a7bb96e6e80a468a7b511e8b0fc6e06bb",
+    "sha256": "75e1b72b8d4a848b2437eecce7ea6c1919818152d79e27cfaafe8e533c581ae2",
     "triangleTopologyUnchanged": true
   },
   "textures": [
@@ -205,5 +208,112 @@
       "sha256": "4f0701a658b7afac85b01a3527f0a2ea2da019d3f6b6384be8572e429d55c393"
     }
   ],
-  "decodedSourceTexels": 118784
+  "decodedSourceTexels": 118784,
+  "portals": {
+    "insurance": {
+      "version": 1,
+      "room": "insurance",
+      "units": "meters",
+      "up": "Y",
+      "axisSpace": "world",
+      "eye": [
+        -5.6,
+        1.94,
+        -2.82
+      ],
+      "frame": "portal-frame-insurance",
+      "hinges": [
+        {
+          "node": "hinge-insurance-left",
+          "leaf": "leaf-insurance-left",
+          "handle": "handle-insurance-left",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "pivot": [
+            -6.7,
+            0.35,
+            -2.82
+          ],
+          "openRadians": 1.4835298641951802
+        },
+        {
+          "node": "hinge-insurance-right",
+          "leaf": "leaf-insurance-right",
+          "handle": "handle-insurance-right",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "pivot": [
+            -4.5,
+            0.35,
+            -2.82
+          ],
+          "openRadians": -1.4835298641951802
+        }
+      ],
+      "aperture": {
+        "shape": "arched",
+        "center": [
+          -5.6,
+          1.94,
+          -2.82
+        ],
+        "right": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "width": 2.2,
+        "height": 3.115,
+        "springY": 2.4
+      },
+      "opaqueRect": {
+        "min": [
+          -6.66,
+          0.45,
+          -2.77
+        ],
+        "max": [
+          -4.54,
+          2.39,
+          -2.77
+        ]
+      },
+      "approach": "approach-insurance",
+      "seal": {
+        "preferredDistance": 1.1,
+        "coverageMargin": 0.1,
+        "fovDegrees": 40,
+        "eyeHeight": 1.94
+      },
+      "crossing": {
+        "position": [
+          -5.6,
+          1.94,
+          -4.1
+        ],
+        "target": [
+          -5.6,
+          1.94,
+          -5.6
+        ],
+        "fovDegrees": 40
+      }
+    }
+  }
 }

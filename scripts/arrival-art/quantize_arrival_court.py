@@ -1,4 +1,4 @@
-"""Deterministic static glTF quantization. Original material pixels are copied
+"""Deterministic glTF mesh quantization; native EMPTY pivots remain unscaled. Original material pixels are copied
 verbatim into embedded bufferViews. No image editing/decoder/external URLs.
 """
 import struct,json,os,hashlib

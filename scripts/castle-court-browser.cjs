@@ -55,7 +55,7 @@ function check(result,name,pass,detail){
  assert.ok(pass,name+(detail===undefined?'':': '+JSON.stringify(detail)));
 }
 async function snapshot(frame){return frame.evaluate(()=>window.__arrivalCourt.snapshot());}
-async function settled(frame){await frame.waitForFunction(()=>{const value=window.__arrivalCourt?.snapshot();return value?.ready&&value.renderer&&!value.renderer.pendingFrame;});}
+async function settled(frame){await frame.waitForFunction(()=>{const value=window.__arrivalCourt?.snapshot();return value?.ready&&value.renderer&&!value.renderer.pendingFrame&&!value.renderer.presentation?.active;});}
 async function capture(ctx,name){
  const file=`${ctx.result.label}-${name}.png`;await ctx.page.screenshot({path:path.join(out,file)});ctx.result.frames.push(file);
 }
@@ -79,6 +79,7 @@ async function openHost(browser,origin,{width=390,height=900,label,fault=null,sh
   }
   if(fault==='invalid-model'&&url.pathname.endsWith('/arrival-court-v1.glb')){result.expectedFaults.push(url.pathname);return route.fulfill({status:200,contentType:'model/gltf-binary',body:Buffer.from('invalid synthetic GLB')});}
   if((fault==='model'&&url.pathname.endsWith('/arrival-court-v1.glb'))||(fault==='module'&&url.pathname.endsWith('/arrival-renderer.js'))||(fault==='entry-module'&&url.pathname.endsWith('/arrival-atelier.js'))){result.expectedFaults.push(url.pathname);return route.abort();}
+  if((fault==='passage-module'&&url.pathname.endsWith('/arrival-passage.js'))||(fault==='passage-css'&&url.pathname.endsWith('/court-passage.css'))){result.expectedFaults.push(url.pathname);return route.abort();}
   return route.continue();
  });
  const ctx={context,page,result,frame:null,f:null,releaseModel,modelRequest};
@@ -347,6 +348,102 @@ async function initialReducedCase(browser,origin){
  }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
 }
 
+// Real application passage acceptance. The only timeline controls are native
+// WAAPI pause/currentTime/finish on the ordinary parent animation. There is no
+// production seek, readback or fake renderer hook.
+async function prepareInsurancePassage(ctx){
+ await ctx.f.locator('.arrival-court[data-state=ready]').waitFor();await settled(ctx.frame);
+ await ctx.frame.waitForFunction(()=>window.__arrivalCourt?.snapshot().passage?.available===true,null,{timeout:30_000});
+ const target=ctx.f.locator('[data-court-room=insurance]');
+ if(await target.isVisible()){await target.click();await settled(ctx.frame);}
+ else{await ctx.f.locator('[data-court-open=insurance]').click();await ctx.f.locator('#room[data-account=insurance][data-spatial-desk=ready]').waitFor();await back(ctx);await settled(ctx.frame);}
+ await ctx.page.evaluate(()=>{
+  const source=document.getElementById('ccCastleFrame').contentDocument,canvas=source.querySelector('.arrival-court canvas');
+  window.__passageOriginal={canvas,gl:canvas.getContext('webgl2'),parent:canvas.parentNode,next:canvas.nextSibling,style:canvas.getAttribute('style')};
+ });
+}
+async function beginInsurancePassage(ctx){
+ await ctx.f.locator('.arrival-enter').click();
+ await ctx.page.waitForFunction(()=>document.getAnimations().some(animation=>animation.id==='court-passage-clock'),null,{timeout:10_000});
+}
+async function samplePassage(ctx,progress,{seal=false}={}){
+ return ctx.page.evaluate(async({progress,seal})=>{
+  const animation=document.getAnimations().find(value=>value.id==='court-passage-clock');if(!animation)throw Error('No real passage animation to sample');
+  animation.pause();animation.currentTime=Number(animation.effect.getTiming().duration)*progress;
+  // The compositor registered its RAF before the test. Read immediately after
+  // its second paint, before the browser may clear a non-preserved GL buffer.
+  return new Promise((resolve,reject)=>requestAnimationFrame(()=>requestAnimationFrame(()=>{try{
+   const layer=document.querySelector('.court-passage'),canvas=layer?.querySelector('canvas'),original=window.__passageOriginal;
+   const frame=document.getElementById('ccCastleFrame'),source=frame.contentDocument,state=frame.contentWindow.__arrivalCourt.snapshot(),gl=canvas?.getContext('webgl2');
+   let pixels=null;
+   if(seal&&gl){const width=gl.drawingBufferWidth,height=gl.drawingBufferHeight,rgba=new Uint8Array(width*height*4);gl.readPixels(0,0,width,height,gl.RGBA,gl.UNSIGNED_BYTE,rgba);let nonOpaque=0,minAlpha=255,maxAlpha=0;for(let i=3;i<rgba.length;i+=4){const alpha=rgba[i];if(alpha<255)nonOpaque++;minAlpha=Math.min(minAlpha,alpha);maxAlpha=Math.max(maxAlpha,alpha);}pixels={width,height,total:width*height,nonOpaque,minAlpha,maxAlpha,error:gl.getError()};}
+   const r=layer?.getBoundingClientRect(),fr=frame.getBoundingClientRect(),copy=source.getElementById('desk-copy'),cr=copy?.getBoundingClientRect();
+   resolve({progress,direction:layer?.dataset.direction,phase:layer?.dataset.phase,sameCanvas:canvas===original.canvas,sameContext:gl===original.gl,canvasCount:layer?.querySelectorAll('canvas').length,ownerParent:canvas?.ownerDocument===document,contextLost:gl?.isContextLost(),inert:layer?.inert,ariaHidden:layer?.getAttribute('aria-hidden'),pointerEvents:layer&&getComputedStyle(layer).pointerEvents,layerRect:r&&{left:r.left,top:r.top,width:r.width,height:r.height},frameRect:{left:fr.left,top:fr.top,width:fr.width,height:fr.height},room:source.getElementById('room')?.dataset.account,roomHidden:source.getElementById('room')?.hidden,copyReachable:copy&&!copy.disabled&&cr.width>=44&&cr.height>=44,renderer:state.renderer,passage:state.passage,pixels});
+  }catch(error){reject(error);}})));
+ },{progress,seal});
+}
+async function finishPassage(ctx){
+ await ctx.page.evaluate(()=>{const animation=document.getAnimations().find(value=>value.id==='court-passage-clock');if(!animation)throw Error('Passage clock disappeared before native finish');animation.finish();});
+ await ctx.page.locator('.court-passage').waitFor({state:'detached'});
+}
+async function restoredPassage(ctx,label){
+ const state=await ctx.page.evaluate(()=>{const o=window.__passageOriginal,frame=document.getElementById('ccCastleFrame'),r=frame.contentWindow.__arrivalCourt.snapshot();return {sameNode:o.canvas.parentNode===o.parent,sameNext:o.canvas.nextSibling===o.next,sameStyle:o.canvas.getAttribute('style')===o.style,sameContext:o.canvas.getContext('webgl2')===o.gl,ownerChild:o.canvas.ownerDocument===frame.contentDocument,layerCount:document.querySelectorAll('.court-passage').length,clockCount:document.getAnimations().filter(a=>a.id==='court-passage-clock').length,presentationActive:r.renderer?.presentation?.active,passageActive:r.passage?.active,selected:r.selected};});
+ check(ctx.result,label+' returns the only canvas exactly without a clock or layer lease',state.sameNode&&state.sameNext&&state.sameStyle&&state.sameContext&&state.ownerChild&&state.layerCount===0&&state.clockCount===0&&!state.presentationActive&&!state.passageActive,state);
+}
+async function passageCase(browser,origin,width,height){
+ let ctx;
+ try{
+  ctx=await openHost(browser,origin,{width,height,label:`${width}-${height}-passage`});await prepareInsurancePassage(ctx);await capture(ctx,'source');await beginInsurancePassage(ctx);
+  const frames=[0,.2,.4,.479,.481,.65,.84];
+  for(const progress of frames){
+   const state=await samplePassage(ctx,progress,{seal:progress===.481});
+   check(ctx.result,'entry '+progress+' uses the same real context in the nonblocking parent surface',state.sameCanvas&&state.sameContext&&state.canvasCount===1&&state.ownerParent&&!state.contextLost&&state.inert&&state.ariaHidden==='true'&&state.pointerEvents==='none'&&state.direction==='in'&&Math.abs(state.renderer.passage.u-progress)<.0001&&Math.abs(state.layerRect.top-state.frameRect.top)<.5&&Math.abs(state.layerRect.height-state.frameRect.height)<.5,state);
+   check(ctx.result,'entry '+progress+' has already committed the real insurance reader and usable copy control',state.room==='insurance'&&!state.roomHidden&&state.copyReachable,{room:state.room,roomHidden:state.roomHidden,copyReachable:state.copyReachable});
+   if(progress===.481)check(ctx.result,'closed native portal seals every drawing-buffer pixel without an opaque sky or CSS substitute',state.renderer.transparentBackground===true&&state.renderer.clearAlpha===0&&state.renderer.mainLayerMask===2&&state.renderer.shadowLayerMask===3&&state.renderer.passage.hinges.length===2&&state.renderer.passage.hinges.map(h=>h.node).sort().join(',')==='hinge-insurance-left,hinge-insurance-right'&&state.renderer.passage.hinges.every(h=>h.angle<.00001)&&state.pixels.total>0&&state.pixels.nonOpaque===0&&state.pixels.minAlpha===255&&state.pixels.error===0,state);
+   await capture(ctx,'entry-'+String(progress).replace('.',''));
+  }
+  await finishPassage(ctx);await restoredPassage(ctx,'completed entry');await reader(ctx,'insurance');await capture(ctx,'entry-end');
+  await back(ctx);await ctx.page.waitForFunction(()=>document.getAnimations().some(a=>a.id==='court-passage-clock'),null,{timeout:10_000});
+  for(const progress of [0,.2,.5]){const state=await samplePassage(ctx,progress);check(ctx.result,'reverse '+progress+' follows the same native doorway with the canonical court already restored',state.sameCanvas&&state.sameContext&&!state.contextLost&&state.direction==='out'&&Math.abs(state.renderer.passage.u-(1-progress))<.0001&&state.passage.active===true,state);await capture(ctx,'return-'+String(progress).replace('.',''));}
+  await finishPassage(ctx);await settled(ctx.frame);await restoredPassage(ctx,'completed reverse');
+  const returned=await snapshot(ctx.frame);check(ctx.result,'reverse ends on the actual insurance aperture and original source control',returned.selected==='insurance'&&returned.renderer.selected==='insurance'&&returned.projection.find(point=>point.key==='insurance')?.visible===true&&await ctx.f.locator('.arrival-enter').evaluate(node=>node===document.activeElement),returned);await capture(ctx,'return-end');await unchanged(ctx);
+ }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
+}
+async function interruptedPassageCase(browser,origin,kind){
+ let ctx;
+ try{
+  ctx=await openHost(browser,origin,{label:'390-900-passage-'+kind});await prepareInsurancePassage(ctx);await beginInsurancePassage(ctx);await samplePassage(ctx,.2);
+  if(kind==='copy'){
+   await reader(ctx,'insurance');await ctx.page.locator('.court-passage').waitFor({state:'detached'});await restoredPassage(ctx,'copy interruption');
+   check(ctx.result,'copy during travel remains an actual copy, not a route or publication',await ctx.f.locator('#room[data-account=insurance]').isVisible());
+  }else if(kind==='quick'){
+   await ctx.f.locator('.spatial-room-name').click();await ctx.f.locator('.spatial-destination[data-destination=otoku]').click();await reader(ctx,'otoku');await ctx.page.locator('.court-passage').waitFor({state:'detached'});await restoredPassage(ctx,'latest room interruption');await back(ctx);await settled(ctx.frame);
+   check(ctx.result,'new quick destination and Back are never overwritten by the old passage',(await snapshot(ctx.frame)).selected==='otoku'&&await ctx.page.locator('.court-passage').count()===0);
+  }else if(kind==='resize'){
+   await ctx.page.setViewportSize({width:800,height:648});await ctx.page.locator('.court-passage').waitFor({state:'detached'});await restoredPassage(ctx,'Fold resize');await reader(ctx,'insurance');await back(ctx);await settled(ctx.frame);
+   check(ctx.result,'resizing cancels only visual history, never stretches the old return trip',await ctx.page.locator('.court-passage').count()===0&&(await snapshot(ctx.frame)).selected==='insurance');
+  }else if(kind==='context-loss'){
+   const invoked=await ctx.page.evaluate(()=>{const ext=window.__passageOriginal.gl.getExtension('WEBGL_lose_context');if(!ext)return false;ext.loseContext();return true;});check(ctx.result,'actual adopted context loss is exercised',invoked);
+   await ctx.page.locator('.court-passage').waitFor({state:'detached'});await ctx.frame.waitForFunction(()=>window.__arrivalCourt.snapshot().failed);await reader(ctx,'insurance');await restoredPassage(ctx,'context failure');await back(ctx);await ctx.f.locator('.spatial-castle').waitFor({state:'visible'});
+   check(ctx.result,'failed borrowed graphics leave the existing reader and original castle functional',await ctx.f.locator('.castle-quick-open[data-room=insurance]').isVisible());
+  }
+  await capture(ctx,'settled');await unchanged(ctx);
+ }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
+}
+async function optionalPassageFailure(browser,origin,fault){
+ let ctx;
+ try{
+  ctx=await openHost(browser,origin,{label:'390-900-'+fault,fault});await ctx.f.locator('.arrival-court[data-state=ready]').waitFor();await settled(ctx.frame);
+  const deadline=Date.now()+10_000;while(!ctx.result.expectedFaults.length&&Date.now()<deadline)await ctx.page.waitForTimeout(50);
+  check(ctx.result,'optional passage dependency failure was actually requested',ctx.result.expectedFaults.length>0,[...ctx.result.expectedFaults]);
+  check(ctx.result,'passage failure does not retire the real courtyard renderer',(await snapshot(ctx.frame)).active===true&&(await snapshot(ctx.frame)).failed===false);
+  await ctx.f.locator('[data-court-open=insurance]').click();await reader(ctx,'insurance');await back(ctx);await settled(ctx.frame);
+  check(ctx.result,'optional passage failure preserves direct reader and matching 3D return',(await snapshot(ctx.frame)).selected==='insurance'&&await ctx.page.locator('.court-passage').count()===0);
+  await ctx.f.locator('.arrival-enter').click();await reader(ctx,'insurance');await back(ctx);await settled(ctx.frame);
+  check(ctx.result,'ordinary doorway also falls through to its real reader when passage is unavailable',(await snapshot(ctx.frame)).selected==='insurance'&&await ctx.page.locator('.court-passage').count()===0);await capture(ctx,'retained-court');await unchanged(ctx);
+ }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
+}
+
 async function shadowDiagnostic(browser,origin,width,height){
  let ctx;
  try{
@@ -380,6 +477,9 @@ async function shadowDiagnostic(browser,origin,width,height){
   for(const fault of ['model','invalid-model','module','entry-module','context-loss'])await fallbackCase(browser,origin,fault);
   disabled=await chromium.launch({channel:'chromium',headless:true,args:['--disable-webgl']});await fallbackCase(disabled,origin,'no-webgl');
   await lazyCancellationCase(browser,origin);await initialReducedCase(browser,origin);
+  for(const [width,height] of [[390,900],[320,640],[800,648],[1440,900]])await passageCase(browser,origin,width,height);
+  for(const kind of ['copy','quick','resize','context-loss'])await interruptedPassageCase(browser,origin,kind);
+  for(const fault of ['passage-module','passage-css'])await optionalPassageFailure(browser,origin,fault);
   // Diagnostic-only A/B. The normal four widths and all fault cases above use
   // unchanged exact-head source. No production flag, API, or asset is added.
   await shadowDiagnostic(browser,origin,1440,900);await shadowDiagnostic(browser,origin,390,900);

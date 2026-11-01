@@ -26,12 +26,12 @@ jobs:
       # SwiftShader flags apply only to this owned, local synthetic fixture.
       # The fixture rejects remote traffic and never loads production credentials.
       - run: NODE_PATH="$RUNNER_TEMP/ui/node_modules" node scripts/castle-court-passage-browser.cjs
-      - run: NODE_PATH="$RUNNER_TEMP/ui/node_modules" node scripts/castle-court-browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: castle-court-passage
           path: artifacts/castle-court-passage
+      - run: NODE_PATH="$RUNNER_TEMP/ui/node_modules" node scripts/castle-court-browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

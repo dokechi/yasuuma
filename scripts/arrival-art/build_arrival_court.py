@@ -1,7 +1,7 @@
 """Original architectural arrival court; geometry/PBR only, no external artwork.
 Run with Blender 4.3: blender -b -t 8 -P build_arrival_court.py
 """
-import bpy, math, random, json, os, collections, sys
+import bpy, math, random, json, os, collections, sys, hashlib
 from mathutils import Vector
 from math import sin, cos, pi
 ROOT=os.path.dirname(os.path.abspath(__file__)); random.seed(27)
@@ -251,6 +251,11 @@ for name,obs in portal_groups.items():
  primary=next((o for o in obs if o.name==name),obs[0]);bpy.context.view_layer.objects.active=primary;bpy.ops.object.join();primary.name=name
  primary['destination']=name.removeprefix('room-').removeprefix('closed-');primary['sealed']=name.startswith('closed-');primary['roomKey']=primary['destination']
 
+# Native insurance-only continuity slice. All other room geometry stays static.
+sys.path.insert(0,ROOT)
+from split_insurance_portal import split_insurance_portal
+insurance_portal = split_insurance_portal()
+
 # Identical actual embedded image maps in Blender proof and standard glTF PBR.
 base=bpy.data.images.load(os.path.join(ROOT,'materials','stone-basecolor-v1.jpg'));base.colorspace_settings.name='sRGB'
 normal=bpy.data.images.load(os.path.join(ROOT,'materials','stone-normal-v1.png'));normal.colorspace_settings.name='Non-Color'
@@ -318,8 +323,12 @@ for o in exported:
  if o.type=='MESH':o.data.calc_loop_triangles();triangles+=len(o.data.loop_triangles)
 def yup(p):return [round(p[0],5),round(p[2],5),round(-p[1],5)]
 meta={'version':1,'units':'meters','up':'Y','origin':'courtyard floor below central stair spine','triangleCount':triangles,'materialCount':len(M),'meshCount':sum(o.type=='MESH' for o in exported),'glbBytes':os.path.getsize(os.path.join(ROOT,'arrival-court-v1-raw.glb')),'cameras':{'arrival-camera':{'position':yup(cam.location),'target':yup((-.2,2.2,3.3)),'fovVerticalDegrees':round(math.degrees(cam.data.angle_y),3)},'phone-camera':{'position':yup(phone.location),'target':yup((-3.85,1.5,3.5)),'fovVerticalDegrees':round(math.degrees(phone.data.angle_y),3)}},'anchors':{k:yup(v) for k,v in anchors.items()},'materials':list(M),'lightingIntent':'broad cool upper-left key; restrained warm window reflections; contact shadows essential; no bloom blanket','budget':{'trianglesTarget':60000,'trianglesMaximum':80000,'glbMaximumBytes':2000000,'materialsMaximum':12,'drawCallsMaximum':50},'notes':['Static original architectural prototype; not a claim of Igloo-equivalent render quality.','Original embedded PBR stone maps only; no copied models/art, external URI, user data or character replacements.','Existing reader, authentication, immediate routes and painted castle remain implementation-owned fallback.','Phone should select/focus a room, never shrink all gates to unreadable miniatures.']}
+meta['portals']={'insurance':insurance_portal}
+meta['budget'].update(trianglesMaximum=60000,primitiveGroupsTarget=52,primitiveGroupsMaximum=64,drawCallsMaximum=128)
+meta['authoredRevision']='v4-insurance-native'
+meta['notes'][0]='Original architectural prototype with native insurance portal; actual WebGL continuity QA required.'
 json.dump(meta,open(os.path.join(ROOT,'arrival-court-v1-layout.json'),'w'),ensure_ascii=False,indent=2)
-json.dump({'asset':'arrival-court-v1.glb','authoring':'Original procedural mesh/material authoring using Blender 4.3.2 Python API','source':'build_arrival_court.py','sourceArtworkUsed':'Original imagegen basecolor and original native-baked material maps; no external raster/model inputs. Architectural continuity informed by existing original castle cutaway and room identities.','references':'User-provided Igloo screenshots used only for atmosphere, light/space quality analysis, not copied or embedded.','generatedRasterAssets':'Original built-in imagegen stone basecolor plus native Blender-baked technical normal/ORM maps','proofRenders':'Blender inspection renders, not shipped image replacements','licenses':'Original geometry and material definitions; no third-party assets','geometry':meta},open(os.path.join(ROOT,'arrival-court-v1-provenance.json'),'w'),ensure_ascii=False,indent=2)
+json.dump({'asset':'arrival-court-v1.glb','authoredRevision':'v4-insurance-native','authoring':'Original procedural mesh/material authoring using Blender 4.3.2 Python API','source':'build_arrival_court.py','sourceRecipe':['build_arrival_court.py','split_insurance_portal.py','quantize_arrival_court.py','bake_stone_material.py'],'sourceFiles':{name:{'bytes':os.path.getsize(os.path.join(ROOT,name)),'sha256':hashlib.sha256(open(os.path.join(ROOT,name),'rb').read()).hexdigest()} for name in ['build_arrival_court.py','split_insurance_portal.py','quantize_arrival_court.py','bake_stone_material.py'] if os.path.exists(os.path.join(ROOT,name))},'sourceArtworkUsed':'Original imagegen basecolor and original native-baked material maps; no external raster/model inputs. Architectural continuity informed by existing original castle cutaway and room identities.','references':'User-provided Igloo screenshots used only for atmosphere, light/space quality analysis, not copied or embedded.','generatedRasterAssets':'Original built-in imagegen stone basecolor plus native Blender-baked technical normal/ORM maps','proofRenders':'Blender inspection renders, not shipped image replacements','licenses':'Original geometry and material definitions; no third-party assets','geometry':meta},open(os.path.join(ROOT,'arrival-court-v1-provenance.json'),'w'),ensure_ascii=False,indent=2)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(ROOT,'arrival-court-v1.blend'))
 print('ARRIVAL_ASSET_STATS',json.dumps({k:meta[k] for k in ['triangleCount','materialCount','meshCount','glbBytes']}),flush=True)
 if '--render' in sys.argv:
