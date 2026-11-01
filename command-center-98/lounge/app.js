@@ -131,3 +131,10 @@ export const getAccountBoard=()=>desk?.accountBoard;
 
 // Read-only room summaries and existing owner actions for optional living tools.
 export const getLivingDesk=()=>desk?.living;
+
+// Existing supplementary reader remains reachable from the book's settings.
+// It does not add an account or a second reader/controller.
+export function openSupplementaryReader(key){
+ if(key!=='fp'||phase!=='town')return false;
+ desk?.accountBoard?.hide();accountContext=null;enterRoom('silver',true);return true;
+}

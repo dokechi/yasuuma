@@ -56,7 +56,7 @@ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 (async()=>{
  fs.mkdirSync(artifact,{recursive:true});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const origin='http://127.0.0.1:'+server.address().port;
- const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ const browser=await chromium.launch({channel:'chromium',headless:true,args:['--no-sandbox']});
  const results=[];
  const save=()=>fs.writeFileSync(path.join(artifact,'results.json'),JSON.stringify({scope:'actual-default insurance vertical slice; full five-room motion pending',results},null,2));
  try{for(const [width,height]of sizes){
@@ -124,4 +124,4 @@ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   finally{save();await context.close();}
  }}finally{await browser.close();server.close();save();}
  console.log(JSON.stringify(results.map(r=>({width:r.width,height:r.height,status:r.status,checks:r.checks.length,failed:r.checks.filter(c=>!c.pass).length})),null,2));
-})().catch(error=>{console.error(error);server.close();process.exitCode=1;});
+})().catch(error=>{fs.mkdirSync(artifact,{recursive:true});fs.writeFileSync(path.join(artifact,'fatal.json'),JSON.stringify({scope:'fixture bootstrap or teardown failure; no UI pass claimed',message:error.message,stack:error.stack},null,2));console.error(error);server.close();process.exitCode=1;});
