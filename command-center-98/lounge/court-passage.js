@@ -62,11 +62,16 @@ export function createCourtPassage({document: doc = globalThis.document, reduced
   if (current !== record || record.released) return false;
   if (!canMove() || record.sourceDocument.hidden || !record.parent.isConnected) { release(record); return false; }
   const time = clamp(finite(elapsed) ? elapsed : 0, 0, record.duration);
+  // A paused ordinary WAAPI clock keeps its last composited frame. Repainting
+  // identical geometry every RAF needlessly occupies the GPU (and software GL).
+  // Lifecycle checks above still run, and invalidation listeners stay live.
+  if (record.lastPaintedTime === time) return true;
   const u = record.direction === 'out' ? 1 - time / record.duration : time / record.duration;
   try {
    const result = record.handle.paint(u, {width: record.surface.width, height: record.surface.height});
    if (!result || result.ok !== true) { release(record); return false; }
    if (current !== record || record.released) return false;
+   record.lastPaintedTime = time;
    record.progress = u; record.phase = typeof result.phase === 'string' ? result.phase : u < .44 ? 'approach' : u <= .52 ? 'sealed' : u < .94 ? 'reveal' : 'inside';
    record.layer.dataset.phase = record.phase;
    // Reader and companion are one solid plane: the paper masks the original

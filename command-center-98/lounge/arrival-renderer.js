@@ -105,7 +105,7 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
    camera.layers.mask=cameraMask;sun.shadow.camera.layers.mask=shadowMask;scene.background=background;renderer.setClearAlpha(clearAlpha);
    if(lastOpen!==0)sun.shadow.needsUpdate=true;model.updateMatrixWorld(true);passageView=null;
   }
-  lease=leases.acquire({...(returnState?{returnState}:{}),onInvalidated(reason){restoreNative();try{onInvalidated?.(reason);}catch{}}});
+  lease=leases.acquire({...(returnState?{returnState,resumeAtReturn:true}:{}),onInvalidated(reason){restoreNative();try{onInvalidated?.(reason);}catch{}}});
   if(!lease)return null;
   background=scene.background;clearAlpha=renderer.getClearAlpha();cameraMask=camera.layers.mask;shadowMask=sun.shadow.camera.layers.mask;
   for(const mesh of record.meshes)layers.push([mesh,mesh.layers.mask]);scene.traverse(o=>{if(o.isLight)layers.push([o,o.layers.mask]);});captured=true;

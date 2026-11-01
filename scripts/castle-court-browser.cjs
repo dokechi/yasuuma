@@ -367,26 +367,28 @@ async function prepareInsurancePassage(ctx){
 async function armPassageClock(ctx){
  // Subscribe BEFORE the real input: software rendering can finish a 900ms trip
  // before Playwright's click promise returns. This is ordinary WAAPI tooling.
- await ctx.page.evaluate(()=>document.addEventListener('court:passage-start',()=>{const clock=document.getAnimations().find(a=>a.id==='court-passage-clock');if(clock){clock.pause();clock.currentTime=0;}},{once:true}));
+ await ctx.page.evaluate(()=>document.addEventListener('court:passage-start',()=>{const clock=document.getAnimations().find(a=>a.id==='court-passage-clock');if(clock){window.__testPassageStartedAt=performance.now();clock.pause();clock.currentTime=0;}},{once:true}));
 }
 async function beginInsurancePassage(ctx){
- await armPassageClock(ctx);await ctx.f.locator('.arrival-enter').click();
+ const box=await ctx.f.locator('.arrival-enter').boundingBox();assert.ok(box&&box.width>=44&&box.height>=44,'real visible entrance has a measured tap target');
+ await armPassageClock(ctx);const start=Date.now();await ctx.page.mouse.click(box.x+box.width/2,box.y+box.height/2);ctx.lastPassageClickMs=Date.now()-start;
  await ctx.page.waitForFunction(()=>document.getAnimations().some(animation=>animation.id==='court-passage-clock'),null,{timeout:10_000});
 }
 async function samplePassage(ctx,progress,{seal=false}={}){
  return ctx.page.evaluate(async({progress,seal})=>{
   const animation=document.getAnimations().find(value=>value.id==='court-passage-clock');if(!animation)throw Error('No real passage animation to sample');
   animation.pause();animation.currentTime=Number(animation.effect.getTiming().duration)*progress;
-  // The compositor registered its RAF before the test. Read immediately after
-  // its second paint, before the browser may clear a non-preserved GL buffer.
-  return new Promise((resolve,reject)=>requestAnimationFrame(()=>requestAnimationFrame(()=>{try{
+  // The compositor already queued its tick before this callback. Read in the
+  // SAME first RAF as the changed-progress paint: a later RAF may see a cleared
+  // non-preserved backbuffer after identical paused-progress draws are skipped.
+  return new Promise((resolve,reject)=>requestAnimationFrame(()=>{try{
    const layer=document.querySelector('.court-passage'),canvas=layer?.querySelector('canvas'),original=window.__passageOriginal;
    const frame=document.getElementById('ccCastleFrame'),source=frame.contentDocument,state=frame.contentWindow.__arrivalCourt.snapshot(),gl=canvas?.getContext('webgl2');
    let pixels=null;
    if(seal&&gl){const width=gl.drawingBufferWidth,height=gl.drawingBufferHeight,rgba=new Uint8Array(width*height*4);gl.readPixels(0,0,width,height,gl.RGBA,gl.UNSIGNED_BYTE,rgba);let nonOpaque=0,minAlpha=255,maxAlpha=0;for(let i=3;i<rgba.length;i+=4){const alpha=rgba[i];if(alpha<255)nonOpaque++;minAlpha=Math.min(minAlpha,alpha);maxAlpha=Math.max(maxAlpha,alpha);}pixels={width,height,total:width*height,nonOpaque,minAlpha,maxAlpha,error:gl.getError()};}
    const r=layer?.getBoundingClientRect(),fr=frame.getBoundingClientRect(),copy=source.getElementById('desk-copy'),cr=copy?.getBoundingClientRect();
-   resolve({progress,duration:Number(animation.effect.getTiming().duration),direction:layer?.dataset.direction,phase:layer?.dataset.phase,sameCanvas:canvas===original.canvas,sameContext:gl===original.gl,canvasCount:layer?.querySelectorAll('canvas').length,ownerParent:canvas?.ownerDocument===document,contextLost:gl?.isContextLost(),inert:layer?.inert,ariaHidden:layer?.getAttribute('aria-hidden'),pointerEvents:layer&&getComputedStyle(layer).pointerEvents,layerRect:r&&{left:r.left,top:r.top,width:r.width,height:r.height},frameRect:{left:fr.left,top:fr.top,width:fr.width,height:fr.height},room:source.getElementById('room')?.dataset.account,roomHidden:source.getElementById('room')?.hidden,copyReachable:copy&&!copy.disabled&&cr.width>=44&&cr.height>=44,renderer:state.renderer,passage:state.passage,pixels});
-  }catch(error){reject(error);}})));
+   resolve({progress,elapsedMs:performance.now()-window.__testPassageStartedAt,clockTime:animation.currentTime,duration:Number(animation.effect.getTiming().duration),direction:layer?.dataset.direction,phase:layer?.dataset.phase,sameCanvas:canvas===original.canvas,sameContext:gl===original.gl,canvasCount:layer?.querySelectorAll('canvas').length,ownerParent:canvas?.ownerDocument===document,contextLost:gl?.isContextLost(),inert:layer?.inert,ariaHidden:layer?.getAttribute('aria-hidden'),pointerEvents:layer&&getComputedStyle(layer).pointerEvents,layerRect:r&&{left:r.left,top:r.top,width:r.width,height:r.height},frameRect:{left:fr.left,top:fr.top,width:fr.width,height:fr.height},room:source.getElementById('room')?.dataset.account,roomHidden:source.getElementById('room')?.hidden,copyReachable:copy&&!copy.disabled&&cr.width>=44&&cr.height>=44,renderer:state.renderer,passage:state.passage,pixels});
+  }catch(error){reject(error);}}));
  },{progress,seal});
 }
 async function finishPassage(ctx){
@@ -398,10 +400,16 @@ async function restoredPassage(ctx,label){
  check(ctx.result,label+' returns the only canvas exactly without a clock or layer lease',state.sameNode&&state.sameNext&&state.sameStyle&&state.sameContext&&state.ownerChild&&state.layerCount===0&&state.clockCount===0&&!state.presentationActive&&!state.passageActive,state);
 }
 async function capturePassage(ctx,name,progress){
- await capture(ctx,name);
- const after=await ctx.page.evaluate(()=>{const clock=document.getAnimations().find(a=>a.id==='court-passage-clock'),state=document.getElementById('ccCastleFrame').contentWindow.__arrivalCourt.snapshot();return {clock:!!clock,paused:clock?.playState==='paused',active:state.passage.active,u:state.renderer.passage?.u};});
+ // Direct owned CDP capture avoids Playwright screenshot preparation consuming
+ // a short real lease. This still captures actual compositor pixels, not a DOM
+ // reconstruction or a renderer readback hook.
+ ctx.captureSession??=await ctx.context.newCDPSession(ctx.page);
+ const start=Date.now(),file=`${ctx.result.label}-${name}.png`;
+ const {data}=await ctx.captureSession.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:false,optimizeForSpeed:true});
+ fs.writeFileSync(path.join(out,file),Buffer.from(data,'base64'));ctx.result.frames.push(file);
+ const after=await ctx.page.evaluate(()=>{const clock=document.getAnimations().find(a=>a.id==='court-passage-clock'),state=document.getElementById('ccCastleFrame').contentWindow.__arrivalCourt.snapshot();return {clock:!!clock,paused:clock?.playState==='paused',active:state.passage.active,u:state.renderer.passage?.u,elapsedMs:performance.now()-window.__testPassageStartedAt};});
  const expected=name.startsWith('return-')?1-progress:progress;
- check(ctx.result,name+' screenshot remained inside its real paused lease (no watchdog-expired frame)',after.clock&&after.paused&&after.active&&Math.abs(after.u-expected)<.0001,after);
+ check(ctx.result,name+' screenshot remained inside its real paused lease (no watchdog-expired frame)',after.clock&&after.paused&&after.active&&Math.abs(after.u-expected)<.0001,{...after,captureMs:Date.now()-start,clickMs:ctx.lastPassageClickMs});
 }
 async function backWithPausedClock(ctx){
  await armPassageClock(ctx);await back(ctx);
@@ -411,10 +419,12 @@ async function passageCase(browser,origin,width,height){
  let ctx;
  try{
   ctx=await openHost(browser,origin,{width,height,label:`${width}-${height}-passage`});await prepareInsurancePassage(ctx);await capture(ctx,'source');
+  const sourceCamera=(await snapshot(ctx.frame)).renderer.camera;
+  const assertSource=async label=>{const current=await snapshot(ctx.frame),pose=current.renderer.camera;check(ctx.result,label+' starts at the identical selected insurance pose',current.selected==='insurance'&&current.renderer.selected==='insurance'&&['position','target'].every(key=>pose[key].every((value,index)=>Math.abs(value-sourceCamera[key][index])<.000001))&&Math.abs(pose.fov-sourceCamera.fov)<.000001,{source:sourceCamera,current:pose});};
   // ONE screenshot per genuine UI trip. Preserve the production watchdog;
   // slow software-GPU readback must never extend a lease or invent a seek API.
   for(const progress of [0,.2,.4,.479,.481,.65,.84]){
-   await beginInsurancePassage(ctx);
+   await assertSource('entry '+progress);await beginInsurancePassage(ctx);
    const state=await samplePassage(ctx,progress,{seal:progress===.481});
    check(ctx.result,'entry '+progress+' uses the same real context in the nonblocking parent surface',state.sameCanvas&&state.sameContext&&state.canvasCount===1&&state.ownerParent&&!state.contextLost&&state.inert&&state.ariaHidden==='true'&&state.pointerEvents==='none'&&state.direction==='in'&&state.duration===900&&Math.abs(state.renderer.passage.u-progress)<.0001&&Math.abs(state.layerRect.top-state.frameRect.top)<.5&&Math.abs(state.layerRect.height-state.frameRect.height)<.5,state);
    check(ctx.result,'entry '+progress+' has already committed the real insurance reader and usable copy control',state.room==='insurance'&&!state.roomHidden&&state.copyReachable,{room:state.room,roomHidden:state.roomHidden,copyReachable:state.copyReachable});
@@ -425,7 +435,7 @@ async function passageCase(browser,origin,width,height){
    await backWithPausedClock(ctx);await finishPassage(ctx);await settled(ctx.frame);
   }
   for(const progress of [0,.2,.5]){
-   await beginInsurancePassage(ctx);await finishPassage(ctx);await backWithPausedClock(ctx);
+   await assertSource('reverse '+progress);await beginInsurancePassage(ctx);await finishPassage(ctx);await backWithPausedClock(ctx);
    const state=await samplePassage(ctx,progress);
    check(ctx.result,'reverse '+progress+' follows the same native doorway with the canonical court already restored',state.sameCanvas&&state.sameContext&&!state.contextLost&&state.direction==='out'&&Math.abs(state.renderer.passage.u-(1-progress))<.0001&&state.passage.active===true,state);
    await capturePassage(ctx,'return-'+String(progress).replace('.',''),progress);await finishPassage(ctx);await settled(ctx.frame);await restoredPassage(ctx,'completed reverse '+progress);
@@ -452,10 +462,23 @@ async function passagePaceCase(browser,origin){
 async function interruptedPassageCase(browser,origin,kind){
  let ctx;
  try{
-  ctx=await openHost(browser,origin,{label:'390-900-passage-'+kind});await prepareInsurancePassage(ctx);await beginInsurancePassage(ctx);await samplePassage(ctx,.2);
-  if(['escape','early-back','reduce'].includes(kind)){
+  ctx=await openHost(browser,origin,{label:'390-900-passage-'+kind});await prepareInsurancePassage(ctx);const sourceCamera=(await snapshot(ctx.frame)).renderer.camera;await beginInsurancePassage(ctx);await samplePassage(ctx,.2);
+  if(kind==='cancel-return'){
+   await finishPassage(ctx);await backWithPausedClock(ctx);const moving=await samplePassage(ctx,.2);
+   check(ctx.result,'reverse interruption is exercised on the actual outgoing native lease',moving.direction==='out'&&moving.passage.active&&Math.abs(moving.renderer.passage.u-.8)<.0001,moving.renderer.passage);
+   await ctx.page.keyboard.press('Escape');await ctx.page.locator('.court-passage').waitFor({state:'detached'});await restoredPassage(ctx,'mid-return Escape');await settled(ctx.frame);
+   const current=await snapshot(ctx.frame),pose=current.renderer.camera;
+   check(ctx.result,'cancelled reverse restores the authored court pose and original focus, not the inside camera',current.active&&current.selected==='insurance'&&current.renderer.selected==='insurance'&&['position','target'].every(key=>pose[key].every((value,index)=>Math.abs(value-sourceCamera[key][index])<.000001))&&Math.abs(pose.fov-sourceCamera.fov)<.000001&&await ctx.f.locator('.arrival-enter').evaluate(node=>node===document.activeElement),{source:sourceCamera,current:pose});
+   const aperture=current.projection.find(point=>point.key==='insurance');check(ctx.result,'cancelled reverse reprojects a finite visible physical insurance aperture',aperture?.visible&&Number.isFinite(aperture.x)&&Number.isFinite(aperture.y)&&!current.renderer.pendingFrame,aperture);
+   await ctx.f.locator('[data-court-open=insurance]').click();await reader(ctx,'insurance');await back(ctx);await settled(ctx.frame);
+   check(ctx.result,'copy revisit after cancelled reverse leaves no orphan presentation',await ctx.page.locator('.court-passage').count()===0&&!(await snapshot(ctx.frame)).renderer.presentation.active);
+  }else if(['escape','early-back','reduce'].includes(kind)){
    await ctx.page.evaluate(()=>{window.__testPassageStarts=[];document.addEventListener('court:passage-start',event=>window.__testPassageStarts.push(event.detail));});
-   if(kind==='escape')await ctx.f.locator('#desk-copy').press('Escape');
+   if(kind==='escape'){
+    await ctx.frame.evaluate(()=>{window.__testEscapeProbe=null;window.addEventListener('keydown',event=>{if(event.key!=='Escape')return;const before=window.__arrivalCourt.snapshot(),clock=parent.document.getAnimations().find(a=>a.id==='court-passage-clock');window.__testEscapeProbe={before:{active:before.passage.active,clock:!!clock,time:clock?.currentTime,elapsedMs:parent.performance.now()-parent.__testPassageStartedAt,roomVisible:!document.getElementById('room').hidden}};window.__testEscapeEvent=event;},{capture:true,once:true});});
+    await ctx.page.keyboard.press('Escape');
+    const probe=await ctx.frame.evaluate(()=>{if(window.__testEscapeProbe)window.__testEscapeProbe.after={prevented:window.__testEscapeEvent.defaultPrevented,active:window.__arrivalCourt.snapshot().passage.active,roomVisible:!document.getElementById('room').hidden};return window.__testEscapeProbe;});check(ctx.result,'Escape reaches the live loan before the production watchdog',probe?.before.active&&probe.before.clock,probe);
+   }
    else if(kind==='reduce')await ctx.page.emulateMedia({reducedMotion:'reduce'});
    else await back(ctx);
    await ctx.page.locator('.court-passage').waitFor({state:'detached'});await restoredPassage(ctx,kind+' interruption');
@@ -535,7 +558,7 @@ async function shadowDiagnostic(browser,origin,width,height){
   await lazyCancellationCase(browser,origin);await initialReducedCase(browser,origin);
   for(const [width,height] of [[390,900],[320,640],[800,648],[1440,900]])await passageCase(browser,origin,width,height);
   await passagePaceCase(browser,origin);
-  for(const kind of ['copy','quick','resize','context-loss','escape','early-back','reduce'])await interruptedPassageCase(browser,origin,kind);
+  for(const kind of ['copy','quick','resize','context-loss','escape','early-back','reduce','cancel-return'])await interruptedPassageCase(browser,origin,kind);
   for(const fault of ['passage-module','passage-css'])await optionalPassageFailure(browser,origin,fault);
   // Diagnostic-only A/B. The normal four widths and all fault cases above use
   // unchanged exact-head source. No production flag, API, or asset is added.

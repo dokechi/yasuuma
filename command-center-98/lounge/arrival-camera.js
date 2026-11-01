@@ -82,14 +82,17 @@ export function createPresentationLeases({snapshot,version=()=>0,valid=()=>true,
   return true;
  }
  function invalidate(reason='cancelled'){serial++;return close(current,{reason,notify:true});}
- function acquire({returnState,onInvalidated}={}){
+ function acquire({returnState,onInvalidated,resumeAtReturn=false}={}){
   const intent=++serial;
   close(current,{reason:'replaced',notify:true,resuming:false});
   if(disposed||serial!==intent)return null;if(!valid()){if(!current)resume();return null;}
   let start,saved;try{start=presentationState(snapshot());saved=returnState?presentationState(returnState):start;if(saved.width!==start.width||saved.height!==start.height)throw Error('Changed court return viewport');}catch{if(!current&&!disposed)resume();return null;}
   const record={id:intent,version:version(),start,returnState:saved,onInvalidated,closed:false,paintCount:0};
   current=record;lastReason='leased';
-  try{suspend(start);}catch{close(record,{reason:'suspend-failed',notify:true});return null;}
+  // Entry freezes the painted departure. Native exit may explicitly seed
+  // the saved canonical court resume pose: cancelling it must not strand the
+  // camera inside the doorway while waiting for a normal owner-window RAF.
+  try{suspend(resumeAtReturn&&returnState?saved:start);}catch{close(record,{reason:'suspend-failed',notify:true});return null;}
   if(current!==record||disposed)return null;
   return Object.freeze({
    id:record.id,returnState:saved,
