@@ -1,0 +1,23 @@
+{
+  "mode": "built-in image_gen identity-preserving style-transfer",
+  "identitySource": "panel-otoku.webp",
+  "styleReference": "insurance-actor-v1.png",
+  "prompt": "otoku-actor-v1-prompt.txt",
+  "nativeOutput": "otoku-actor-v1.png",
+  "webAsset": "otoku-actor-v1.webp",
+  "encoding": "mechanical PNG→WebP quality82 method6 exact=True; no resize, color or alpha edit",
+  "dimensions": [
+    1536,
+    1024
+  ],
+  "visibleAlpha127BBox": [
+    498,
+    10,
+    1523,
+    1024
+  ],
+  "bytes": 192632,
+  "sha256": "a5c983eac4c5654c44b894b2e2e6660384fe73ed39badebd6e64ddc92e3f4bb0",
+  "alphaConversionIdentical": true,
+  "status": "asset candidate; actual scene composition pending"
+}

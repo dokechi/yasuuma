@@ -62,6 +62,19 @@ const server=http.createServer((req,res)=>{
       const selectedBefore=await lounge.locator('.storybook').getAttribute('data-story-room');await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.forEach(node=>node.click()));
       assert.equal(await lounge.locator('.storybook').getAttribute('data-story-room'),selectedBefore);assert.equal(await lounge.locator('.account-board').evaluate(node=>node.hidden),false);assert.equal(await lounge.locator('#room').evaluate(node=>node.hidden),true);
       await preparing.locator('summary').click();assert.equal(await lounge.locator('[data-story-destination]:visible').count(),5);
+      // Every chapter uses its own actual decorative source, not insurance art
+      // reused under another label. Selection alone never enters a route.
+      const handles={insurance:'@sucker0508',otoku:'@thats_a_steal0601',rakuten:'@bonya0914',lottery:'@chusen1101'};
+      for(const key of ['insurance','otoku','rakuten','lottery','sourcing']){
+        await lounge.locator('[data-story-chapter='+key+']').click();
+        const art=lounge.locator('.story-art-host .story-paper-art[data-story-room='+key+']');await art.waitFor();
+        const actor=art.locator('.story-actor-image');await actor.waitFor();await actor.evaluate(image=>image.decode());
+        assert.ok(await art.locator('svg').count());assert.equal(await actor.evaluate(image=>image.complete&&image.naturalWidth>0),true);
+        assert.match(await actor.getAttribute('src'),new RegExp('storybook-'+key+'-actor-v1\\.webp'));
+        if(handles[key])assert.ok((await lounge.locator('.story-account-identity').textContent()).includes(handles[key]));
+        assert.equal(await lounge.locator('.account-board').evaluate(n=>n.hidden),false);
+        assert.equal(await lounge.locator('#room').evaluate(n=>n.hidden),true);
+      }
       // Chapter selection only changes the illustrated page. Its live memo is
       // the new presentation of the same owner count, not a fabricated tile count.
       await lounge.locator('[data-story-chapter=insurance]').click();
@@ -137,7 +150,7 @@ const server=http.createServer((req,res)=>{
       assert.deepEqual(errors,[]);assert.deepEqual(blocked,[]);
       assert.equal(await page.evaluate(()=>__rpgQA.writes.length),0);
       await page.screenshot({path:path.join(out,width+'.png')});
-      results.push({width,height,currentHost:'lounge/index.html',presentation:'storybook',insuranceFixture:true,classicRetired:true,managementPreserved:true,oneReadingDesk:true,keyboardRoutes:true,externalReturn:true,reload:true,sourceUnchanged:true,errors,writes:0,syntheticInitializations:audit.initializations});
+      results.push({width,height,currentHost:'lounge/index.html',presentation:'storybook',insuranceFixture:true,fiveChapterIdentities:true,classicRetired:true,managementPreserved:true,oneReadingDesk:true,keyboardRoutes:true,externalReturn:true,reload:true,sourceUnchanged:true,errors,writes:0,syntheticInitializations:audit.initializations});
       await context.close();
     }
     fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(results,null,2));console.log(JSON.stringify(results,null,2));

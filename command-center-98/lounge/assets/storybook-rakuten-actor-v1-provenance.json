@@ -1,0 +1,23 @@
+{
+  "mode": "built-in image_gen identity-preserving style-transfer",
+  "identitySource": "panel-rakuten.webp",
+  "styleReference": "insurance-actor-v1.png",
+  "prompt": "rakuten-actor-v1-prompt.txt",
+  "nativeOutput": "rakuten-actor-v1.png",
+  "webAsset": "rakuten-actor-v1.webp",
+  "encoding": "mechanical PNG→WebP quality84 method6 exact=True; no resize, color or alpha edit",
+  "dimensions": [
+    1536,
+    1024
+  ],
+  "visibleAlpha127BBox": [
+    458,
+    23,
+    1528,
+    1012
+  ],
+  "bytes": 149952,
+  "sha256": "edee86505d9c74706bfa9001f8c6cfaca45f4939657dea2590ff5a179aa07f6b",
+  "alphaConversionIdentical": true,
+  "status": "asset candidate; actual scene composition pending"
+}

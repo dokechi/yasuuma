@@ -1,0 +1,23 @@
+{
+  "mode": "built-in image_gen identity-preserving style-transfer",
+  "identitySource": "panel-planned-4.webp",
+  "styleReference": "insurance-actor-v1.png",
+  "prompt": "lottery-actor-v1-prompt.txt",
+  "nativeOutput": "lottery-actor-v1.png",
+  "webAsset": "lottery-actor-v1.webp",
+  "encoding": "mechanical PNG→WebP quality84 method6 exact=True; no resize, color or alpha edit",
+  "dimensions": [
+    1536,
+    1024
+  ],
+  "visibleAlpha127BBox": [
+    408,
+    19,
+    1514,
+    1024
+  ],
+  "bytes": 172198,
+  "sha256": "33644ebf311fb7bca41e97d456c533cd36b8bfbf86f78cad8b602feb783c8d95",
+  "alphaConversionIdentical": true,
+  "status": "asset candidate; actual scene composition pending"
+}

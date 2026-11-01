@@ -103,7 +103,7 @@ test('the production manual-hub bridge preserves current account destinations an
  assert.equal(h.root.CCRpgHome.openAccount('choi'),true);
  assert.deepEqual(external,[['https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit','_blank','noopener']]);
  assert.equal(h.doc.querySelector('dialog'),null);
- for(const [key,label,taskId] of [['otoku','まだ安く買えるはず｜@thats_a_steal0601','otoku-threads-v1'],['rakuten','楽天犬｜@bonya0914','rakuten-threads-v1'],['lottery','抽選｜@kousaka_san_','lottery-threads-v1']]){
+ for(const [key,label,taskId] of [['otoku','まだ安く買えるはず｜@thats_a_steal0601','otoku-threads-v1'],['rakuten','楽天犬｜@bonya0914','rakuten-threads-v1'],['lottery','抽選日記｜@chusen1101','lottery-threads-v1']]){
   assert.equal(h.root.CCManualOperationHub.openAccount(key),true);await Promise.resolve();await Promise.resolve();const dialog=h.doc.querySelector('dialog');assert.equal(dialog.querySelector('h2').textContent,label);assert.equal(new URL(requests.at(-1).url).searchParams.get('taskId'),taskId);dialog.querySelectorAll('button').find(b=>b.textContent==='閉じる').click();
  }
  assert.ok(requests.some(r=>new URL(r.url).searchParams.get('taskId')==='insurance-threads-v1'));

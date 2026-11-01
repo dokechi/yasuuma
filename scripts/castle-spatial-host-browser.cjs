@@ -6,11 +6,16 @@ const {chromium}=require('playwright-core');
 // Coverage is the new default book, never archive.html or a substituted frame.
 const root=path.resolve(__dirname,'..'),out=path.join(root,'artifacts/castle-spatial-prototype');
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg'};
-const insuranceBody='合成データの保険原稿です。保障内容と条件を確認してから判断します。\n\nコピーは投稿ではありません。保存済みの文章をそのまま読みます。';
+const insuranceBody='合成データの保険原稿です。保障内容と条件を確認してから判断します。\n\n'+('コピーは投稿ではありません。保存済みの文章をそのまま読みます。\n\n').repeat(18);
+const publishing=['insurance','otoku','rakuten','lottery'];
+const handles={insurance:'@sucker0508',otoku:'@thats_a_steal0601',rakuten:'@bonya0914',lottery:'@chusen1101'};
+const titles={insurance:'保険を見直す前の確認',otoku:'お得な買い物の確認',rakuten:'楽天の条件を確認',lottery:'抽選の参加条件を確認'};
+const bodies=Object.fromEntries(publishing.map(key=>[key,key==='insurance'?insuranceBody:key+'の合成保存原稿です。\n\n'+('この持ち場だけの本文です。保存された条件と出典をそのまま確認します。\n\n').repeat(18)]));
 const fixtureScript=`(()=>{
-  const row={id:901,taskId:'insurance-threads-v1',eventKey:'unified-insurance',title:'保険を見直す前の確認',occurredAt:'2026-10-30T08:00:00Z',domain:'money',payload:{draft:${JSON.stringify(insuranceBody)},date:'2026-10-30',review_status:'確認用下書き',sources_note:'検証専用の出典記録'}};
-  __rpgQA.threads.events.push(row);
-  window.__unifiedQA={original:JSON.stringify(row),requests:[],external:[]};
+  const keys=${JSON.stringify(publishing)},titles=${JSON.stringify(titles)},bodies=${JSON.stringify(bodies)};
+  const rows=keys.map((key,i)=>({id:901+i,taskId:key+'-threads-v1',eventKey:'host-'+key,title:titles[key],occurredAt:'2026-10-30T08:00:00Z',domain:'money',payload:{draft:bodies[key],date:'2026-10-30',review_status:'確認用下書き',sources_note:'検証専用の出典記録'}}));
+  __rpgQA.threads.events.push(...rows);
+  window.__unifiedQA={original:JSON.stringify(rows),requests:[],external:[]};
   window.open=(...args)=>{__unifiedQA.external.push(args);return null;};
   const previous=window.fetch;
   window.fetch=async(input,options={})=>{
@@ -19,7 +24,7 @@ const fixtureScript=`(()=>{
     let body;try{body=JSON.parse(options.body||'null');}catch{}
     __unifiedQA.requests.push({url:url.href,method,...(body?{action:body.action,entityType:body.entityType,count:body.items?.length}:{})});
     const json=data=>new Response(JSON.stringify(data),{status:200,headers:{'Content-Type':'application/json'}});
-    if(method==='GET'&&url.searchParams.get('resource')==='task-events'&&url.searchParams.get('taskId')==='insurance-threads-v1')return json({ok:true,events:[row],total:1,nextOffset:null});
+    if(method==='GET'&&url.searchParams.get('resource')==='task-events'&&rows.some(row=>row.taskId===url.searchParams.get('taskId')))return json({ok:true,events:rows.filter(row=>row.taskId===url.searchParams.get('taskId')),total:1,nextOffset:null});
     if(method==='GET'&&url.searchParams.get('resource')==='threads-images')return json({ok:true,id:url.searchParams.get('id'),accountKey:url.searchParams.get('accountKey'),manifest:{contract:'threads-post-images-v1',revision:0,images:[]},assets:[]});
     return previous(input,options);
   };
@@ -45,7 +50,7 @@ const server=http.createServer((req,res)=>{
   const lounge=page.frameLocator('#ccCastleFrame');await lounge.locator('.storybook[data-ready=true][data-story-scene=ready]').waitFor();await lounge.locator('[data-story-instant=sourcing]').waitFor();
   // All five authored characters remain required, not just the initially
   // selected insurance illustration. This deliberately fails incomplete art.
-  const identities={insurance:'@sucker0508',otoku:'@thats_a_steal0601',rakuten:'@bonya0914',lottery:'@chusen1101'};
+  const identities=handles;
   for(const key of ['insurance','otoku','rakuten','lottery','sourcing']){
    await lounge.locator('[data-story-chapter='+key+']').click();
    const art=lounge.locator('.story-art-host .story-paper-art[data-story-room='+key+']');await art.waitFor();
@@ -65,14 +70,44 @@ const server=http.createServer((req,res)=>{
   await page.screenshot({path:path.join(out,`${width}-${height}-host-home.png`)});
   const frameRect=await page.locator('#ccCastleFrame').boundingBox(),barRect=await page.locator('#requestProgressShortcut').boundingBox();
   assert.ok(frameRect.y>=barRect.y+barRect.height);assert.ok(Math.abs(frameRect.y-52)<=1,'the actual host reserves its 52px request rail');assert.ok((await page.locator('#requestProgressOpen').boundingBox()).height>=44);
-  await lounge.locator('[data-story-instant=insurance]').click();await lounge.locator('#room[data-story-scene=ready]').waitFor();await lounge.locator('.spatial-desk-actor').evaluate(n=>n.decode());assert.match(await lounge.locator('.spatial-desk-actor').getAttribute('src'),/storybook-insurance-actor-v1\.webp/);assert.equal(await lounge.locator('.spatial-study-scene .story-paper-art[data-story-room=insurance]').count(),1);
-  await lounge.locator('#draft-body').waitFor();assert.equal(await lounge.locator('#draft-body').textContent(),insuranceBody);
-  const reader=await lounge.locator('#desk-scroll').evaluate(n=>({font:parseFloat(getComputedStyle(document.getElementById('draft-body')).fontSize),copyHeight:document.getElementById('desk-copy').getBoundingClientRect().height,doneHeight:document.getElementById('desk-done').getBoundingClientRect().height,height:n.clientHeight,bodyTop:document.getElementById('draft-body').getBoundingClientRect().top,viewport:innerHeight,overflow:document.documentElement.scrollWidth>innerWidth}));assert.ok(reader.font>=16&&reader.copyHeight>=44&&reader.doneHeight>=44&&reader.height>=180&&reader.bodyTop<reader.viewport-80&&!reader.overflow,JSON.stringify(reader));
-  await page.screenshot({path:path.join(out,`${width}-${height}-host-study.png`)});
-  await lounge.locator('.spatial-work>summary').click();assert.ok(await lounge.locator('#desk-refresh').isVisible());
-  await page.screenshot({path:path.join(out,`${width}-${height}-host-tools.png`)});await lounge.locator('#desk-read').click();
-  assert.equal(await lounge.locator('#room').evaluate(n=>n.scrollTop),0);await lounge.locator('#desk-copy').click();await lounge.locator('#desk-operation').getByText('本文をコピーしました。',{exact:true}).waitFor();assert.equal((await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n'),insuranceBody);
-  await lounge.locator('#back').click();await lounge.locator('.account-board:not([hidden])').waitFor();
+  const publishingResults=[];
+  for(const key of publishing){
+   await lounge.locator('[data-story-instant='+key+']').click();
+   await lounge.locator('#room[data-account='+key+'][data-story-scene=ready]').waitFor();
+   await lounge.locator('.spatial-desk-actor').evaluate(image=>image.decode());
+   assert.match(await lounge.locator('.spatial-desk-actor').getAttribute('src'),new RegExp('storybook-'+key+'-actor-v1\\.webp'));
+   assert.equal(await lounge.locator('.spatial-study-scene .story-paper-art[data-story-room='+key+']').count(),1);
+   assert.equal(await lounge.locator('.spatial-account-identity p').textContent(),handles[key]);
+   await lounge.locator('#draft-body').waitFor();assert.equal(await lounge.locator('#draft-body').textContent(),bodies[key]);
+   const reader=await lounge.locator('#desk-scroll').evaluate(n=>({font:parseFloat(getComputedStyle(document.getElementById('draft-body')).fontSize),height:n.clientHeight,bodyTop:document.getElementById('draft-body').getBoundingClientRect().top,viewport:innerHeight,overflow:document.documentElement.scrollWidth>innerWidth,actions:[...document.querySelectorAll('#desk-copy,#desk-done')].map(button=>{const r=button.getBoundingClientRect();return {height:r.height,width:r.width,top:r.top,bottom:r.bottom};})}));
+   assert.ok(reader.font>=16&&reader.height>=180&&reader.bodyTop<reader.viewport-80&&!reader.overflow&&reader.actions.every(r=>r.height>=44&&r.width>=44&&r.top>=0&&r.bottom<=reader.viewport),JSON.stringify({key,...reader}));
+   await page.screenshot({path:path.join(out,`${width}-${height}-host-study${key==='insurance'?'':'-'+key}.png`)});
+   await lounge.locator('.spatial-work>summary').click();assert.ok(await lounge.locator('#desk-refresh').isVisible());
+   assert.ok((await lounge.locator('#desk-routes strong').textContent()).includes(handles[key]));
+   if(key==='insurance')await page.screenshot({path:path.join(out,`${width}-${height}-host-tools.png`)});
+   await lounge.locator('#desk-read').click();assert.equal(await lounge.locator('#room').evaluate(n=>n.scrollTop),0);
+   await lounge.locator('#desk-copy').click();await lounge.locator('#desk-operation').getByText('本文をコピーしました。',{exact:true}).waitFor();
+   assert.equal((await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n'),bodies[key]);
+   assert.equal(await lounge.locator('#desk-pin').getAttribute('aria-pressed'),'false','favorites from the previous account never leak');
+   await lounge.locator('#desk-pin').click();assert.equal(await lounge.locator('#desk-pin').getAttribute('aria-pressed'),'true');
+   const scroll=await lounge.locator('#desk-scroll').evaluate(node=>{node.scrollTop=150;window.__hostPaper=document.getElementById('desk');window.__hostBody=document.getElementById('draft-body');return node.scrollTop;});
+   assert.ok(scroll>0,'the retention test must use a real nonzero reading offset');
+   await lounge.locator('.living-toggle').click();await lounge.locator('[data-object=chest]').click();
+   await lounge.locator('#living-record-dialog[open]').waitFor();assert.equal(await lounge.locator('#living-record-dialog [data-living-draft]').count(),1);
+   assert.equal(await lounge.locator('#living-record-dialog [data-living-draft] strong').textContent(),titles[key]);
+   assert.ok((await lounge.locator('#living-record-dialog [data-living-draft] span').textContent()).includes(handles[key]));
+   await lounge.getByRole('button',{name:'部屋の記録を閉じる',exact:true}).click();
+   await lounge.locator('.living-copy-history').click();await lounge.locator('#desk-history-dialog[open]').waitFor();
+   assert.equal(await lounge.locator('#desk-history-list details').count(),1,'copy history is current-account scoped');
+   assert.equal(await lounge.locator('#desk-history-list pre').textContent(),bodies[key]);
+   await lounge.locator('#desk-history-close').click();assert.equal(await lounge.locator('.living-copy-history').evaluate(n=>n===document.activeElement),true);
+   await lounge.locator('.living-reader-return').click();
+   assert.equal(await lounge.locator('#desk').evaluate(n=>n===window.__hostPaper&&!n.inert&&document.getElementById('draft-body')===window.__hostBody),true);
+   assert.equal(await lounge.locator('#draft-body').textContent(),bodies[key]);assert.equal(await lounge.locator('#desk-scroll').evaluate(n=>n.scrollTop),scroll);
+   await lounge.locator('#back').click();await lounge.locator('.account-board:not([hidden])').waitFor();
+   assert.equal(await lounge.locator('[data-story-instant='+key+']').evaluate(n=>n===document.activeElement),true);
+   publishingResults.push({key,handle:handles[key],reader,exactCopy:true,accountLocalNotes:true,scrollRetained:scroll});
+  }
   await lounge.locator('[data-story-instant=sourcing]').click();await page.locator('body.lounge-workspace #loungeWorkspaceHeader:not([hidden])').waitFor();
   assert.equal(await page.locator('#ccCastleFrame').isVisible(),false);assert.equal(await page.locator('#mainWindow').getAttribute('data-cc-view'),'sourcing');
   await page.waitForFunction(()=>document.querySelector('#sourcingHub'));await page.evaluate(()=>document.fonts.ready);
@@ -89,8 +124,8 @@ const server=http.createServer((req,res)=>{
   await page.locator('[data-lounge-home]').click();await lounge.locator('.account-board:not([hidden])').waitFor();assert.equal(await lounge.locator('[data-story-instant=sourcing]').evaluate(n=>n===document.activeElement),true);
   assert.deepEqual(requested.filter(url=>/castle-interior-sourcing-v1\.webp|\/sourcing-desk-actor\.webp/.test(url)),[],'native notebook must not fetch retired workshop artwork');
   assert.deepEqual(errors,[]);assert.deepEqual(blocked,[]);assert.deepEqual(await page.evaluate(()=>__rpgQA.writes),[]);assert.deepEqual(await page.evaluate(()=>__rpgQA.threads.simulatedWrites),[]);
-  const sourceUnchanged=await page.evaluate(()=>JSON.stringify(__rpgQA.threads.events.find(x=>x.id===901))===__unifiedQA.original);assert.equal(sourceUnchanged,true);
-  results.push({width,height,presentation:'storybook',geometry,sourceUnchanged,errors,writes:0});await context.close();
- }fs.writeFileSync(path.join(out,'native-results.json'),JSON.stringify(results,null,2));console.log('PASS storybook native notebook: real host loader, immediate sourcing route, original ledger/settings/back, responsive controls and zero fixture writes.');}
+  const sourceUnchanged=await page.evaluate(()=>JSON.stringify(__rpgQA.threads.events.filter(x=>x.id>=901&&x.id<=904))===__unifiedQA.original);assert.equal(sourceUnchanged,true);
+  results.push({width,height,presentation:'storybook',publishingResults,geometry,sourceUnchanged,errors,writes:0});await context.close();
+ }fs.writeFileSync(path.join(out,'native-results.json'),JSON.stringify(results,null,2));console.log('PASS storybook native notebook: real host loader, five home identities, four source/copy/favorite/history/scroll journeys, immediate sourcing route, original ledger/settings/back, responsive controls and zero fixture writes.');}
  finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});

@@ -1,0 +1,23 @@
+{
+  "mode": "built-in image_gen identity-preserving style-transfer",
+  "identitySource": "panel-sourcing.webp",
+  "styleReference": "insurance-actor-v1.png",
+  "prompt": "sourcing-actor-v1-prompt.txt",
+  "nativeOutput": "sourcing-actor-v1.png",
+  "webAsset": "sourcing-actor-v1.webp",
+  "encoding": "mechanical PNG→WebP quality78 method6 exact=True; no resize, color or alpha edit",
+  "dimensions": [
+    1536,
+    1024
+  ],
+  "visibleAlpha127BBox": [
+    229,
+    10,
+    1523,
+    1001
+  ],
+  "bytes": 193358,
+  "sha256": "19867ff9c664cf64b5e654bc23b8c669347e70fc32f32913ee1dbda0172be522",
+  "alphaConversionIdentical": true,
+  "status": "asset candidate; actual scene composition pending"
+}

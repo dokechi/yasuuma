@@ -1,0 +1,133 @@
+{
+  "revision": "five-chapter-paper-stage-v3",
+  "authoredAtUTC": "2026-11-01T08:52:00Z",
+  "originalNativeArt": true,
+  "generator": "Hand-authored native SVG/DOM; no raster tracing, no reference-site assets",
+  "module": {
+    "file": "storybook-art.js",
+    "bytes": 26842,
+    "sha256": "27a82ffa09232baf2cc98c7a6a18310f91b8de596093b1e357b1180bda2f77df"
+  },
+  "test": {
+    "file": "storybook-art.test.mjs",
+    "sha256": "8dfee7b6c5474e64445c3af26e8be5381f2fbbf8042138c4a03847815158b396",
+    "sourceSha256": "9a24e2e04631afd46dede6d33ad2068a5fb6ed99a725994e06d3c2e0f7b5e6d2",
+    "integrationNote": "Default input path only changed to repository module; pure source contract otherwise unchanged."
+  },
+  "pureProof": {
+    "file": "layout-v3-proof.json",
+    "sha256": "d8af8a4de6731bd7eb837755b240cd2acea79ffe4cce4bd3a74b6ce81c2ea9ea",
+    "scope": "5 rooms x 3 layouts x 4 host boxes = 60 visible actor bounds; exact shared actor coordinates with and without actor; native SVG safety; image-error fallback. Not browser visual acceptance."
+  },
+  "palette": "palette-v2.json",
+  "rasterAssets": {
+    "insurance": {
+      "file": "insurance-actor-v1.webp",
+      "bytes": 158814,
+      "sha256": "446b0755d56156a8c993eff1ff239d4544a923ff1cbf6ee9e080b34916f7dd84",
+      "source": "insurance-actor-v1-provenance.json"
+    },
+    "otoku": {
+      "file": "otoku-actor-v1.webp",
+      "bytes": 192632,
+      "sha256": "a5c983eac4c5654c44b894b2e2e6660384fe73ed39badebd6e64ddc92e3f4bb0",
+      "source": "otoku-actor-v1-provenance.json"
+    },
+    "rakuten": {
+      "file": "rakuten-actor-v1.webp",
+      "bytes": 149952,
+      "sha256": "edee86505d9c74706bfa9001f8c6cfaca45f4939657dea2590ff5a179aa07f6b",
+      "source": "rakuten-actor-v1-provenance.json"
+    },
+    "lottery": {
+      "file": "lottery-actor-v1.webp",
+      "bytes": 172198,
+      "sha256": "33644ebf311fb7bca41e97d456c533cd36b8bfbf86f78cad8b602feb783c8d95",
+      "source": "lottery-actor-v1-provenance.json"
+    },
+    "sourcing": {
+      "file": "sourcing-actor-v1.webp",
+      "bytes": 193358,
+      "sha256": "19867ff9c664cf64b5e654bc23b8c669347e70fc32f32913ee1dbda0172be522",
+      "source": "sourcing-actor-v1-provenance.json"
+    }
+  },
+  "chapters": {
+    "insurance": "letter rack / stepped shelf / folded window / plant / dispatch paper",
+    "otoku": "pitched greenhouse / standing catalogue / leaf ladder / offer fan",
+    "rakuten": "pantry screen / wrapping rolls / stacked parcels / ribbon bridge",
+    "lottery": "standing chart wheel / folded atlas / observatory flap / paper comet",
+    "sourcing": "inventory bay / ledger bridge / index stakes / parcel tray"
+  },
+  "layout": {
+    "spread": {
+      "aspect": 2,
+      "actor": [
+        7,
+        0,
+        100,
+        96
+      ]
+    },
+    "page": {
+      "aspect": 0.9523809523809523,
+      "actor": {
+        "insurance": [
+          -40,
+          1,
+          140,
+          97
+        ],
+        "otoku": [
+          -40,
+          1,
+          140,
+          97
+        ],
+        "rakuten": [
+          -40,
+          1,
+          140,
+          97
+        ],
+        "lottery": [
+          -36,
+          1,
+          136,
+          97
+        ],
+        "sourcing": [
+          -17,
+          1,
+          116,
+          97
+        ]
+      }
+    },
+    "legacy": {
+      "aspect": 1.3333333333333333,
+      "actor": [
+        0,
+        10.8,
+        100,
+        88.8889
+      ]
+    }
+  },
+  "notes": [
+    "Fresh decorative DOM per call; no controls/data/text in SVG",
+    "HTML owns broad page colors; native props stand on bottom-origin folds",
+    "Each object retains its source aspect with meet; actor keeps exact full source canvas and contain",
+    "Small local contact ellipses and thin paper feet, not backdrop glows",
+    "Image error hides image and its contact wrapper once; native paper props remain; root artState=fallback",
+    "Source PNGs retain generated pixels; WebP alpha channels identical; no manual mask or color correction"
+  ],
+  "actualAppVisualStatus": "Pending next exact full-five integration screenshots and valid motion frames; first insurance whole-book direction conditionally accepted only.",
+  "repositoryPaths": {
+    "module": "command-center-98/lounge/storybook-art.js",
+    "test": "scripts/storybook-art.test.mjs",
+    "pureProof": "docs/storybook-art/layout-v3-proof.json",
+    "palette": "docs/storybook-art/palette-v2.json",
+    "rasterPrefix": "command-center-98/lounge/assets/storybook-"
+  }
+}

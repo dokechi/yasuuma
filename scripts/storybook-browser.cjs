@@ -59,7 +59,7 @@ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
  const origin='http://127.0.0.1:'+server.address().port;
  const browser=await chromium.launch({channel:'chromium',headless:true,args:['--no-sandbox']});
  const results=[];
- const save=()=>fs.writeFileSync(path.join(artifact,'results.json'),JSON.stringify({scope:'actual-default insurance vertical slice; full five-room motion pending',results},null,2));
+ const save=()=>fs.writeFileSync(path.join(artifact,'results.json'),JSON.stringify({scope:'actual-default five chapters, four real publishing readers/tools, native sourcing; normal motion covered separately',results},null,2));
  try{for(const [width,height]of sizes){
   const context=await browser.newContext({viewport:{width,height},hasTouch:width<=800,reducedMotion:'reduce',serviceWorkers:'block',permissions:['clipboard-read','clipboard-write']});await context.addInitScript(probe);
   const page=await context.newPage(),errors=[],blocked=[],moduleRequests=[];
@@ -126,6 +126,56 @@ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
    const update=structuredClone(original),current=(await roomState('insurance')).current;update.type='records';update.drafts.find(d=>d.id===current.id).body+='\n明示操作でだけ反映する新しい本文です。';await send(update);await cf.waitForFunction(()=>__storyDesk.snapshot().rooms.find(r=>r.key==='insurance').pendingUpdate===true);check('arriving revision does not replace a reading manuscript silently',await f.locator('#draft-body').textContent()===body&&(await state()).provisional&&(await roomState('insurance')).totalCount===null);
    await f.locator('[data-object=notice]').click();await f.locator('.living-apply-update').waitFor();await capture('notice-pending');await f.locator('.living-apply-update').click();await f.locator('#room:not([data-living-view])').waitFor();check('explicit notice action alone applies the same exact source revision',await f.locator('#draft-body').textContent()===update.drafts.find(d=>d.id===current.id).body&&(await roomState('insurance')).current.id===current.id&&!(await roomState('insurance')).pendingUpdate);
    await f.locator('#back').click();await f.locator('.storybook[data-ready=true]').waitFor({state:'visible'});check('Back preserves selected insurance and leaves no inert work overlay',(await cf.evaluate(()=>__storybook.snapshot())).selected==='insurance'&&await f.locator('#room').isHidden());await capture('default-return');
+   // The actual default now owns all five illustrated chapters. Browsing a
+   // chapter must not route or replace records; the five quick paths remain
+   // genuinely instantaneous and use the same manuscript/native owners.
+   for(const key of ['insurance','otoku','rakuten','lottery','sourcing']){
+    const browsingVisit=await cf.evaluate(()=>__storyBoard.state.visitVersion);
+    await f.locator('[data-story-chapter='+key+']').click();
+    await f.locator('.storybook[data-story-room='+key+'][data-story-scene=ready]').waitFor();
+    await f.locator('.story-art-host .story-actor-image').evaluate(n=>n.decode());
+    const chapter=await cf.evaluate(key=>{const art=document.querySelector('.story-art-host .story-paper-art'),actor=art?.querySelector('img'),r=actor?.getBoundingClientRect();return {key:art?.dataset.storyRoom,layout:art?.dataset.storyLayout,props:[...art?.querySelectorAll('[data-prop]')||[]].map(n=>n.dataset.prop),actor:actor?.getAttribute('src'),loaded:!!actor?.complete&&actor.naturalWidth>0,rect:r?.toJSON(),identity:document.querySelector('.story-account-identity')?.textContent,selected:__storybook.snapshot().selected,visit:__storyBoard.state.visitVersion};},key);
+    check(key+' chapter is its own loaded original illustration and browsing never routes',chapter.key===key&&chapter.selected===key&&chapter.loaded&&chapter.actor.includes('storybook-'+key+'-actor-v1.webp')&&chapter.props.length>=4&&chapter.visit===browsingVisit,chapter);
+    await capture(key+'-chapter');
+    if(key==='insurance')continue; // Its full owner/data workflow was exercised above.
+    const routeBefore=await cf.evaluate(()=>({visit:__storyBoard.state.visitVersion,copies:__storyProbe.clipboard.length}));
+    await f.locator('[data-story-instant='+key+']').click();
+    if(key==='sourcing'){
+     await page.locator('body.lounge-workspace #loungeWorkspaceHeader:not([hidden])[data-story-art=ready]').waitFor();
+     await page.locator('.story-workspace-art .story-actor-image').evaluate(n=>n.decode());
+     const native=await page.evaluate(()=>{const art=document.querySelector('.story-workspace-art'),actor=art?.querySelector('img'),home=document.querySelector('[data-lounge-home]'),r=home?.getBoundingClientRect();return {view:document.getElementById('mainWindow')?.dataset.ccView,frameHidden:document.getElementById('ccCastleFrame').hidden,art:art?.querySelector('.story-paper-art')?.dataset.storyRoom,actor:actor?.getAttribute('src'),loaded:!!actor?.complete&&actor.naturalWidth>0,decorative:art?.inert&&art?.getAttribute('aria-hidden')==='true',home:{visible:home?.checkVisibility(),width:r?.width,height:r?.height},overflow:document.documentElement.scrollWidth>innerWidth};});
+     check('sourcing keeps its original native work surface and isolated paper decoration',native.view==='sourcing'&&native.frameHidden&&native.art==='sourcing'&&native.loaded&&native.actor.includes('storybook-sourcing-actor-v1.webp')&&native.decorative&&native.home.visible&&native.home.width>=44&&native.home.height>=44&&!native.overflow,native);
+     check('native stock and task quantities remain unknown rather than invented zeroes',(await roomState('sourcing')).loadedCount===null&&(await roomState('sourcing')).totalCount===null);
+     await capture('sourcing-native');await page.locator('[data-lounge-home]').click();
+    }else{
+     await f.locator('#room[data-account='+key+'][data-spatial-desk=ready][data-story-scene=ready]').waitFor();await f.locator('.living-toggle').waitFor();
+     const expected=rows.find(r=>r.taskId===key+'-threads-v1').payload.draft,summary=await roomState(key);
+     const currentGeometry=await f.locator('#desk-scroll').evaluate(n=>({height:n.clientHeight,top:document.getElementById('draft-body').getBoundingClientRect().top,viewport:innerHeight,font:parseFloat(getComputedStyle(document.getElementById('draft-body')).fontSize),overflow:document.documentElement.scrollWidth>innerWidth,actor:document.querySelector('.spatial-desk-actor')?.getAttribute('src'),actions:[...document.querySelectorAll('#desk-copy,#desk-done')].map(b=>{const r=b.getBoundingClientRect();return {width:r.width,height:r.height,top:r.top,bottom:r.bottom};})}));
+     check(key+' reader preserves its own exact source, identity, known count and readable paper',await f.locator('#draft-body').textContent()===expected&&summary.current.source.account===key&&summary.loadedCount===1&&summary.totalCount===1&&currentGeometry.actor.includes('storybook-'+key+'-actor-v1.webp')&&currentGeometry.height>=180&&currentGeometry.top<currentGeometry.viewport-80&&currentGeometry.font>=16&&!currentGeometry.overflow&&currentGeometry.actions.every(r=>r.width>=44&&r.height>=44&&r.top>=0&&r.bottom<=currentGeometry.viewport+1),{source:summary.current.source,handle:summary.handle,geometry:currentGeometry});
+     check(key+' room never carries a previous account copy-success claim',!(await f.locator('#desk-operation').textContent()).includes('コピーしました'));
+     await capture(key+'-reader');await f.locator('#desk-copy').click();await f.locator('#desk-operation').getByText('本文をコピーしました。',{exact:true}).waitFor();
+     check(key+' copy writes only its own original manuscript once',await cf.evaluate(before=>__storyProbe.clipboard.length===before+1,routeBefore.copies)&&(await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n')===expected&&(await roomState(key)).postedCount===0);
+     await showTools();const currentObjects=await f.locator('#living-workbench [data-object]').evaluateAll(ns=>ns.map(n=>{const r=n.getBoundingClientRect();return {key:n.dataset.object,width:r.width,height:r.height,label:n.getAttribute('aria-label')};}));
+     check(key+' tools expose four existing labelled actions and preserve current source',same(currentObjects.map(n=>n.key).sort(),['desk','shelf','chest','notice'].sort())&&currentObjects.every(n=>n.width>=44&&n.height>=44&&n.label)&&(await roomState(key)).current.source.account===key,currentObjects);await capture(key+'-tools');
+     await f.locator('[data-object=desk]').click();await f.locator('#room:not([data-living-view])').waitFor();await f.locator('#back').click();
+    }
+    await f.locator('.storybook[data-ready=true]').waitFor({state:'visible'});
+    const returned=await cf.evaluate(key=>({visit:__storyBoard.state.visitVersion,selected:__storybook.snapshot().selected,focus:document.activeElement?.dataset.storyInstant,inert:!!document.activeElement?.closest('[inert]'),layers:document.querySelectorAll('.storybook-journey,.court-passage,.castle-journey').length,hidden:document.getElementById('room').hidden}),key);
+    check(key+' instant route commits exactly once and Back restores the same usable chapter',returned.visit===routeBefore.visit+1&&returned.selected===key&&returned.focus===key&&!returned.inert&&returned.layers===0&&returned.hidden,returned);
+   }
+   if(width===390){
+    // Real joint-session browser history, not synthetic popstate. These three
+    // publishing accounts share the old purple room, so preserve the account
+    // and exact selected draft instead of accepting any purple destination.
+    await f.locator('[data-story-instant=lottery]').click();await f.locator('#room[data-account=lottery][data-spatial-desk=ready][data-story-scene=ready]').waitFor();
+    const historySource=await cf.evaluate(()=>{const room=__storyDesk.snapshot().rooms.find(r=>r.key==='lottery');return {id:room.current.id,source:room.current.source,body:document.getElementById('draft-body').textContent,account:document.getElementById('room').dataset.account};});
+    await page.goBack();await f.locator('.storybook[data-ready=true]').waitFor({state:'visible'});
+    check('real browser Back restores the selected shared-route chapter and its original trigger',await cf.evaluate(()=>__storybook.snapshot().selected==='lottery'&&document.getElementById('room').hidden&&document.activeElement?.dataset.storyInstant==='lottery'&&!document.activeElement.closest('[inert]')));
+    await page.goForward();await f.locator('#room[data-account=lottery][data-spatial-desk=ready][data-story-scene=ready]').waitFor();
+    const historyReturn=await cf.evaluate(()=>{const room=__storyDesk.snapshot().rooms.find(r=>r.key==='lottery'),copy=document.getElementById('desk-copy'),r=copy.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {id:room.current?.id,source:room.current?.source,body:document.getElementById('draft-body').textContent,account:document.getElementById('room').dataset.account,boardHidden:document.querySelector('.account-board').hidden,copyHit:hit===copy||copy.contains(hit),focusInert:!!document.activeElement?.closest('[inert]')};});
+    check('real browser Forward reopens the exact lottery source rather than another purple account or covered reader',historyReturn.id===historySource.id&&same(historyReturn.source,historySource.source)&&historyReturn.body===historySource.body&&historyReturn.account===historySource.account&&historyReturn.boardHidden&&historyReturn.copyHit&&!historyReturn.focusInert,historyReturn);
+    await capture('lottery-browser-forward');await f.locator('#back').click();await f.locator('.storybook[data-ready=true]').waitFor({state:'visible'});
+   }
    check('local owner note and source records survive without mutation',await cf.evaluate(()=>localStorage.getItem('storybook-owner-note'))==='untouched'&&await page.evaluate(()=>JSON.stringify(__rpgQA.threads.events.filter(r=>__storybookRecords.ids.includes(r.id)))===__storybookRecords.original));
    check('no external actions, source writes, unexpected transport or browser errors',await page.evaluate(()=>__rpgQA.writes.length===0&&__rpgQA.threads.simulatedWrites.length===0&&__storybookRecords.external.length===0)&&blocked.length===0&&errors.length===0,{blocked,errors});
    check('default sound is silent without an explicit gesture',await page.evaluate(()=>__storyProbe.audio.length===0)&&await cf.evaluate(()=>__storyProbe.audio.length===0));

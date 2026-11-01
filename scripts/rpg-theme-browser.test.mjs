@@ -444,12 +444,18 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
    await evaluate(`[...${L}.document.querySelectorAll('.story-preparing [data-story-destination]')].forEach(n=>n.click())`);
    await capture(width+'x'+height+'-storybook-preparing',`(()=>{const d=${L}.document,nodes=[...d.querySelectorAll('.story-preparing [data-story-destination]')];return nodes.length===3&&JSON.stringify(nodes.map(n=>n.getAttribute('aria-label')))===JSON.stringify(['追加アカウント5、未設定','追加アカウント6、未設定','予備、未設定'])&&nodes.every(n=>n.disabled&&n.checkVisibility()&&n.getBoundingClientRect().height>=44)&&d.querySelectorAll('[data-story-destination]').length===8&&d.querySelector('.storybook').dataset.storyRoom===window.__storySelectionBefore&&!d.querySelector('.account-board').hidden&&d.getElementById('room').hidden})()`);
    await evaluate(`${L}.document.querySelector('.story-preparing>summary').click()`);await waitFor(`${L}.document.querySelector('.story-preparing').open===false`);
+   for(const chapter of ['insurance','otoku','rakuten','lottery','sourcing']){
+    await evaluate(`${L}.document.querySelector('[data-story-chapter="${chapter}"]').click()`);
+    await waitFor(`!!${L}.document.querySelector('.story-art-host .story-paper-art[data-story-room="${chapter}"] .story-actor-image')`);
+    await evaluate(`${L}.document.querySelector('.story-art-host .story-actor-image').decode()`);
+    await capture(width+'x'+height+'-storybook-chapter-'+chapter,`(()=>{const d=${L}.document,art=d.querySelector('.story-art-host .story-paper-art'),image=art.querySelector('.story-actor-image'),handle=({insurance:'@sucker0508',otoku:'@thats_a_steal0601',rakuten:'@bonya0914',lottery:'@chusen1101'})['${chapter}'];return art.dataset.storyRoom==='${chapter}'&&art.querySelectorAll('svg').length>0&&image.complete&&image.naturalWidth>0&&image.src.endsWith('/storybook-${chapter}-actor-v1.webp')&&(!handle||d.querySelector('.story-account-identity').textContent.includes(handle))&&!d.querySelector('.account-board').hidden&&d.getElementById('room').hidden})()`);
+   }
    for(const account of ['insurance','otoku','rakuten','lottery']){
     await evaluate(`${L}.document.querySelector('[data-story-instant="${account}"]').click()`);
     await waitFor(`${L}.document.getElementById('room').hidden===false&&${L}.document.getElementById('draft-body').textContent.startsWith('${account}')`);
     await waitFor(`${L}.document.getElementById('room').dataset.storyScene==='ready'`);
     await evaluate(`${L}.document.querySelector('.spatial-desk-actor').decode()`);
-    await capture(width+'x'+height+'-lounge-room-'+account,`(()=>{const c=${L},d=c.document,body=d.getElementById('draft-body'),expected=window.__rpgQA.currentDrafts.find(x=>x.taskId==='${account}-threads-v1').payload.draft;return d.getElementById('room').dataset.account==='${account}'&&d.querySelector('.spatial-account-identity p').textContent===({insurance:'@sucker0508',otoku:'@thats_a_steal0601',rakuten:'@bonya0914',lottery:'@chusen1101'})['${account}']&&body.textContent===expected&&d.querySelector('.spatial-desk-actor').complete&&d.querySelector('.spatial-desk-actor').naturalWidth>0&&d.querySelector('.spatial-desk-actor').src.includes('storybook-${account}-actor')&&!!d.querySelector('.spatial-study-scene .story-paper-art')&&d.getElementById('desk-scroll').clientHeight>=180&&c.document.documentElement.scrollWidth<=c.innerWidth+1&&parseFloat(c.getComputedStyle(body).fontSize)>=16&&d.getElementById('desk-copy').getBoundingClientRect().height>=44})()`);
+    await capture(width+'x'+height+'-lounge-room-'+account,`(()=>{const c=${L},d=c.document,body=d.getElementById('draft-body'),expected=window.__rpgQA.currentDrafts.find(x=>x.taskId==='${account}-threads-v1').payload.draft;return d.getElementById('room').dataset.account==='${account}'&&d.querySelector('.spatial-account-identity p').textContent===({insurance:'@sucker0508',otoku:'@thats_a_steal0601',rakuten:'@bonya0914',lottery:'@chusen1101'})['${account}']&&body.textContent===expected&&d.querySelector('.spatial-desk-actor').complete&&d.querySelector('.spatial-desk-actor').naturalWidth>0&&d.querySelector('.spatial-desk-actor').src.includes('storybook-${account}-actor')&&!!d.querySelector('.spatial-illustration-stage .spatial-study-scene .story-paper-art[data-story-room="${account}"]')&&d.getElementById('desk-scroll').clientHeight>=180&&c.document.documentElement.scrollWidth<=c.innerWidth+1&&parseFloat(c.getComputedStyle(body).fontSize)>=16&&body.getBoundingClientRect().top<c.innerHeight-80&&['desk-copy','desk-done'].every(id=>{const r=d.getElementById(id).getBoundingClientRect();return r.height>=44&&r.width>=44&&r.top>=0&&r.bottom<=c.innerHeight})})()`);
     await evaluate(`(()=>{const c=${L};Object.defineProperty(c.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__loungeCopied=text}}});c.document.getElementById('desk-copy').click()})()`);
     await waitFor(`window.__loungeCopied===window.__rpgQA.currentDrafts.find(x=>x.taskId==='${account}-threads-v1').payload.draft`);
     await capture(width+'x'+height+'-lounge-copy-'+account,`window.__loungeCopied===${L}.document.getElementById('draft-body').textContent&&window.__rpgQA.writes.length===0&&window.__rpgQA.threads.simulatedWrites.length===0`);
@@ -463,12 +469,14 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
     }
     await evaluate(`${L}.document.getElementById('back').click()`);
     await waitFor(`${L}.document.querySelector('.account-board').hidden===false`);
+    await capture(width+'x'+height+'-lounge-return-'+account,`${L}.document.activeElement===${L}.document.querySelector('[data-story-instant="${account}"]')`);
    }
   }
   // Resizing never swaps the selected manuscript. Pinning remains a local note.
   await evaluate(`${L}.document.querySelector('[data-story-instant="insurance"]').click()`);
   await waitFor(`${L}.document.getElementById('room').hidden===false`);
   await evaluate(`${L}.document.getElementById('desk-pin').click();${L}.document.getElementById('desk-scroll').scrollTop=150;window.__loungeTitle=${L}.document.getElementById('draft-title').textContent;window.__loungeText=${L}.document.getElementById('draft-body').textContent;window.__loungeScroll=${L}.document.getElementById('desk-scroll').scrollTop`);
+  await capture('lounge-reading-has-real-scroll',`window.__loungeScroll>0`);
   await send('Emulation.setDeviceMetricsOverride',{width:360,height:800,deviceScaleFactor:1,mobile:true});await sleep(250);
   await capture('lounge-fold-preserves-reading',`${L}.document.getElementById('draft-title').textContent===window.__loungeTitle&&${L}.document.getElementById('draft-body').textContent===window.__loungeText&&${L}.document.getElementById('desk-scroll').scrollTop===window.__loungeScroll&&${L}.document.getElementById('desk-pin').getAttribute('aria-pressed')==='true'`);
   await evaluate(`window.__rpgQA.mode='error';CCCastle.refresh()`);
@@ -480,6 +488,9 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   await waitFor(`${L}.document.querySelector('.account-board').hidden===false`);
   await evaluate(`${L}.document.querySelector('[data-story-instant="sourcing"]').click()`);
   await waitFor(`!app.busy&&app.view==='sourcing'&&document.getElementById('ccCastleFrame').hidden`);
+  await waitFor(`!!document.querySelector('.story-workspace-art .story-paper-art[data-story-room=sourcing] .story-actor-image')`);
+  await evaluate(`document.querySelector('.story-workspace-art .story-actor-image').decode()`);
+  await capture('lounge-sourcing-chapter-identity',`(()=>{const art=document.querySelector('.story-workspace-art .story-paper-art[data-story-room=sourcing]'),image=art.querySelector('.story-actor-image');return art.getAttribute('aria-hidden')==='true'&&art.querySelectorAll('svg').length>0&&image.complete&&image.naturalWidth>0&&image.src.endsWith('/storybook-sourcing-actor-v1.webp')})()`);
   await capture('lounge-native-sourcing',`sourcingApp.sub==='purchases'&&!document.getElementById('loungeWorkspaceHeader').hidden&&document.querySelector('[data-lounge-home]').getBoundingClientRect().height>=44`);
   await evaluate(`document.querySelector('[data-lounge-home]').click()`);await waitFor(`!document.getElementById('ccCastleFrame').hidden&&${L}.document.querySelector('.account-board').hidden===false`);
   // Supplementary FP still enters the existing saved-reader controller first,
