@@ -27,7 +27,14 @@ const fixtureScript=`(()=>{
    // A valid saved close/price-wait row, seeded before app initialization. No
    // UI action mutates it; the real existing editor is opened read-only below.
    const response=await previous(input,options),data=await response.json();data.items=data.items.map(row=>row.id==='s1'?{...row,sourcingVerdict:'close'}:row);
-   __storybookRecords.nativeSeed??=JSON.stringify(data.items);return json(data);
+   const raw=JSON.stringify(data.items);(__storybookRecords.nativeRawResponses||=[]).push(raw);
+   if(!__storybookRecords.nativeSeed){
+    __storybookRecords.nativeSeed=raw;__storybookRecords.nativeSeedOriginal=raw;
+    // Existing v218 normalizeBoosts is a display-time normalization, not a
+    // storybook write. Only these documented fields may differ from raw seed.
+    __storybookRecords.nativeExpected=JSON.stringify(JSON.parse(raw).map(row=>{const next={...row,supplierBoost:0},base=row.baseScore!==null&&row.baseScore!==undefined?Number(row.baseScore):Number(row.score)-Number(row.supplierBoost||0);if(Number.isFinite(base)){next.score=Math.min(100,base);next.priority=next.score>=85?'S':next.score>=70?'A':'B';}return next;}));
+   }
+   return json(data);
   }
   return previous(input,options);
  };
@@ -241,7 +248,7 @@ const delta=(a,b)=>Math.max(...['left','top','width','height'].map(key=>Math.abs
    // decoded parent art is still arriving. Work, Back and source integrity may not fail.
    await f.locator('[data-story-chapter=sourcing]').click();await cf.waitForFunction(()=>__storybook.snapshot().chapterReady==='ready');await cf.evaluate(()=>Promise.all([...document.querySelectorAll('.story-art-host img')].map(n=>n.decode())));
    const coldStart=await page.evaluate(()=>({mounts:__storyMotion.mounts.length,events:__storyMotion.events.length}));await f.locator('[data-story-open=sourcing]').click();await page.waitForFunction(()=>document.getElementById('mainWindow')?.dataset.ccView==='sourcing'&&document.getElementById('ccCastleFrame')?.hidden);await page.locator('#sourcingBody .purchase-product > b').filter({hasText:/^検証用購入商品$/}).waitFor();await none();
-   const coldState=await page.evaluate(before=>({events:__storyMotion.events.slice(before.events),mounts:__storyMotion.mounts.length-before.mounts,sourceExact:JSON.stringify(sourcingApp.items)===__storybookRecords.nativeSeed,closeRow:sourcingApp.items.find(n=>n.id==='s1')?.sourcingVerdict,homeReachable:document.querySelector('[data-lounge-home]').checkVisibility()}),coldStart);
+   const coldState=await page.evaluate(before=>({events:__storyMotion.events.slice(before.events),mounts:__storyMotion.mounts.length-before.mounts,sourceExact:JSON.stringify(sourcingApp.items)===__storybookRecords.nativeExpected,...(JSON.stringify(sourcingApp.items)!==__storybookRecords.nativeExpected?{raw:JSON.parse(__storybookRecords.nativeSeed),current:structuredClone(sourcingApp.items),expected:JSON.parse(__storybookRecords.nativeExpected)}:{}),closeRow:sourcingApp.items.find(n=>n.id==='s1')?.sourcingVerdict,homeReachable:document.querySelector('[data-lounge-home]').checkVisibility()}),coldStart);
    check('cold ordinary native entry safely completes or omits cosmetics but loads its exact existing work',coldState.sourceExact&&coldState.closeRow==='close'&&coldState.homeReachable&&coldState.mounts<=1&&coldState.events.filter(n=>n.type==='storybook:journey-start').length===coldState.events.filter(n=>n.type==='storybook:journey-end').length,coldState);await screenshot('sourcing-cold-work');
    await page.locator('[data-lounge-home]').click();await home();await none();check('cold native Back restores the real book and matching focus with no orphan layer',await f.locator('[data-story-open=sourcing]').evaluate(n=>n===document.activeElement)&&await page.locator('.storybook-journey').count()===0);await preserve('cold native');
    // Warm the saved native view through its actual zero-delay route. Static
@@ -268,7 +275,7 @@ const delta=(a,b)=>Math.max(...['left','top','width','height'].map(key=>Math.abs
     await nativeStart();await finish();const beforeDialog=await mountCount();await page.locator('[data-lounge-search]').click();await f.locator('#hall-dialog[open]').waitFor();await none();check('native global search keeps the real dialog usable with no cosmetic reverse',await mountCount()===beforeDialog&&await page.locator('#ccCastleFrame').isVisible()&&await f.locator('#hall-dialog').isVisible());await f.locator('#hall-close').click();await home();
     await nativeStart();await finish();await page.locator('#sourcingTabs [data-sourcing-sub=hold]').click();await page.locator('#card-s1 .cc-item-summary').click();await page.locator('#card-s1 [data-price-wait-id] input').waitFor({state:'visible'});
     const editorBefore=await page.locator('#card-s1 [data-price-wait-id] input').inputValue(),unsupportedCount=await mountCount();await screenshot('sourcing-unsupported-editor');await page.locator('[data-lounge-home]').click();await home();await none();
-    check('real unsupported price-wait editor makes Back instant without source edits or hidden focus',await mountCount()===unsupportedCount&&await f.locator('[data-story-open=sourcing]').evaluate(n=>n===document.activeElement)&&await page.evaluate(()=>JSON.stringify(sourcingApp.items)===__storybookRecords.nativeSeed),{editorValue:editorBefore,layers:await page.locator('.storybook-journey').count()});
+    check('real unsupported price-wait editor makes Back instant without source edits or hidden focus',await mountCount()===unsupportedCount&&await f.locator('[data-story-open=sourcing]').evaluate(n=>n===document.activeElement)&&await page.evaluate(()=>JSON.stringify(sourcingApp.items)===__storybookRecords.nativeExpected),{editorValue:editorBefore,layers:await page.locator('.storybook-journey').count()});
 
    }
    await nativeIdentity.dispose();
@@ -300,7 +307,7 @@ const delta=(a,b)=>Math.max(...['left','top','width','height'].map(key=>Math.abs
     await f.locator('[data-story-instant=insurance]').click();await read('insurance');await f.locator('#desk-copy').click();await back();await none();
     check('explicit sound OFF persists and ordinary route/copy/Back starts no further media or WebAudio',await cf.evaluate(n=>__storyMotion.audio.length===n&&!JSON.parse(localStorage.getItem('shireito-courtyard-v1')).sound,stopped)&&await page.evaluate(()=>__storyMotion.audio.length===0)&&await f.locator('#sound').getAttribute('aria-pressed')==='false',{afterOptIn:audioOn.events.length,afterOff:stopped});
    }
-   check('synthetic publishing records and pre-seeded native close record remain byte-for-byte unchanged',await page.evaluate(()=>JSON.stringify(__rpgQA.threads.events.filter(row=>__storybookRecords.ids.includes(row.id)))===__storybookRecords.original&&JSON.stringify(sourcingApp.items)===__storybookRecords.nativeSeed));
+   check('publishing records and raw native responses remain immutable; current native data matches only documented v218 normalization',await page.evaluate(()=>JSON.stringify(__rpgQA.threads.events.filter(row=>__storybookRecords.ids.includes(row.id)))===__storybookRecords.original&&__storybookRecords.nativeSeed===__storybookRecords.nativeSeedOriginal&&__storybookRecords.nativeRawResponses.every(raw=>raw===__storybookRecords.nativeSeed)&&JSON.stringify(sourcingApp.items)===__storybookRecords.nativeExpected));
    check('no writes, external actions, unexpected requests or browser exceptions',await page.evaluate(()=>__rpgQA.writes.length===0&&__rpgQA.threads.simulatedWrites.length===0&&__storybookRecords.external.length===0)&&result.blocked.length===0&&result.errors.length===0,{blocked:result.blocked,errors:result.errors});
    result.events=await page.evaluate(()=>__storyMotion.events);await identity.dispose();result.status='passed';
   }catch(error){result.status='failed';result.failure={message:error.message,stack:error.stack};try{result.diagnostics=await diagnostics();}catch(diagnosticError){result.diagnosticError=diagnosticError.message;}try{await screenshot('failure');}catch(captureError){result.captureError=captureError.message;}process.exitCode=1;}

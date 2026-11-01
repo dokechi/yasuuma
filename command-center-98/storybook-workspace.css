@@ -166,3 +166,8 @@ body.storybook-host .story-workspace-art .story-paper-art{width:100%;height:100%
   body.storybook-host.lounge-workspace #ledgerProfitSummary .purchase-paid-line>span{font-size:13px;color:#365B54}
 
 }
+/* Period filters are real working tabs, not inherited dark chrome. */
+body.storybook-host.lounge-workspace #mainWindow .ledger-month-tab,
+body.storybook-host.lounge-workspace #mainWindow .ledger-month-tab:is(:hover,:focus-visible,:active){min-width:44px;min-height:44px;height:auto;padding:8px 10px;background:#F7F8F2!important;color:#173A35!important;border:1px solid #173A35!important;box-shadow:none!important;font:650 14px/1.5 system-ui,sans-serif;white-space:nowrap}
+body.storybook-host.lounge-workspace #mainWindow .ledger-month-tab.selected,
+body.storybook-host.lounge-workspace #mainWindow .ledger-month-tab.selected:is(:hover,:focus-visible,:active){background:#F5CF5D!important;color:#173A35!important;border-bottom:3px solid #173A35!important}

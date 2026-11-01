@@ -171,6 +171,19 @@ const contrast=sample=>{const text=rgb(sample.color),surface=rgb(sample.backgrou
        const reachable=await auxiliary.nth(index).evaluate(node=>{const r=node.getBoundingClientRect(),host=node.closest('#rpgSourcingAux'),h=host.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {text:node.textContent,focused:document.activeElement===node,rect:r.toJSON(),strip:h.toJSON(),scrollLeft:host.scrollLeft,viewport:[innerWidth,innerHeight],hit:hit===node||node.contains(hit)};});
        check('native auxiliary '+index+' is keyboard reachable as a full 44px target inside its scroll strip',reachable.focused&&reachable.rect.height>=44&&reachable.rect.width>=44&&reachable.rect.left>=reachable.strip.left-1&&reachable.rect.right<=reachable.strip.right+1&&reachable.rect.top>=0&&reachable.rect.bottom<=reachable.viewport[1]+1&&reachable.hit,reachable);
       }
+      const months=page.locator('#sourcingBody .ledger-month-tab:not(:disabled)'),monthCount=await months.count();
+      const monthBefore=await page.evaluate(()=>({selected:document.querySelector('.ledger-month-tab.selected')?.dataset.ledgerMonth,purchases:JSON.stringify(sourcingApp.purchases),requests:__storybookRecords.requests.filter(n=>new URL(n.url).searchParams.get('resource')==='sourcing').length}));
+      check('real native ledger retains multiple accessible month controls',monthCount>=2,{monthCount,selected:monthBefore.selected});
+      await months.first().focus();
+      for(let index=0;index<monthCount;index++){
+       if(index)await page.keyboard.press('Tab');
+       const reachable=await months.nth(index).evaluate(node=>{const r=node.getBoundingClientRect(),host=node.closest('.ledger-month-tabs'),h=host.getBoundingClientRect(),style=getComputedStyle(node),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {month:node.dataset.ledgerMonth,focused:document.activeElement===node,rect:r.toJSON(),strip:h.toJSON(),scrollLeft:host.scrollLeft,viewport:[innerWidth,innerHeight],hit:hit===node||node.contains(hit),color:style.color,background:style.backgroundColor,opacity:Number(style.opacity)};});
+       await months.nth(index).hover();
+       const hovered=await months.nth(index).evaluate(async node=>{await Promise.all(node.getAnimations().map(a=>a.finished.catch(()=>{})));const style=getComputedStyle(node);return {hovered:node.matches(':hover'),color:style.color,background:style.backgroundColor,opacity:Number(style.opacity)};});
+       check('native month '+index+' is keyboard reachable with a full 44px target and readable focus/hover',reachable.focused&&reachable.rect.height>=44&&reachable.rect.width>=44&&reachable.rect.left>=reachable.strip.left-1&&reachable.rect.right<=reachable.strip.right+1&&reachable.rect.top>=0&&reachable.rect.bottom<=reachable.viewport[1]+1&&reachable.hit&&contrast(reachable)>=4.5&&hovered.hovered&&contrast(hovered)>=4.5,{focus:{...reachable,contrast:contrast(reachable)},hover:{...hovered,contrast:contrast(hovered)}});
+      }
+      check('month focus and hover do not select, reload or edit existing purchases',await page.evaluate(before=>document.querySelector('.ledger-month-tab.selected')?.dataset.ledgerMonth===before.selected&&JSON.stringify(sourcingApp.purchases)===before.purchases&&__storybookRecords.requests.filter(n=>new URL(n.url).searchParams.get('resource')==='sourcing').length===before.requests,monthBefore),monthBefore);
+      await capture('sourcing-month-keyboard');
      }
      await page.locator('[data-lounge-home]').click();
     }else{

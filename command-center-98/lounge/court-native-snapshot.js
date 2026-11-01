@@ -84,7 +84,7 @@ export function captureNativeWorkspace(source, {document: target = source, surfa
   for(const attr of [...prepared.attributes])if(!['src','decoding'].includes(attr.name))prepared.removeAttribute(attr.name);
   prepared.alt='';prepared.draggable=false;prepared.decoding='sync';return prepared;
  }
- function copy(node, root = false, transformedAncestor = false) {
+ function copy(node, root = false, transformedAncestor = false, atomicButton = false) {
   if (node.nodeType === 3) { budget(node.textContent); return target.createTextNode(node.textContent); }
   if (node.nodeType !== 1) return null;
   const isSvg = node.namespaceURI === 'http://www.w3.org/2000/svg';
@@ -94,7 +94,7 @@ export function captureNativeWorkspace(source, {document: target = source, surfa
   if (!['','normal','1'].includes(style.getPropertyValue('zoom'))) throw Error('snapshot-zoom');
   const rect = node.getBoundingClientRect(); if (!box(rect)) throw Error('snapshot-geometry');
   const transformedBox = transformedAncestor || transformed(style);
-  const inView = root || !rect.width || !rect.height || intersects(rect, surface);
+  const inView = root || atomicButton || !rect.width || !rect.height || intersects(rect, surface);
   // Invisible subtrees retain their exact layout box, not their unseen records.
   if (!inView || style.visibility === 'hidden' || style.visibility === 'collapse') { elementBudget(); const spacer = target.createElement('div'); copyStyle(style, spacer); spacer.style.visibility = 'hidden'; if (!transformedBox) { spacer.style.boxSizing = 'border-box'; spacer.style.width = rect.width+'px'; spacer.style.height = rect.height+'px'; } if (style.display === 'inline') throw Error('snapshot-inline-layout'); return spacer; }
   const presentationCopy=node.tagName==='IMG'?preparedPresentationImage(node):null;
@@ -116,7 +116,13 @@ export function captureNativeWorkspace(source, {document: target = source, surfa
   if (node.scrollLeft) clone.dataset.courtScrollLeft = String(node.scrollLeft);
   if (!isSvg) { const before = pseudo(node,'::before'); if (before) clone.append(before); }
   const children = node.tagName === 'DETAILS' && !node.open ? [...node.children].filter(child => child.tagName === 'SUMMARY').slice(0,1) : node.childNodes;
-  for (const child of children) { const next = copy(child,false,transformedBox); if (next) clone.append(next); }
+  // A partly clipped button is one visible control. Keep its complete label
+  // and badge layout; independently pruning a badge beyond the viewport can
+  // change the control's intrinsic flex geometry. The overlay clips it at the
+  // original surface. Hidden content, unsupported nodes and all budgets still
+  // take the same strict path; entirely offscreen buttons never reach here.
+  const wholeButton = atomicButton || node.tagName === 'BUTTON' && intersects(rect,surface);
+  for (const child of children) { const next = copy(child,false,transformedBox,wholeButton); if (next) clone.append(next); }
   if (!isSvg) { const after = pseudo(node,'::after'); if (after) clone.append(after); }
   return clone;
  }

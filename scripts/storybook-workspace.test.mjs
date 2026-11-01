@@ -12,3 +12,31 @@ test('pagehide destroys only decorative owner and ignores late resolution',async
 test('failed decorative image is hidden without modifying ledger or navigation',async()=>{const e=env();e.run();e.show();await tick();e.resolve();await tick();const img=e.d.querySelector('.story-workspace-art img');img.dispatchEvent(new e.w.Event('error'));assert.equal(img.hidden,true);assert.equal(e.d.querySelector('.story-workspace-art').dataset.artState,'fallback');assert.equal(e.d.querySelector('input').value,'unchanged');e.close();});
 test('explicit retained castle never imports or inserts the new book decoration',async()=>{const e=env(),frame=e.d.createElement('iframe');frame.id='ccCastleFrame';e.d.body.append(frame);frame.contentDocument.body.className='spatial-atelier';e.run();e.show();await tick();assert.equal(e.imports(),0);assert.equal(e.d.querySelector('.story-workspace-art'),null);assert.equal(e.header.querySelector('.lounge-workspace-caption p').textContent,'Old');assert.equal(e.d.querySelector('input').value,'unchanged');e.close();});
 test('changing book/archive presentations hides only decoration and restores the same book art on return',async()=>{const e=env(),frame=e.d.createElement('iframe');frame.id='ccCastleFrame';e.d.body.append(frame);frame.contentDocument.body.className='storybook-atelier';e.run();e.show();await tick();e.resolve();await tick();const stage=e.d.querySelector('.story-workspace-art');assert(stage&&!stage.hidden);frame.contentDocument.body.className='spatial-atelier';frame.dispatchEvent(new e.w.Event('load'));await tick();assert.equal(stage.hidden,true);assert.equal(e.header.querySelector('.lounge-workspace-caption p').textContent,'Old');frame.contentDocument.body.className='storybook-atelier';frame.dispatchEvent(new e.w.Event('load'));await tick();assert.equal(e.d.querySelector('.story-workspace-art'),stage);assert.equal(stage.hidden,false);assert.equal(e.imports(),1);assert.equal(e.d.querySelector('input').value,'unchanged');e.close();});
+
+function scrollingStrip(e,{kind='aux',left=153,right=333,scrollLeft=0}={}){
+ const strip=e.d.createElement('div'),button=e.d.createElement('button');button.textContent='existing native action';strip.append(button);strip.style.overflowX='auto';
+ if(kind==='aux'){strip.id='rpgSourcingAux';e.d.body.append(strip);}else{strip.className=kind==='month'?'ledger-month-tabs':'sourcing-tab-group';const tabs=e.d.createElement('div');tabs.id=kind==='month'?'sourcingBody':'sourcingTabs';tabs.append(strip);e.d.body.append(tabs);}
+ Object.defineProperties(strip,{clientWidth:{value:241},clientLeft:{value:0},scrollWidth:{value:520}});strip.scrollLeft=scrollLeft;strip.scrollTop=19;
+ strip.getBoundingClientRect=()=>({left:47,right:288,width:241,top:80,bottom:132,height:52});
+ button.getBoundingClientRect=()=>({left:left-strip.scrollLeft,right:right-strip.scrollLeft,width:right-left,top:84,bottom:128,height:44});
+ return {strip,button};
+}
+for(const kind of ['aux','native','month'])test(kind+' strip reveals a clipped focused right edge without page scrolling or changing a real control',()=>{
+ const e=env(),{strip,button}=scrollingStrip(e,{kind});let clicks=0;button.addEventListener('click',()=>clicks++);
+ e.w.scrollTo=e.w.scrollBy=()=>assert.fail('must never scroll the window');button.scrollIntoView=()=>assert.fail('must never scroll ancestors');e.d.documentElement.scrollTop=73;e.d.body.scrollTop=31;
+ e.run();e.run();e.show();button.focus({preventScroll:true});
+ assert.equal(strip.scrollLeft,45);assert.equal(button.getBoundingClientRect().right,288);assert.equal(e.d.activeElement,button);assert.equal(strip.scrollTop,19);assert.equal(e.d.documentElement.scrollTop,73);assert.equal(e.d.body.scrollTop,31);assert.equal(clicks,0);assert.equal(e.d.querySelector('input').value,'unchanged');
+ button.blur();button.focus({preventScroll:true});assert.equal(strip.scrollLeft,45,'already visible control needs no extra movement');e.close();
+});
+for(const kind of ['aux','native','month'])test(kind+' clipped left edge changes only the focused strip by its actual missing width',()=>{
+ const e=env(),{strip,button}=scrollingStrip(e,{kind,left:100,right:220,scrollLeft:80});e.run();e.show();button.focus({preventScroll:true});assert.equal(strip.scrollLeft,53);assert.equal(button.getBoundingClientRect().left,47);assert.equal(strip.scrollTop,19);e.close();
+});
+test('hidden workspace, non-scroll strips, unrelated focus and disposed listeners do not move strips',()=>{
+ const e=env(),{strip,button}=scrollingStrip(e);e.run();button.focus({preventScroll:true});assert.equal(strip.scrollLeft,0,'not in native workspace');e.show();button.blur();strip.style.overflowX='visible';button.focus({preventScroll:true});assert.equal(strip.scrollLeft,0,'desktop non-scroll layout is unchanged');strip.style.overflowX='auto';e.d.querySelector('input').focus();assert.equal(strip.scrollLeft,0,'business field outside the strip is unaffected');
+ button.dispatchEvent(new e.w.FocusEvent('focusin',{bubbles:true}));assert.equal(strip.scrollLeft,0,'a synthetic focusin from an unfocused control does nothing');
+ e.w.dispatchEvent(new e.w.Event('pagehide'));button.focus({preventScroll:true});assert.equal(strip.scrollLeft,0,'disposed focus listener is removed');e.close();
+});
+test('explicit archive and removal of storybook-host never adjust native strips or import book art',async()=>{
+ const e=env(),frame=e.d.createElement('iframe');frame.id='ccCastleFrame';e.d.body.append(frame);frame.contentDocument.body.className='spatial-atelier';const {strip,button}=scrollingStrip(e);e.run();e.show();button.focus({preventScroll:true});assert.equal(strip.scrollLeft,0);await tick();assert.equal(e.imports(),0);
+ frame.contentDocument.body.className='storybook-atelier';e.d.body.classList.remove('storybook-host');button.blur();button.focus({preventScroll:true});assert.equal(strip.scrollLeft,0);e.close();
+});
