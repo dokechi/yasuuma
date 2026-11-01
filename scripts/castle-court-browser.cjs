@@ -108,6 +108,7 @@ async function openHost(browser,origin,{width=390,height=900,label,fault=null,sh
 async function fail(ctx,error){
  failures++;ctx.result.failure=String(error.stack||error);
  if(ctx.frame)ctx.result.failureState=await snapshot(ctx.frame).catch(()=>null);
+ ctx.result.hostTimeline=await ctx.page.evaluate(()=>({timeline:window.__testPassageTimeline,styles:window.__testCanvasStyleHistory,inputs:window.__testPassageInputStyles})).catch(()=>null);
  await capture(ctx,'failure').catch(()=>{});
  console.error(`FAIL ${ctx.result.label}: ${error.stack||error}`);
 }
@@ -379,6 +380,11 @@ async function prepareRoomPassage(ctx,key='insurance'){
  await ctx.page.evaluate(()=>{
   const frame=document.getElementById('ccCastleFrame'),source=frame.contentDocument,canvas=source.querySelector('.arrival-court canvas'),r=frame.getBoundingClientRect();
   window.__passageOriginal={canvas,gl:canvas.getContext('webgl2'),parent:canvas.parentNode,next:canvas.nextSibling,style:canvas.getAttribute('style'),frameRect:{left:r.left,top:r.top,width:r.width,height:r.height}};
+  window.__testCanvasStyleObserver?.disconnect();window.__testCanvasStyleHistory=[];window.__testPassageInputStyles=[];window.__testPassageTimeline=[];
+  const keep=(list,value,limit=64)=>{list.push(value);if(list.length>limit)list.splice(0,list.length-limit);};
+  window.__testCanvasStyleObserver=new MutationObserver(records=>{for(const record of records)keep(window.__testCanvasStyleHistory,{time:performance.now(),old:record.oldValue,current:canvas.getAttribute('style'),owner:canvas.ownerDocument===document?'parent':'child',phase:document.querySelector('.court-passage')?.dataset.phase||null});});window.__testCanvasStyleObserver.observe(canvas,{attributes:true,attributeFilter:['style'],attributeOldValue:true});
+  if(!window.__testPassageTimelineInstalled){window.__testPassageTimelineInstalled=true;for(const type of ['cc:castle-native','cc:castle-home','court:passage-start','court:passage-end'])document.addEventListener(type,event=>keep(window.__testPassageTimeline,{time:performance.now(),type,action:event.detail?.action,room:event.detail?.room,direction:event.detail?.direction,cancelled:event.detail?.cancelled,frameHidden:frame.hidden,nativeView:document.getElementById('mainWindow')?.dataset.ccView,canvasStyle:window.__passageOriginal.canvas.getAttribute('style')}),true);}
+
  });
 }
 async function prepareInsurancePassage(ctx){return prepareRoomPassage(ctx,'insurance');}
@@ -390,6 +396,7 @@ async function armPassageClock(ctx){
 async function beginNativePassage(ctx){
  const box=await ctx.f.locator('.arrival-enter').boundingBox();assert.ok(box&&box.width>=44&&box.height>=44,'real visible entrance has a measured tap target');
  ctx.beforePassageRenderer=(await snapshot(ctx.frame)).renderer;
+ await ctx.page.evaluate(()=>{const records=window.__testPassageInputStyles;records.push({direction:'in',time:performance.now(),style:window.__passageOriginal.canvas.getAttribute('style')});if(records.length>40)records.shift();});
  await armPassageClock(ctx);const start=Date.now();await ctx.page.mouse.click(box.x+box.width/2,box.y+box.height/2);ctx.lastPassageClickMs=Date.now()-start;
  await ctx.page.waitForFunction(()=>document.getAnimations().some(animation=>animation.id==='court-passage-clock'),null,{timeout:10_000});
 }
@@ -415,7 +422,7 @@ async function finishPassage(ctx){
  await ctx.page.locator('.court-passage').waitFor({state:'detached'});
 }
 async function restoredPassage(ctx,label){
- const state=await ctx.page.evaluate(()=>{const o=window.__passageOriginal,frame=document.getElementById('ccCastleFrame'),r=frame.contentWindow.__arrivalCourt.snapshot();return {sameNode:o.canvas.parentNode===o.parent,sameNext:o.canvas.nextSibling===o.next,sameStyle:o.canvas.getAttribute('style')===o.style,sameContext:o.canvas.getContext('webgl2')===o.gl,ownerChild:o.canvas.ownerDocument===frame.contentDocument,layerCount:document.querySelectorAll('.court-passage').length,clockCount:document.getAnimations().filter(a=>a.id==='court-passage-clock').length,presentationActive:r.renderer?.presentation?.active,passageActive:r.passage?.active,selected:r.selected};});
+ const state=await ctx.page.evaluate(()=>{const o=window.__passageOriginal,frame=document.getElementById('ccCastleFrame'),r=frame.contentWindow.__arrivalCourt.snapshot();return {sameNode:o.canvas.parentNode===o.parent,sameNext:o.canvas.nextSibling===o.next,sameStyle:o.canvas.getAttribute('style')===o.style,originalStyle:o.style,restoredStyle:o.canvas.getAttribute('style'),perTripStyles:window.__testPassageInputStyles?.slice(-4),styleHistory:window.__testCanvasStyleHistory?.slice(-20),timeline:window.__testPassageTimeline?.slice(-12),sameContext:o.canvas.getContext('webgl2')===o.gl,ownerChild:o.canvas.ownerDocument===frame.contentDocument,layerCount:document.querySelectorAll('.court-passage').length,clockCount:document.getAnimations().filter(a=>a.id==='court-passage-clock').length,presentationActive:r.renderer?.presentation?.active,passageActive:r.passage?.active,selected:r.selected};});
  check(ctx.result,label+' returns the only canvas exactly without a clock or layer lease',state.sameNode&&state.sameNext&&state.sameStyle&&state.sameContext&&state.ownerChild&&state.layerCount===0&&state.clockCount===0&&!state.presentationActive&&!state.passageActive,state);
 }
 async function capturePassage(ctx,name,progress){
@@ -460,6 +467,7 @@ async function compareNativeClone(ctx){
  });
 }
 async function backWithPausedClock(ctx,key='insurance'){
+ await ctx.page.evaluate(()=>{const records=window.__testPassageInputStyles;records.push({direction:'out',time:performance.now(),style:window.__passageOriginal.canvas.getAttribute('style')});if(records.length>40)records.shift();});
  await armPassageClock(ctx);await backFromRoom(ctx,key);
  await ctx.page.waitForFunction(()=>document.getAnimations().some(a=>a.id==='court-passage-clock'),null,{timeout:10_000});
 }
@@ -500,7 +508,7 @@ async function otherRoomPassageCase(browser,origin,width,height,key){
   const samePose=pose=>['position','target'].every(name=>pose[name].every((value,index)=>Math.abs(value-sourceCamera[name][index])<.000001))&&Math.abs(pose.fov-sourceCamera.fov)<.000001;
   for(const progress of [.479,.481,.65,.84]){
    const start=await snapshot(ctx.frame);check(ctx.result,key+' fresh trip restores exactly its own source pose',start.selected===key&&start.renderer.selected===key&&samePose(start.renderer.camera),start.renderer.camera);
-   await beginNativePassage(ctx);const state=await samplePassage(ctx,progress,{seal:progress===.481}),before=ctx.beforePassageRenderer;
+   await beginNativePassage(ctx);if(key==='sourcing')await destinationReady(ctx,key,{copy:false});const state=await samplePassage(ctx,progress,{seal:progress===.481}),before=ctx.beforePassageRenderer;
    check(ctx.result,key+' entry '+progress+' borrows one real context at its original host aperture',state.sameCanvas&&state.sameContext&&state.canvasCount===1&&state.ownerParent&&!state.contextLost&&state.inert&&state.pointerEvents==='none'&&state.direction==='in'&&state.duration===900&&state.renderer.passage.room===key&&Math.abs(state.renderer.passage.u-progress)<.0001&&Math.abs(state.layerRect.top-state.frameRect.top)<.5&&Math.abs(state.layerRect.height-state.frameRect.height)<.5&&state.renderer.reusedEntryFrames===before.reusedEntryFrames+1,state);
    check(ctx.result,key+' canonical work surface is already usable during native travel',key==='sourcing'?state.frameHidden&&state.currentFrameRect.width===0&&state.nativeView==='sourcing'&&state.nativeBackReachable:state.room===key&&!state.roomHidden&&state.copyReachable,state);
    if(progress===.481){const hinges=state.renderer.passage.hinges,names=hinges.map(h=>h.node).sort(),expected=key==='lottery'?1:2;
@@ -510,7 +518,7 @@ async function otherRoomPassageCase(browser,origin,width,height,key){
    if(progress===.84){await destinationReady(ctx,key);await capture(ctx,'destination');}
    await backWithPausedClock(ctx,key);await finishPassage(ctx);await settled(ctx.frame);
   }
-  await beginNativePassage(ctx);await finishPassage(ctx);if(key==='sourcing')await armNativeCloneComparison(ctx);await backWithPausedClock(ctx,key);const reverse=await samplePassage(ctx,0),nativeClone=key==='sourcing'?await compareNativeClone(ctx):null;
+  await beginNativePassage(ctx);if(key==='sourcing')await destinationReady(ctx,key,{copy:false});await finishPassage(ctx);if(key==='sourcing')await armNativeCloneComparison(ctx);await backWithPausedClock(ctx,key);const reverse=await samplePassage(ctx,0),nativeClone=key==='sourcing'?await compareNativeClone(ctx):null;
   check(ctx.result,key+' reverse begins from its own completed work surface without a new context',reverse.direction==='out'&&reverse.renderer.passage.room===key&&reverse.renderer.passage.u===1&&reverse.sameCanvas&&reverse.sameContext,reverse);
   await capturePassage(ctx,'return-0',0);if(nativeClone)check(ctx.result,'same-event native source button and parent-group geometry/materials survive attached reverse snapshot',nativeClone.pass,nativeClone);await finishPassage(ctx);await settled(ctx.frame);await restoredPassage(ctx,key+' return');
   const end=await snapshot(ctx.frame);check(ctx.result,key+' returns to its exact physical source and original entrance focus',end.selected===key&&end.renderer.selected===key&&samePose(end.renderer.camera)&&end.projection.find(p=>p.key===key)?.visible&&await ctx.f.locator('.arrival-enter').evaluate(node=>node===document.activeElement),end);await capture(ctx,'return-end');await unchanged(ctx);
@@ -536,9 +544,9 @@ async function sourcingReturnPathsCase(browser,origin){
   await ctx.page.evaluate(()=>{window.__testSourcingStarts=[];document.addEventListener('court:passage-start',e=>window.__testSourcingStarts.push(e.detail));});
   await backFromRoom(ctx,'sourcing');await ctx.page.locator('.court-passage').waitFor({state:'detached'});await settled(ctx.frame);await restoredPassage(ctx,'early native workspace Back');
   const starts=await ctx.page.evaluate(()=>window.__testSourcingStarts);check(ctx.result,'early native Back cancels only the loan and never invents a completed reverse',starts.length===0&&(await snapshot(ctx.frame)).selected==='sourcing',starts);
-  await beginNativePassage(ctx);await finishPassage(ctx);await destinationReady(ctx,'sourcing');await armPassageClock(ctx);await ctx.page.locator('#ccCastleReturn').click();
+  await beginNativePassage(ctx);await destinationReady(ctx,'sourcing');await finishPassage(ctx);await destinationReady(ctx,'sourcing');check(ctx.result,'native workspace intentionally hides the legacy duplicate return and exposes its own Home',await ctx.page.locator('#ccCastleReturn').isHidden()&&await ctx.page.locator('[data-lounge-home]').isVisible());await armPassageClock(ctx);await ctx.page.locator('[data-lounge-home]').click();
   await ctx.page.waitForFunction(()=>document.getAnimations().some(a=>a.id==='court-passage-clock'),null,{timeout:10_000});const reverse=await samplePassage(ctx,0);
-  check(ctx.result,'existing host return control uses the same completed native sourcing history',reverse.direction==='out'&&reverse.renderer.passage.room==='sourcing'&&reverse.sameContext,reverse);await capturePassage(ctx,'return-host-0',0);await finishPassage(ctx);await settled(ctx.frame);await restoredPassage(ctx,'host native return');await unchanged(ctx);
+  check(ctx.result,'visible native Home uses the same completed sourcing history',reverse.direction==='out'&&reverse.renderer.passage.room==='sourcing'&&reverse.sameContext,reverse);await capturePassage(ctx,'return-host-0',0);await finishPassage(ctx);await settled(ctx.frame);await restoredPassage(ctx,'host native return');await unchanged(ctx);
  }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
 }
 
@@ -552,7 +560,7 @@ async function sourcingContextLossCase(browser,origin){
   await destinationReady(ctx,'sourcing');await restoredPassage(ctx,'hidden-child context failure');
   check(ctx.result,'context failure preserves canonical native workspace and really loses that same context',await ctx.page.evaluate(()=>document.getElementById('ccCastleFrame').hidden&&document.getElementById('mainWindow').dataset.ccView==='sourcing'&&window.__passageOriginal.gl.isContextLost()));await capture(ctx,'native-work-preserved');
   await backFromRoom(ctx,'sourcing');await ctx.f.locator('.spatial-castle').waitFor({state:'visible'});
-  check(ctx.result,'native Back after actual context loss reaches original usable castle without a stranded loan',await ctx.f.locator('.castle-quick-open[data-room=sourcing]').isVisible()&&await ctx.page.locator('.court-passage').count()===0&&!(await snapshot(ctx.frame)).renderer.presentation.active);
+  const failed=await snapshot(ctx.frame);check(ctx.result,'native Back after actual context loss reaches original usable castle with its renderer fully disposed',failed.failed===true&&failed.renderer===null&&!failed.passage.active&&await ctx.f.locator('.castle-quick-open[data-room=sourcing]').isVisible()&&await ctx.page.locator('.court-passage').count()===0,failed);await restoredPassage(ctx,'native original-castle return after lost context');
   await capture(ctx,'classic-return');await unchanged(ctx);
  }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
 }
@@ -565,7 +573,7 @@ async function nativeSnapshotFailureCase(browser,origin,fault){
   await beginNativePassage(ctx);const entry=await samplePassage(ctx,.2);
   check(ctx.result,'unavailable native capture never stalls publishing native passage installation',entry.sameContext&&entry.room==='insurance'&&entry.renderer.passage.room==='insurance'&&entry.passage.active,entry);
   await finishPassage(ctx);await backWithPausedClock(ctx);await finishPassage(ctx);await settled(ctx.frame);await restoredPassage(ctx,'publishing reverse with unavailable native capture');
-  await prepareRoomPassage(ctx,'sourcing');await beginNativePassage(ctx);await finishPassage(ctx);await destinationReady(ctx,'sourcing');
+  await prepareRoomPassage(ctx,'sourcing');await beginNativePassage(ctx);await destinationReady(ctx,'sourcing');await finishPassage(ctx);await destinationReady(ctx,'sourcing');
   await ctx.page.evaluate(()=>{window.__testUnavailableCaptureStarts=[];document.addEventListener('court:passage-start',event=>window.__testUnavailableCaptureStarts.push(event.detail));});
   await backFromRoom(ctx,'sourcing');await settled(ctx.frame);await restoredPassage(ctx,'native instant Back without capture');
   const starts=await ctx.page.evaluate(()=>window.__testUnavailableCaptureStarts);check(ctx.result,'unsupported native capture uses immediate canonical Back without inventing a reverse snapshot',starts.length===0&&(await snapshot(ctx.frame)).selected==='sourcing'&&(await snapshot(ctx.frame)).active,starts);
@@ -576,7 +584,7 @@ async function nativeSnapshotFailureCase(browser,origin,fault){
 async function sourcingSearchCase(browser,origin){
  let ctx;
  try{
-  ctx=await openHost(browser,origin,{label:'390-900-sourcing-search'});await prepareRoomPassage(ctx,'sourcing');await beginNativePassage(ctx);await finishPassage(ctx);await destinationReady(ctx,'sourcing');
+  ctx=await openHost(browser,origin,{label:'390-900-sourcing-search'});await prepareRoomPassage(ctx,'sourcing');await beginNativePassage(ctx);await destinationReady(ctx,'sourcing');await finishPassage(ctx);await destinationReady(ctx,'sourcing');
   await ctx.page.evaluate(()=>{window.__testNativeSearchStarts=[];document.addEventListener('court:passage-start',event=>window.__testNativeSearchStarts.push(event.detail));});
   await ctx.page.locator('[data-lounge-search]').click();await ctx.f.locator('#hall-dialog[open]').waitFor();
   const state=await snapshot(ctx.frame),starts=await ctx.page.evaluate(()=>window.__testNativeSearchStarts);
@@ -682,16 +690,18 @@ async function returnForegroundCase(browser,origin,kind){
    const body=[...paper.querySelectorAll('div')].find(node=>node.textContent===source.text&&node.firstChild?.nodeType===Node.TEXT_NODE),scroller=paper.querySelector('[data-journey-scroll-top]');
    let visible=null;if(kind==='scroll'&&body&&source.snapshot.visible){const range=document.createRange(),offset=source.snapshot.visible.offset;range.setStart(body.firstChild,offset);range.setEnd(body.firstChild,offset+1);visible={text:body.firstChild.textContent.slice(offset,offset+36),rect:rect(range)};}
    const objects=kind==='tools'?source.snapshot.objects.map(item=>{const strong=[...paper.querySelectorAll('strong')].find(node=>node.textContent===item.label),button=strong?.closest('button'),front=button?.querySelector('span')?.children[1];return {key:item.key,label:strong?.textContent,rect:button&&rect(button),front:front&&Object.fromEntries(Object.keys(item.front).map(p=>[p,getComputedStyle(front).getPropertyValue(p)]))};}):[];
-   return {paper:rect(paper),actor:actor&&rect(actor),bodyRect:body&&rect(body),bodyText:body?.textContent,scrollTop:scroller?.scrollTop,scrollMarker:scroller?.dataset.journeyScrollTop,visible,objects,inert:paper.closest('.court-passage').inert,liveSame:source.paper.isConnected&&source.body===document.getElementById('ccCastleFrame').contentDocument.getElementById('draft-body')&&source.body.textContent===source.text};
+   return {paper:rect(paper),actor:actor&&rect(actor),bodyRect:body&&rect(body),bodyText:body?.textContent,scrollTop:scroller?.scrollTop,scrollMarker:scroller?.dataset.journeyScrollTop,visible,objects,inert:paper.closest('.court-passage').inert,sourcePlaneConnected:source.paper.isConnected,liveBodyConnected:source.body.isConnected,liveBodySame:source.body===document.getElementById('ccCastleFrame').contentDocument.getElementById('draft-body'),liveTextSame:source.body.textContent===source.text};
   },kind);
   const sameRect=(a,b)=>a&&b&&['left','top','width','height'].every(key=>Math.abs(a[key]-b[key])<1);
-  check(ctx.result,'native return keeps original paper and actor geometry in the parent surface',clone.liveSame&&clone.inert&&sameRect(source.paper,clone.paper)&&(!source.actor||sameRect(source.actor,clone.actor)),{source:{paper:source.paper,actor:source.actor},clone});
+  check(ctx.result,'native return keeps original paper and actor geometry in the parent surface',clone.liveBodyConnected&&clone.liveBodySame&&clone.liveTextSame&&(kind==='tools'?!clone.sourcePlaneConnected:clone.sourcePlaneConnected)&&clone.inert&&sameRect(source.paper,clone.paper)&&(!source.actor||sameRect(source.actor,clone.actor)),{source:{paper:source.paper,actor:source.actor},clone});
   if(kind==='scroll')check(ctx.result,'return snapshot preserves the real scroll and the same visible manuscript character',clone.bodyText===source.bodyText&&Math.abs(clone.scrollTop-source.scrollTop)<1&&sameRect(source.bodyRect,clone.bodyRect)&&clone.visible?.text===source.visible.text&&sameRect(source.visible.rect,clone.visible.rect),{source,clone});
   else check(ctx.result,'native tools return preserves all four object bounds and their computed material transforms',clone.objects.length===4&&source.objects.every(item=>{const copied=clone.objects.find(row=>row.key===item.key);return copied&&sameRect(item.rect,copied.rect)&&Object.keys(item.front).every(key=>copied.front?.[key]===item.front[key]);}),{source:source.objects,clone:clone.objects});
   await capturePassage(ctx,'return-'+kind+'-0',0);await finishPassage(ctx);await settled(ctx.frame);await restoredPassage(ctx,'foreground '+kind);
   await ctx.f.locator('[data-court-open=insurance]').click();await ctx.f.locator('#room[data-account=insurance][data-spatial-desk=ready]').waitFor();
   const live=await ctx.frame.evaluate(()=>{const saved=window.__testForegroundSource;return {sameBody:saved.body===document.getElementById('draft-body'),sameText:saved.body.textContent===saved.text,scroll:document.getElementById('desk-scroll').scrollTop};});
-  check(ctx.result,'a real revisit retains the same live manuscript nodes and contents',live.sameBody&&live.sameText&&(kind!=='scroll'||Math.abs(live.scroll-source.scrollTop)<1),live);await unchanged(ctx);
+  check(ctx.result,'a real revisit retains the same live manuscript nodes and contents',live.sameBody&&live.sameText&&(kind!=='scroll'||Math.abs(live.scroll-source.scrollTop)<1),live);
+  if(kind==='tools'){await ctx.f.locator('.living-toggle').click();await ctx.f.locator('#living-workbench').waitFor({state:'visible'});const bench=await ctx.frame.evaluate(()=>{const saved=window.__testForegroundSource;return {sameBench:saved.paper===document.getElementById('living-workbench'),connected:saved.paper.isConnected,sameBody:saved.body===document.getElementById('draft-body'),sameText:saved.body.textContent===saved.text};});check(ctx.result,'canonical revisit reconnects the exact original reusable tools bench without replacing the manuscript',bench.sameBench&&bench.connected&&bench.sameBody&&bench.sameText,bench);}
+  await unchanged(ctx);
  }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
 }
 
