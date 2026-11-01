@@ -1,6 +1,7 @@
 /* Optional route/presentation coordination. Existing owners still commit every
    account and Back; a passage is never awaited and never owns reader content. */
-export function createArrivalPassage({document:doc,canvas,board,renderer,passage,route,canPresent=()=>true,currentRoom=()=>null,capture=()=>null}={}){
+export const courtPassageDuration=pace=>pace==='quick'?480:pace==='slow'?1200:900;
+export function createArrivalPassage({document:doc,canvas,board,renderer,passage,route,canPresent=()=>true,currentRoom=()=>null,capture=()=>null,pace=()=>doc.querySelector('[name=pace]:checked')?.value}={}){
  const win=doc?.defaultView,panel=board?.element;
  if(!win||!panel||!canvas||typeof route!=='function')throw Error('A mounted courtyard owner is required.');
  let disposed=false,serial=0,trip=null,departure=null,lastHidden=panel.hidden;
@@ -22,7 +23,7 @@ export function createArrivalPassage({document:doc,canvas,board,renderer,passage
   try{
    const bounds=surface();
    if(!disposed&&!instant&&room==='insurance'&&canPresent(room)&&bounds){
-    token=passage?.travel({room,direction:'in',renderer,canvas,surface:bounds});
+    token=passage?.travel({room,direction:'in',renderer,canvas,surface:bounds,duration:courtPassageDuration(pace())});
     if(token&&intent===serial)trip={room,returnState:token.returnState,arrived:false};
    }
   }catch{/* Optional graphics may never prevent the normal route. */}
@@ -50,7 +51,7 @@ export function createArrivalPassage({document:doc,canvas,board,renderer,passage
   passage?.cancel();
   if(intent!==serial||!saved.arrived||panel.dataset.view==='list'||board.state?.lastVisited!==saved.room||!canPresent(saved.room)||visual?.room!==saved.room||!visual.foreground||!visual.roomBackdrop)return;
   const bounds=surface();if(!bounds)return;
-  try{passage?.travel({room:saved.room,direction:'out',renderer,canvas,surface:bounds,returnState:saved.returnState,...(visual?.room===saved.room?{foreground:visual.foreground,roomBackdrop:visual.roomBackdrop}:{})});}catch{}
+  try{passage?.travel({room:saved.room,direction:'out',renderer,canvas,surface:bounds,duration:courtPassageDuration(pace()),returnState:saved.returnState,...(visual?.room===saved.room?{foreground:visual.foreground,roomBackdrop:visual.roomBackdrop}:{})});}catch{}
  }
  const observer=new win.MutationObserver(onBoard);observer.observe(panel,{attributes:true,attributeFilter:['hidden','data-view']});
  // A canceled journey is a deliberate fast path. In particular, Back during an

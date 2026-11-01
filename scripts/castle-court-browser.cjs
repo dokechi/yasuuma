@@ -364,8 +364,13 @@ async function prepareInsurancePassage(ctx){
   window.__passageOriginal={canvas,gl:canvas.getContext('webgl2'),parent:canvas.parentNode,next:canvas.nextSibling,style:canvas.getAttribute('style')};
  });
 }
+async function armPassageClock(ctx){
+ // Subscribe BEFORE the real input: software rendering can finish a 900ms trip
+ // before Playwright's click promise returns. This is ordinary WAAPI tooling.
+ await ctx.page.evaluate(()=>document.addEventListener('court:passage-start',()=>{const clock=document.getAnimations().find(a=>a.id==='court-passage-clock');if(clock){clock.pause();clock.currentTime=0;}},{once:true}));
+}
 async function beginInsurancePassage(ctx){
- await ctx.f.locator('.arrival-enter').click();
+ await armPassageClock(ctx);await ctx.f.locator('.arrival-enter').click();
  await ctx.page.waitForFunction(()=>document.getAnimations().some(animation=>animation.id==='court-passage-clock'),null,{timeout:10_000});
 }
 async function samplePassage(ctx,progress,{seal=false}={}){
@@ -380,7 +385,7 @@ async function samplePassage(ctx,progress,{seal=false}={}){
    let pixels=null;
    if(seal&&gl){const width=gl.drawingBufferWidth,height=gl.drawingBufferHeight,rgba=new Uint8Array(width*height*4);gl.readPixels(0,0,width,height,gl.RGBA,gl.UNSIGNED_BYTE,rgba);let nonOpaque=0,minAlpha=255,maxAlpha=0;for(let i=3;i<rgba.length;i+=4){const alpha=rgba[i];if(alpha<255)nonOpaque++;minAlpha=Math.min(minAlpha,alpha);maxAlpha=Math.max(maxAlpha,alpha);}pixels={width,height,total:width*height,nonOpaque,minAlpha,maxAlpha,error:gl.getError()};}
    const r=layer?.getBoundingClientRect(),fr=frame.getBoundingClientRect(),copy=source.getElementById('desk-copy'),cr=copy?.getBoundingClientRect();
-   resolve({progress,direction:layer?.dataset.direction,phase:layer?.dataset.phase,sameCanvas:canvas===original.canvas,sameContext:gl===original.gl,canvasCount:layer?.querySelectorAll('canvas').length,ownerParent:canvas?.ownerDocument===document,contextLost:gl?.isContextLost(),inert:layer?.inert,ariaHidden:layer?.getAttribute('aria-hidden'),pointerEvents:layer&&getComputedStyle(layer).pointerEvents,layerRect:r&&{left:r.left,top:r.top,width:r.width,height:r.height},frameRect:{left:fr.left,top:fr.top,width:fr.width,height:fr.height},room:source.getElementById('room')?.dataset.account,roomHidden:source.getElementById('room')?.hidden,copyReachable:copy&&!copy.disabled&&cr.width>=44&&cr.height>=44,renderer:state.renderer,passage:state.passage,pixels});
+   resolve({progress,duration:Number(animation.effect.getTiming().duration),direction:layer?.dataset.direction,phase:layer?.dataset.phase,sameCanvas:canvas===original.canvas,sameContext:gl===original.gl,canvasCount:layer?.querySelectorAll('canvas').length,ownerParent:canvas?.ownerDocument===document,contextLost:gl?.isContextLost(),inert:layer?.inert,ariaHidden:layer?.getAttribute('aria-hidden'),pointerEvents:layer&&getComputedStyle(layer).pointerEvents,layerRect:r&&{left:r.left,top:r.top,width:r.width,height:r.height},frameRect:{left:fr.left,top:fr.top,width:fr.width,height:fr.height},room:source.getElementById('room')?.dataset.account,roomHidden:source.getElementById('room')?.hidden,copyReachable:copy&&!copy.disabled&&cr.width>=44&&cr.height>=44,renderer:state.renderer,passage:state.passage,pixels});
   }catch(error){reject(error);}})));
  },{progress,seal});
 }
@@ -392,23 +397,56 @@ async function restoredPassage(ctx,label){
  const state=await ctx.page.evaluate(()=>{const o=window.__passageOriginal,frame=document.getElementById('ccCastleFrame'),r=frame.contentWindow.__arrivalCourt.snapshot();return {sameNode:o.canvas.parentNode===o.parent,sameNext:o.canvas.nextSibling===o.next,sameStyle:o.canvas.getAttribute('style')===o.style,sameContext:o.canvas.getContext('webgl2')===o.gl,ownerChild:o.canvas.ownerDocument===frame.contentDocument,layerCount:document.querySelectorAll('.court-passage').length,clockCount:document.getAnimations().filter(a=>a.id==='court-passage-clock').length,presentationActive:r.renderer?.presentation?.active,passageActive:r.passage?.active,selected:r.selected};});
  check(ctx.result,label+' returns the only canvas exactly without a clock or layer lease',state.sameNode&&state.sameNext&&state.sameStyle&&state.sameContext&&state.ownerChild&&state.layerCount===0&&state.clockCount===0&&!state.presentationActive&&!state.passageActive,state);
 }
+async function capturePassage(ctx,name,progress){
+ await capture(ctx,name);
+ const after=await ctx.page.evaluate(()=>{const clock=document.getAnimations().find(a=>a.id==='court-passage-clock'),state=document.getElementById('ccCastleFrame').contentWindow.__arrivalCourt.snapshot();return {clock:!!clock,paused:clock?.playState==='paused',active:state.passage.active,u:state.renderer.passage?.u};});
+ const expected=name.startsWith('return-')?1-progress:progress;
+ check(ctx.result,name+' screenshot remained inside its real paused lease (no watchdog-expired frame)',after.clock&&after.paused&&after.active&&Math.abs(after.u-expected)<.0001,after);
+}
+async function backWithPausedClock(ctx){
+ await armPassageClock(ctx);await back(ctx);
+ await ctx.page.waitForFunction(()=>document.getAnimations().some(a=>a.id==='court-passage-clock'),null,{timeout:10_000});
+}
 async function passageCase(browser,origin,width,height){
  let ctx;
  try{
-  ctx=await openHost(browser,origin,{width,height,label:`${width}-${height}-passage`});await prepareInsurancePassage(ctx);await capture(ctx,'source');await beginInsurancePassage(ctx);
-  const frames=[0,.2,.4,.479,.481,.65,.84];
-  for(const progress of frames){
+  ctx=await openHost(browser,origin,{width,height,label:`${width}-${height}-passage`});await prepareInsurancePassage(ctx);await capture(ctx,'source');
+  // ONE screenshot per genuine UI trip. Preserve the production watchdog;
+  // slow software-GPU readback must never extend a lease or invent a seek API.
+  for(const progress of [0,.2,.4,.479,.481,.65,.84]){
+   await beginInsurancePassage(ctx);
    const state=await samplePassage(ctx,progress,{seal:progress===.481});
-   check(ctx.result,'entry '+progress+' uses the same real context in the nonblocking parent surface',state.sameCanvas&&state.sameContext&&state.canvasCount===1&&state.ownerParent&&!state.contextLost&&state.inert&&state.ariaHidden==='true'&&state.pointerEvents==='none'&&state.direction==='in'&&Math.abs(state.renderer.passage.u-progress)<.0001&&Math.abs(state.layerRect.top-state.frameRect.top)<.5&&Math.abs(state.layerRect.height-state.frameRect.height)<.5,state);
+   check(ctx.result,'entry '+progress+' uses the same real context in the nonblocking parent surface',state.sameCanvas&&state.sameContext&&state.canvasCount===1&&state.ownerParent&&!state.contextLost&&state.inert&&state.ariaHidden==='true'&&state.pointerEvents==='none'&&state.direction==='in'&&state.duration===900&&Math.abs(state.renderer.passage.u-progress)<.0001&&Math.abs(state.layerRect.top-state.frameRect.top)<.5&&Math.abs(state.layerRect.height-state.frameRect.height)<.5,state);
    check(ctx.result,'entry '+progress+' has already committed the real insurance reader and usable copy control',state.room==='insurance'&&!state.roomHidden&&state.copyReachable,{room:state.room,roomHidden:state.roomHidden,copyReachable:state.copyReachable});
    if(progress===.481)check(ctx.result,'closed native portal seals every drawing-buffer pixel without an opaque sky or CSS substitute',state.renderer.transparentBackground===true&&state.renderer.clearAlpha===0&&state.renderer.mainLayerMask===2&&state.renderer.shadowLayerMask===3&&state.renderer.passage.hinges.length===2&&state.renderer.passage.hinges.map(h=>h.node).sort().join(',')==='hinge-insurance-left,hinge-insurance-right'&&state.renderer.passage.hinges.every(h=>h.angle<.00001)&&state.pixels.total>0&&state.pixels.nonOpaque===0&&state.pixels.minAlpha===255&&state.pixels.error===0,state);
-   await capture(ctx,'entry-'+String(progress).replace('.',''));
+   await capturePassage(ctx,'entry-'+String(progress).replace('.',''),progress);
+   await finishPassage(ctx);await restoredPassage(ctx,'completed entry '+progress);
+   if(progress===.84){await reader(ctx,'insurance');await capture(ctx,'entry-end');}
+   await backWithPausedClock(ctx);await finishPassage(ctx);await settled(ctx.frame);
   }
-  await finishPassage(ctx);await restoredPassage(ctx,'completed entry');await reader(ctx,'insurance');await capture(ctx,'entry-end');
-  await back(ctx);await ctx.page.waitForFunction(()=>document.getAnimations().some(a=>a.id==='court-passage-clock'),null,{timeout:10_000});
-  for(const progress of [0,.2,.5]){const state=await samplePassage(ctx,progress);check(ctx.result,'reverse '+progress+' follows the same native doorway with the canonical court already restored',state.sameCanvas&&state.sameContext&&!state.contextLost&&state.direction==='out'&&Math.abs(state.renderer.passage.u-(1-progress))<.0001&&state.passage.active===true,state);await capture(ctx,'return-'+String(progress).replace('.',''));}
-  await finishPassage(ctx);await settled(ctx.frame);await restoredPassage(ctx,'completed reverse');
+  for(const progress of [0,.2,.5]){
+   await beginInsurancePassage(ctx);await finishPassage(ctx);await backWithPausedClock(ctx);
+   const state=await samplePassage(ctx,progress);
+   check(ctx.result,'reverse '+progress+' follows the same native doorway with the canonical court already restored',state.sameCanvas&&state.sameContext&&!state.contextLost&&state.direction==='out'&&Math.abs(state.renderer.passage.u-(1-progress))<.0001&&state.passage.active===true,state);
+   await capturePassage(ctx,'return-'+String(progress).replace('.',''),progress);await finishPassage(ctx);await settled(ctx.frame);await restoredPassage(ctx,'completed reverse '+progress);
+  }
   const returned=await snapshot(ctx.frame);check(ctx.result,'reverse ends on the actual insurance aperture and original source control',returned.selected==='insurance'&&returned.renderer.selected==='insurance'&&returned.projection.find(point=>point.key==='insurance')?.visible===true&&await ctx.f.locator('.arrival-enter').evaluate(node=>node===document.activeElement),returned);await capture(ctx,'return-end');await unchanged(ctx);
+ }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
+}
+async function passagePaceCase(browser,origin){
+ let ctx;
+ try{
+  ctx=await openHost(browser,origin,{label:'390-900-passage-pace'});await prepareInsurancePassage(ctx);
+  for(const [pace,duration]of [['quick',480],['slow',1200]]){
+   await ctx.f.locator('.arrival-menu summary').click();await ctx.f.locator('.arrival-menu').getByRole('button',{name:'音・演出',exact:true}).click();
+   await ctx.f.locator('#settings input[name=pace][value='+pace+']').check();await closeSettings(ctx);
+   await beginInsurancePassage(ctx);const state=await samplePassage(ctx,.2);check(ctx.result,'real '+pace+' setting maps to its declared passage duration',state.duration===duration&&state.room==='insurance',state.duration);
+   await finishPassage(ctx);await backWithPausedClock(ctx);await finishPassage(ctx);await settled(ctx.frame);
+   await ctx.page.evaluate(()=>{window.__testInstantStarts=[];document.addEventListener('court:passage-start',event=>window.__testInstantStarts.push(event.detail));});
+   await ctx.f.locator('[data-court-open=insurance]').click();await reader(ctx,'insurance');
+   const starts=await ctx.page.evaluate(()=>window.__testInstantStarts);check(ctx.result,'すぐ開く stays truly instant under '+pace,starts.length===0&&await ctx.page.locator('.court-passage').count()===0,starts);await back(ctx);await settled(ctx.frame);
+  }
+  await unchanged(ctx);
  }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
 }
 async function interruptedPassageCase(browser,origin,kind){
@@ -496,6 +534,7 @@ async function shadowDiagnostic(browser,origin,width,height){
   disabled=await chromium.launch({channel:'chromium',headless:true,args:['--disable-webgl']});await fallbackCase(disabled,origin,'no-webgl');
   await lazyCancellationCase(browser,origin);await initialReducedCase(browser,origin);
   for(const [width,height] of [[390,900],[320,640],[800,648],[1440,900]])await passageCase(browser,origin,width,height);
+  await passagePaceCase(browser,origin);
   for(const kind of ['copy','quick','resize','context-loss','escape','early-back','reduce'])await interruptedPassageCase(browser,origin,kind);
   for(const fault of ['passage-module','passage-css'])await optionalPassageFailure(browser,origin,fault);
   // Diagnostic-only A/B. The normal four widths and all fault cases above use

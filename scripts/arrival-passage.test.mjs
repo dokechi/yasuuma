@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
-import {createArrivalPassage,captureArrivalRoom} from '../command-center-98/lounge/arrival-passage.js';
+import {createArrivalPassage,captureArrivalRoom,courtPassageDuration} from '../command-center-98/lounge/arrival-passage.js';
 const require=createRequire(import.meta.url),{JSDOM}=require('jsdom');
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 function fixture(t,{available=true,begin=true,capture=true,routeError=false}={}){
@@ -41,3 +41,7 @@ test('departure captures the already-rendered room background and precise parent
 
 test('Back during an unfinished entry is instant and never flashes a full-room reverse snapshot',async t=>{const h=fixture(t);h.adapter.enter('insurance');await flush();await h.back();assert.equal(h.calls.length,1);assert.equal(h.captured,0);assert.equal(h.panel.hidden,false);assert.equal(h.adapter.state().active,false);});
 test('an explicitly skipped entry keeps subsequent Back instant rather than restarting travel',async t=>{const h=fixture(t);h.adapter.enter('insurance');h.passage.cancel();h.doc.dispatchEvent(new h.win.CustomEvent('court:passage-end',{detail:{room:'insurance',direction:'in',cancelled:true}}));await flush();await h.back();assert.equal(h.calls.length,1);assert.equal(h.captured,0);});
+
+// Existing checked pace is read for each visual trip; no new saved setting.
+test('native passage respects all existing pace values and invalid values use normal',()=>{assert.deepEqual(['quick','normal','slow','unknown',undefined].map(courtPassageDuration),[480,900,1200,900,900]);});
+test('each trip reads current pace, including a changed setting before Back',async t=>{const h=fixture(t);const input=h.doc.createElement('input');input.type='radio';input.name='pace';input.value='quick';input.checked=true;h.doc.body.append(input);h.adapter.enter('insurance');assert.equal(h.calls[0].duration,480);h.complete();await flush();input.value='slow';await h.back();assert.equal(h.calls[1].duration,1200);});
