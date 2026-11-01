@@ -96,12 +96,12 @@ export function createPresentationLeases({snapshot,version=()=>0,valid=()=>true,
   if(current!==record||disposed)return null;
   return Object.freeze({
    id:record.id,returnState:saved,
-   paintPose(pose,{width=start.width,height=start.height}={}){
+   paintPose(pose,{width=start.width,height=start.height,reuseEntry=false}={}){
     if(current!==record||record.closed||disposed)return false;
     if(!validPose(pose)){invalidate('invalid-pose');return false;}
     if(width!==start.width||height!==start.height){invalidate('resize');return false;}
     if(!valid()){invalidate('surface-unavailable');return false;}
-    let drawn=false;try{drawn=paint(copyPose(pose),{width,height})!==false;}catch{drawn=false;}
+    let drawn=false;try{drawn=paint(copyPose(pose),{width,height,reuseEntry:!!reuseEntry})!==false;}catch{drawn=false;}
     if(current!==record||record.closed||disposed)return false;
     if(!drawn){invalidate('paint-failed');return false;}
     record.paintCount++;return true;
@@ -110,6 +110,13 @@ export function createPresentationLeases({snapshot,version=()=>0,valid=()=>true,
   });
  }
  return {acquire,invalidate,active:()=>!!current,state:()=>current?{active:true,id:current.id,room:current.returnState.room,paintCount:current.paintCount,width:current.start.width,height:current.start.height}:{active:false,reason:lastReason},dispose(){if(disposed)return;disposed=true;serial++;close(current,{reason:'disposed',notify:true,resuming:false});}};
+}
+// Reuse is permitted only for an identical last NORMAL opaque-world draw.
+// A matching camera alone is insufficient after a transparent native passage.
+export function courtEntryFrameReusable(previous,current){
+ if(!previous||!current||!current.worldOpaque||current.contextValid!==true||current.shadowDirty||!current.closed||previous.serial!==current.frameCount||!Number.isSafeInteger(current.frameCount)||current.frameCount<1||previous.generation!==current.generation||!validPose(previous.pose)||!validPose(current.pose))return false;
+ for(const key of['width','height','pixelRatio','physicalWidth','physicalHeight'])if(!finite(current[key])||current[key]<=0||previous[key]!==current[key])return false;
+ return previous.pose.fov===current.pose.fov&&['position','target'].every(key=>previous.pose[key].every((value,i)=>value===current.pose[key][i]));
 }
 // The first native passage is deliberately a validated insurance-only slice.
 // Bounds describe a guaranteed opaque rectangle BELOW the arch, not its bbox.

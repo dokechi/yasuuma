@@ -1,7 +1,7 @@
 /* Optional real geometry and light. The existing application owns all routes,
    records and accessible controls. This module never reads user storage. */
 import * as T from './vendor/three-r187/court-three.js?v=20261101.5-arrival';
-import {COURT_KEYS,COURT_BUDGET,COURT_ATMOSPHERE,courtSkyPixels,fitCourtShadow,closedCourtShadowMaterial,renderDimensions,createCameraMotion,createDemandDriver,createSurfaceFrames,courtSurfaceAvailable,createPresentationLeases,prepareCourtPortal,courtPassageSample,copyPose,orbitPose,focusPose,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from './arrival-camera.js?v=20261101.6-passage';
+import {COURT_KEYS,COURT_BUDGET,COURT_ATMOSPHERE,courtSkyPixels,fitCourtShadow,closedCourtShadowMaterial,renderDimensions,createCameraMotion,createDemandDriver,createSurfaceFrames,courtSurfaceAvailable,createPresentationLeases,prepareCourtPortal,courtPassageSample,courtEntryFrameReusable,copyPose,orbitPose,focusPose,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from './arrival-camera.js?v=20261101.6-passage';
 
 export class CourtRendererError extends Error{constructor(code,message,cause){super(message,{cause});this.name='CourtRendererError';this.code=code;}}
 const abortError=()=>new DOMException('Court initialization cancelled','AbortError');
@@ -22,9 +22,9 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
  let deadline=0,stopReject;const stopped=new Promise((_,reject)=>{stopReject=reject;});stopped.catch(()=>{});
  const loadAbort=new AbortController(),anchors=new Map(),homePoses=new Map(),roomPoses=new Map(),portals=new Map();
  const raycaster=new T.Raycaster(),point=new T.Vector3(),bufferSize=new T.Vector2();
- let assetInfo=null,meshTriangles=0,materialCount=0,closedShadowMaterials=0,shadowBounds=null,drawCalls=0,renderedTriangles=0,pose=null,shadowRefreshes=0,passageView=null;
+ let assetInfo=null,meshTriangles=0,materialCount=0,closedShadowMaterials=0,shadowBounds=null,drawCalls=0,renderedTriangles=0,pose=null,shadowRefreshes=0,passageView=null,visualGeneration=0,lastNormalPaint=null,lastPaintMode=null,reusedEntryFrames=0;
  function release(reason=abortError()){
-  if(disposed)return;disposed=true;active=false;ready=false;clearTimeout(deadline);loadAbort.abort();driver?.dispose();leases?.dispose();
+  if(disposed)return;disposed=true;active=false;lastNormalPaint=null;ready=false;clearTimeout(deadline);loadAbort.abort();driver?.dispose();leases?.dispose();
   canvas.removeEventListener('webglcontextlost',lost,true);signal?.removeEventListener('abort',aborted);stopReject(reason);
   disposeCourtResources(model);model=null;anchors.clear();homePoses.clear();roomPoses.clear();portals.clear();sky?.dispose();sky=null;environment?.dispose();environment=null;environmentTarget?.dispose();environmentTarget=null;pmrem?.dispose();pmrem=null;
   if(scene){scene.traverse(object=>{object.shadow?.map?.dispose();object.shadow?.mapPass?.dispose();});scene.environment=null;scene.background=null;scene.clear();}
@@ -50,11 +50,13 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
   projected=[...anchors].map(([key,item])=>{point.copy(item.point).project(camera);const inFrustum=point.z>=-1&&point.z<=1&&point.x>=-1&&point.x<=1&&point.y>=-1&&point.y<=1;const visible=inFrustum&&roomAt(point.x,point.y)===key;return {key,x:(point.x+1)*dimensions.width/2,y:(1-point.y)*dimensions.height/2,depth:point.z,inFrustum,visible,occluded:inFrustum&&!visible};});
   return projected.map(value=>({...value}));
  }
+ const opaqueWorld=()=>scene?.background===sky&&!!sky&&renderer?.getClearAlpha()===1&&camera?.layers.mask===1&&sun?.shadow.camera.layers.mask===1;
  function renderPose(value,{manual=false}={}){
   if(disposed||!model)return false;
   try{
    applyPose(value,!manual);const updateShadow=sun?.shadow.needsUpdate===true;renderer.render(scene,camera);if(updateShadow&&sun.shadow.needsUpdate===false)shadowRefreshes++;if(renderer.getContext().isContextLost())throw new CourtRendererError('context-lost','The court graphics context is unavailable');
-   const info=renderer.info.render;drawCalls=info.calls;renderedTriangles=info.triangles;frameCount++;
+   const info=renderer.info.render;drawCalls=info.calls;renderedTriangles=info.triangles;frameCount++;lastPaintMode=manual?'presentation':'normal';
+   if(!manual&&opaqueWorld())lastNormalPaint={serial:frameCount,generation:visualGeneration,pose:copyPose(pose),width:dimensions.width,height:dimensions.height,pixelRatio:dimensions.pixelRatio,physicalWidth:dimensions.physicalWidth,physicalHeight:dimensions.physicalHeight};
    if(!manual)onFrame({rooms:project(),camera:copyPose(pose),selected});return true;
   }catch(error){fail(error instanceof CourtRendererError?error:new CourtRendererError('render','The court could not draw safely',error));return false;}
  }
@@ -99,7 +101,7 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
   let lease=null,restored=false,layered=false,lastOpen=0;
   let captured=false,background=null,clearAlpha=1,cameraMask=1,shadowMask=1;const layers=[];
   function restoreNative(){
-   if(restored)return;restored=true;if(!captured)return;
+   if(restored)return;restored=true;if(!captured)return;visualGeneration++;
    for(const hinge of record.hinges)hinge.node.quaternion.copy(hinge.initial);
    for(const [object,mask]of layers)object.layers.mask=mask;
    camera.layers.mask=cameraMask;sun.shadow.camera.layers.mask=shadowMask;scene.background=background;renderer.setClearAlpha(clearAlpha);
@@ -116,7 +118,7 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
     let sample;try{sample=courtPassageSample(lease.returnState.pose,approach,plan,progress);}catch{leases.invalidate('invalid-progress');return false;}
     try{
      if(sample.portalOnly!==layered){
-      layered=sample.portalOnly;
+      layered=sample.portalOnly;visualGeneration++;
       for(const [object,mask]of layers)object.layers.mask=layered?mask|2:mask;
       camera.layers.mask=layered?2:cameraMask;
       // r187 supports explicit shadow-camera layers. Original world casters
@@ -124,8 +126,8 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
       sun.shadow.camera.layers.mask=layered?shadowMask|2:shadowMask;
       scene.background=layered?null:background;renderer.setClearAlpha(layered?0:clearAlpha);
      }
-     if(sample.open!==lastOpen){for(const hinge of record.hinges)hinge.node.quaternion.copy(hinge.initial).multiply(hinge.rotation.setFromAxisAngle(hinge.axis,hinge.angle*sample.open));lastOpen=sample.open;sun.shadow.needsUpdate=true;model.updateMatrixWorld(true);}
-     if(!lease.paintPose(sample.pose,viewport))return false;
+     if(sample.open!==lastOpen){visualGeneration++;for(const hinge of record.hinges)hinge.node.quaternion.copy(hinge.initial).multiply(hinge.rotation.setFromAxisAngle(hinge.axis,hinge.angle*sample.open));lastOpen=sample.open;sun.shadow.needsUpdate=true;model.updateMatrixWorld(true);}
+     if(!lease.paintPose(sample.pose,{...viewport,reuseEntry:sample.u===0&&!returnState}))return false;
      passageView={room,u:sample.u,phase:sample.phase,portalOnly:layered,open:sample.open};return Object.freeze({ok:true,u:sample.u,phase:sample.phase});
     }catch{leases.invalidate('portal-paint-failed');return false;}
    },
@@ -134,7 +136,7 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
  }
  function resize(width,height){
   if(disposed)return false;let next=renderDimensions(width,height,surfaceView().devicePixelRatio||1);const changed=!dimensions||next.width!==dimensions.width||next.height!==dimensions.height||next.pixelRatio!==dimensions.pixelRatio;
-  if(!changed)return true;if(leases?.active()){leases.invalidate('resize');if(disposed)return false;next=renderDimensions(width,height,surfaceView().devicePixelRatio||1);}normalVersion++;dimensions=next;renderer.setPixelRatio(next.pixelRatio);renderer.setSize(next.width,next.height,false);
+  if(!changed)return true;if(leases?.active()){leases.invalidate('resize');if(disposed)return false;next=renderDimensions(width,height,surfaceView().devicePixelRatio||1);}normalVersion++;visualGeneration++;dimensions=next;renderer.setPixelRatio(next.pixelRatio);renderer.setSize(next.width,next.height,false);
   if(motion){motion.to(destinationPose(),{instant:true});driver?.invalidate();}return true;
  }
  try{
@@ -178,7 +180,11 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
    snapshot:()=>({room:selected,pose:copyPose(pose),width:dimensions.width,height:dimensions.height}),version:()=>normalVersion,
    valid:()=>!disposed&&ready&&courtSurfaceAvailable(canvas),
    suspend(state){driver.setActive(false);motion.to(state.pose,{instant:true});yaw=0;},
-   paint(value){return renderPose(value,{manual:true});},
+   paint(value,{reuseEntry=false}={}){
+    if(reuseEntry){const rect=canvas.getBoundingClientRect(),closed=[...portals.values()].every(p=>!p.hinges||p.hinges.every(h=>h.node.quaternion.equals(h.initial)));
+    if(courtEntryFrameReusable(lastNormalPaint,{...dimensions,width:rect.width,height:rect.height,physicalWidth:canvas.width,physicalHeight:canvas.height,frameCount,generation:visualGeneration,pose:value,worldOpaque:opaqueWorld(),contextValid:!contextLost&&!renderer.getContext().isContextLost(),shadowDirty:sun.shadow.needsUpdate||renderer.shadowMap.needsUpdate,closed})){reusedEntryFrames++;return true;}}
+    return renderPose(value,{manual:true});
+   },
    restore(state){motion.to(state.pose,{instant:true});yaw=0;},
    resume(){if(disposed)return;const available=active&&courtSurfaceAvailable(canvas);driver.setActive(available);if(available)draw();}
   });
@@ -194,7 +200,7 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
    prepareDoor(key){const plan=portalPlan(key);return plan?{room:key,width:plan.width,height:plan.height,seal:copyPose(plan.seal),inside:copyPose(plan.inside),coverage:{...plan.coverage}}:null;},
    beginPassage,
    pick(x,y){if(disposed||!active||leases.active()||!Number.isFinite(x)||!Number.isFinite(y)||Math.abs(x)>1||Math.abs(y)>1)return null;return roomAt(x,y);},
-   diagnostics(){const size=renderer?.getDrawingBufferSize(bufferSize);return {webgl2:true,ready,disposed,contextLost,active,presentation:leases?.state()||{active:false},surfaceOwner:canvas.ownerDocument===win.document?'court':'adopted',frameCount,meshTriangles,materialCount,primitiveGroups:assetInfo?.primitiveGroups||0,nativePortals:[...portals].map(([key,value])=>({key,available:!value.reason&&!value.planReason,reason:value.reason||value.planReason||null})),passage:passageView?{...passageView,hinges:portals.get(passageView.room)?.hinges.map(h=>({node:h.node.name,quaternion:h.node.quaternion.toArray(),angle:h.node.quaternion.angleTo(h.initial)}))}:null,transparentBackground:scene?.background===null,mainLayerMask:camera?.layers.mask,shadowLayerMask:sun.shadow.camera.layers.mask,shadowRefreshes,clearAlpha:renderer?.getClearAlpha(),shadowEnabled:renderer?.shadowMap.enabled===true,shadowFilter:renderer?.shadowMap.type===T.PCFShadowMap?'pcf':'other',shadowMapSize:sun.shadow.mapSize.x,shadowRadius:sun.shadow.radius,closedShadowMaterials,shadowBounds:shadowBounds?{...shadowBounds}:null,staticShadow:sun.shadow.autoUpdate===false,doorLight:{position:lamp.position.toArray(),intensity:lamp.intensity,distance:lamp.distance,castsShadow:lamp.castShadow},atmosphere:{...COURT_ATMOSPHERE},runtimeSkyTextures:sky?1:0,runtimeSkyTexels:sky?COURT_ATMOSPHERE.skyWidth*COURT_ATMOSPHERE.skyHeight:0,drawCalls,renderedTriangles,assetTextureCount:assetInfo?.textureCount||0,assetTexels:assetInfo?.texels||0,gpuTextures:renderer?.info.memory.textures||0,assetBytes:assetInfo?.bytes||0,physicalPixels:dimensions?.physicalPixels||0,physicalWidth:size?.x||0,physicalHeight:size?.y||0,pixelRatio:dimensions?.pixelRatio||0,width:dimensions?.width||0,height:dimensions?.height||0,pendingFrame:driver?.state().pendingFrame||false,selected,camera:pose?copyPose(pose):null,projectedRooms:projected.map(value=>({...value}))};},
+   diagnostics(){const size=renderer?.getDrawingBufferSize(bufferSize);return {webgl2:true,ready,disposed,contextLost,active,presentation:leases?.state()||{active:false},reusedEntryFrames,normalPaintSerial:lastNormalPaint?.serial??null,lastPaintMode,visualGeneration,surfaceOwner:canvas.ownerDocument===win.document?'court':'adopted',frameCount,meshTriangles,materialCount,primitiveGroups:assetInfo?.primitiveGroups||0,nativePortals:[...portals].map(([key,value])=>({key,available:!value.reason&&!value.planReason,reason:value.reason||value.planReason||null})),passage:passageView?{...passageView,hinges:portals.get(passageView.room)?.hinges.map(h=>({node:h.node.name,quaternion:h.node.quaternion.toArray(),angle:h.node.quaternion.angleTo(h.initial)}))}:null,transparentBackground:scene?.background===null,mainLayerMask:camera?.layers.mask,shadowLayerMask:sun.shadow.camera.layers.mask,shadowRefreshes,clearAlpha:renderer?.getClearAlpha(),shadowEnabled:renderer?.shadowMap.enabled===true,shadowFilter:renderer?.shadowMap.type===T.PCFShadowMap?'pcf':'other',shadowMapSize:sun.shadow.mapSize.x,shadowRadius:sun.shadow.radius,closedShadowMaterials,shadowBounds:shadowBounds?{...shadowBounds}:null,staticShadow:sun.shadow.autoUpdate===false,doorLight:{position:lamp.position.toArray(),intensity:lamp.intensity,distance:lamp.distance,castsShadow:lamp.castShadow},atmosphere:{...COURT_ATMOSPHERE},runtimeSkyTextures:sky?1:0,runtimeSkyTexels:sky?COURT_ATMOSPHERE.skyWidth*COURT_ATMOSPHERE.skyHeight:0,drawCalls,renderedTriangles,assetTextureCount:assetInfo?.textureCount||0,assetTexels:assetInfo?.texels||0,gpuTextures:renderer?.info.memory.textures||0,assetBytes:assetInfo?.bytes||0,physicalPixels:dimensions?.physicalPixels||0,physicalWidth:size?.x||0,physicalHeight:size?.y||0,pixelRatio:dimensions?.pixelRatio||0,width:dimensions?.width||0,height:dimensions?.height||0,pendingFrame:driver?.state().pendingFrame||false,selected,camera:pose?copyPose(pose):null,projectedRooms:projected.map(value=>({...value}))};},
    dispose
   };
  }catch(error){fail(error,false);throw error;}

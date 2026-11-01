@@ -371,6 +371,7 @@ async function armPassageClock(ctx){
 }
 async function beginInsurancePassage(ctx){
  const box=await ctx.f.locator('.arrival-enter').boundingBox();assert.ok(box&&box.width>=44&&box.height>=44,'real visible entrance has a measured tap target');
+ ctx.beforePassageRenderer=(await snapshot(ctx.frame)).renderer;
  await armPassageClock(ctx);const start=Date.now();await ctx.page.mouse.click(box.x+box.width/2,box.y+box.height/2);ctx.lastPassageClickMs=Date.now()-start;
  await ctx.page.waitForFunction(()=>document.getAnimations().some(animation=>animation.id==='court-passage-clock'),null,{timeout:10_000});
 }
@@ -426,6 +427,7 @@ async function passageCase(browser,origin,width,height){
   for(const progress of [0,.2,.4,.479,.481,.65,.84]){
    await assertSource('entry '+progress);await beginInsurancePassage(ctx);
    const state=await samplePassage(ctx,progress,{seal:progress===.481});
+   const before=ctx.beforePassageRenderer;check(ctx.result,'entry '+progress+' reuses only the already-painted normal source frame',before.lastPaintMode==='normal'&&before.normalPaintSerial===before.frameCount&&state.renderer.reusedEntryFrames===before.reusedEntryFrames+1&&state.renderer.frameCount===before.frameCount+(progress===0?0:1),{before:{frameCount:before.frameCount,normalPaintSerial:before.normalPaintSerial,lastPaintMode:before.lastPaintMode,reused:before.reusedEntryFrames},after:{frameCount:state.renderer.frameCount,normalPaintSerial:state.renderer.normalPaintSerial,lastPaintMode:state.renderer.lastPaintMode,reused:state.renderer.reusedEntryFrames}});
    check(ctx.result,'entry '+progress+' uses the same real context in the nonblocking parent surface',state.sameCanvas&&state.sameContext&&state.canvasCount===1&&state.ownerParent&&!state.contextLost&&state.inert&&state.ariaHidden==='true'&&state.pointerEvents==='none'&&state.direction==='in'&&state.duration===900&&Math.abs(state.renderer.passage.u-progress)<.0001&&Math.abs(state.layerRect.top-state.frameRect.top)<.5&&Math.abs(state.layerRect.height-state.frameRect.height)<.5,state);
    check(ctx.result,'entry '+progress+' has already committed the real insurance reader and usable copy control',state.room==='insurance'&&!state.roomHidden&&state.copyReachable,{room:state.room,roomHidden:state.roomHidden,copyReachable:state.copyReachable});
    if(progress===.481)check(ctx.result,'closed native portal seals every drawing-buffer pixel without an opaque sky or CSS substitute',state.renderer.transparentBackground===true&&state.renderer.clearAlpha===0&&state.renderer.mainLayerMask===2&&state.renderer.shadowLayerMask===3&&state.renderer.passage.hinges.length===2&&state.renderer.passage.hinges.map(h=>h.node).sort().join(',')==='hinge-insurance-left,hinge-insurance-right'&&state.renderer.passage.hinges.every(h=>h.angle<.00001)&&state.pixels.total>0&&state.pixels.nonOpaque===0&&state.pixels.minAlpha===255&&state.pixels.error===0,state);
