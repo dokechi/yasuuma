@@ -10,7 +10,7 @@ const accounts = [
   {key: 'insurance', name: '保険', handle: '@sucker0508', intro: '保険の備えを、手紙にして確かめる。'},
   {key: 'otoku', name: 'まだ安く買えるはず', handle: '@thats_a_steal0601', intro: 'お得な買い物は、条件と価格を確かめてから。'},
   {key: 'rakuten', name: '楽天犬', handle: '@bonya0914', intro: '楽天犬と選ぶ、暮らしに合う贈りもの。'},
-  {key: 'lottery', name: '抽選', handle: '@kousaka_san_', intro: '抽選の締切と応募条件を、星図のように見渡す。'}
+  {key: 'lottery', name: '抽選', handle: '@chusen1101', intro: '抽選の締切と応募条件を、星図のように見渡す。'}
 ];
 const rows = accounts.flatMap(account => Array.from({length: 8}, (_, i) => ({
   id: account.key + i, place: account.key === 'insurance' ? 'kyun' : account.key,

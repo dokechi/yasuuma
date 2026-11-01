@@ -16,50 +16,49 @@ rows[8].posting={main:rows[8].body,reply:'条件と出典の補足です。保�
   await page.addInitScript(()=>{HTMLMediaElement.prototype.play=()=>Promise.resolve();Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>{window.__copied=text;}}});});
   await page.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());
   await page.goto(origin+'/fixture.html');const frame=page.frameLocator('iframe'),cf=page.frames().find(f=>f.url().includes('/lounge/'));
-  await frame.locator('.castle-room-hotspot').first().waitFor();
+  await frame.locator('[data-story-destination]').first().waitFor();
   const send=data=>page.evaluate(data=>document.querySelector('iframe').contentWindow.postMessage({channel:'cc-castle-v1',...data},location.origin),data);
   const screenshot=name=>page.screenshot({path:path.join(out,`${width}-${height}-${name}.png`)});
   const openWork=async()=>{if(!await frame.locator('.spatial-work').evaluate(n=>n.open))await frame.locator('.spatial-work > summary').click();};
   const returnToBoard=async()=>{await openWork();await frame.locator('#desk-routes').getByRole('button',{name:'← 司令塔へ',exact:true}).click();await frame.locator('.account-board').waitFor();};
   const waitRoom=async account=>{
-   await frame.locator('#room[data-account='+account+'][data-spatial-desk=ready][data-spatial-scene=interior]').waitFor();
+   await frame.locator('#room[data-account='+account+'][data-spatial-desk=ready][data-story-scene=ready]').waitFor();
    await frame.locator('#draft-body').waitFor();await frame.locator('.spatial-desk-actor').evaluate(n=>n.decode());
   };
   await send({type:'records',drafts:rows,complete:true,loading:false,message:'保存原稿を読込済み'});
   await frame.locator('.account-board[data-state=ready]').waitFor();
-  for(const account of ['insurance','otoku','rakuten','lottery'])assert.equal(await frame.locator('.castle-room-hotspot[data-room='+account+'] .castle-room-count').textContent(),'保存原稿 8本','visible per-room counts retain all 32 original groups');
-  await frame.locator('.castle-stage img').evaluateAll(nodes=>Promise.all(nodes.map(n=>n.decode())));
+  for(const account of ['insurance','otoku','rakuten','lottery']){await frame.locator('[data-story-chapter='+account+']').click();assert.match(await frame.locator('.story-memo').textContent(),/保存原稿 8本/,'visible selected-chapter count retains all 32 original groups');}await frame.locator('[data-story-chapter=insurance]').click();
+  await frame.locator('.story-art-host img').evaluateAll(nodes=>Promise.all(nodes.map(n=>n.decode())));
   await cf.evaluate(()=>document.fonts.ready);await screenshot('home');
   assert.equal(await frame.locator('#app').getAttribute('inert'),'');
-  assert.equal(await frame.locator('.castle-room-hotspot:disabled').count(),3);
-  assert.equal(await frame.locator('.castle-room-hotspot').count(),8);
-  assert.equal(await frame.locator('.castle-quick-open').count(),5);
+  assert.equal(await frame.locator('[data-story-destination]:disabled').count(),3);
+  assert.equal(await frame.locator('[data-story-destination]').count(),8);
+  assert.equal(await frame.locator('[data-story-instant]').count(),5);
   const layout=await cf.evaluate(()=>({viewport:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth,
-   buttons:[...document.querySelectorAll('.account-board-heading button,.castle-quick-open,.castle-step,.castle-overview')].filter(n=>n.checkVisibility()).map(n=>({label:n.textContent,height:n.getBoundingClientRect().height,width:n.getBoundingClientRect().width,font:parseFloat(getComputedStyle(n).fontSize)})),
-   labels:[...document.querySelectorAll('.castle-room-label strong,.castle-room-count')].filter(n=>n.checkVisibility()).map(n=>({text:n.textContent,font:parseFloat(getComputedStyle(n).fontSize)}))}));
+   buttons:[...document.querySelectorAll('.story-utilities button,[data-story-instant],[data-story-chapter]')].filter(n=>n.checkVisibility()).map(n=>({label:n.textContent,height:n.getBoundingClientRect().height,width:n.getBoundingClientRect().width,font:parseFloat(getComputedStyle(n).fontSize)})),
+   labels:[...document.querySelectorAll('.story-folio,.story-account-identity,.story-memo')].filter(n=>n.checkVisibility()).map(n=>({text:n.textContent,font:parseFloat(getComputedStyle(n).fontSize)}))}));
   assert.equal(layout.overflow,false);
   assert.ok(layout.buttons.every(b=>b.height>=44&&b.width>=44&&b.font>=12),JSON.stringify(layout.buttons));
   assert.ok(layout.labels.every(label=>label.font>=12),JSON.stringify(layout.labels));
-  // The architecture replaces rectangular cards. Eight named, reachable hit zones
-  // must fit the overview; task rail and footer may not obscure the castle viewport.
-  if(width<=700)await frame.locator('.castle-overview').click();
-  const bounds=await frame.locator('.castle-room-hotspot').evaluateAll(nodes=>nodes.map(n=>{
-   const r=n.getBoundingClientRect(),v=document.querySelector('.castle-viewport').getBoundingClientRect();
+  // Eight named bookmarks belong to one spread, not an old castle image map.
+  // The task rail and footer cannot overlap the spread; phone content may scroll.
+
+  const bounds=await frame.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(n=>{
+   const r=n.getBoundingClientRect(),v=document.querySelector('.story-spread').getBoundingClientRect();
    return {name:n.getAttribute('aria-label'),width:r.width,height:r.height,inside:r.left>=v.left-1&&r.top>=v.top-1&&r.right<=v.right+1&&r.bottom<=v.bottom+1};
   }));
   assert.ok(bounds.every(r=>r.name&&r.width>=44&&r.height>=44&&r.inside),JSON.stringify(bounds));
-  assert.equal(await frame.locator('.castle-room-hotspot:visible').count(),8);
+  assert.equal(await frame.locator('[data-story-destination]:visible').count(),8);
   const layers=await cf.evaluate(()=>{
    const box=selector=>document.querySelector(selector).getBoundingClientRect();
-   const viewport=box('.castle-viewport'),route=box('.castle-routebar'),quick=box('.castle-quick'),footer=box('.board-footer');
-   return {viewportBottom:viewport.bottom,routeTop:route.top,routeBottom:route.bottom,quickTop:quick.top,quickBottom:quick.bottom,footerTop:footer.top,footerBottom:footer.bottom,height:innerHeight};
+   const spread=box('.story-spread'),quick=box('.story-fast'),footer=box('.story-footer'),book=box('.storybook');
+   return {spreadBottom:spread.bottom,quickTop:quick.top,quickBottom:quick.bottom,footerTop:footer.top,footerBottom:footer.bottom,bookBottom:book.bottom,height:innerHeight};
   });
-  assert.ok(layers.viewportBottom<=layers.routeTop+1&&layers.routeBottom<=layers.quickTop+1&&layers.quickBottom<=layers.footerTop+1&&layers.footerBottom<=height+1,JSON.stringify(layers));
-  if(width<=700)await frame.locator('.castle-overview').click();
-  const insurance=frame.locator('.castle-quick-open[data-room=insurance]');
+  assert.ok(layers.spreadBottom<=layers.quickTop+1&&layers.quickBottom<=layers.footerTop+1&&layers.footerBottom<=layers.bookBottom+1,JSON.stringify(layers));
+  const insurance=frame.locator('[data-story-instant=insurance]');
   await insurance.focus();
   await send({type:'records',drafts:rows,complete:true,loading:false,message:'保存原稿を再確認しました'});
-  await frame.locator('.account-board-status').getByText('保存原稿を再確認しました',{exact:true}).waitFor();
+  await frame.locator('.story-status').getByText('保存原稿を再確認しました',{exact:true}).waitFor();
   assert.equal(await insurance.evaluate(n=>n===document.activeElement),true,'status refresh preserves the visible quick-route focus');
   await insurance.click();await waitRoom('insurance');
   assert.equal(await frame.locator('#app').getAttribute('inert'),null);
@@ -81,7 +80,7 @@ rows[8].posting={main:rows[8].body,reply:'条件と出典の補足です。保�
   await frame.locator('#desk-copy').click();
   assert.equal(await cf.evaluate(()=>window.__copied),rows[0].body);
   await returnToBoard();assert.equal(await insurance.evaluate(n=>n===document.activeElement),true);
-  await frame.locator('.board-primary').click();await frame.locator('.account-jump').waitFor();
+  await frame.locator('.story-list').click();await frame.locator('.account-jump').waitFor();
   await frame.locator('.account-jump').getByRole('button',{name:'楽天犬',exact:true}).click();
   await frame.locator('.account-column[data-account=rakuten] .account-draft').first().click();await waitRoom('rakuten');
   assert.equal(await frame.locator('#room-title').textContent(),'楽天犬');
@@ -114,7 +113,7 @@ rows[8].posting={main:rows[8].body,reply:'条件と出典の補足です。保�
   if([390,800,1440].includes(width)){
    await frame.locator('.board-primary').click();
    for(const account of ['otoku','rakuten','lottery']){
-    await frame.locator('.castle-quick-open[data-room='+account+']').click();await waitRoom(account);
+    await frame.locator('[data-story-instant='+account+']').click();await waitRoom(account);
     assert.equal(await frame.locator('#room').getAttribute('data-account'),account);
     assert.equal(await frame.locator('#desk-operation').textContent(),'','new room has no stale copy claim');
     await screenshot('room-'+account);

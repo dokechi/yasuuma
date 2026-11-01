@@ -7,6 +7,7 @@ const path = require('node:path');
 const http = require('node:http');
 const assert = require('node:assert/strict');
 const {chromium} = require('playwright-core');
+const {openStorybookArchive}=require('./storybook-archive-entry.cjs');
 const root = path.resolve(__dirname, '..');
 const out = path.join(root, 'artifacts/castle-immersive');
 const mime = {'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript',
@@ -97,11 +98,9 @@ function installProbe() {
       const result={width,height,checks:[],frames:[]};results.push(result);
       const check=(name,pass,detail)=>{result.checks.push({name,pass:!!pass,...(detail===undefined?{}:{detail})});assert.ok(pass,name+(detail===undefined?'':': '+JSON.stringify(detail)));};
       const screenshot=name=>page.screenshot({path:path.join(out,`${width}-${height}-${name}.png`)});
-      await page.goto(origin+'/command-center-98/app-v130.html');
-      await page.waitForFunction(()=>window.CCCastle?.unified&&!document.getElementById('ccCastleFrame').hidden);
-      const f=page.frameLocator('#ccCastleFrame');
+      const archive=await openStorybookArchive(page,origin,{check});
+      const f=archive.f,cf=archive.frame;
       await f.locator('.castle-room-hotspot[data-room=insurance]').waitFor();
-      const cf=page.frames().find(frame=>frame.url().includes('/lounge/'));
       await f.locator('.castle-stage img').evaluateAll(ns=>Promise.all(ns.map(n=>n.decode())));
       await cf.evaluate(async()=>{await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
       await f.locator('.castle-sound-toggle').waitFor();
@@ -513,9 +512,8 @@ function installProbe() {
       if(width===390){
         // Losing the optional host renderer must not strand the old data/workflow.
         await context.route('**/castle-journey-host.js*',route=>route.abort());
-        await page.goto(origin+'/command-center-98/app-v130.html');
-        await page.waitForFunction(()=>window.CCCastle?.unified&&!document.getElementById('ccCastleFrame').hidden);
-        const fallback=page.frameLocator('#ccCastleFrame');await fallback.locator('.castle-quick-open[data-room=insurance]').waitFor();
+        const archivedFallback=await openStorybookArchive(page,origin,{check});
+        const fallback=archivedFallback.f;await fallback.locator('.castle-quick-open[data-room=insurance]').waitFor();
         await fallback.locator('.castle-quick-open[data-room=insurance]').click();await fallback.locator('#draft-body').filter({hasText:'insurance の合成データです。'}).waitFor();
         await fallback.locator('#desk-copy').click();await fallback.locator('#desk-operation').getByText('本文をコピーしました。',{exact:true}).waitFor();
         check('missing optional host renderer leaves original work usable',(await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n')===rows[0].payload.draft&&await page.locator('.castle-journey').count()===0);

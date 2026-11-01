@@ -52,3 +52,6 @@ body.storybook-atelier #room:not([data-spatial-desk=ready]){background:var(--sb-
 body.storybook-atelier #room:not([data-spatial-desk=ready]) :is(.room-architecture,.room-shade,#room-art){display:none}
 body.storybook-atelier #room:not([data-spatial-desk=ready]) :is(.reading-desk,.desk-toolbar,.manuscript-reader,.manuscript-shelf){background:var(--sb-paper);color:var(--sb-ink);text-shadow:none;border-color:var(--sb-line)}
 body.storybook-atelier #room:not([data-spatial-desk=ready]) .draft-body{color:var(--sb-ink);font-size:16px;line-height:1.9}
+.storybook .story-unwritten-tab{min-height:44px;font-size:12px}
+.story-index-page{overflow:auto}
+@media(min-width:601px) and (max-width:1000px){.story-index-page .story-welcome,.story-index-page .story-intro{display:none}.story-index-page{padding-block:18px}.story-memo{padding-block:12px 6px}.story-unwritten{font-size:12px}.story-unwritten>span{width:100%}}
