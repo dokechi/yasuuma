@@ -11,7 +11,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  let storage;try{storage=window.localStorage;}catch{}
  let storageError=false,lastRenderedOperationContext=null;
  const notebook=createNotebook({seeds:{kyun:[],choi:[],otoku:[],rakuten:[],lottery:[],fp:[],shiire:[]},storage,onError:()=>{storageError=true;}});
- let place=null,active=null,query='',filter='all',pending=null,loading=false,complete=false,connected=false,autoReturn=false,manual=null,scrollTimer=0,externalNotes=false,nativeWork=null;
+ let place=null,active=null,query='',filter='all',pending=null,loading=false,complete=false,connected=false,autoReturn=false,nativeReturnAwaiting=null,manual=null,scrollTimer=0,externalNotes=false,nativeWork=null;
  const selections=new Map(),views=new Map();let requested=null;let returnToAccounts=false,passiveEntry=false,initialDraftId=null;
  const livingSubscribers=new Set();let livingQueued=false,livingSignature='',statusMessage='',sourceIssue='',recordsAccepted=false,summarizeLivingRooms=null;
  const livingSnapshot=()=>summarizeLivingRooms?summarizeLivingRooms({notebook,loading,complete:complete&&recordsAccepted,connected,message:sourceIssue||statusMessage,active,place,pending,externalNotes}):{rooms:[],complete:false};
@@ -69,7 +69,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  function operation(text){$('desk-operation').textContent=text+(storageError?'（端末に保存できないため、この画面内で保持）':'');}
  function native(action,recordId,returnHome=false,section){
   if(!embedded){window.top.location.href=productionURL;return;}
-  savePosition();autoReturn=returnHome;if(place==='shiire'&&['sourcing','watches','cards'].includes(action))nativeWork=action;if(!passiveEntry&&['sourcing','watches','cards','fp','tiktok'].includes(action)){const p=['fp','tiktok'].includes(action)?'fp':'shiire';notebook.setPref('lastWork',{place:p,title:({sourcing:'仕入れ帳',watches:'海外時計・価格差',cards:'カード',fp:'FP 台本・画像',tiktok:'TikTok 投稿結果'})[action],native:action,recordId,section});conveniences.refresh();}send('native',{action,...(['purchases','research','queue'].includes(section)?{section}:{}),...(typeof recordId==='string'&&recordId.length<=500?{recordId}:{})});
+  savePosition();autoReturn=returnHome;nativeReturnAwaiting=returnHome&&passiveEntry?action:null;if(place==='shiire'&&['sourcing','watches','cards'].includes(action))nativeWork=action;if(!passiveEntry&&['sourcing','watches','cards','fp','tiktok'].includes(action)){const p=['fp','tiktok'].includes(action)?'fp':'shiire';notebook.setPref('lastWork',{place:p,title:({sourcing:'仕入れ帳',watches:'海外時計・価格差',cards:'カード',fp:'FP 台本・画像',tiktok:'TikTok 投稿結果'})[action],native:action,recordId,section});conveniences.refresh();}send('native',{action,...(['purchases','research','queue'].includes(section)?{section}:{}),...(typeof recordId==='string'&&recordId.length<=500?{recordId}:{})});
  }
  function setStatus(message,{loading:busy=false,complete:done=false}={}){
   loading=busy;complete=done&&!busy;if(busy)recordsAccepted=false;statusMessage=message||'';emitLiving();
@@ -221,13 +221,13 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   if(!embedded||!trustedMessage(event,origin,window.parent))return;const m=event.data;
   if(m.type==='records')receive(m);
   if(m.type==='status'){connected=true;setStatus(m.message,{loading:m.loading!==false});conveniences.status({loading:m.loading!==false,complete:false});if(!active)render();}
-  if(m.type==='pause'){savePosition();onPause();}
-  if(m.type==='resume'){if(autoReturn){autoReturn=false;onHome();}onResume();}
+  if(m.type==='pause'){if(nativeReturnAwaiting&&m.native===nativeReturnAwaiting)nativeReturnAwaiting=null;savePosition();onPause();}
+  if(m.type==='resume'){if(autoReturn&&!nativeReturnAwaiting){autoReturn=false;onHome();}onResume();}
   if(m.type==='install-state')conveniences.installState(m);
   if(m.type==='later-context')conveniences.nativeLater(m.context);
   if(m.type==='search-open')conveniences.showSearch();
   if(m.type==='reading-settings')onSettings();
-  if(m.type==='working-chapter'&&document.body.classList.contains('storybook-workbench')&&['insurance','otoku','rakuten','lottery','sourcing'].includes(m.key)){autoReturn=false;onWorkingChapter(m.key);}
+  if(m.type==='working-chapter'&&document.body.classList.contains('storybook-workbench')&&['insurance','otoku','rakuten','lottery','sourcing'].includes(m.key)){autoReturn=false;nativeReturnAwaiting=null;onWorkingChapter(m.key);}
   if(m.type==='interaction'&&['tap','paper','latch','back','door'].includes(m.kind))onFeedback(m.kind,'orange');
   if(m.type==='reading-copy'&&m.event){notebook.inheritCopy(m.event,m.event.eventId);render();}
   if(m.type==='host-update'){operation('管理画面の更新があります。');}
@@ -240,5 +240,5 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   openDraft(id){const account=publishingAccounts.find(a=>a.place===place),row=account&&draftsForAccount(notebook.all(),account).find(d=>d.id===id);if(!row)return false;if(active?.id===id)return true;query='';filter='all';$('desk-query').value='';rememberView();select(id);return true;},
   history,read:()=>$('desk-read').click(),applyPending:()=>{if(!pending)return false;activateReading();applyPending();return true;},hasPending:()=>!!pending
  };
- return {living,accountBoard:board,requestWorkingChapter,enter,leave:()=>{send('reading-room',{active:false});savePosition();rememberView();place=null;active=null;nativeWork=null;passiveEntry=false;initialDraftId=null;conveniences.update(null);emitLiving();if(pending)applyPending();if(returnToAccounts)board.show();},native,ready:()=>{if(embedded){setStatus('本体の保存原稿に接続しています…',{loading:true});send('ready');}},receive,notebook,workMarks:conveniences.workMarks};
+ return {living,accountBoard:board,requestWorkingChapter,enter,leave:()=>{send('reading-room',{active:false});savePosition();rememberView();place=null;active=null;nativeWork=null;nativeReturnAwaiting=null;passiveEntry=false;initialDraftId=null;conveniences.update(null);emitLiving();if(pending)applyPending();if(returnToAccounts)board.show();},native,ready:()=>{if(embedded){setStatus('本体の保存原稿に接続しています…',{loading:true});send('ready');}},receive,notebook,workMarks:conveniences.workMarks};
 }

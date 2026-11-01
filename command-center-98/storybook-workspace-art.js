@@ -29,7 +29,7 @@
   if(!active()||!d.body.classList.contains('storybook-host')||target!==d.activeElement)return;
   const strip=target.closest?.('#rpgSourcingAux,#sourcingTabs .sourcing-tab-group,#sourcingBody .ledger-month-tabs,#loungeWorkspaceHeader.workbook-native-header>nav:not(.workbook-native-chapters)');
   if(!strip||strip.scrollWidth<=strip.clientWidth||!['auto','scroll','overlay'].includes(w.getComputedStyle(strip).overflowX))return;
-  const control=target.getBoundingClientRect(),bounds=strip.getBoundingClientRect(),left=bounds.left+strip.clientLeft,right=left+strip.clientWidth;
+  const control=target.getBoundingClientRect(),bounds=strip.getBoundingClientRect(),left=bounds.left+strip.clientLeft,right=Math.min(bounds.right,left+strip.clientWidth);
   if(control.width<=0||control.height<=0||strip.clientWidth<=0)return;
   const delta=control.left<left?control.left-left:control.right>right?control.right-right:0;
   if(delta)strip.scrollLeft=Math.max(0,Math.min(strip.scrollWidth-strip.clientWidth,strip.scrollLeft+delta));

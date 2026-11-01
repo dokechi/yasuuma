@@ -31,9 +31,9 @@ body.storybook-workbench.spatial-atelier #room[data-account=otoku]{--work-left:#
 body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready]::before{background:linear-gradient(90deg,var(--work-left) 0 var(--sb-book-split),#F7F8F2 var(--sb-book-split) 100%);box-shadow:0 4px 0 #F7F8F2,0 5px 0 1px #173A35,0 10px 0 var(--work-under)}
 body.storybook-workbench[data-workbook-ready=true].spatial-atelier #room[data-spatial-desk=ready] :is(.room-caption,.spatial-shelf-open){display:none}
 body.storybook-workbench[data-workbook-ready=true].spatial-atelier #room[data-spatial-desk=ready] .back-button{display:none}
-body.storybook-workbench[data-workbook-ready=true].spatial-atelier #room[data-spatial-desk=ready] .spatial-desk-nav{position:fixed;top:64px;right:18px;z-index:40}
+body.storybook-workbench[data-workbook-ready=true].spatial-atelier #room[data-spatial-desk=ready] .spatial-desk-nav{position:fixed;top:calc(var(--work-header) + 8px);right:18px;z-index:40}
 body.storybook-workbench[data-workbook-ready=true].spatial-atelier #room[data-spatial-desk=ready] .spatial-work>summary{display:none}
-body.storybook-workbench[data-workbook-ready=true].spatial-atelier #room[data-spatial-desk=ready] .spatial-work-body{top:0}
+body.storybook-workbench[data-workbook-ready=true].spatial-atelier #room[data-spatial-desk=ready] .spatial-work-body{top:0;max-height:calc(100dvh - var(--work-header) - 24px)}
 body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .spatial-illustration-stage{top:calc(var(--work-header) + 5px);bottom:auto;width:calc(var(--work-art-height) / 1.05);height:var(--work-art-height);left:calc((var(--sb-book-edge) + var(--sb-book-split)) / 2);transform:translateX(-50%)}
 body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .reading-desk{inset:var(--work-header) 18px 26px var(--sb-book-split);border-radius:0 10px 5px 0}
 body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .reader-scroll{padding:20px 24px 26px 36px}
@@ -91,7 +91,7 @@ body.storybook-workbench .workbook-copy-confirmed .reading-desk::before{animatio
  body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .reader-scroll{padding:15px 12px 22px 22px}
  body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .reader-actions{padding:9px 8px 9px 17px;gap:5px}
  body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .reader-actions button{font-size:13px;padding-inline:6px}
- body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .spatial-work-body{max-width:calc(100vw - 28px);max-height:calc(100dvh - 105px);overflow:auto;right:0}
+ body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .spatial-work-body{max-width:calc(100vw - 28px);max-height:calc(100dvh - var(--work-header) - 24px);overflow:auto;right:0}
  body.storybook-workbench .workbook-art-dialog{padding:12px}.workbook-art-heading{flex-wrap:wrap}.workbook-art-heading h2{font-size:18px!important}body.storybook-workbench .workbook-art-tabs{gap:3px}body.storybook-workbench .workbook-art-dialog button{font-size:12px;padding-inline:6px}body.storybook-workbench .workbook-art-picture>.story-paper-art{aspect-ratio:1/1.05}body.storybook-workbench .workbook-art-picture{height:calc(100% - 190px)}
 }
 @media(prefers-reduced-motion:reduce){body.storybook-workbench :is(.workbook-chapter,.workbook-actions button){transition:none!important}body.storybook-workbench .workbook-copy-confirmed .reading-desk::before{animation:none!important}}

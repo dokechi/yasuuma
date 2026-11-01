@@ -46,3 +46,5 @@ test('working native chapter bookmarks preserve sourcing no-op and send strict c
  const tabs=[...e.header.querySelectorAll('.workbook-native-chapters button')];assert.deepEqual(tabs.map(b=>b.dataset.workingChapter),['insurance','otoku','rakuten','lottery','sourcing']);tabs[4].click();assert.deepEqual(calls,[]);tabs[3].click();assert.deepEqual(calls,[{message:{channel:'cc-castle-v1',type:'working-chapter',key:'lottery'},origin:'https://example.test'},{show:true}]);assert.equal(e.d.querySelector('input').value,'unchanged');
  e.w.dispatchEvent(new e.w.Event('pagehide'));assert.equal(e.header.querySelector('.workbook-native-chapters'),null);e.close();
 });
+
+test('fractional strip boundary wins over integer-rounded clientWidth when exposing a focused edge',()=>{const e=env(),{strip,button}=scrollingStrip(e);strip.getBoundingClientRect=()=>({left:47,right:287.625,width:240.625,top:80,bottom:132,height:52});e.run();e.show();button.focus({preventScroll:true});assert.equal(strip.scrollLeft,45.375);assert.equal(button.getBoundingClientRect().right,287.625);e.close();});

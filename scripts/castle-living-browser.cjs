@@ -207,6 +207,7 @@ function probe(){
   if(width===390){
    // Losing only the optional read-only model must not block proven navigation,
    // manuscript copy, or the native source-preserving workshop route.
+   await f.locator('[data-story-instant=insurance]').click();await waitReader('insurance');
    await context.route('**/living-room-model.js*',route=>route.abort());
    await page.goto(origin+'/command-center-98/app-v130.html');
    await page.waitForFunction(()=>window.CCCastle?.unified&&!document.getElementById('ccCastleFrame').hidden);
