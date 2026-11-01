@@ -51,3 +51,59 @@ test('the actual purchase-ledger HTML builder fits the default bounded static ca
  body.innerHTML=trade.html({purchaseMonth:'2026-11',purchaseProfit:[],purchases:[{id:1,status:'purchased',supplier_name:'実際の仕入先',supplier_key:'fixture',order_id:'saved-order',ordered_at:'2026-11-01T00:00:00Z',product_name:'保存済みの商品',sku:'ABC',variant:'青',quantity:1,order_total_yen:1234,unit_price_yen:1234,allocated_net_unit_yen:1234}]});
  for(const node of body.querySelectorAll('*'))h.place(node);const before=body.innerHTML,result=h.capture();assert.ok(result);assert.match(result.foreground.textContent,/保存済みの商品/);assert.match(result.foreground.textContent,/実際の仕入先/);assert.equal(body.innerHTML,before);assert.equal(h.requests,0);
 });
+
+function fractionalRow(h,{width=276.28125,height=55}={}){
+ const group=h.place(h.doc.createElement('section'),{left:33,top:400,width,height});
+ Object.assign(group.style,{display:'flex',boxSizing:'border-box',flex:'0 1 auto',flexWrap:'wrap',gap:'4px',padding:'5px 6px 4px',border:'1px solid',width:width===276.28125?'276.281px':width+'px'});
+ for(const [index,label]of ['仕入れ先候補','仕入れ先台帳'].entries()){
+  const node=h.place(h.doc.createElement('button'),{left:40+index*133.140625,top:406,width:129.140625,height:44});node.textContent=label;
+  Object.assign(node.style,{display:'block',boxSizing:'border-box',flex:'1 1 auto',width:'129.141px',height:'44px',padding:'6px 11px',border:'1px solid'});group.append(node);
+ }
+ h.doc.querySelector('.window-body').append(group);return group;
+}
+test('fractional used boxes preserve the exact two-button flex fit instead of reparsing rounded computed dimensions',t=>{
+ const h=setup(t),source=fractionalRow(h),before=source.outerHTML,result=h.capture();assert.ok(result);
+ const buttons=[...result.foreground.querySelectorAll('button')].filter(n=>n.textContent.startsWith('仕入れ先')),group=buttons[0].parentElement;
+ assert.equal(group.style.width,'276.28125px');assert.equal(group.style.height,'55px');assert.equal(group.style.flexWrap,'wrap');assert.equal(group.style.boxSizing,'border-box');
+ assert.deepEqual(buttons.map(n=>n.style.width),['129.140625px','129.140625px']);
+ // JSDOM has no layout: this proves the exact fit's numeric inputs. Actual
+ // unchanged rows/rects remain a strict same-event real-browser acceptance gate.
+ const contentWidth=parseFloat(group.style.width)-12-2,used=buttons.reduce((sum,n)=>sum+parseFloat(n.style.width),0)+4;
+ assert.equal(contentWidth,used);assert.equal(source.outerHTML,before);assert.equal(h.requests,0);assert.equal(h.writes,0);
+});
+test('content-box dimensions subtract precise padding and borders without changing box-sizing or margins',t=>{
+ const h=setup(t),node=h.place(h.doc.createElement('section'),{left:33,top:400,width:276.28125,height:70.5});node.textContent='正確な内容領域';
+ Object.assign(node.style,{display:'block',boxSizing:'content-box',width:'261.531px',height:'52px',padding:'3.25px 6.125px 4.75px 5.875px',borderStyle:'solid',borderWidth:'1.25px 1.5px 2.25px 1.25px',margin:'7px'});h.doc.querySelector('.window-body').append(node);
+ const result=h.capture();assert.ok(result);const clone=[...result.foreground.querySelectorAll('section')].find(n=>n.textContent==='正確な内容領域');
+ assert.equal(clone.style.boxSizing,'content-box');assert.equal(clone.style.width,'261.53125px');assert.equal(clone.style.height,'59px');assert.equal(clone.style.margin,'7px');assert.equal(node.style.width,'261.531px');
+});
+test('the viewport-positioned root preserves its content box instead of treating the border rect as CSS width',t=>{
+ const h=setup(t),main=h.doc.getElementById('mainWindow');Object.assign(main.style,{boxSizing:'content-box',padding:'7px 11px',border:'2px solid'});
+ const result=h.capture();assert.ok(result);const clone=result.foreground.firstElementChild;
+ assert.equal(clone.style.width,'726px');assert.equal(clone.style.height,'1182px');assert.equal(clone.style.boxSizing,'content-box');assert.equal(clone.style.left,'24px');assert.equal(main.style.width,'752px');
+});
+test('a legitimately compact multirow flex group retains wrapping and its original two-row height',t=>{
+ const h=setup(t),source=fractionalRow(h,{width:220,height:103});const second=source.children[1];h.place(second,{left:40,top:454,width:129.140625,height:44});second.style.width='129.141px';
+ const result=h.capture();assert.ok(result);const buttons=[...result.foreground.querySelectorAll('button')].filter(n=>n.textContent.startsWith('仕入れ先')),group=buttons[0].parentElement;
+ assert.equal(group.style.width,'220px');assert.equal(group.style.height,'103px');assert.equal(group.style.flexWrap,'wrap');assert.equal(group.style.flexDirection,'');assert.ok(buttons.reduce((sum,n)=>sum+parseFloat(n.style.width),0)+4>220-14);assert.equal(source.style.flexWrap,'wrap');
+});
+for(const [property,value]of [['transform','scale(2)'],['scale','2'],['translate','0px 1.5px'],['rotate','5deg']])test('a descendant '+property+' retains computed layout size and transform, never its transformed bounding size',t=>{
+ const h=setup(t),node=h.place(h.doc.createElement('button'),{left:40,top:400,width:200,height:88});node.textContent='押下中';Object.assign(node.style,{display:'block',boxSizing:'border-box',width:'100px',height:'44px'});node.style.setProperty(property,value);h.doc.querySelector('.window-body').append(node);
+ const result=h.capture();assert.ok(result);const clone=[...result.foreground.querySelectorAll('button')].find(n=>n.textContent==='押下中');
+ assert.equal(clone.style.width,'100px');assert.equal(clone.style.height,'44px');assert.equal(clone.style.getPropertyValue(property),value);assert.equal(node.style.width,'100px');
+});
+test('descendants of a transformed group keep local layout sizes instead of the ancestor-scaled rect',t=>{
+ const h=setup(t),group=fractionalRow(h);group.style.transform='scale(2)';h.place(group,{left:33,top:400,width:552.5625,height:110});group.style.width='276.281px';
+ for(const node of group.children){h.place(node,{left:40,top:406,width:258.28125,height:88});node.style.width='129.141px';node.style.height='44px';}
+ const result=h.capture();assert.ok(result);const buttons=[...result.foreground.querySelectorAll('button')].filter(n=>n.textContent.startsWith('仕入れ先'));
+ assert.equal(buttons[0].parentElement.style.width,'276.281px');assert.deepEqual(buttons.map(n=>n.style.width),['129.141px','129.141px']);assert.equal(buttons[0].parentElement.style.transform,'scale(2)');
+});
+for(const selector of ['#mainWindow','body','html'])test('transformed '+selector+' cannot be normalized into a viewport snapshot and falls back instantly',t=>{
+ const h=setup(t),node=h.doc.querySelector(selector);node.style.transform='scale(1.1)';const before=h.doc.body.outerHTML;assert.equal(h.capture(),null);assert.equal(h.doc.body.outerHTML,before);assert.equal(h.requests,0);
+});
+
+test('CSS zoom with a non-unit layout scale chooses an instant fallback, not scaled dimensions',t=>{
+ const h=setup(t),node=h.doc.getElementById('month'),original=h.win.getComputedStyle;
+ h.win.getComputedStyle=(element,part)=>{const style=original(element,part);if(element!==node||part)return style;return new Proxy(style,{get(target,key){if(key==='getPropertyValue')return property=>property==='zoom'?'2':target.getPropertyValue(property);const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value;}});};
+ assert.equal(h.capture(),null);assert.equal(h.requests,0);assert.equal(h.unchanged(),true);
+});

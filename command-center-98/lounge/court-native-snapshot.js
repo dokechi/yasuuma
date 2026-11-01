@@ -1,7 +1,8 @@
 /* A bounded visual copy of the native workspace already on screen. No source
    mutation, data lookup, HTML serialization, event handlers, or network calls.
    Any unsupported visible state returns null: canonical Back stays instant. */
-const properties = ('display position box-sizing flex flex-direction flex-wrap flex-grow flex-shrink flex-basis align-items align-self align-content justify-content gap row-gap column-gap grid-template-columns grid-template-rows grid-column grid-row width height min-width min-height max-width max-height margin padding border border-top border-right border-bottom border-left border-radius border-color border-collapse border-spacing table-layout caption-side vertical-align background-color background-image background-position background-size background-repeat background-origin background-clip background-attachment color opacity font-family font-size font-weight font-style font-variant line-height letter-spacing word-spacing text-align text-indent text-transform text-decoration white-space overflow overflow-x overflow-y overflow-wrap word-break box-shadow text-shadow object-fit object-position filter clip-path mask-image transform transform-origin top right bottom left z-index isolation list-style-type list-style-position appearance accent-color').split(' ');
+const properties = ('display position box-sizing flex flex-direction flex-wrap flex-grow flex-shrink flex-basis align-items align-self align-content justify-content gap row-gap column-gap grid-template-columns grid-template-rows grid-column grid-row width height min-width min-height max-width max-height margin padding border border-top border-right border-bottom border-left border-radius border-color border-collapse border-spacing table-layout caption-side vertical-align background-color background-image background-position background-size background-repeat background-origin background-clip background-attachment color opacity font-family font-size font-weight font-style font-variant line-height letter-spacing word-spacing text-align text-indent text-transform text-decoration white-space overflow overflow-x overflow-y overflow-wrap word-break box-shadow text-shadow object-fit object-position filter clip-path mask-image transform translate rotate scale transform-origin top right bottom left z-index isolation list-style-type list-style-position appearance accent-color').split(' ');
+const sizedBoxes = new Set(['block','flex','grid','inline-block','inline-flex','inline-grid','flow-root','list-item']);
 const svgTags = new Set(['svg','g','path','rect','circle','ellipse','line','polyline','polygon','title','desc']);
 const svgAttrs = new Set(['viewBox','width','height','x','y','x1','x2','y1','y2','cx','cy','r','rx','ry','d','points','fill','fill-rule','stroke','stroke-width','stroke-linecap','stroke-linejoin','stroke-dasharray','stroke-dashoffset','opacity','transform','preserveAspectRatio']);
 const never = new Set(['SCRIPT','STYLE','LINK','META','TEMPLATE','NOSCRIPT']);
@@ -32,6 +33,22 @@ export function captureNativeWorkspace(source, {document: target = source, surfa
   for (const property of properties) { const value = style.getPropertyValue(property); if (value) clone.style.setProperty(property, assetsOnly(value)); }
   clone.style.pointerEvents = 'none'; clone.style.animation = 'none'; clone.style.transition = 'none';
  }
+ function transformed(style) {
+  return ['transform','translate','rotate','scale'].some(key => { const value=style.getPropertyValue(key); return value && value !== 'none'; }) || !['','normal','1'].includes(style.getPropertyValue('zoom'));
+ }
+ function exactUsedBox(style, rect, clone) {
+  // Computed CSS serializes 276.28125 as 276.281px. Parsing that back can
+  // lose one 1/64px layout unit and wrap an otherwise exactly fitting flex row.
+  // Keep its measured used box, not an invented nowrap rule or rounded width.
+  if (!sizedBoxes.has(style.display)) return;
+  const edge = key => { const value=style.getPropertyValue(key); if (!value) return 0; if (!/^-?(?:\d+\.?\d*|\.\d+)px$/.test(value)) throw Error('snapshot-used-box'); return Number.parseFloat(value); };
+  for (const [dimension,sides] of [['width',['left','right']],['height',['top','bottom']]]) {
+   const inset=style.boxSizing === 'border-box' ? 0 : sides.reduce((sum,side)=>sum+edge('padding-'+side)+edge('border-'+side+'-width'),0);
+   const size=rect[dimension]-inset;
+   if (!finite(size) || size < 0) throw Error('snapshot-used-box');
+   clone.style.setProperty(dimension,size+'px');
+  }
+ }
  function pseudo(node, which) {
   const style = win.getComputedStyle(node, which), content = style.content;
   if (!content || content === 'none' || content === 'normal' || style.display === 'none' || style.visibility === 'hidden') return null;
@@ -54,20 +71,25 @@ export function captureNativeWorkspace(source, {document: target = source, surfa
   elementBudget(); const option = target.createElement('option'); budget(selected.textContent); option.textContent = selected.textContent; option.selected = true; clone.append(option);
   clone.disabled = node.disabled; clone.tabIndex = -1;
  }
- function copy(node, root = false) {
+ function copy(node, root = false, transformedAncestor = false) {
   if (node.nodeType === 3) { budget(node.textContent); return target.createTextNode(node.textContent); }
   if (node.nodeType !== 1) return null;
   const isSvg = node.namespaceURI === 'http://www.w3.org/2000/svg';
   if (isSvg && !svgTags.has(node.localName)) throw Error('snapshot-svg');
   if (never.has(node.tagName)) return null;
   budget(); const style = styleOf(node); if (node.hidden || style.display === 'none') return null;
+  if (!['','normal','1'].includes(style.getPropertyValue('zoom'))) throw Error('snapshot-zoom');
   const rect = node.getBoundingClientRect(); if (!box(rect)) throw Error('snapshot-geometry');
+  const transformedBox = transformedAncestor || transformed(style);
   const inView = root || !rect.width || !rect.height || intersects(rect, surface);
   // Invisible subtrees retain their exact layout box, not their unseen records.
-  if (!inView || style.visibility === 'hidden' || style.visibility === 'collapse') { elementBudget(); const spacer = target.createElement('div'); copyStyle(style, spacer); spacer.style.visibility = 'hidden'; spacer.style.boxSizing = 'border-box'; spacer.style.width = rect.width+'px'; spacer.style.height = rect.height+'px'; if (style.display === 'inline') throw Error('snapshot-inline-layout'); return spacer; }
+  if (!inView || style.visibility === 'hidden' || style.visibility === 'collapse') { elementBudget(); const spacer = target.createElement('div'); copyStyle(style, spacer); spacer.style.visibility = 'hidden'; if (!transformedBox) { spacer.style.boxSizing = 'border-box'; spacer.style.width = rect.width+'px'; spacer.style.height = rect.height+'px'; } if (style.display === 'inline') throw Error('snapshot-inline-layout'); return spacer; }
   if (unsupported.has(node.tagName) || node.shadowRoot || node.hasAttribute('contenteditable') && node.getAttribute('contenteditable') !== 'false' || !root && ['fixed','sticky'].includes(style.position)) throw Error('snapshot-unsupported');
   elementBudget(); const clone = isSvg ? target.createElementNS(node.namespaceURI,node.localName) : target.createElement(node.tagName === 'FORM' ? 'div' : node.localName);
   copyStyle(style,clone);
+  // A transformed rect is a visual bound, not its CSS layout size. Preserve
+  // that subtree's original transforms/used CSS instead of scaling it twice.
+  if (!isSvg && !transformedBox) exactUsedBox(style,rect,clone);
   if (isSvg) for (const attr of node.attributes) {
    if (/^(on|href|xlink:href)/i.test(attr.name) || /url\(|javascript:|data:/i.test(attr.value) || ['filter','mask','clip-path'].includes(attr.name)) throw Error('snapshot-svg-reference');
    if (svgAttrs.has(attr.name)) clone.setAttribute(attr.name,attr.value);
@@ -80,13 +102,16 @@ export function captureNativeWorkspace(source, {document: target = source, surfa
   if (node.scrollLeft) clone.dataset.courtScrollLeft = String(node.scrollLeft);
   if (!isSvg) { const before = pseudo(node,'::before'); if (before) clone.append(before); }
   const children = node.tagName === 'DETAILS' && !node.open ? [...node.children].filter(child => child.tagName === 'SUMMARY').slice(0,1) : node.childNodes;
-  for (const child of children) { const next = copy(child); if (next) clone.append(next); }
+  for (const child of children) { const next = copy(child,false,transformedBox); if (next) clone.append(next); }
   if (!isSvg) { const after = pseudo(node,'::after'); if (after) clone.append(after); }
   return clone;
  }
  try {
   for (const dialog of source.querySelectorAll('dialog[open],[role="dialog"],[role="alertdialog"],[popover]')) if (visible(dialog) && box(dialog.getBoundingClientRect()) && dialog.getBoundingClientRect().width) return null;
   if (!visible(main) || !visible(header)) return null;
+  // The root is positioned in parent viewport coordinates; transformed outer
+  // ancestry cannot be normalized from an axis-aligned bound faithfully.
+  for (let node=main;node;node=node.parentElement) if (transformed(styleOf(node))) return null;
   for (const editor of main.querySelectorAll('input,textarea,select,[contenteditable]:not([contenteditable="false"]),[data-editor],[data-editing="true"],[data-dirty="true"],.editor,.editing,.dirty,[data-price-wait-id]')) {
    budget(); const area = editor.getBoundingClientRect();
    if (visible(editor) && box(area) && area.width && area.height && !staticFilter(editor)) return null;
@@ -100,7 +125,7 @@ export function captureNativeWorkspace(source, {document: target = source, surfa
   Object.assign(backdrop.style,{position:'absolute',left:-surface.left+'px',top:-surface.top+'px',width:win.innerWidth+'px',height:win.innerHeight+'px'});
   for (const property of ['background-color','background-image','background-position','background-size','background-repeat','background-origin','background-clip']) backdrop.style.setProperty(property,assetsOnly(bodyStyle.getPropertyValue(property)));
   roomBackdrop.append(backdrop);
-  const content = copy(main,true); Object.assign(content.style,{position:'absolute',left:rect.left-surface.left+'px',top:rect.top-surface.top+'px',right:'auto',bottom:'auto',width:rect.width+'px',height:rect.height+'px',margin:'0',transform:'none'}); foreground.append(content);
+  const content = copy(main,true); Object.assign(content.style,{position:'absolute',left:rect.left-surface.left+'px',top:rect.top-surface.top+'px',right:'auto',bottom:'auto',margin:'0',transform:'none'}); foreground.append(content);
   budget(); return {foreground,roomBackdrop};
  } catch { return null; }
 }
