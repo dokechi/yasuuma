@@ -17,7 +17,7 @@ export function mountStorybook({document:doc=globalThis.document,board,buildArt=
  const cover=make('header','story-cover'),wordmark=make('div','story-wordmark'),kicker=make('span','story-kicker','YOUR WORKING STORYBOOK'),heading=make('h1','','司令塔');wordmark.append(kicker,heading);
  const utilities=make('nav','story-utilities');utilities.setAttribute('aria-label','司令塔の道具');
  const invoke=id=>{const focus=doc.activeElement;doc.getElementById(id)?.click();const dialog=doc.querySelector('dialog[open]');dialog?.addEventListener('close',()=>{if(!disposed&&!host.hidden&&focus?.isConnected)focus.focus({preventScroll:true});},{once:true});};
- utilities.append(button('story-tool','全体検索',()=>invoke('town-search')),button('story-tool','あとで',()=>invoke('town-later')),button('story-tool','設定',()=>invoke('settings-open')));cover.append(wordmark,utilities);
+ utilities.append(button('story-tool','全体検索',()=>invoke('lounge-search')),button('story-tool','あとで',()=>invoke('lounge-later')),button('story-tool','設定',()=>invoke('settings-open')));cover.append(wordmark,utilities);
  const spread=make('div','story-spread'),chapter=make('section','story-chapter-page');
  const binding=make('div','story-binding');binding.setAttribute('aria-hidden','true');
  const tabs=make('nav','story-chapters');tabs.setAttribute('aria-label','五つの章を見る');const chapterButtons=new Map();

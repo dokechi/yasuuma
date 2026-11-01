@@ -36,7 +36,7 @@ const server=http.createServer((req,res)=>{
   res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'}).end(content);
  });
 });
-const version='20261101.8-storybook';
+const version='20261101.9-workbook';
 const matrix=[[320,640],[390,900],[800,648],[1440,900]];
 const requestedWidth=Number(process.env.STORY_WIDTH||0),requestedHeight=Number(process.env.STORY_HEIGHT||0);
 const sizes=requestedWidth?matrix.filter(([w,h])=>w===requestedWidth&&h===requestedHeight):matrix;
@@ -60,6 +60,8 @@ const rgb=value=>{const parts=String(value).match(/[\d.]+/g)?.map(Number)||[];re
 const luminance=channels=>channels.slice(0,3).map(v=>{const x=v/255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;}).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
 const contrast=sample=>{const text=rgb(sample.color),surface=rgb(sample.background);if(!text||!surface||sample.opacity!==1)return 0;return Math.min(...[0,255].map(under=>{const bg=surface.slice(0,3).map(v=>v*surface[3]+under*(1-surface[3])),fg=text.slice(0,3).map((v,i)=>v*text[3]+bg[i]*(1-text[3])),a=luminance(fg),b=luminance(bg);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);}));};
 
+// Explicit secondary UI, never a forced click on the hidden original Back.
+async function overview(frame){const menu=frame.locator('.workbook-menu>summary');if(await menu.isVisible()){await menu.click();await frame.locator('.workbook-menu-body').getByRole('button',{name:'本の全景',exact:true}).click();}else await frame.locator('#back').click();}
 (async()=>{
  fs.mkdirSync(artifact,{recursive:true});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const origin='http://127.0.0.1:'+server.address().port;
@@ -77,7 +79,7 @@ const contrast=sample=>{const text=rgb(sample.color),surface=rgb(sample.backgrou
   try{
    await page.goto(origin+'/command-center-98/app-v130.html');
    await page.waitForFunction(()=>window.CCCastle?.unified&&!document.getElementById('ccCastleFrame').hidden);
-   const f=page.frameLocator('#ccCastleFrame');await f.locator('.storybook[data-ready=true]').waitFor();
+   const f=page.frameLocator('#ccCastleFrame');await f.locator('.storybook[data-ready=true]').waitFor({state:'attached'});
    const cf=page.frames().find(frame=>new URL(frame.url()).pathname==='/command-center-98/lounge/index.html');assert.ok(cf,'real default lounge index, not archive/prototype');
    await cf.evaluate(async version=>{await document.fonts.ready;const owner=await import('./app.js?v='+version);window.__storyOwner=owner;window.__storyDesk=owner.getLivingDesk();window.__storyBoard=owner.getAccountBoard();},version);
    await cf.waitForFunction(()=>__storyDesk?.snapshot().complete===true&&__storyProbe.records?.drafts.length>0);
@@ -85,10 +87,15 @@ const contrast=sample=>{const text=rgb(sample.color),surface=rgb(sample.backgrou
    const roomState=async key=>(await state()).rooms.find(room=>room.key===key);
    const send=payload=>page.evaluate(payload=>document.getElementById('ccCastleFrame').contentWindow.postMessage({channel:'cc-castle-v1',...payload},location.origin),payload);
    const original=await cf.evaluate(()=>structuredClone(__storyProbe.records));
+   await f.locator('.workbook-header[data-workbook-ready=true]').waitFor();await f.locator('#room[data-account=insurance][data-spatial-desk=ready]').waitFor();
+   check('the untouched actual default opens its live insurance manuscript before any optional cover',await f.locator('#draft-body').textContent()===rows[0].payload.draft&&await f.locator('.storybook').isHidden()&&await cf.evaluate(()=>__storyBoard.state.visitVersion===0));await capture('default-work');
+   // Existing cover/material semantics remain explicit opt-in regression, not
+   // a substitute for the new untouched work-first matrix.
+   await overview(f);await f.locator('.storybook[data-ready=true]').waitFor({state:'visible'});
    await cf.evaluate(async()=>{await Promise.all([...document.querySelectorAll('.storybook img')].filter(n=>n.getBoundingClientRect().width&&n.getBoundingClientRect().height).map(n=>n.decode()));});
-   await capture('default-home');
+   await capture('optional-cover');
    const home=await cf.evaluate(()=>({body:document.body.classList.contains('storybook-atelier'),roots:document.querySelectorAll('.storybook').length,boards:document.querySelectorAll('.account-board').length,desk:document.querySelectorAll('#desk').length,owner:__storyBoard.element===document.querySelector('.account-board'),destinations:[...document.querySelectorAll('[data-story-destination]')].map(n=>({key:n.dataset.storyDestination,disabled:n.disabled===true})),instant:[...document.querySelectorAll('[data-story-instant]')].map(n=>n.dataset.storyInstant),overflow:document.documentElement.scrollWidth>innerWidth,state:window.__storybook.snapshot()}));
-   check('new storybook is the real default with one board, reader and application owner',home.body&&home.roots===1&&home.boards===1&&home.desk===1&&home.owner,home);
+   check('the optional storybook preserves the same one board, reader and application owner',home.body&&home.roots===1&&home.boards===1&&home.desk===1&&home.owner,home);
    check('eight real destinations retain five active and three sealed slots',home.destinations.length===8&&home.destinations.filter(n=>n.disabled).length===3&&same(home.destinations.filter(n=>!n.disabled).map(n=>n.key).sort(),['insurance','otoku','rakuten','lottery','sourcing'].sort()),home.destinations);
    check('five explicit instant paths preserve exact account routing',same([...new Set(home.instant)].sort(),['insurance','otoku','rakuten','lottery','sourcing'].sort())&&home.instant.length===5,home.instant);
    check('default neither overflows nor eagerly imports archived presentation',!home.overflow&&!moduleRequests.some(url=>/\/(?:spatial-atelier|castle-scene|arrival-entry|arrival-atelier|arrival-renderer)\.js|three-r187|\.glb(?:\?|$)/.test(url)),[...moduleRequests]);
@@ -132,7 +139,7 @@ const contrast=sample=>{const text=rgb(sample.color),surface=rgb(sample.backgrou
    await send(original);await cf.waitForFunction(()=>__storyDesk.snapshot().complete===true);if(await f.locator('.spatial-work[open]').count())await f.locator('.spatial-work>summary').click();
    const update=structuredClone(original),current=(await roomState('insurance')).current;update.type='records';update.drafts.find(d=>d.id===current.id).body+='\n明示操作でだけ反映する新しい本文です。';await send(update);await cf.waitForFunction(()=>__storyDesk.snapshot().rooms.find(r=>r.key==='insurance').pendingUpdate===true);check('arriving revision does not replace a reading manuscript silently',await f.locator('#draft-body').textContent()===body&&(await state()).provisional&&(await roomState('insurance')).totalCount===null);
    await f.locator('[data-object=notice]').click();await f.locator('.living-apply-update').waitFor();await capture('notice-pending');await f.locator('.living-apply-update').click();await f.locator('#room:not([data-living-view])').waitFor();check('explicit notice action alone applies the same exact source revision',await f.locator('#draft-body').textContent()===update.drafts.find(d=>d.id===current.id).body&&(await roomState('insurance')).current.id===current.id&&!(await roomState('insurance')).pendingUpdate);
-   await f.locator('#back').click();await f.locator('.storybook[data-ready=true]').waitFor({state:'visible'});check('Back preserves selected insurance and leaves no inert work overlay',(await cf.evaluate(()=>__storybook.snapshot())).selected==='insurance'&&await f.locator('#room').isHidden());await capture('default-return');
+   await overview(f);await f.locator('.storybook[data-ready=true]').waitFor({state:'visible'});check('Back preserves selected insurance and leaves no inert work overlay',(await cf.evaluate(()=>__storybook.snapshot())).selected==='insurance'&&await f.locator('#room').isHidden());await capture('default-return');
    // The actual default now owns all five illustrated chapters. Browsing a
    // chapter must not route or replace records; the five quick paths remain
    // genuinely instantaneous and use the same manuscript/native owners.
@@ -209,7 +216,7 @@ const contrast=sample=>{const text=rgb(sample.color),surface=rgb(sample.backgrou
      check(key+' copy writes only its own original manuscript once',await cf.evaluate(before=>__storyProbe.clipboard.length===before+1,routeBefore.copies)&&(await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n')===expected&&(await roomState(key)).postedCount===0);
      await showTools();const currentObjects=await f.locator('#living-workbench [data-object]').evaluateAll(ns=>ns.map(n=>{const r=n.getBoundingClientRect();return {key:n.dataset.object,width:r.width,height:r.height,label:n.getAttribute('aria-label')};}));
      check(key+' tools expose four existing labelled actions and preserve current source',same(currentObjects.map(n=>n.key).sort(),['desk','shelf','chest','notice'].sort())&&currentObjects.every(n=>n.width>=44&&n.height>=44&&n.label)&&(await roomState(key)).current.source.account===key,currentObjects);await capture(key+'-tools');
-     await f.locator('[data-object=desk]').click();await f.locator('#room:not([data-living-view])').waitFor();await f.locator('#back').click();
+     await f.locator('[data-object=desk]').click();await f.locator('#room:not([data-living-view])').waitFor();await overview(f);
     }
     await f.locator('.storybook[data-ready=true]').waitFor({state:'visible'});
     const returned=await cf.evaluate(key=>({visit:__storyBoard.state.visitVersion,selected:__storybook.snapshot().selected,focus:document.activeElement?.dataset.storyInstant,inert:!!document.activeElement?.closest('[inert]'),layers:document.querySelectorAll('.storybook-journey,.court-passage,.castle-journey').length,hidden:document.getElementById('room').hidden}),key);
@@ -219,21 +226,22 @@ const contrast=sample=>{const text=rgb(sample.color),surface=rgb(sample.backgrou
     // Real joint-session browser history, not synthetic popstate. These three
     // publishing accounts share the old purple room, so preserve the account
     // and exact selected draft instead of accepting any purple destination.
-    await f.locator('[data-story-instant=lottery]').click();await f.locator('#room[data-account=lottery][data-spatial-desk=ready][data-story-scene=ready]').waitFor();
+    await f.locator('[data-working-chapter=rakuten]').click();await f.locator('#room[data-account=rakuten][data-spatial-desk=ready]').waitFor();
+    await f.locator('[data-working-chapter=lottery]').click();await f.locator('#room[data-account=lottery][data-spatial-desk=ready][data-story-scene=ready]').waitFor();
     const historySource=await cf.evaluate(()=>{const room=__storyDesk.snapshot().rooms.find(r=>r.key==='lottery');return {id:room.current.id,source:room.current.source,body:document.getElementById('draft-body').textContent,account:document.getElementById('room').dataset.account};});
     // Playwright goBack waits for a main-frame navigation, but this is real
     // iframe pushState. Use the same documented Chromium history commands as
     // its delegate and wait for the actual child owner, not a nonexistent load.
     const historyClient=await context.newCDPSession(page),historyTrace=[];
     const traverse=async delta=>{const before=await historyClient.send('Page.getNavigationHistory'),target=before.entries[before.currentIndex+delta];assert.ok(target,'real adjacent browser-history entry exists');historyTrace.push({from:before.currentIndex,to:before.currentIndex+delta,id:target.id,url:target.url});await historyClient.send('Page.navigateToHistoryEntry',{entryId:target.id});};
-    await traverse(-1);await f.locator('.storybook[data-ready=true]').waitFor({state:'visible'});
-    check('real browser Back restores the selected shared-route chapter and its original trigger',await cf.evaluate(()=>__storybook.snapshot().selected==='lottery'&&document.getElementById('room').hidden&&document.activeElement?.dataset.storyInstant==='lottery'&&!document.activeElement.closest('[inert]')));
+    await traverse(-1);await f.locator('#room[data-account=rakuten][data-spatial-desk=ready]').waitFor();
+    check('real browser Back restores the exact prior shared-route work chapter without an initial-page loop',await f.locator('#draft-body').textContent()===rows[2].payload.draft&&await cf.evaluate(()=>document.getElementById('room').dataset.account==='rakuten'&&!document.activeElement.closest('[inert]')));
     const backHistory=await historyClient.send('Page.getNavigationHistory');check('Back advances exactly one real browser-history entry',backHistory.currentIndex===historyTrace[0].to,historyTrace[0]);
     await traverse(1);await f.locator('#room[data-account=lottery][data-spatial-desk=ready][data-story-scene=ready]').waitFor();
     const historyReturn=await cf.evaluate(()=>{const room=__storyDesk.snapshot().rooms.find(r=>r.key==='lottery'),copy=document.getElementById('desk-copy'),r=copy.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {id:room.current?.id,source:room.current?.source,body:document.getElementById('draft-body').textContent,account:document.getElementById('room').dataset.account,boardHidden:document.querySelector('.account-board').hidden,copyHit:hit===copy||copy.contains(hit),focusInert:!!document.activeElement?.closest('[inert]')};});
     check('real browser Forward reopens the exact lottery source rather than another purple account or covered reader',historyReturn.id===historySource.id&&same(historyReturn.source,historySource.source)&&historyReturn.body===historySource.body&&historyReturn.account===historySource.account&&historyReturn.boardHidden&&historyReturn.copyHit&&!historyReturn.focusInert,historyReturn);
     const forwardHistory=await historyClient.send('Page.getNavigationHistory');check('Forward returns to the same real browser-history index',forwardHistory.currentIndex===historyTrace[0].from&&historyTrace[1].to===historyTrace[0].from,historyTrace);await historyClient.detach();
-    await capture('lottery-browser-forward');await f.locator('#back').click();await f.locator('.storybook[data-ready=true]').waitFor({state:'visible'});
+    await capture('lottery-browser-forward');await overview(f);await f.locator('.storybook[data-ready=true]').waitFor({state:'visible'});
    }
    check('local owner note and source records survive without mutation',await cf.evaluate(()=>localStorage.getItem('storybook-owner-note'))==='untouched'&&await page.evaluate(()=>JSON.stringify(__rpgQA.threads.events.filter(r=>__storybookRecords.ids.includes(r.id)))===__storybookRecords.original));
    check('no external actions, source writes, unexpected transport or browser errors',await page.evaluate(()=>__rpgQA.writes.length===0&&__rpgQA.threads.simulatedWrites.length===0&&__storybookRecords.external.length===0)&&blocked.length===0&&errors.length===0,{blocked,errors});

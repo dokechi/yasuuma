@@ -1,6 +1,6 @@
 /* Parent presentation entry. The application manifest retains its strict
    root-only asset policy; these fixed same-origin decorative sheets are shared
    with the iframe and never load a data or application controller. */
-@import url('./lounge/storybook-tokens.css?v=20261101.8-storybook');
-@import url('./lounge/storybook-art.css?v=20261101.8-storybook');
-@import url('./lounge/storybook-journey.css?v=20261101.8-storybook');
+@import url('./lounge/storybook-tokens.css?v=20261101.9-workbook');
+@import url('./lounge/storybook-art.css?v=20261101.9-workbook');
+@import url('./lounge/storybook-journey.css?v=20261101.9-workbook');

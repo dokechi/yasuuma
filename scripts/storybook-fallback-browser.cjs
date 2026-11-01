@@ -37,7 +37,7 @@ const server=http.createServer((req,res)=>{
   res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'}).end(content);
  });
 });
-const version='20261101.8-storybook';
+const version='20261101.9-workbook';
 const matrix=[[320,640],[800,648]];
 const requestedWidth=Number(process.env.STORY_WIDTH||0),requestedHeight=Number(process.env.STORY_HEIGHT||0);
 const sizes=requestedWidth?matrix.filter(([w,h])=>w===requestedWidth&&h===requestedHeight):matrix;
@@ -55,7 +55,7 @@ function probe(){
  for(const name of ['OscillatorNode','AudioBufferSourceNode']){const proto=window[name]?.prototype;if(typeof proto?.start==='function'){const start=proto.start;proto.start=function(){__storyProbe.audio.push({kind:name,when:arguments[0]??0});return start.apply(this,arguments);};}}
 }
 const cases=[
- ['home-css','storybook-home.css'],['reader-css','storybook-reader.css'],['palette-css','storybook-tokens.css'],
+ ['work-css','storybook-workbench.css'],['work-module','storybook-workbench.js'],['home-css','storybook-home.css'],['reader-css','storybook-reader.css'],['palette-css','storybook-tokens.css'],
  ['spatial-css','spatial-desk.css'],['entry-module','storybook-atelier.js'],['scene-module','storybook-scene.js'],
  ['reader-module','spatial-desk.js'],['art-module','storybook-art.js'],['actor-image','assets/storybook-insurance-actor-v1.webp']
 ];
@@ -67,6 +67,8 @@ function visibleHealth(){
  return {broken,background:getComputedStyle(surface).backgroundColor,bodyBackground:getComputedStyle(document.body).backgroundColor,overflow:document.documentElement.scrollWidth>innerWidth,boardHidden:board.hidden,roomHidden:room.hidden,activeInert:!!document.activeElement?.closest('[inert]'),oldWorldVisible:[...document.querySelectorAll('#world,#town,#entry-wash,#labels,.door-threshold')].some(visible),journeys:document.querySelectorAll('.storybook-journey,.court-passage,.castle-journey').length};
 }
 const bright=color=>{const n=color.match(/[\d.]+/g)?.map(Number)||[];return n.length>=3&&n.slice(0,3).every(v=>v>=200)&&(n.length<4||n[3]>=.95);};
+// Explicit secondary UI, never a forced click on the hidden original Back.
+async function overview(frame){const menu=frame.locator('.workbook-menu>summary');if(await menu.isVisible()){await menu.click();await frame.locator('.workbook-menu-body').getByRole('button',{name:'本の全景',exact:true}).click();}else await frame.locator('#back').click();}
 (async()=>{
  fs.mkdirSync(artifact,{recursive:true});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const origin='http://127.0.0.1:'+server.address().port;
@@ -84,10 +86,12 @@ const bright=color=>{const n=color.match(/[\d.]+/g)?.map(Number)||[];return n.le
   await context.route('**/*',route=>{const req=route.request(),u=new URL(req.url());if(u.origin===origin&&['GET','HEAD'].includes(req.method())){if(u.pathname==='/command-center-98/lounge/'+resource){aborts.push(u.pathname+u.search);didAbort();return route.abort('failed');}return route.continue();}blocked.push({url:req.url(),method:req.method()});return route.abort();});
   try{
    await page.goto(origin+'/command-center-98/app-v130.html');await page.waitForFunction(()=>window.CCCastle?.unified&&!document.getElementById('ccCastleFrame').hidden);
-   const f=page.frameLocator('#ccCastleFrame');await f.locator('.account-board:not([hidden])').waitFor();
+   const f=page.frameLocator('#ccCastleFrame');await f.locator('#room[data-account=insurance]').waitFor();
    const cf=page.frames().find(frame=>new URL(frame.url()).pathname==='/command-center-98/lounge/index.html');assert.ok(cf,'real current default iframe is required');
    await cf.evaluate(async version=>{await document.fonts.ready;const owner=await import('./app.js?v='+version);window.__storyOwner=owner;window.__storyBoard=owner.getAccountBoard();},version);
    await cf.waitForFunction(()=>__storyBoard.state.complete===true&&__storyProbe.records?.drafts.length>0);
+   check('optional asset failure still starts the real current manuscript, without a cover click',await f.locator('#draft-body').textContent()===rows[0].payload.draft&&await f.locator('.account-board').isHidden());await capture('initial-work');
+   await overview(f);await f.locator('.account-board:not([hidden])').waitFor();
    if(name!=='actor-image'){let timer;try{await Promise.race([aborted,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Declared optional asset was never requested: '+resource)),10000);})]);}finally{clearTimeout(timer);}}
    // Wait for the actual optional installer outcome, not arbitrary rendering time.
    // Failed top-level import has no installer; its canonical owner is already ready.
@@ -114,9 +118,9 @@ const bright=color=>{const n=color.match(/[\d.]+/g)?.map(Number)||[];return n.le
    const copy=f.locator('#desk-copy');await copy.scrollIntoViewIfNeeded();const copyGeometry=await copy.evaluate(n=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {rect:r.toJSON(),reachable:hit===n||n.contains(hit),inert:!!n.closest('[inert]')};});
    check('the real copy button remains at least 44px and genuinely hittable',copyGeometry.rect.width>=44&&copyGeometry.rect.height>=44&&copyGeometry.reachable&&!copyGeometry.inert,copyGeometry);await copy.click();await f.locator('#desk-operation').getByText('本文をコピーしました。',{exact:true}).waitFor();
    check('one copy gesture copies the exact source once',await cf.evaluate(count=>__storyProbe.clipboard.length===count+1,before.copies)&&(await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n')===body);await capture('reader');
-   await f.locator('#back').click();await f.locator('.account-board:not([hidden])').waitFor();check('canonical Back clears the reader and leaves no stuck inert overlay',await f.locator('#room').isHidden()&&await cf.evaluate(()=>!document.activeElement?.closest('[inert]')&&!document.querySelector('.storybook-journey,.court-passage,.castle-journey')));
+   await overview(f);await f.locator('.account-board:not([hidden])').waitFor();check('canonical Back clears the reader and leaves no stuck inert overlay',await f.locator('#room').isHidden()&&await cf.evaluate(()=>!document.activeElement?.closest('[inert]')&&!document.querySelector('.storybook-journey,.court-passage,.castle-journey')));
    await open('sourcing');await page.locator('body.lounge-workspace #loungeWorkspaceHeader:not([hidden])').waitFor();check('fallback still opens the original native sourcing workspace',await page.locator('#mainWindow').getAttribute('data-cc-view')==='sourcing'&&await page.locator('#ccCastleFrame').isHidden()&&await page.locator('[data-lounge-home]').isVisible());await capture('native');
-   await page.locator('[data-lounge-home]').click();await f.locator('.account-board:not([hidden])').waitFor();await open('insurance');await f.locator('#draft-body').filter({hasText:'insurance の合成原稿です。'}).waitFor();check('native return and repeat entry retain the same original manuscript',await f.locator('#draft-body').textContent()===body);await f.locator('#back').click();await f.locator('.account-board:not([hidden])').waitFor();
+   await page.locator('[data-lounge-home]').click();await f.locator('.account-board:not([hidden])').waitFor();await open('insurance');await f.locator('#draft-body').filter({hasText:'insurance の合成原稿です。'}).waitFor();check('native return and repeat entry retain the same original manuscript',await f.locator('#draft-body').textContent()===body);await overview(f);await f.locator('.account-board:not([hidden])').waitFor();
    health=await cf.evaluate(visibleHealth);check('return remains bright and free of broken images or hidden interaction traps',bright(health.background)&&health.broken.length===0&&!health.activeInert&&health.journeys===0,health);await capture('return');
    check('missing presentation never imports an archived castle or graphics engine',!moduleRequests.some(url=>/\/(?:hybrid-world|spatial-atelier|castle-scene|arrival-entry|arrival-atelier|arrival-renderer)\.js|three-r187|\.glb(?:\?|$)/.test(url)),[...moduleRequests]);
    check('fallback preserves source data and the unrelated saved local note',await cf.evaluate(()=>localStorage.getItem('storybook-owner-note'))==='untouched'&&await page.evaluate(()=>JSON.stringify(__rpgQA.threads.events.filter(r=>__storybookRecords.ids.includes(r.id)))===__storybookRecords.original));

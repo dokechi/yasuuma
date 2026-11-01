@@ -1,0 +1,61 @@
+/* A working first page. Existing account/desk owners keep every record and action.
+   This module only supplies chapter navigation, an original-art disclosure, and
+   a dock for the exact live manuscript shelf (never copied manuscript content). */
+const chapters=Object.freeze([
+ {key:'insurance',name:'保険',number:'01'}, {key:'otoku',name:'お得',number:'02'},
+ {key:'rakuten',name:'楽天',number:'03'}, {key:'lottery',name:'抽選',number:'04'},
+ {key:'sourcing',name:'仕入れ',number:'05'}
+]);
+export function mountWorkingBook({document:doc=globalThis.document,application,board,buildArt=null,onTurn=()=>false,onCancel=()=>{}}={}){
+ const win=doc?.defaultView,room=doc?.getElementById('room');
+ if(!win||!room||!board?.subscribe||typeof application?.openWorkingChapter!=='function')throw Error('Working book needs the existing reader owner.');
+ if(doc.body.classList.contains('storybook-workbench')&&win.getComputedStyle(doc.body).getPropertyValue('--workbook-ready').trim()!=='1')throw Error('Working-page styles unavailable.');
+ const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
+ const button=(cls,text,fn)=>{const n=make('button',cls,text);n.type='button';n.addEventListener('click',fn);return n;};
+ const safely=(fn,...args)=>{try{return fn(...args);}catch{return false;}};
+ let disposed=false,desk=null,artBuilder=buildArt,lastFocus=null,artKey=null,artIntent=0,copyTimer=null,lastOperation='',statusSnapshot=null;
+ const header=make('header','workbook-header');header.dataset.workbookReady='true';
+ const top=make('div','workbook-top'),brand=make('span','workbook-brand','司令塔'),tabs=make('nav','workbook-chapters');tabs.setAttribute('aria-label','五つの持ち場、すぐ切り替え');
+ const buttons=new Map();
+ for(const c of chapters){const b=button('workbook-chapter','',()=>open(c.key));b.dataset.workingChapter=c.key;const label=make('strong','',c.name),state=make('small','','未確認');b.append(label,state);tabs.append(b);buttons.set(c.key,{button:b,state});}
+ const menu=make('details','workbook-menu'),summary=make('summary','','•••');summary.setAttribute('aria-label','司令塔の道具を開く');const menuBody=make('div','workbook-menu-body');
+ function invoke(id){safely(onCancel);menu.open=false;const opener=summary;opener.focus({preventScroll:true});doc.getElementById(id)?.click();const modal=doc.querySelector('dialog[open]');modal?.addEventListener('close',()=>{if(!disposed&&opener?.isConnected)opener.focus({preventScroll:true});},{once:true});}
+ menuBody.append(button('','全体検索',()=>invoke('lounge-search')),button('','あとで読む',()=>invoke('lounge-later')),button('','設定',()=>invoke('settings-open')),button('','本の全景',()=>{menu.open=false;doc.getElementById('back')?.click();}),button('','保存原稿を更新',()=>{menu.open=false;summary.focus({preventScroll:true});board.element.querySelector('.board-refresh')?.click();}),button('','作業・読取状況',()=>{menu.open=false;const work=room.querySelector('.spatial-work');if(work){work.open=true;const body=work.querySelector('.spatial-work-body');if(body){body.tabIndex=-1;(body.querySelector('button:not(:disabled),input:not(:disabled),a[href]')||body).focus({preventScroll:true});}}}));
+ const preparing=make('p','workbook-preparing','追加の3頁は準備中です。');menuBody.append(preparing);menu.append(summary,menuBody);top.append(brand,tabs,menu);
+ const context=make('div','workbook-context'),identity=make('div','workbook-identity'),name=make('strong'),handle=make('span');identity.append(name,handle);
+ const actions=make('nav','workbook-actions');actions.setAttribute('aria-label','今の頁の操作');
+ const listButton=button('workbook-list-open','原稿一覧',()=>{safely(onCancel);desk?.openShelf();});listButton.dataset.workingList='';listButton.setAttribute('aria-haspopup','dialog');listButton.setAttribute('aria-controls','spatial-shelf-dialog');
+ const toolButton=button('workbook-tools-open','道具',()=>{safely(onCancel);room.querySelector('.living-toggle')?.click();});toolButton.dataset.workingTools='';
+ const artButton=button('workbook-art-open','絵の頁',()=>showArt());artButton.dataset.workingArt='';artButton.setAttribute('aria-haspopup','dialog');artButton.setAttribute('aria-controls','workbook-art-dialog');
+ const previous=button('workbook-turn workbook-turn-previous','←',()=>turn(-1));previous.setAttribute('aria-label','前の原稿室へ、頁をめくる');previous.dataset.workingTurn='previous';
+ const next=button('workbook-turn workbook-turn-next','めくる →',()=>turn(1));next.setAttribute('aria-label','次の原稿室へ、頁をめくる');next.dataset.workingTurn='next';
+ actions.append(listButton,toolButton,artButton,previous,next);context.append(identity,actions);header.append(top,context);doc.body.append(header);doc.body.dataset.workbookReady='true';
+ const dock=make('aside','workbook-list');dock.setAttribute('aria-label','この持ち場の原稿');const dockTitle=make('h2','workbook-list-title','原稿のしおり');dock.append(dockTitle);room.append(dock);
+ const dialog=make('dialog','workbook-art-dialog');dialog.id='workbook-art-dialog';dialog.setAttribute('aria-labelledby','workbook-art-title');
+ const artHeading=make('header','workbook-art-heading'),artTitle=make('h2','','絵の頁');artTitle.id='workbook-art-title';const close=button('','仕事の頁へ戻る',()=>dialog.close());close.dataset.workingArtClose='';artHeading.append(artTitle,close);
+ const artTabs=make('nav','workbook-art-tabs');artTabs.setAttribute('aria-label','絵を見る章');for(const c of chapters){const b=button('',c.name,()=>{artKey=c.key;paintArt();});b.dataset.workingArtChapter=c.key;artTabs.append(b);}
+ const picture=make('div','workbook-art-picture'),artWork=button('workbook-art-work','この章で作業する',()=>{const key=artKey;dialog.close();open(key);});dialog.append(artHeading,artTabs,picture,artWork);doc.body.append(dialog);
+ function current(){return chapters.some(c=>c.key===room.dataset.account)&&!room.hidden?room.dataset.account:application.resolveWorkingChapter?.().key||'insurance';}
+ function open(key){if(disposed||!chapters.some(c=>c.key===key))return false;safely(onCancel);menu.open=false;return safely(application.openWorkingChapter,key);}
+ function turn(direction){const order=chapters.slice(0,4),source=current(),index=order.findIndex(c=>c.key===source);if(disposed||index<0)return false;const key=order[(index+direction+order.length)%order.length].key;safely(onCancel);safely(onTurn,{room:key,sourceRoom:source,direction:direction<0?'previous':'next'});return safely(application.openWorkingChapter,key);}
+ function paintArt(){
+  const token=++artIntent,key=artKey||current(),c=chapters.find(c=>c.key===key);picture.replaceChildren();picture.dataset.storyRoom=key;dialog.dataset.storyRoom=key;artTitle.textContent=(c?.name||'仕事')+'の絵の頁';
+  for(const b of artTabs.children)b.setAttribute('aria-pressed',String(b.dataset.workingArtChapter===key));
+  const art=safely(artBuilder,{document:doc,key,layout:win.innerWidth>600?'spread':'page'});if(token!==artIntent||disposed)return;
+  if(art?.nodeType===1)picture.append(art);else picture.append(make('p','workbook-art-unavailable','絵は準備中です。原稿と仕事の頁はそのまま使えます。'));
+ }
+ function showArt(){if(disposed||dialog.open)return;safely(onCancel);lastFocus=doc.activeElement;artKey=current();paintArt();dialog.showModal();close.focus({preventScroll:true});}
+ dialog.addEventListener('close',()=>{++artIntent;if(!disposed&&lastFocus?.isConnected)lastFocus.focus({preventScroll:true});lastFocus=null;});
+ function update(){
+  if(disposed)return;const key=current(),account=board.state.destinations.find(a=>a.key===key),native=key==='sourcing';header.dataset.storyRoom=key;header.hidden=room.hidden;doc.body.dataset.workingAccount=key;
+  name.textContent=account?.name||chapters.find(c=>c.key===key)?.name||(key==='fp'?'FP・TikTok':'仕事の頁');handle.textContent=account?.handle|| (native?'購入・在庫・売却':'保存原稿');
+  for(const c of chapters){const b=buttons.get(c.key),source=board.state.destinations.find(a=>a.key===c.key),s=statusSnapshot?.rooms?.find(a=>a.key===c.key);b.button.setAttribute('aria-current',c.key===key?'page':'false');b.button.setAttribute('aria-label',[source?.name||c.name,source?.handle,c.key==='sourcing'?'実作業へ':s?(s.totalCount===null?'保存分 ':'保存 ')+s.loadedCount+'本':board.state.loading?'読込中':board.state.complete?source?.status:'未確認','すぐ切り替え'].filter(Boolean).join('、'));b.state.textContent=c.key==='sourcing'?'実作業':s?(s.totalCount===null?'保存分 ':'保存 ')+s.loadedCount:board.state.loading?'読込中':board.state.complete?(source?.status||'保存').replace('保存原稿 ',''):'未確認';}
+  const eligible=!room.hidden&&!!room.querySelector('.spatial-desk-nav');listButton.disabled=!eligible;toolButton.disabled=!eligible||!room.querySelector('.living-toggle');toolButton.textContent=room.dataset.livingView==='tools'?'本文':'道具';toolButton.setAttribute('aria-expanded',String(room.dataset.livingView==='tools'));previous.disabled=native||key==='fp';next.disabled=native||key==='fp';dock.hidden=!eligible;
+  const message=doc.getElementById('desk-operation')?.textContent||'';
+  if(message!==lastOperation&&/コピーしました/.test(message)){room.classList.remove('workbook-copy-confirmed');void room.offsetWidth;room.classList.add('workbook-copy-confirmed');win.clearTimeout(copyTimer);copyTimer=win.setTimeout(()=>room.classList.remove('workbook-copy-confirmed'),650);}lastOperation=message;
+ }
+ const off=board.subscribe(update),observer=new win.MutationObserver(update);observer.observe(room,{attributes:true,attributeFilter:['hidden','data-account','data-spatial-desk','data-living-view'],childList:true});const operation=doc.getElementById('desk-operation');if(operation)observer.observe(operation,{childList:true,subtree:true,characterData:true});
+ const onKey=event=>{if(event.key!=='Escape')return;const work=room.querySelector('.spatial-work');if(menu.open||(!doc.querySelector('dialog[open]')&&work?.open)){event.preventDefault();event.stopImmediatePropagation();menu.open=false;if(work)work.open=false;summary.focus({preventScroll:true});}},outside=event=>{if(menu.open&&!menu.contains(event.target))menu.open=false;};doc.addEventListener('keydown',onKey,true);doc.addEventListener('pointerdown',outside);
+ const quiet=()=>{doc.body.dataset.workbookPaused=String(doc.hidden||!!doc.getSelection()?.toString()||/^(INPUT|TEXTAREA|SELECT)$/.test(doc.activeElement?.tagName||''));};doc.addEventListener('visibilitychange',quiet);doc.addEventListener('selectionchange',quiet);doc.addEventListener('focusin',quiet);doc.addEventListener('focusout',quiet);quiet();update();
+ return {element:header,shelfDock:dock,open,showArt,setDesk(value){desk=value;update();},setArtBuilder(value){artBuilder=value;if(dialog.open)paintArt();},setLivingStatus(value){statusSnapshot=value;update();},snapshot:()=>({key:current(),view:dialog.open?'illustration':room.hidden?'overview':'work',artKey:dialog.open?artKey:null}),destroy(){if(disposed)return;disposed=true;++artIntent;off();observer.disconnect();win.clearTimeout(copyTimer);doc.removeEventListener('keydown',onKey,true);doc.removeEventListener('pointerdown',outside);doc.removeEventListener('visibilitychange',quiet);doc.removeEventListener('selectionchange',quiet);doc.removeEventListener('focusin',quiet);doc.removeEventListener('focusout',quiet);if(dialog.open)dialog.close();header.remove();delete doc.body.dataset.workbookReady;dialog.remove();if(!dock.querySelector('.manuscript-shelf'))dock.remove();}};
+}

@@ -159,7 +159,7 @@ export async function installArrivalPassage(options={}){
  let nativeSnapshot=null;
  // Native return is a separate enhancement: a slow optional module must not
  // postpone the four publishing-room passages. Missing capture means instant Back.
- import('./court-native-snapshot.js?v=20261101.8-storybook').then(module=>{nativeSnapshot=module;}).catch(()=>{});
+ import('./court-native-snapshot.js?v=20261101.9-workbook').then(module=>{nativeSnapshot=module;}).catch(()=>{});
  const [{createCourtPassage},{captureCastleForeground}]=await Promise.all([import('./court-passage.js?v=20261101.6-passage'),import('./castle-foreground.js?v=20261101.1-living')]);
  if(host.getComputedStyle(target.documentElement).getPropertyValue('--court-passage-ready').trim()!=='1')await new Promise((resolve,reject)=>{
   const link=target.createElement('link');link.rel='stylesheet';link.href=new URL('./court-passage.css?v=20261101.6-passage',import.meta.url).href;

@@ -1,0 +1,147 @@
+/* Work-first DEFAULT in the real production host. Synthetic data only.
+   No iframe URL substitution, production login, remote request or source write. */
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
+const {chromium}=require('playwright-core');
+const root=path.resolve(__dirname,'..'),out=path.join(root,'artifacts/storybook-work-first');
+const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg'};
+const accounts=['insurance','otoku','rakuten','lottery'];
+const titles={insurance:'保険の保存原稿 一',otoku:'お得の保存原稿',rakuten:'楽天犬の保存原稿',lottery:'抽選の保存原稿'};
+const rows=[...accounts.map((key,i)=>({id:951+i,taskId:key+'-threads-v1',eventKey:'storybook-'+key,title:titles[key],occurredAt:'2026-10-31T08:00:00Z',domain:'money',payload:{draft:key+' の合成原稿です。保存条件と出典を確認します。\n\n'+'コピーだけで投稿済みにはしません。この原稿は同じ部屋の机から読み、履歴とお気に入りは既存の記録を使います。\n\n'.repeat(12),date:'2026-10-31',review_status:'検証専用の下書き',sources_note:'合成データ・送信不可'}})),{id:955,taskId:'insurance-threads-v1',eventKey:'storybook-insurance-two',title:'保険の保存原稿 二',occurredAt:'2026-10-30T08:00:00Z',domain:'money',payload:{draft:'insurance 二つ目の合成原稿です。\n\n'+'別の原稿を選んでも出典IDとアカウントを保ちます。\n\n'.repeat(12),date:'2026-10-30',review_status:'検証専用の下書き'}}];
+const fixtureScript=`(()=>{
+ const rows=${JSON.stringify(rows)};__rpgQA.threads.events.push(...rows);
+ window.__workFirstRelease=[];
+ window.__storybookRecords={original:JSON.stringify(rows),ids:rows.map(r=>r.id),requests:[],external:[],messages:[]};
+ // Parser-installed after the real loader's document.open(), which erases
+ // earlier Window listeners. Observe the real bridge; never synthesize a ready.
+ window.addEventListener('message',event=>{const frame=document.getElementById('ccCastleFrame');if(event.origin===location.origin&&frame&&event.source===frame.contentWindow&&event.data?.channel==='cc-castle-v1')__storybookRecords.messages.push({type:event.data.type,active:event.data.active,action:event.data.action});});
+ window.open=(...args)=>{__storybookRecords.external.push(args);return null;};
+ const previous=window.fetch;
+ window.fetch=async(input,options={})=>{
+  const url=new URL(input instanceof URL?input.href:typeof input==='string'?input:input.url,location.href),method=(options.method||input?.method||'GET').toUpperCase();
+  __storybookRecords.requests.push({url:url.href,method});
+  const json=data=>new Response(JSON.stringify(data),{status:200,headers:{'Content-Type':'application/json'}});
+  if(method==='GET'&&url.searchParams.get('resource')==='task-events'&&rows.some(r=>r.taskId===url.searchParams.get('taskId'))){
+   const mode=window.__workFirstSetup?.mode||'loaded';
+   if((mode==='loading'||mode==='cached-loading')&&!window.__workFirstReleased)await new Promise(resolve=>__workFirstRelease.push(resolve));
+   if(mode==='error'||mode==='cached-error')return new Response(JSON.stringify({ok:false,error:'synthetic_read_failure'}),{status:503,headers:{'Content-Type':'application/json'}});
+   return json({ok:true,events:mode==='empty'?[]:rows.filter(r=>r.taskId===url.searchParams.get('taskId')),nextOffset:null});
+  }
+  if(method==='GET'&&url.searchParams.get('resource')==='threads-images')return json({ok:true,id:url.searchParams.get('id'),accountKey:url.searchParams.get('accountKey'),manifest:{contract:'threads-post-images-v1',revision:0,images:[]},assets:[]});
+  return previous(input,options);
+ };
+})();`;
+const server=http.createServer((req,res)=>{
+ if(!['GET','HEAD'].includes(req.method))return res.writeHead(405).end();
+ const relative=new URL(req.url,'http://localhost').pathname,file=path.resolve(root,'.'+relative);
+ if(!file.startsWith(root+path.sep))return res.writeHead(403).end();
+ fs.readFile(file,(error,bytes)=>{
+  if(error)return res.writeHead(404).end();let content=bytes;
+  if(relative==='/command-center-98/app.html')content=bytes.toString().replace('<head>','<head><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script><script>'+fixtureScript+'</script>');
+  if(relative==='/scripts/ui-fixtures.js')content=bytes.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
+  res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'}).end(content);
+ });
+});
+const version='20261101.9-workbook',matrix=[[320,640],[390,900],[800,648],[1440,900]],w=Number(process.env.STORY_WIDTH||0),h=Number(process.env.STORY_HEIGHT||0),sizes=w?matrix.filter(pair=>pair[0]===w&&pair[1]===h):matrix;
+assert.ok(sizes.length,'declared actual-host viewport');
+const artifact=path.join(out,w?`${w}-${h}`:'all');
+const semanticKey=key=>/^castle-production\.v1\.(?:read:|selected:|visit:|visited:|lastPlace$|pin:|tray:|done:|copy:|pref:(?:seenRevisions$|lastWork$|view:|posted:))/.test(key);
+function probe(setup){
+ window.__workFirstSetup=setup;window.__workProbe={storage:[],copies:[],resolved:[],audio:[],focus:[],pushes:[],events:[]};
+ // Fixture records/preferences exist before the production owner starts. Never
+ // replace a production owner, its selection or its initialized state.
+ if(window!==parent)for(const [key,value]of Object.entries(setup.storage||{}))localStorage.setItem(key,value);
+ window.__workProbe.initial=Object.fromEntries(Object.keys(localStorage).map(key=>[key,localStorage.getItem(key)]));
+ const set=Storage.prototype.setItem,remove=Storage.prototype.removeItem;Storage.prototype.setItem=function(key,value){__workProbe.storage.push({key:String(key),value:String(value),op:'set'});return set.apply(this,arguments);};Storage.prototype.removeItem=function(key){__workProbe.storage.push({key:String(key),op:'remove'});return remove.apply(this,arguments);};
+ const push=history.pushState.bind(history);history.pushState=function(...args){__workProbe.pushes.push(structuredClone(args[0]));return push(...args);};
+ const focus=HTMLElement.prototype.focus;HTMLElement.prototype.focus=function(...args){__workProbe.focus.push({id:this.id,tag:this.tagName});return focus.apply(this,args);};
+ if(navigator.clipboard?.writeText){const write=navigator.clipboard.writeText.bind(navigator.clipboard);navigator.clipboard.writeText=text=>{__workProbe.copies.push(String(text));return write(text).then(value=>{__workProbe.resolved.push(String(text));return value;});};}
+ const play=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(...args){__workProbe.audio.push('media');return play.apply(this,args);};
+ for(const name of ['OscillatorNode','AudioBufferSourceNode']){const proto=window[name]?.prototype;if(proto?.start){const start=proto.start;proto.start=function(...args){__workProbe.audio.push(name);return start.apply(this,args);};}}
+}
+const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+(async()=>{
+ fs.mkdirSync(artifact,{recursive:true});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const origin='http://127.0.0.1:'+server.address().port,browser=await chromium.launch({channel:'chromium',headless:true,args:['--no-sandbox']}),results=[];
+ const save=()=>fs.writeFileSync(path.join(artifact,'results.json'),JSON.stringify({scope:'actual untouched work-first default, passive source states and direct work controls; optional cover is not the initial route',results},null,2));
+ try{for(const [width,height]of sizes){let sourceCache={};
+ for(const mode of ['loaded','cached-loading','empty','loading','error','cached-error']){
+  const setup={mode,storage:mode.startsWith('cached')?sourceCache:{}},context=await browser.newContext({viewport:{width,height},hasTouch:width<=800,reducedMotion:'reduce',serviceWorkers:'block',permissions:['clipboard-read','clipboard-write']});await context.addInitScript(probe,setup);
+  const page=await context.newPage(),result={width,height,mode,checks:[],frames:[],errors:[],blocked:[],modules:[]};results.push(result);
+  const check=(name,pass,detail)=>{result.checks.push({name,pass:!!pass,...detail===undefined?{}:{detail}});save();assert.ok(pass,name+': '+JSON.stringify(detail));};
+  const capture=async label=>{const filename=`${width}-${height}-${mode}-${label}.png`;await page.screenshot({path:path.join(artifact,filename)});result.frames.push(filename);save();};
+  page.on('pageerror',error=>result.errors.push(error.message));page.on('request',request=>{const url=new URL(request.url());if(url.pathname.startsWith('/command-center-98/lounge/')&&/\.js$/.test(url.pathname))result.modules.push(url.pathname+url.search);});
+  await context.route('**/*',route=>{const request=route.request();if(new URL(request.url()).origin===origin&&['GET','HEAD'].includes(request.method()))return route.continue();result.blocked.push({url:request.url(),method:request.method()});return route.abort();});
+  try{
+   await page.goto(origin+'/command-center-98/app-v130.html');await page.waitForFunction(()=>window.CCCastle?.unified&&!document.getElementById('ccCastleFrame').hidden);
+   const f=page.frameLocator('#ccCastleFrame'),cf=page.frames().find(frame=>new URL(frame.url()).pathname==='/command-center-98/lounge/index.html');assert.ok(cf,'real default iframe');
+   await f.locator('.workbook-header[data-workbook-ready=true]').waitFor();await f.locator('#room[data-spatial-desk=ready]').waitFor();
+   await cf.evaluate(async version=>{await document.fonts.ready;const owner=await import('./app.js?v='+version);window.__workOwner=owner;window.__workDesk=owner.getLivingDesk();window.__workBoard=owner.getAccountBoard();},version);
+   if(mode==='loaded'||mode==='empty')await cf.waitForFunction(()=>__workDesk.snapshot().complete===true);
+   else if(mode.includes('loading'))await page.waitForFunction(()=>__workFirstRelease.length>0);
+   else await cf.waitForFunction(()=>__workDesk.snapshot().state==='attention');
+   if(mode==='loaded'||mode.startsWith('cached'))await f.locator('#draft-body').filter({hasText:mode==='loaded'?rows[0].payload.draft:rows[4].payload.draft}).waitFor();
+   // No click, scroll, pointer or focus action has occurred at this point.
+   const initial=await cf.evaluate(()=>{const room=document.getElementById('room'),body=document.getElementById('draft-body'),scroll=document.getElementById('desk-scroll'),copy=document.getElementById('desk-copy'),title=document.getElementById('draft-title'),rect=n=>n?.getBoundingClientRect().toJSON(),hit=n=>{const r=n.getBoundingClientRect(),points=[[.5,.5],[.2,.2],[.8,.2],[.2,.8],[.8,.8]];return points.every(([x,y])=>{const at=document.elementFromPoint(r.left+r.width*x,r.top+r.height*y);return at===n||n.contains(at);});};return {work:__storybook.snapshot().workbench,account:room.dataset.account,hidden:room.hidden,body:body.textContent,bodyVisible:body.checkVisibility(),title:title?.textContent,titleRect:rect(title),bodyRect:rect(body),scroll:(()=>{const b=scroll.getBoundingClientRect();let top=Math.max(0,b.top),bottom=Math.min(innerHeight,b.bottom),left=Math.max(0,b.left),right=Math.min(innerWidth,b.right);for(let node=scroll.parentElement;node;node=node.parentElement){const style=getComputedStyle(node),r=node.getBoundingClientRect();if(/auto|scroll|hidden|clip/.test(style.overflowY)){top=Math.max(top,r.top);bottom=Math.min(bottom,r.bottom);}if(/auto|scroll|hidden|clip/.test(style.overflowX)){left=Math.max(left,r.left);right=Math.min(right,r.right);}}const frame=frameElement.getBoundingClientRect();top=Math.max(top,-frame.top);bottom=Math.min(bottom,parent.innerHeight-frame.top);return {height:scroll.clientHeight,top:scroll.scrollTop,max:scroll.scrollHeight-scroll.clientHeight,rect:b.toJSON(),visibleHeight:Math.max(0,bottom-top),visibleWidth:Math.max(0,right-left)};})(),font:parseFloat(getComputedStyle(body).fontSize),empty:document.getElementById('desk-empty').textContent,emptyVisible:document.getElementById('desk-empty').checkVisibility(),copy:{disabled:copy.disabled,rect:rect(copy),hit:hit(copy)},actions:[...document.querySelectorAll('#desk-copy,#desk-pin,#desk-done')].map(n=>({id:n.id,rect:rect(n),hit:hit(n),disabled:n.disabled})),tabs:[...document.querySelectorAll('[data-working-chapter]')].map(n=>({key:n.dataset.workingChapter,rect:rect(n),hit:hit(n),current:n.getAttribute('aria-current')})),shelf:{count:document.querySelectorAll('.manuscript-shelf').length,docked:document.querySelector('.workbook-list>.manuscript-shelf')?.checkVisibility()||false,listButton:document.querySelector('[data-working-list]')?.checkVisibility()},visit:__workBoard.state.visitVersion,snapshot:__workDesk.snapshot(),semantic:__workProbe.storage,focus:__workProbe.focus,pushes:__workProbe.pushes,audio:__workProbe.audio,copies:__workProbe.copies,layers:parent.document.querySelectorAll('.storybook-journey').length,cover:document.querySelector('.storybook')?.checkVisibility(),overflow:document.documentElement.scrollWidth>innerWidth,viewport:{w:innerWidth,h:innerHeight},pageScroll:scrollY,initial:__workProbe.initial,current:Object.fromEntries(Object.keys(localStorage).map(k=>[k,localStorage.getItem(k)]))};});
+   const fit=r=>r&&r.left>=0&&r.top>=0&&r.right<=initial.viewport.w+.1&&r.bottom<=initial.viewport.h+.1;
+   check('first screen is the live work owner, never the illustration cover',initial.work.view==='work'&&!initial.hidden&&!initial.cover&&initial.layers===0&&!initial.overflow&&initial.pageScroll===0,initial.work);
+   check('all five permanent chapter tabs are fully visible 44px true targets without scrolling',same(initial.tabs.map(t=>t.key),['insurance','otoku','rakuten','lottery','sourcing'])&&initial.tabs.every(t=>fit(t.rect)&&t.rect.width>=44&&t.rect.height>=44&&t.hit),initial.tabs);
+   const marked=initial.semantic.filter(item=>semanticKey(item.key));const initialMarks=Object.fromEntries(Object.entries(initial.initial).filter(([key])=>semanticKey(key))),currentMarks=Object.fromEntries(Object.entries(initial.current).filter(([key])=>semanticKey(key)));
+   check('passive initial and data-arrival render create no seen/visit/read/pin/copy/done/history/focus/audio activity',marked.length===0&&same(initialMarks,currentMarks)&&initial.visit===0&&initial.copies.length===0&&initial.pushes.length===0&&initial.focus.length===0&&initial.audio.length===0,{marked,initialMarks,currentMarks,visit:initial.visit,focus:initial.focus,pushes:initial.pushes,audio:initial.audio});
+   check('one canonical owner, board and reader initialize exactly once',same(result.modules.filter(url=>url.startsWith('/command-center-98/lounge/app.js')),['/command-center-98/lounge/app.js?v='+version])&&await page.evaluate(()=>__storybookRecords.messages.filter(m=>m.type==='ready').length===1)&&await cf.evaluate(()=>document.querySelectorAll('#desk').length===1&&document.querySelectorAll('.account-board').length===1),result.modules);
+   check('wide live shelf and phone list affordance keep the same sole manuscript list',initial.shelf.count===1&&(width>600?initial.shelf.docked:initial.shelf.listButton),initial.shelf);
+   const hasBody=mode==='loaded'||mode.startsWith('cached');
+   if(hasBody){const expected=mode==='loaded'?rows[0]:rows[4];check('untouched selected title and source body are readable with 180px paper and 44px live actions',initial.body===expected.payload.draft&&initial.title===expected.title&&initial.bodyVisible&&initial.font>=16&&initial.scroll.height>=180&&initial.scroll.visibleHeight>=180&&fit(initial.scroll.rect)&&initial.bodyRect.top<initial.viewport.h-80&&fit(initial.titleRect)&&initial.actions.every(a=>fit(a.rect)&&a.rect.width>=44&&a.rect.height>=44&&a.hit&&!a.disabled),{title:initial.titleRect,body:initial.bodyRect,scroll:initial.scroll,actions:initial.actions});}
+   else check('no-data first page is explicit and cannot copy a previous or manufactured manuscript',initial.emptyVisible&&initial.copy.disabled&&initial.actions.every(a=>a.disabled)&&!initial.bodyVisible,initial.empty);
+   if(mode==='empty')check('confirmed empty is distinct from unknown loading or failed source',initial.snapshot.complete&&initial.snapshot.rooms.find(r=>r.key==='insurance').totalCount===0&&/ありません/.test(initial.empty),initial.snapshot);
+   if(mode.includes('loading')||mode.includes('error'))check('unconfirmed source stays unknown even when a saved manuscript is available',!initial.snapshot.complete&&initial.snapshot.rooms.find(r=>r.key==='insurance').totalCount===null&&(mode.includes('loading')?initial.snapshot.loading:initial.snapshot.state==='attention'),{mode,state:initial.snapshot.state,loading:initial.snapshot.loading,room:initial.snapshot.rooms.find(r=>r.key==='insurance')});
+   await capture('untouched-firstscreen');
+   if(mode==='loaded'){
+    // Cache originates from the real normalized notebook, not fabricated owner
+    // state. Only an explicitly synthetic previous selection is seeded later.
+    sourceCache=Object.fromEntries(Object.entries(initial.current).filter(([key])=>key.startsWith('castle-production.v1.source:')));
+    const selected=Object.entries(sourceCache).find(([,value])=>JSON.parse(value).body===rows[4].payload.draft);assert.ok(selected,'real normalized second source cached');const saved=JSON.parse(selected[1]);
+    sourceCache['castle-production.v1.pref:lastWork']=JSON.stringify({place:saved.place,id:saved.id,title:saved.title});sourceCache['castle-production.v1.selected:'+saved.place]=JSON.stringify(saved.id);
+    check('cache fixture is bound to the real normalized second draft and account',saved.source.account==='insurance'&&saved.body===rows[4].payload.draft,{id:saved.id,source:saved.source});
+    await cf.evaluate(()=>{window.__workLive={body:document.getElementById('draft-body'),paper:document.getElementById('desk'),shelf:document.querySelector('.manuscript-shelf')};});
+    for(const [label,dialog,close]of [['全体検索','hall-dialog','hall-close'],['あとで読む','later-dialog','later-close']]){await f.locator('.workbook-menu>summary').click();await f.locator('.workbook-menu-body').getByRole('button',{name:label,exact:true}).click();await f.locator('#'+dialog+'[open]').waitFor();check('new workbook menu '+label+' opens its existing live owner without replacing the manuscript',await cf.evaluate(()=>__workLive.body===document.getElementById('draft-body')&&document.getElementById('room').dataset.account==='insurance')&&await page.locator('.storybook-journey').count()===0);await f.locator('#'+close).click();check(label+' closes to the visible menu summary without losing keyboard focus',await cf.evaluate(()=>document.activeElement===document.querySelector('.workbook-menu>summary')&&!document.activeElement.closest('[inert]')&&document.activeElement.checkVisibility()));}
+
+    const beforeSame=await cf.evaluate(()=>({visit:__workBoard.state.visitVersion,copies:__workProbe.copies.length,body:document.getElementById('draft-body').textContent}));await f.locator('[data-working-chapter=insurance]').click();
+    check('the selected chapter is a genuine no-op rather than a second enter',await cf.evaluate(before=>__workBoard.state.visitVersion===before.visit&&document.getElementById('draft-body').textContent===before.body&&__workProbe.copies.length===before.copies,beforeSame)&&await page.locator('.storybook-journey').count()===0);
+    // Optional art is a disclosure, not a new work route or replacement paper.
+    const scroll=await cf.evaluate(()=>{const s=document.getElementById('desk-scroll');s.scrollTop=Math.min(150,s.scrollHeight-s.clientHeight);return s.scrollTop;});check('the real fixture can hold a nonzero reading scroll',scroll>0,scroll);
+    await f.locator('[data-working-art]').click();await f.locator('#workbook-art-dialog[open]').waitFor();const artVisit=await cf.evaluate(()=>__workBoard.state.visitVersion);
+    for(const key of accounts){await f.locator('[data-working-art-chapter='+key+']').click();await f.locator('#workbook-art-dialog[data-story-room='+key+'] .story-actor-image').evaluate(n=>n.decode());await capture('optional-art-'+key);}
+    await f.locator('[data-working-art-close]').click();
+    check('browsing and closing optional illustrations preserves exact manuscript, scroll, focus and route',await cf.evaluate(({scroll,visit})=>__workLive.body===document.getElementById('draft-body')&&__workLive.paper===document.getElementById('desk')&&document.getElementById('draft-body').textContent.includes('insurance の合成原稿')&&Math.abs(document.getElementById('desk-scroll').scrollTop-scroll)<1&&document.activeElement.matches('[data-working-art]')&&__workBoard.state.visitVersion===visit,{scroll,visit:artVisit}));
+    if(width<=600){await f.locator('[data-working-list]').click();await f.locator('#spatial-shelf-dialog[open]').waitFor();}
+    const query=f.locator('#desk-query');await query.fill('二');check('the visible original shelf search remains source-scoped',await f.locator('#desk-list .manuscript-card').count()===1&&/二/.test(await f.locator('#desk-list').textContent()));
+    await f.locator('#desk-list .manuscript-card').click();await f.locator('#draft-body').filter({hasText:rows[4].payload.draft}).waitFor();
+    check('selecting the original shelf commits the exact source and keeps its live DOM',await cf.evaluate(()=>__workLive.shelf===document.querySelector('.manuscript-shelf')&&__workLive.body===document.getElementById('draft-body'))&&(await cf.evaluate(()=>__workDesk.snapshot().rooms.find(r=>r.key==='insurance').current.source.account))==='insurance');
+    await capture('selected-second-work');
+    for(const key of ['otoku','rakuten','lottery']){const before=await cf.evaluate(()=>({visits:__workBoard.state.visitVersion,copies:__workProbe.copies.length}));await f.locator('[data-working-chapter='+key+']').click();await f.locator('#room[data-account='+key+']').waitFor();const body=await f.locator('#draft-body').textContent();check(key+' permanent tab routes immediately exactly once with no page turn',body===rows.find(r=>r.taskId===key+'-threads-v1').payload.draft&&await page.locator('.storybook-journey').count()===0&&await cf.evaluate(before=>__workBoard.state.visitVersion===before.visits+1&&__workProbe.copies.length===before.copies,before));await capture(key+'-direct-work');}
+    // Real adjacent joint browser history, not synthetic events or owner calls.
+    const client=await context.newCDPSession(page),history=await client.send('Page.getNavigationHistory');assert.ok(history.entries[history.currentIndex-1]);await client.send('Page.navigateToHistoryEntry',{entryId:history.entries[history.currentIndex-1].id});await f.locator('#room[data-account=rakuten]').waitFor();check('browser Back restores the prior work account/body without an initial-room loop',await f.locator('#draft-body').textContent()===rows[2].payload.draft&&await page.locator('.storybook-journey').count()===0);await client.send('Page.navigateToHistoryEntry',{entryId:history.entries[history.currentIndex].id});await f.locator('#room[data-account=lottery]').waitFor();check('browser Forward restores the exact shared-room lottery source',await f.locator('#draft-body').textContent()===rows[3].payload.draft&&await cf.evaluate(()=>__workDesk.snapshot().rooms.find(r=>r.key==='lottery').current.source.account==='lottery'));await client.detach();
+    await f.locator('[data-working-chapter=sourcing]').click();await page.locator('#mainWindow[data-cc-view=sourcing]').waitFor();await page.locator('#sourcingBody .purchase-product > b').filter({hasText:/^検証用購入商品$/}).waitFor();check('the fifth direct chapter opens real native work without an illustration journey',await page.locator('#ccCastleFrame').isHidden()&&await page.locator('.storybook-journey').count()===0&&await page.locator('[data-lounge-home]').isVisible());await capture('native-direct-work');
+    const nativeTabs=await page.locator('#loungeWorkspaceHeader [data-working-chapter]').evaluateAll(ns=>ns.map(n=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {key:n.dataset.workingChapter,w:r.width,h:r.height,visible:n.checkVisibility(),inside:r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth,hit:hit===n||n.contains(hit)};}));check('native work retains the same five fully visible 44px direct chapter actions',same(nativeTabs.map(n=>n.key),['insurance','otoku','rakuten','lottery','sourcing'])&&nativeTabs.every(n=>n.visible&&n.inside&&n.w>=44&&n.h>=44&&n.hit),nativeTabs);
+    const utility=page.locator('#loungeWorkspaceHeader>nav:not(.workbook-native-chapters) button'),utilityBefore=await page.evaluate(()=>({scroll:scrollY,view:document.getElementById('mainWindow').dataset.ccView}));check('native utilities retain all five original owner actions',await utility.count()===5);await utility.first().focus();const utilityProof=[];for(let i=0;i<5;i++){if(i)await page.keyboard.press('Tab');utilityProof.push(await page.evaluate(()=>{const n=document.activeElement,r=n.getBoundingClientRect(),strip=n.closest('#loungeWorkspaceHeader>nav:not(.workbook-native-chapters)'),b=strip?.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return {key:[...n.attributes].map(a=>a.name).find(k=>k.startsWith('data-lounge-')),w:r.width,h:r.height,inside:!!b&&r.left>=b.left-.1&&r.right<=b.right+.1&&r.top>=0&&r.bottom<=innerHeight,hit:hit===n||n.contains(hit),scroll:scrollY};}));}check('all native utility actions are keyboard-reachable44px targets inside their horizontal strip without moving work',utilityProof.map(n=>n.key).join(',')==='data-lounge-home,data-lounge-refresh,data-lounge-search,data-lounge-later,data-lounge-tools'&&utilityProof.every(n=>n.w>=44&&n.h>=44&&n.inside&&n.hit&&n.scroll===utilityBefore.scroll),utilityProof);
+    await page.locator('#loungeWorkspaceHeader [data-working-chapter=sourcing]').click();check('already active native chapter remains a real no-op',await page.locator('#ccCastleFrame').isHidden()&&await page.locator('#mainWindow[data-cc-view=sourcing]').isVisible());
+    await page.locator('#loungeWorkspaceHeader [data-working-chapter=lottery]').click();await f.locator('#room[data-account=lottery]').waitFor();check('native header direct chapter restores exact existing source without a cover',await f.locator('#draft-body').textContent()===rows[3].payload.draft&&await f.locator('.storybook').isHidden()&&await page.locator('.storybook-journey').count()===0);
+    await f.locator('.workbook-menu>summary').click();await f.locator('.workbook-menu-body').getByRole('button',{name:'設定',exact:true}).click();await f.locator('#settings[open]').waitFor();await f.locator('#storybook-fp').click();await f.locator('#room[data-account=fp]').waitFor();check('new work menu retains the existing supplementary FP route',await f.locator('#room[data-account=fp]').isVisible()&&await f.locator('#settings').isHidden());
+    await f.locator('[data-working-chapter=sourcing]').click();await page.locator('#mainWindow[data-cc-view=sourcing]').waitFor();await page.locator('[data-lounge-home]').click();await page.locator('#ccCastleFrame').waitFor();check('native Back restores a usable real child without an orphan overlay',await page.locator('.storybook-journey').count()===0&&await cf.evaluate(()=>!document.activeElement?.closest('[inert]')));
+   }
+   if(mode.includes('loading')){
+    // Late records are permitted to update data, never to undo a newer real
+    // chapter/native intent. The response barrier belongs to synthetic fetch.
+    if(mode==='loading'){await f.locator('[data-working-chapter=sourcing]').click();await page.locator('#mainWindow[data-cc-view=sourcing]').waitFor();}
+    else {await f.locator('[data-working-chapter=rakuten]').click();await f.locator('#room[data-account=rakuten]').waitFor();}
+    await page.evaluate(()=>{window.__workFirstReleased=true;const releases=__workFirstRelease.splice(0);for(const release of releases)release();});await cf.waitForFunction(()=>__workDesk.snapshot().complete===true);
+    if(mode==='loading')check('late first records never reopen the passive reader over newer native work',await page.locator('#mainWindow[data-cc-view=sourcing]').isVisible()&&await page.locator('#ccCastleFrame').isHidden());
+    else check('late cache refresh preserves the explicitly chosen account and exact new source',await f.locator('#room').getAttribute('data-account')==='rakuten'&&await f.locator('#draft-body').textContent()===rows[2].payload.draft);
+    await capture('late-records-latest-intent');
+   }
+   check('all source records remain unchanged and no external or business write occurs',await page.evaluate(()=>JSON.stringify(__rpgQA.threads.events.filter(r=>__storybookRecords.ids.includes(r.id)))===__storybookRecords.original&&__rpgQA.writes.length===0&&__rpgQA.threads.simulatedWrites.length===0&&__storybookRecords.external.length===0)&&result.blocked.length===0&&result.errors.length===0,{blocked:result.blocked,errors:result.errors});result.status='passed';
+  }catch(error){result.status='failed';result.failure={message:error.message,stack:error.stack};try{await capture('failure');}catch(e){result.captureError=e.message;}process.exitCode=1;}finally{save();await context.close();}
+ }
+ }}finally{await browser.close();server.close();save();}
+ console.log(JSON.stringify(results.map(r=>({width:r.width,height:r.height,mode:r.mode,status:r.status,checks:r.checks.length,failed:r.checks.filter(x=>!x.pass).length})),null,2));
+})().catch(error=>{console.error(error);server.close();process.exitCode=1;});

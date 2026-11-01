@@ -365,3 +365,11 @@ test('storybook paper preserves readable text, actionable controls, hidden state
   assert.equal(all.find(r => r.selectorText === 'body.storybook-atelier').style.getPropertyValue('--storybook-reader-ready'), '1');
   b.unchanged();
 });
+
+test('working facing-leaf dock borrows the exact shelf, mobile dialog returns it, account change/destroy restores owner',async t=>{
+ const b=setup(t),dock=b.doc.createElement('aside');dock.className='workbook-list';b.room.append(dock);const api=b.install({shelfDock:dock});
+ await b.enter('insurance');assert.equal(b.shelf.parentNode,dock);assert.equal(b.$('#desk-query'),b.nodes['desk-query']);b.$('#desk-query').value='一';b.$('#desk-list').scrollTop=31;
+ api.openShelf();assert.equal(b.shelf.closest('dialog').id,'spatial-shelf-dialog');api.closeShelf();await flush();assert.equal(b.shelf.parentNode,dock);assert.equal(b.$('#desk-query').value,'一');assert.equal(b.$('#desk-list').scrollTop,31);
+ await b.enter('lottery');assert.equal(b.shelf.parentNode,dock);api.destroy();assert.equal(b.desk.innerHTML,b.before);assert.equal(b.shelf.closest('#desk'),b.desk);b.unchanged();
+});
+test('invalid facing-leaf dock fails before moving existing owner controls',t=>{const b=setup(t),outside=b.doc.createElement('aside');assert.throws(()=>b.install({shelfDock:outside}),/Shelf dock/);assert.equal(b.desk.innerHTML,b.before);b.unchanged();});
