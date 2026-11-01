@@ -147,9 +147,10 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
     if (!active) return;
     metadata.hidden = !!article?.hidden;
     const message = status?.textContent || '';
-    // Preserve the existing reader's automatic failure disclosure even though
-    // its original status details now lives inside the secondary-tools drawer.
-    if (message !== lastStatus && /失敗|未確認|できません|エラー/.test(message)) work.open = true;
+    // Legacy/fallback readers keep their automatic failure disclosure. The
+    // mounted work-first header exposes a visible nonblocking warning instead;
+    // opening a drawer automatically must not cover usable cached text/actions.
+    if (doc.body.dataset.workbookReady!=='true' && message !== lastStatus && /失敗|未確認|できません|エラー/.test(message)) work.open = true;
     lastStatus = message;
   };
   const restoreShelf = () => {

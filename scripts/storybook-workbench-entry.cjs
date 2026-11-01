@@ -27,10 +27,15 @@ async function openStorybookOverview(frame){
  await frame.locator('.account-board:not([hidden])').waitFor();
 }
 async function openReaderWork(frame){
- if(await frame.locator('.spatial-work').evaluate(node=>node.open))return;
- if(await working(frame))await menuAction(frame,'作業・読取状況');
- else await frame.locator('.spatial-work>summary').click();
- await frame.locator('.spatial-work[open]').waitFor();
+ if(!await frame.locator('.spatial-work').evaluate(node=>node.open)){
+  if(await working(frame))await menuAction(frame,'作業・読取状況');
+  else await frame.locator('.spatial-work>summary').click();
+ }
+ // The workbook hides the old summary; the remaining drawer is positioned
+ // absolutely, so its <details> wrapper legitimately has no painted box.
+ // Require the actual disclosed work surface, not that empty wrapper.
+ await frame.locator('.spatial-work[open]').waitFor({state:'attached'});
+ await frame.locator('.spatial-work[open] .spatial-work-body').waitFor({state:'visible'});
 }
 async function closeReaderWork(page,frame){
  if(await frame.locator('.spatial-work').evaluate(node=>node.open)){

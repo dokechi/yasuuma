@@ -226,7 +226,7 @@ async function overview(frame){const menu=frame.locator('.workbook-menu>summary'
     // Real joint-session browser history, not synthetic popstate. These three
     // publishing accounts share the old purple room, so preserve the account
     // and exact selected draft instead of accepting any purple destination.
-    await f.locator('[data-working-chapter=rakuten]').click();await f.locator('#room[data-account=rakuten][data-spatial-desk=ready]').waitFor();
+    await f.locator('[data-story-instant=rakuten]').click();await f.locator('#room[data-account=rakuten][data-spatial-desk=ready]').waitFor();
     await f.locator('[data-working-chapter=lottery]').click();await f.locator('#room[data-account=lottery][data-spatial-desk=ready][data-story-scene=ready]').waitFor();
     const historySource=await cf.evaluate(()=>{const room=__storyDesk.snapshot().rooms.find(r=>r.key==='lottery');return {id:room.current.id,source:room.current.source,body:document.getElementById('draft-body').textContent,account:document.getElementById('room').dataset.account};});
     // Playwright goBack waits for a main-frame navigation, but this is real

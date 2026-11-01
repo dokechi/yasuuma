@@ -185,7 +185,7 @@ body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-head
  body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header{padding:10px;min-height:0}
  body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header .workbook-native-chapters{display:grid;gap:4px;margin-bottom:10px;width:100%}
  body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header .workbook-native-chapters button{min-width:0;min-height:44px;padding:5px 2px;font-size:12px}
- body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header>nav:not(.workbook-native-chapters){display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:6px;padding:2px 2px 6px;max-width:100%;scroll-padding-inline:2px;scrollbar-width:thin}
+ body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header>nav:not(.workbook-native-chapters){display:flex;flex-direction:row;justify-content:flex-start;align-items:center;min-width:0;width:100%;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:6px;padding:2px 2px 6px;max-width:100%;scroll-padding-inline:2px;scrollbar-width:thin}
  body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header>nav:not(.workbook-native-chapters)>div{display:contents}
  body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header>nav:not(.workbook-native-chapters) button{flex:0 0 auto;white-space:nowrap;min-width:44px;min-height:44px;padding:7px 10px;font-size:12px}
  body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header[data-story-art=ready] .lounge-workspace-caption{margin-top:7px;padding:4px 10px}

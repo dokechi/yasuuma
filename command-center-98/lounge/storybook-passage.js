@@ -269,8 +269,11 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
   listen(win,'message',event=>{if(event.source===host&&event.origin===win.location.origin&&event.data?.channel==='cc-castle-v1'&&['search-open','later-context','reading-settings'].includes(event.data.type))cancel();});
  }
 
+ // Local tools can stop a live cosmetic without erasing an already completed
+ // cover entry. A later Back must snapshot the current tools/text, not replay it.
+ function interrupt(){if(disposed)return false;if(journey.state().active||departure||trip&&!trip.arrived){cancel();return true;}return false;}
  function destroy(){if(disposed)return;disposed=true;cancel();observer.disconnect();unsubscribe?.();for(const off of listeners.splice(0))off();journey.destroy();}
- return {onTravel,onTurn,cancel,destroy,snapshot:()=>({active:!!journey.state().active,returnRoom:trip?.turn?null:trip?.room||null,pendingReturn:!!departure,phase:journey.state().phase||'idle'})};
+ return {onTravel,onTurn,cancel,interrupt,destroy,snapshot:()=>({active:!!journey.state().active,returnRoom:trip?.turn?null:trip?.room||null,pendingReturn:!!departure,phase:journey.state().phase||'idle'})};
 }
 
 export function installStorybookPassage(options={}){

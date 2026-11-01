@@ -31,7 +31,7 @@ try{
  const {mountStorybook,storyChapters}=await import('./storybook-scene.js?v=20261101.9-workbook');
  scene=mountStorybook({board,onCancel:()=>passage?.cancel(),onTravel:spec=>passage?.onTravel(spec)});
  if(document.body.classList.contains('storybook-workbench')){
-  try{const {mountWorkingBook}=await import('./storybook-workbench.js?v=20261101.9-workbook');workbench=mountWorkingBook({application,board,onCancel:()=>passage?.cancel(),onTurn:spec=>passage?.onTurn?.(spec)});const publish=scene.setLivingStatus.bind(scene);scene.setLivingStatus=value=>{publish(value);workbench?.setLivingStatus(value);};}catch(error){console.warn('Working-page navigation unavailable; the existing reader remains usable.',error);}
+  try{const {mountWorkingBook}=await import('./storybook-workbench.js?v=20261101.9-workbook');workbench=mountWorkingBook({application,board,onCancel:()=>passage?.cancel(),onInterrupt:()=>passage?.interrupt(),onTurn:spec=>passage?.onTurn?.(spec)});const publish=scene.setLivingStatus.bind(scene);scene.setLivingStatus=value=>{publish(value);workbench?.setLivingStatus(value);};}catch(error){console.warn('Working-page navigation unavailable; the existing reader remains usable.',error);}
  }
  const config=Object.fromEntries(storyChapters.filter(x=>x.key!=='sourcing').map(x=>[x.key,{name:x.place,fallbackColor:'#F7F8F2',actorURL:actorURLs[x.key]}]));
  const {installSpatialDesk}=await import('./spatial-desk.js?v=20261101.9-workbook');

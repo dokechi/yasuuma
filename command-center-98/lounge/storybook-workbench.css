@@ -123,7 +123,24 @@ body.storybook-workbench .workbook-list .manuscript-card[aria-pressed=true]{back
  body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .spatial-illustration-stage{display:block;left:14px;right:auto;top:calc(var(--work-header) + 3px);bottom:auto;width:calc(100% - 28px);height:calc((100vw - 28px) / 2);aspect-ratio:2/1;transform:none}
  body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .spatial-study-scene>.story-paper-art{aspect-ratio:2/1}
  body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .reading-desk{top:calc(var(--work-header) + var(--work-scene-strip));border-top:1.5px solid #173A35;border-radius:3px 9px 4px 0;box-shadow:0 -4px 0 #F7F8F2,0 -5px 0 #173A35}
- body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .reader-actions{grid-template-columns:minmax(0,1fr) 44px 88px;align-items:stretch;padding:8px 8px 8px 12px;gap:5px}
- body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .reader-actions #desk-done{grid-column:auto;font-size:12px;white-space:normal;line-height:1.35;padding-inline:5px}
+ body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .reader-actions{grid-template-columns:minmax(0,1fr) 44px 100px;align-items:stretch;padding:8px 8px 8px 12px;gap:5px}
+ body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .reader-actions #desk-done{grid-column:auto;font-size:12px;white-space:nowrap;line-height:1.35;padding-inline:5px}
  body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .reader-actions #desk-copy{font-size:13px;padding-inline:4px;white-space:normal}
 }
+
+body.storybook-workbench .workbook-header[data-read-state=attention] .workbook-identity>span{background:#FEB60A;color:#173A35;border-radius:2px;padding:2px 5px;font-weight:700}
+
+body.storybook-workbench .workbook-read-warning{min-height:44px;min-width:44px;white-space:nowrap;padding:7px 9px;background:#FEB60A;color:#173A35;border:1.5px solid #173A35;border-radius:3px;font:700 12px/1.4 system-ui}
+@media(max-width:600px){body.storybook-workbench:has(.workbook-header[data-read-state=attention]){--work-header:166px}body.storybook-workbench:has(.workbook-header[data-read-state=attention]) .workbook-identity{min-height:44px}}
+/* These are manuscript bookmarks, not repeated copies of the open body. Keep
+   exact titles/kind/star in the compact dock; the full body and metadata remain
+   in their original reader/tools owners. Two neighboring titles should fit. */
+body.storybook-workbench .workbook-list-title{background:#F7F8F2;color:#173A35;box-shadow:inset 0 3px 0 var(--work-under)}
+body.storybook-workbench .workbook-list .desk-count{padding:2px 0;margin:5px 2px;line-height:1.5}
+body.storybook-workbench .workbook-list .manuscript-card{min-height:58px;padding:7px 9px!important;gap:2px;background:transparent!important;box-shadow:none;border-color:#173A3560!important}
+body.storybook-workbench .workbook-list .manuscript-card[aria-pressed=true]{background:#F7F8F2!important;box-shadow:inset 3px 0 #106762}
+body.storybook-workbench .workbook-list .manuscript-card>span,body.storybook-workbench .workbook-list .manuscript-card>small:not(:first-child){display:none}
+body.storybook-workbench .workbook-list .manuscript-card>small:first-child{font-size:11px;line-height:1.4}
+body.storybook-workbench .workbook-list .manuscript-card>strong{font-size:14px;line-height:1.5;-webkit-line-clamp:2}
+@media(max-width:1000px) and (min-width:601px){body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready]{--work-art-height:clamp(132px,24dvh,180px)}}
+body.storybook-workbench .workbook-work-close{position:sticky;top:0;z-index:2;align-self:flex-end;min-width:70px;min-height:44px;margin:0 0 8px auto;background:#F7F8F2;color:#173A35;border:1.5px solid #173A35;font:700 14px/1.4 system-ui;cursor:pointer}
