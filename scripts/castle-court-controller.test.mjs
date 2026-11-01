@@ -9,18 +9,20 @@ const original=fs.readFileSync(new URL('../command-center-98/lounge/arrival-atel
 const executable=original
  .replace(/^import \* as spatial from [^\n]+;\n/m,'')
  .replace(/^import \* as application from [^\n]+;\n/m,'')
+ .replace(/^export function (activateCourt|getCourtState)\b/gm,'function $1')
  .replace(/import\('\.\/arrival-renderer\.js[^']*'\)/g,'__loadRenderer()')
  .replaceAll('import.meta.url','__moduleURL');
 assert.notEqual(executable,original);
 assert.doesNotMatch(executable,/^import /m,'only the two owner namespace imports are replaced');
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
-const run=new AsyncFunction('window','document','matchMedia','navigator','MutationObserver','ResizeObserver','AbortController','getComputedStyle','spatial','application','__loadRenderer','__moduleURL','fetch','location',executable);
+const run=new AsyncFunction('window','document','matchMedia','navigator','MutationObserver','ResizeObserver','AbortController','getComputedStyle','spatial','application','__loadRenderer','__moduleURL','fetch','location',executable+'\nreturn {activateCourt,getCourtState};');
 const flush=async()=>{await Promise.resolve();await new Promise(resolve=>setImmediate(resolve));};
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
 
 async function setup(t,options={}){
  const dom=new JSDOM('<!doctype html><html><head></head><body style="--arrival-court-ready:1"><main id="app"></main><dialog id="settings"><input id="reduce-setting" type="checkbox"><button id="settings-close">閉じる</button></dialog><section class="account-board"><header class="original-header" aria-hidden="false"><button class="board-primary">原稿一覧</button><button class="board-refresh">更新</button><button class="board-lounge">管理</button><button class="castle-experience-settings">設定</button></header><p class="account-board-status">保存原稿読込済み</p><nav class="spatial-castle">'+['insurance','otoku','rakuten','lottery','sourcing'].map(key=>`<button class="castle-quick-open" data-room="${key}">${key}</button>`).join('')+'</nav><footer class="board-footer"></footer></section></body></html>',{url:'https://castle.invalid/lounge/index.html?experience=court',pretendToBeVisual:true});
  const win=dom.window,doc=win.document,panel=doc.querySelector('.account-board'),originalChildren=[...panel.children],gate=deferred();
+ if(options.externalEntry){const entry=doc.createElement('button');entry.className='arrival-launch';entry.setAttribute('data-arrival-entry','');entry.textContent='3Dの中庭';panel.querySelector('.board-footer').append(entry);}
  t.after(()=>{win.dispatchEvent(new win.Event('pagehide'));dom.window.close();});
  Object.defineProperties(win.HTMLElement.prototype,{clientWidth:{get:()=>390,configurable:true},clientHeight:{get:()=>848,configurable:true}});
  win.HTMLElement.prototype.getBoundingClientRect=function(){return {left:0,top:0,right:390,bottom:848,x:0,y:0,width:390,height:848};};
@@ -53,6 +55,21 @@ test('loading enhancement leaves the proven castle accessible; only successful f
  assert.equal(h.snapshot().ready,true);assert.equal(h.snapshot().active,true);assert.equal(h.panel.dataset.court,'ready');
  for(const node of h.originalChildren){assert.equal(node.inert,true);assert.equal(node.getAttribute('aria-hidden'),'true');}
  assert.equal(h.sourceUnchanged(),true);
+});
+
+test('external lazy entry is reused and remains inactive until its explicit activation',async t=>{
+ const h=await setup(t,{externalEntry:true,pending:true}),entry=h.doc.querySelector('[data-arrival-entry]');
+ assert.equal(h.snapshot().active,false);h.gate.resolve();const api=await h.finished;await flush();
+ assert.equal(api.getCourtState().ready,true);assert.equal(api.getCourtState().active,false);assert.equal(h.doc.querySelectorAll('.arrival-launch').length,1);assert.equal(h.panel.dataset.court,undefined);
+ entry.click();await flush();assert.equal(api.getCourtState().active,true);assert.equal(h.panel.dataset.court,'ready');assert.equal(h.doc.activeElement,h.doc.querySelector('.arrival-text-button'));
+});
+
+test('external entry initialization never reopens a reader and later needs a fresh explicit activation',async t=>{
+ const h=await setup(t,{externalEntry:true,pending:true});h.panel.hidden=true;
+ const copy=h.doc.createElement('button');copy.textContent='Existing reader copy';h.doc.body.append(copy);copy.focus();h.gate.resolve();const api=await h.finished;await flush();
+ assert.equal(api.getCourtState().active,false);assert.equal(api.getCourtState().available,false);assert.equal(h.doc.activeElement,copy);assert.equal(api.activateCourt(),false);
+ await h.back();assert.equal(api.getCourtState().active,false);assert.equal(h.panel.dataset.court,undefined);
+ h.doc.querySelector('[data-arrival-entry]').click();await flush();assert.equal(api.getCourtState().active,true);assert.equal(h.sourceUnchanged(),true);
 });
 
 test('slow enhancement does not steal existing keyboard work; explicit launch is required',async t=>{

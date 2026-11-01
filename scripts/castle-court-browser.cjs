@@ -1,6 +1,6 @@
 /* Owned synthetic CI only. No production credentials, posts, or remote traffic.
- * The prototype iframe replacement below changes bytes served by this local
- * fixture, never castle-parent.js on disk or the production entrypoint.
+ * Real app-v130 -> castle-parent -> default lounge index -> explicit lazy entry.
+ * Only synthetic records are injected; the host/iframe route is not substituted.
  * Software GL verifies rendering and lifecycle, NOT a physical phone FPS claim.
  */
 'use strict';
@@ -35,11 +35,6 @@ const server=http.createServer((req,res)=>{
   if(error)return res.writeHead(404).end();let content=bytes;
   if(relative==='/command-center-98/app.html')content=bytes.toString().replace('<head>','<head><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script><script>'+fixtureScript+'</script>');
   if(relative==='/scripts/ui-fixtures.js')content=bytes.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
-  if(relative==='/command-center-98/castle-parent.js'){
-   const source=bytes.toString();
-   if(!source.includes('./lounge/index.html?'))return res.writeHead(500).end('Fixture parent entry contract changed');
-   content=source.replaceAll('./lounge/index.html?','./lounge/arrival-prototype.html?');
-  }
   res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store'}).end(content);
  });
 });
@@ -63,15 +58,18 @@ async function settled(frame){await frame.waitForFunction(()=>{const value=windo
 async function capture(ctx,name){
  const file=`${ctx.result.label}-${name}.png`;await ctx.page.screenshot({path:path.join(out,file)});ctx.result.frames.push(file);
 }
-async function openHost(browser,origin,{width=390,height=900,label,fault=null,shadowOff=false,reducedMotion='no-preference'}={}){
+async function openHost(browser,origin,{width=390,height=900,label,fault=null,shadowOff=false,reducedMotion='no-preference',autoActivate=true,deferModel=false}={}){
  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,hasTouch:width<=800,reducedMotion,serviceWorkers:'block',permissions:['clipboard-read','clipboard-write']});
- const page=await context.newPage(),result={label:label||`${width}-${height}`,width,height,checks:[],frames:[],errors:[],blocked:[],expectedFaults:[]};results.push(result);
+ const page=await context.newPage(),result={label:label||`${width}-${height}`,width,height,checks:[],frames:[],errors:[],blocked:[],expectedFaults:[],heavyRequests:[]};results.push(result);
+ let releaseModel,modelRequested;const modelGate=new Promise(resolve=>releaseModel=resolve),modelRequest=new Promise(resolve=>modelRequested=resolve);
+ page.on('request',request=>{if(/\/arrival-(atelier|renderer|camera)\.js|\/vendor\/three-r187\/|\/arrival-court-v1\.glb/.test(new URL(request.url()).pathname))result.heavyRequests.push(request.url());});
  if(shadowOff){result.diagnosticOnly=true;result.sourceSubstitutions=[];}
  page.on('pageerror',error=>result.errors.push(error.message));
  page.on('console',message=>{if(message.type()==='warning'||message.type()==='error')(result.console||=[]).push(message.text());});
- await context.route('**/*',route=>{
+ await context.route('**/*',async route=>{
   const request=route.request(),url=new URL(request.url());
   if(url.origin!==origin||!['GET','HEAD'].includes(request.method())){result.blocked.push({url:url.href,method:request.method()});return route.abort();}
+  if(deferModel&&url.pathname.endsWith('/arrival-court-v1.glb')){modelRequested();await modelGate;}
   if(shadowOff&&url.pathname.endsWith('/arrival-renderer.js')){
    const original=fs.readFileSync(path.join(root,'command-center-98/lounge/arrival-renderer.js'),'utf8'),needle='renderer.shadowMap.enabled=true';
    assert.equal(original.split(needle).length-1,1,'owned diagnostic substitution has one exact source target');
@@ -79,20 +77,26 @@ async function openHost(browser,origin,{width=390,height=900,label,fault=null,sh
    return route.fulfill({status:200,contentType:'text/javascript',body:original.replace(needle,'renderer.shadowMap.enabled=false')});
   }
   if(fault==='invalid-model'&&url.pathname.endsWith('/arrival-court-v1.glb')){result.expectedFaults.push(url.pathname);return route.fulfill({status:200,contentType:'model/gltf-binary',body:Buffer.from('invalid synthetic GLB')});}
-  if((fault==='model'&&url.pathname.endsWith('/arrival-court-v1.glb'))||(fault==='module'&&url.pathname.endsWith('/arrival-renderer.js'))){result.expectedFaults.push(url.pathname);return route.abort();}
+  if((fault==='model'&&url.pathname.endsWith('/arrival-court-v1.glb'))||(fault==='module'&&url.pathname.endsWith('/arrival-renderer.js'))||(fault==='entry-module'&&url.pathname.endsWith('/arrival-atelier.js'))){result.expectedFaults.push(url.pathname);return route.abort();}
   return route.continue();
  });
- const ctx={context,page,result,frame:null,f:null};
+ const ctx={context,page,result,frame:null,f:null,releaseModel,modelRequest};
  try{
   await page.goto(origin+'/command-center-98/app-v130.html');
   await page.waitForFunction(()=>window.CCCastle?.unified&&!document.getElementById('ccCastleFrame').hidden);
-  ctx.frame=page.frames().find(frame=>frame.url().includes('/lounge/')&&new URL(frame.url()).searchParams.get('experience')==='court');
-  assert.ok(ctx.frame,'real host points only its local fixture iframe to the prototype');ctx.f=page.frameLocator('#ccCastleFrame');
+  ctx.frame=page.frames().find(frame=>new URL(frame.url()).pathname.endsWith('/lounge/index.html'));
+  assert.ok(ctx.frame,'real unmodified host loads its default lounge index');ctx.f=page.frameLocator('#ccCastleFrame');
   await ctx.f.locator('.account-board').waitFor({state:'attached'});
   await ctx.frame.evaluate(async()=>{await document.fonts.ready;const script=document.querySelector('script[src^="app.js"]');if(script)window.__courtLiving=(await import(script.src)).getLivingDesk();});
   await ctx.frame.waitForFunction(()=>window.__courtLiving?.snapshot().complete===true);
+  await ctx.f.locator('[data-arrival-entry]').waitFor();await ctx.f.locator('.spatial-castle').waitFor({state:'visible'});
+  check(result,'default real host has no prototype route or eagerly loaded graphics',!new URL(ctx.frame.url()).searchParams.has('experience')&&result.heavyRequests.length===0&&await ctx.frame.evaluate(()=>!window.__arrivalCourt),result.heavyRequests);
+  const entry=await ctx.f.locator('[data-arrival-entry]').evaluate(node=>{const r=node.getBoundingClientRect();return {width:r.width,height:r.height,left:r.left,right:r.right,bottom:r.bottom,viewport:[innerWidth,innerHeight],overflow:document.documentElement.scrollWidth>innerWidth};});
+  check(result,'default castle exposes a bounded 44px optional 3D entry',entry.width>=44&&entry.height>=44&&entry.left>=-.5&&entry.right<=entry.viewport[0]+.5&&entry.bottom<=entry.viewport[1]+.5&&!entry.overflow,entry);
+  await capture(ctx,'default-castle');
+  if(autoActivate)await ctx.f.locator('[data-arrival-entry]').click();
   return ctx;
- }catch(error){await fail(ctx,error);await context.close();throw error;}
+ }catch(error){releaseModel();await fail(ctx,error);await context.close();throw error;}
 }
 async function fail(ctx,error){
  failures++;ctx.result.failure=String(error.stack||error);
@@ -153,6 +157,7 @@ async function normalCase(browser,origin,width,height){
   check(result,'materials, main-plus-shadow draw calls and decoded textures stay bounded',render.drawCalls<=128&&render.materialCount<=12&&render.assetTextureCount<=4&&render.assetTexels<=1_000_000,{drawCalls:render.drawCalls,materialCount:render.materialCount,assetTextureCount:render.assetTextureCount,assetTexels:render.assetTexels,gpuTextures:render.gpuTextures});
   check(result,'generated runtime sky is one bounded texture, separate from authored asset textures',render.runtimeSkyTextures===1&&render.runtimeSkyTexels===32_768,{runtimeSkyTextures:render.runtimeSkyTextures,runtimeSkyTexels:render.runtimeSkyTexels,atmosphere:render.atmosphere});
   check(result,'normal court retains supported bounded cached shadows rather than hiding the defect by disabling them',render.shadowEnabled===true&&render.shadowFilter==='pcf'&&render.shadowMapSize<=1024&&render.staticShadow===true&&render.closedShadowMaterials===11,{shadowEnabled:render.shadowEnabled,shadowFilter:render.shadowFilter,shadowMapSize:render.shadowMapSize,shadowRadius:render.shadowRadius,staticShadow:render.staticShadow,closedShadowMaterials:render.closedShadowMaterials,shadowBounds:render.shadowBounds,doorLight:render.doorLight});
+  check(result,'warm fanlight stays behind its measured pane without a new shadow pass',render.doorLight.position.every((value,index)=>Math.abs(value-[-5.6,2.8,-2.852][index])<.0001)&&render.doorLight.intensity===.8&&render.doorLight.distance===3.5&&render.doorLight.castsShadow===false,render.doorLight);
   check(result,'drawing buffer is bounded',render.pixelRatio<=1.5&&render.physicalPixels<=1_800_000&&render.physicalWidth*render.physicalHeight<=1_800_000&&render.width>0&&render.height>0,render);
   const gl=await f.locator('.arrival-court canvas').evaluate(canvas=>{const gl=canvas.getContext('webgl2'),debug=gl.getExtension('WEBGL_debug_renderer_info');return {webgl2:gl instanceof WebGL2RenderingContext,version:gl.getParameter(gl.VERSION),renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),vendor:debug?gl.getParameter(debug.UNMASKED_VENDOR_WEBGL):gl.getParameter(gl.VENDOR)};});
   gl.backend=/swiftshader|software/i.test(gl.renderer)?'software':/angle|nvidia|intel|amd|adreno|mali/i.test(gl.renderer)?'hardware-or-unknown':'unknown';
@@ -289,7 +294,8 @@ async function fallbackCase(browser,origin,fault){
    check(result,'real WEBGL_lose_context extension is available and invoked',extension);
    await frame.waitForFunction(()=>window.__courtLostContext.isContextLost());
   }
-  await frame.waitForFunction(()=>document.querySelector('.arrival-court')?.dataset.state==='fallback',null,{timeout:30_000});
+  if(fault==='entry-module')await f.locator('[data-arrival-entry][data-arrival-entry-state=unavailable]').waitFor();
+  else await frame.waitForFunction(()=>document.querySelector('.arrival-court')?.dataset.state==='fallback',null,{timeout:30_000});
   if(fault==='no-webgl')check(result,'WebGL-disabled browser really cannot create a WebGL2 context',await frame.evaluate(()=>document.createElement('canvas').getContext('webgl2')===null));
   await f.locator('.spatial-castle').waitFor({state:'visible',timeout:30_000});
   check(result,'fallback has live original court-independent navigation',await f.locator('.castle-quick-open[data-room=insurance]').isVisible());
@@ -297,8 +303,42 @@ async function fallbackCase(browser,origin,fault){
   await f.locator('.castle-quick-open[data-room=insurance]').click();await reader(ctx,'insurance');await capture(ctx,'reader');await back(ctx);
   await f.locator('.castle-quick-open[data-room=sourcing]').click();await ctx.page.locator('#mainWindow[data-cc-view=sourcing]').waitFor();
   check(result,'fallback still reaches native sourcing',await ctx.page.locator('#ccCastleFrame').isHidden());
-  if(['model','module','invalid-model'].includes(fault))check(result,'requested optional resource failure was actually exercised',result.expectedFaults.length>0,result.expectedFaults);
+  if(['model','module','invalid-model','entry-module'].includes(fault))check(result,'requested optional resource failure was actually exercised',result.expectedFaults.length>0,result.expectedFaults);
   await unchanged(ctx);console.log(`PASS ${result.label}: ${result.checks.length} fallback checks.`);
+ }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
+}
+
+async function lazyCancellationCase(browser,origin){
+ let ctx;
+ try{
+  ctx=await openHost(browser,origin,{label:'390-900-lazy-cancel',autoActivate:false,deferModel:true});
+  const requested=ctx.page.waitForRequest(request=>new URL(request.url()).pathname.endsWith('/arrival-court-v1.glb'),{timeout:30_000});
+  await ctx.f.locator('[data-arrival-entry]').click();await requested;
+  check(ctx.result,'pending 3D load leaves the original castle controls accessible',await ctx.f.locator('.castle-quick-open[data-room=insurance]').isVisible()&&await ctx.f.locator('.spatial-castle').evaluate(node=>!node.inert&&node.getAttribute('aria-hidden')!=='true'));
+  await capture(ctx,'loading-original');await ctx.f.locator('.castle-quick-open[data-room=insurance]').click();await reader(ctx,'insurance');
+  const focused=await ctx.frame.evaluate(()=>document.activeElement?.id);ctx.releaseModel();
+  await ctx.frame.waitForFunction(()=>window.__arrivalCourt?.snapshot().ready===true);await ctx.f.locator('[data-arrival-entry][data-arrival-entry-state=ready]').waitFor({state:'attached'});
+  const late=await snapshot(ctx.frame);
+  check(ctx.result,'late module and first frame cannot reopen the castle over a deliberately chosen reader',!late.active&&late.renderer.active===false&&await ctx.f.locator('#room[data-account=insurance]').isVisible()&&await ctx.frame.evaluate(id=>document.activeElement?.id===id,focused),late);
+  await capture(ctx,'late-ready-reader');await back(ctx);await ctx.f.locator('.spatial-castle').waitFor({state:'visible'});
+  check(ctx.result,'Back after canceled preparation retains the original castle until another explicit tap',!(await snapshot(ctx.frame)).active&&await ctx.f.locator('[data-arrival-entry]').isEnabled());await capture(ctx,'canceled-return');
+  await ctx.f.locator('[data-arrival-entry]').click();await ctx.frame.waitForFunction(()=>window.__arrivalCourt?.snapshot().active===true);await settled(ctx.frame);
+  check(ctx.result,'a fresh explicit tap enters the already prepared renderer',(await snapshot(ctx.frame)).active===true);await capture(ctx,'explicit-reentry');await unchanged(ctx);
+ }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{ctx?.releaseModel();await ctx?.context.close();}
+}
+
+async function initialReducedCase(browser,origin){
+ let ctx;
+ try{
+  ctx=await openHost(browser,origin,{label:'390-900-initial-reduced',autoActivate:false,reducedMotion:'reduce'});
+  const entry=ctx.f.locator('[data-arrival-entry]');
+  check(ctx.result,'initial reduced motion keeps a visible explained disabled entry without loading graphics',await entry.isDisabled()&&!!await entry.getAttribute('title')&&ctx.result.heavyRequests.length===0,ctx.result.heavyRequests);
+  await ctx.f.locator('.castle-quick-open[data-room=insurance]').click();await reader(ctx,'insurance');await back(ctx);
+  check(ctx.result,'default reduced-motion reader use still loads no optional renderer',ctx.result.heavyRequests.length===0,ctx.result.heavyRequests);
+  await ctx.page.emulateMedia({reducedMotion:'no-preference'});await entry.waitFor();await ctx.frame.waitForFunction(()=>!document.querySelector('[data-arrival-entry]').disabled);
+  check(ctx.result,'ending reduced motion enables the entry but does not automatically import graphics',ctx.result.heavyRequests.length===0&&await ctx.frame.evaluate(()=>!window.__arrivalCourt));
+  await entry.click();await ctx.f.locator('.arrival-court[data-state=ready]').waitFor();await settled(ctx.frame);
+  check(ctx.result,'explicit tap after preference change reaches real 3D',(await snapshot(ctx.frame)).active===true);await capture(ctx,'explicit-after-reduce');await unchanged(ctx);
  }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
 }
 
@@ -332,8 +372,9 @@ async function shadowDiagnostic(browser,origin,width,height){
   try{const session=await browser.newBrowserCDPSession();try{environment.gpu=(await session.send('SystemInfo.getInfo')).gpu;}finally{await session.detach();}}catch(error){environment.gpuDiagnosticError=String(error.message);}
   console.log('COURT_BROWSER '+JSON.stringify(environment));
   for(const [width,height] of [[390,900],[320,640],[800,648],[1440,900]])await normalCase(browser,origin,width,height);
-  for(const fault of ['model','invalid-model','module','context-loss'])await fallbackCase(browser,origin,fault);
+  for(const fault of ['model','invalid-model','module','entry-module','context-loss'])await fallbackCase(browser,origin,fault);
   disabled=await chromium.launch({channel:'chromium',headless:true,args:['--disable-webgl']});await fallbackCase(disabled,origin,'no-webgl');
+  await lazyCancellationCase(browser,origin);await initialReducedCase(browser,origin);
   // Diagnostic-only A/B. The normal four widths and all fault cases above use
   // unchanged exact-head source. No production flag, API, or asset is added.
   await shadowDiagnostic(browser,origin,1440,900);await shadowDiagnostic(browser,origin,390,900);

@@ -160,10 +160,10 @@
     "Existing reader, authentication, immediate routes and painted castle remain implementation-owned fallback.",
     "Phone should select/focus a room, never shrink all gates to unreadable miniatures."
   ],
-  "authoredRevision": "v3.2",
+  "authoredRevision": "v3.3",
   "asset": "arrival-court-v1.glb",
   "runtimeBytes": 1981880,
-  "runtimeSha256": "1bdbe3ab14485638535364e8579c3d2422b9eae16fb7a264baf60110210c6112",
+  "runtimeSha256": "b8167b25892380bf0ed18fba1d90522a7bb96e6e80a468a7b511e8b0fc6e06bb",
   "drawGroups": 48,
   "textureCount": 3,
   "imageCount": 3,
@@ -179,7 +179,7 @@
     "maxPositionErrorMeters": 0.0004999999999997229,
     "positionPrecisionMeters": 0.001,
     "uvPrecisionTiles": 0.00390625,
-    "sha256": "1bdbe3ab14485638535364e8579c3d2422b9eae16fb7a264baf60110210c6112",
+    "sha256": "b8167b25892380bf0ed18fba1d90522a7bb96e6e80a468a7b511e8b0fc6e06bb",
     "triangleTopologyUnchanged": true
   },
   "textures": [

@@ -1,9 +1,9 @@
-# Original castle arrival court — v3.2 integration candidate
+# Original castle arrival court — v3.3 integration candidate
 
 This is original, purpose-built geometry, not an imported/copy of Igloo's site or models. The user-supplied reference screenshots informed scale, material, quiet composition and contact-lighting goals only. It is an integration prototype; no claim of equivalent final visual quality.
 
 Runtime files:
-- `arrival-court-v1.glb` — canonical runtime filename; authored revision v3.2.
+- `arrival-court-v1.glb` — canonical runtime filename; authored revision v3.3.
 - `arrival-court-v1-layout.json` — metre units, glTF Y-up cameras/targets, room/focus/approach anchors.
 - `arrival-court-v1-provenance.json` — source/material provenance and exact SHA256.
 
@@ -26,3 +26,5 @@ Do not ship the intermediate raw GLB, `.blend` source caches, or inspection PNGs
 Revision v3.1 changes only the existing five textile and hanging-rail clusters by 0.46 m toward the court. Actual WebGL showed them embedded behind the pier faces. Mesh counts, materials, camera composition, portal targets and functions are unchanged; native source carries the corrected placements.
 
 Revision v3.2 changes only the native phone establishing camera to Y-up position[0.5,2.6,16], target[-3.85,3.5,-1.5], verticalFOV44 degrees. Source, glTF camera and layout agree; it is not a hidden renderer override. Actual WebGL composition acceptance remains pending.
+
+Revision v3.3 assigns only the closed lottery textile to the existing matte cloth_teal material, keeping its green family and separating it from the intentionally open copper dome shadow policy. No new material, primitive, geometry or camera is added.

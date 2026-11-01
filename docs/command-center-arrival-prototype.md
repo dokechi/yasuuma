@@ -1,12 +1,15 @@
-# Original architectural arrival court — isolated preview
+# Original architectural arrival court — optional production mode
 
 ## State and scope
 
-This is a separate, opt-in prototype after PR94. The production entry and the
-established castle remain the default. `lounge/arrival-prototype.html` opens the
-same application with `?experience=court`; it does not provide authentication or
-records on its own. The owned browser fixture supplies synthetic records through
-the existing same-origin parent. No production credentials are used.
+The production host keeps the established castle as its default. Its footer's
+**3Dの中庭** button explicitly loads the optional renderer. No model, renderer or
+Three bundle is requested before that tap. Preference is session-only; there is
+no new stored setting, authentication path or source read. The old prototype URL
+is retained as a redirect to the same default application, not a second product.
+The owned browser fixture follows the real app-v130 → castle-parent → index path
+and supplies synthetic records through the existing same-origin host. No
+production credentials are used.
 
 The first slice evaluates real three-dimensional architecture, physically based
 materials, grounded light and quieter composition, inspired by the user's actual
@@ -25,15 +28,16 @@ claim full three-dimensional exploration of every room from that narrow view.
   selects its camera/label; explicit entry opens the existing owner reader.
 - The old castle remains visible and usable while loading, parsing, compiling and
   drawing the first real frame. Only successful first-frame initialization can
-  hide its controls. Existing keyboard work defers automatic promotion.
+  hide its controls. A newer route, dialog, keyboard action, hidden state or cancellation during
+  loading invalidates that activation intent; a later completed load cannot
+  interrupt it. Returning to the castle then requires another explicit tap.
 - Missing module/style/model, malformed model, unsupported WebGL2 or context loss
   leaves/restores the original castle. There is no automatic context retry loop.
 - Reduced motion or save-data/low-memory startup does not create the renderer.
   Enabling reduced motion later returns to the old castle; an already initialized
-  renderer requires explicit re-entry after that setting ends. If startup bypassed
-  graphics entirely, a fresh page visit is required to attempt initialization after
-  the device preference changes; there is no automatic retry. Hidden/native work
-  surfaces suspend rendering.
+  renderer requires explicit re-entry after that setting ends. Before the first attempt, changing that preference re-enables the small
+  entry without loading anything. A failed/aborted graphics attempt is not retried
+  automatically. Hidden/native work surfaces suspend rendering.
 - New rendering does not add backend reads, polling, source mutations, external
   posting, audio defaults, permissions, security settings or paid services.
 
@@ -72,7 +76,9 @@ regressions remain unchanged. Actual intermediate frames and independent art/UX
 review are required before further promotion.
 
 Software GL proves rendering and lifecycle behavior, **not Galaxy Z Fold GPU
-frame rate, thermals or battery use**. A prototype pass is not a production gate.
+frame rate, thermals or battery use**. Release additionally requires exact-head aggregate regressions, independent
+visual/UX acceptance, public asset verification and the unauthenticated entry
+smoke. Authenticated production records are not exercised by synthetic fixtures.
 
 ## Primary implementation references
 
@@ -87,7 +93,9 @@ frame rate, thermals or battery use**. A prototype pass is not a production gate
 
 The native phone establishing camera now steps back to retain the study, stairs
 and instrument edge rather than presenting an extreme wall crop. Geometry and
-material pixels remain unchanged. One restrained static fanlight is architectural
+material pixels remain unchanged. The closed lottery banner uses the existing
+matte teal cloth material so its standard closed-solid shadow treatment does not
+affect the open copper dome. One restrained static fanlight is architectural
 illumination, never a workflow/activity signal. The renderer uses supported PCF
 shadows, a fitted 1024-pixel shadow frustum and audited closed-solid back-face
 shadow casting; the open copper dome retains double-sided casting. The static

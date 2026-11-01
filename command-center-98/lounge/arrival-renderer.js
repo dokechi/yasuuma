@@ -1,7 +1,7 @@
 /* Optional real geometry and light. The existing application owns all routes,
    records and accessible controls. This module never reads user storage. */
-import * as T from './vendor/three-r187/court-three.js?v=20261101.4-arrival';
-import {COURT_KEYS,COURT_BUDGET,COURT_ATMOSPHERE,courtSkyPixels,fitCourtShadow,closedCourtShadowMaterial,renderDimensions,createCameraMotion,createDemandDriver,copyPose,orbitPose,focusPose,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from './arrival-camera.js?v=20261101.4-arrival';
+import * as T from './vendor/three-r187/court-three.js?v=20261101.5-arrival';
+import {COURT_KEYS,COURT_BUDGET,COURT_ATMOSPHERE,courtSkyPixels,fitCourtShadow,closedCourtShadowMaterial,renderDimensions,createCameraMotion,createDemandDriver,copyPose,orbitPose,focusPose,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from './arrival-camera.js?v=20261101.5-arrival';
 
 export class CourtRendererError extends Error{constructor(code,message,cause){super(message,{cause});this.name='CourtRendererError';this.code=code;}}
 const abortError=()=>new DOMException('Court initialization cancelled','AbortError');
@@ -95,9 +95,9 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
   for(const key of COURT_KEYS){const fixed=model.getObjectByName('camera-'+key),approach=model.getObjectByName('approach-'+key);if(fixed?.isPerspectiveCamera)roomPoses.set(key,cameraPose(fixed,anchors.get(key).point));else if(approach)roomPoses.set(key,focusPose(homePose(),anchors.get(key).point.toArray(),approach.getWorldPosition(new T.Vector3()).toArray()));}
   camera=new T.PerspectiveCamera(43,dimensions.width/dimensions.height,.1,120);motion=createCameraMotion(homePose(),now);applyPose(motion.sample());scene.add(model);
   scene.updateMatrixWorld(true);sun.shadow.updateMatrices(sun);const lightBounds=bounds.clone().applyMatrix4(sun.shadow.camera.matrixWorldInverse);shadowBounds=fitCourtShadow(lightBounds.min.toArray(),lightBounds.max.toArray());Object.assign(sun.shadow.camera,shadowBounds);sun.shadow.camera.updateProjectionMatrix();
-  // One restrained spill at the visible study fanlight. Ambient
+  // One restrained lighting approximation behind the study fanlight. Ambient
   // architecture only: it never claims activity or follows workflow state.
-  const lamp=new T.PointLight('#ffc68a',3,4,2);lamp.position.set(-5.6,2.8,-2.65);scene.add(lamp);
+  const lamp=new T.PointLight('#ffc68a',.8,3.5,2);lamp.position.set(-5.6,2.8,-2.852);scene.add(lamp);
   await wait(renderer.compileAsync(scene,camera));alive();draw();alive();if(!frameCount)throw new CourtRendererError('first-frame','Court did not render a first frame');
   driver=createDemandDriver({render:draw,request:callback=>win.requestAnimationFrame(callback),cancel:id=>win.cancelAnimationFrame(id)});
   ready=true;clearTimeout(deadline);

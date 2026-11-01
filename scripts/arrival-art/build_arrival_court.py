@@ -176,7 +176,7 @@ mod=tower.modifiers.new('Deep window embrasure','BOOLEAN');mod.operation='DIFFER
 bpy.context.view_layer.objects.active=tower;bpy.ops.object.modifier_apply(modifier=mod.name)
 static.remove(cutter);bpy.data.objects.remove(cutter,do_unlink=True)
 # The warm aperture is proud of the opaque tower, with a deep architectural reveal.
-door('lottery',5.10,3.78,3.55,1.32,2.12,'copper_patina')
+door('lottery',5.10,3.78,3.55,1.32,2.12,'cloth_teal')
 box('Observatory balcony',(5.05,4.05,3.35),(5.5,2.1,.28),'stone_worn',.05)
 # Low-poly smooth dome with ribs; patina is kept calm against warm window light.
 verts=[];faces=[];rings=9;sectors=40

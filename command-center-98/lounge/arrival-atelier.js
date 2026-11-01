@@ -1,6 +1,6 @@
-/* Isolated, opt-in architectural preview. Existing owners keep all records,
+/* Optional architectural courtyard. Existing owners keep all records,
    routing and paper. Nothing here reads an API or changes source records. */
-import * as spatial from './spatial-atelier.js?v=20261101.4-arrival';
+import * as spatial from './spatial-atelier.js?v=20261101.5-arrival';
 import * as application from './app.js?v=20261101.1-living';
 
 const rooms=[
@@ -17,16 +17,17 @@ const presentation=spatial.getSpatialPresentation?.();
 if(!presentation?.scene||!presentation.board?.element)throw Error('The established castle must be ready first.');
 const {board,scene:baseScene}=presentation;
 const panel=board.element,doc=document,win=window,media=matchMedia('(prefers-reduced-motion: reduce)');
+const externalLaunch=panel.querySelector('[data-arrival-entry]');
 const reduceControl=doc.getElementById('reduce-setting');
 const reduced=()=>media.matches||!!reduceControl?.checked;
 const lowQuality=()=>navigator.connection?.saveData===true||(Number.isFinite(navigator.deviceMemory)&&navigator.deviceMemory<=2);
 const element=(tag,cls,text)=>{const n=doc.createElement(tag);n.className=cls||'';if(text!==undefined)n.textContent=text;return n;};
 const button=(cls,text,handler)=>{const n=element('button',cls,text);n.type='button';n.addEventListener('click',handler);return n;};
-let renderer=null,failed=false,ready=false,disposed=false,preferred=true,active=false,hostPaused=false,selected=null,overview=true,lastTrigger=null,projection=[],pointer=null;
+let renderer=null,failed=false,ready=false,disposed=false,preferred=!externalLaunch,active=false,hostPaused=false,selected=null,overview=true,lastTrigger=null,projection=[],pointer=null,handedOff=false;
 let snapshot=application.getLivingDesk?.()?.snapshot?.(),lastVisited=board.state.lastVisited,loadTimer=0;
 const abort=new AbortController(),originalAttributes=new Map(),buttons=new Map();
 
-const root=element('section','arrival-court');root.dataset.state='loading';root.hidden=true;root.setAttribute('aria-label','城の到着の中庭・立体表示の試作');
+const root=element('section','arrival-court');root.dataset.state='loading';root.hidden=true;root.setAttribute('aria-label','城の到着の中庭・3Dの中庭');
 const canvas=element('canvas','arrival-canvas');canvas.setAttribute('aria-hidden','true');
 const header=element('header','arrival-heading'),identity=element('div','arrival-identity');
 identity.append(element('small','','THE CASTLE ATELIER'),element('h1','','司令塔'));
@@ -59,7 +60,7 @@ const quick=element('nav','arrival-quick');quick.setAttribute('aria-label','持�
 for(const room of rooms.filter(r=>!r.sealed)){const b=button('arrival-quick-open',room.short,()=>open(room.key,b));b.dataset.courtOpen=room.key;b.setAttribute('aria-label',room.short+'をすぐ開く');quick.append(b);}
 const announcement=element('p','sr-only');announcement.setAttribute('aria-live','polite');
 footer.append(hint,quick);root.append(canvas,header,targets,detail,footer,announcement);panel.append(root);
-const launch=button('arrival-launch','立体の中庭へ',()=>{if(!failed&&ready){preferred=true;sync({force:true});listButton.focus({preventScroll:true});}});launch.hidden=true;panel.querySelector('.board-footer').append(launch);
+const launch=externalLaunch||element('button','arrival-launch','3Dの中庭');launch.type='button';if(!externalLaunch){launch.hidden=true;panel.querySelector('.board-footer').append(launch);}
 const fallbackNote=element('p','account-board-status arrival-fallback-note');fallbackNote.hidden=true;fallbackNote.setAttribute('role','status');const originalStatus=panel.querySelector('.account-board-status');if(originalStatus)originalStatus.after(fallbackNote);else panel.prepend(fallbackNote);
 
 function source(key){return snapshot?.rooms?.find(r=>r.key===key);}
@@ -97,10 +98,24 @@ function releaseOriginal(){
  active=false;root.hidden=true;pointer=null;renderer?.setActive(false);
  if(restoreFocus){const prior=panel.dataset.view!=='list'&&selected?panel.querySelector('.castle-quick-open[data-room="'+selected+'"]'):null;(prior||panel.querySelector('.board-primary'))?.focus({preventScroll:true});}
 }
+function syncLaunch(){
+ if(externalLaunch&&!handedOff)return;
+ const unavailable=failed||disposed||!ready||reduced()||lowQuality();
+ launch.hidden=active||panel.hidden||panel.dataset.view==='list';launch.disabled=unavailable;launch.removeAttribute('aria-busy');launch.removeAttribute('aria-disabled');
+ launch.dataset.arrivalEntryState=failed?'unavailable':!ready?'paused':reduced()||lowQuality()?'blocked':'ready';
+ launch.textContent=failed?'3Dは利用できません':!ready?'3Dは休止中':'3Dの中庭';
+ launch.title=failed?'いつもの城で、そのまま続けられます。':reduced()?'移動の演出を省略しているため、いつもの城を表示します。':lowQuality()?'通信・端末への負荷を抑えるため、いつもの城を表示します。':!ready?'設定を戻した後、ページを再読み込みすると再度利用できます。':'';
+ launch.setAttribute('aria-label',launch.textContent+(launch.title?'。'+launch.title:''));
+}
+export function getCourtState(){return {ready,failed,active,available:!disposed&&!failed&&!reduced()&&!lowQuality()&&!panel.hidden&&panel.dataset.view!=='list'&&!doc.hidden&&!hostPaused&&!doc.querySelector('dialog[open]')};}
+export function activateCourt(){
+ if(!ready||!getCourtState().available)return false;
+ preferred=true;sync({force:true});if(active)listButton.focus({preventScroll:true});return active;
+}
 function sync({force=false}={}){
  if(disposed)return;
  const shouldShow=ready&&!failed&&preferred&&!panel.hidden&&panel.dataset.view!=='list'&&!reduced()&&!lowQuality();
- if(!shouldShow){releaseOriginal();launch.hidden=!ready||failed||reduced()||lowQuality();return;}
+ if(!shouldShow){releaseOriginal();syncLaunch();return;}
  // A slow enhancement must not hide a keyboard user's in-progress old control.
  const focus=doc.activeElement;
  if(!force&&!active&&focus!==doc.body&&panel.contains(focus)&&!root.contains(focus)&&focus!==launch&&!lastTrigger){launch.hidden=false;return;}
@@ -110,7 +125,7 @@ function sync({force=false}={}){
  renderCopy();
 }
 function fail(reason){
- if(failed||disposed)return;failed=true;ready=false;clearTimeout(loadTimer);abort.abort();renderer?.dispose();renderer=null;root.dataset.state='fallback';releaseOriginal();launch.hidden=true;
+ if(failed||disposed)return;failed=true;ready=false;clearTimeout(loadTimer);abort.abort();renderer?.dispose();renderer=null;root.dataset.state='fallback';releaseOriginal();syncLaunch();
  fallbackNote.textContent='立体表示を利用できないため、いつもの城を表示しています。';fallbackNote.hidden=false;
  console.warn('Arrival court kept the established castle.',reason);
 }
@@ -138,11 +153,11 @@ const unsubscribe=board.subscribe(()=>{if(board.state.lastVisited!==lastVisited)
 const unsubscribeLiving=application.getLivingDesk?.()?.subscribe?.(value=>{snapshot=value;renderCopy();});
 const observer=new MutationObserver(()=>sync());observer.observe(panel,{attributes:true,attributeFilter:['hidden','data-view']});
 const resize=new ResizeObserver(()=>{if(active){const r=root.getBoundingClientRect();renderer?.resize(r.width,r.height);}});resize.observe(panel);
-const motionChanged=()=>{if(reduced()||lowQuality()){preferred=false;releaseOriginal();launch.hidden=true;if(!ready){abort.abort();root.dataset.state='fallback';}}else sync();};media.addEventListener('change',motionChanged);reduceControl?.addEventListener('change',motionChanged);navigator.connection?.addEventListener?.('change',motionChanged);
+const motionChanged=()=>{if(reduced()||lowQuality()){preferred=false;releaseOriginal();syncLaunch();if(!ready){abort.abort();root.dataset.state='fallback';}}else sync();};media.addEventListener('change',motionChanged);reduceControl?.addEventListener('change',motionChanged);navigator.connection?.addEventListener?.('change',motionChanged);
 doc.addEventListener('visibilitychange',()=>{pointer=null;renderer?.setActive(active&&!doc.hidden&&!hostPaused);});
 const hostVisibility=event=>{if(event.source!==win.parent||event.origin!==location.origin||event.data?.channel!=='cc-castle-v1'||!['pause','resume'].includes(event.data.type))return;hostPaused=event.data.type==='pause';pointer=null;renderer?.setActive(active&&!doc.hidden&&!hostPaused);};win.addEventListener('message',hostVisibility);
 win.addEventListener('pagehide',()=>{disposed=true;abort.abort();clearTimeout(loadTimer);renderer?.dispose();observer.disconnect();resize.disconnect();unsubscribe();unsubscribeLiving?.();win.removeEventListener('message',hostVisibility);},{once:true});
-// Read-only graphics diagnostics exist only on the explicitly opted-in prototype.
+// Read-only graphics diagnostics exist only after explicit courtyard opt-in.
 Object.defineProperty(win,'__arrivalCourt',{configurable:true,value:Object.freeze({snapshot:()=>({state:failed||reduced()||lowQuality()?'fallback':ready?'ready':'loading',ready,active,failed,selected,overview,projection:projection.map(p=>({...p})),renderer:renderer?.diagnostics()||null})})});
 renderCopy();
 
@@ -150,13 +165,17 @@ if(reduced()||lowQuality()){
  root.dataset.state='fallback';
 }else{
  try{
-  await new Promise((resolve,reject)=>{const link=doc.createElement('link');link.rel='stylesheet';link.href=new URL('./arrival-court.css?v=20261101.4-arrival',import.meta.url);link.onload=resolve;link.onerror=()=>reject(Error('Arrival styles unavailable'));doc.head.append(link);loadTimer=setTimeout(()=>reject(Error('Arrival style timeout')),10000);});clearTimeout(loadTimer);
+  await new Promise((resolve,reject)=>{const link=doc.createElement('link');link.rel='stylesheet';link.href=new URL('./arrival-court.css?v=20261101.5-arrival',import.meta.url);link.onload=resolve;link.onerror=()=>reject(Error('Arrival styles unavailable'));doc.head.append(link);loadTimer=setTimeout(()=>reject(Error('Arrival style timeout')),10000);});clearTimeout(loadTimer);
   if(getComputedStyle(doc.body).getPropertyValue('--arrival-court-ready').trim()!=='1')throw Error('Arrival style contract unavailable');
+  if(disposed||abort.signal.aborted||reduced()||lowQuality())throw new DOMException('Court initialization cancelled','AbortError');
   // Keep the original castle visible during loading and shader compilation.
   root.hidden=false;root.dataset.state='loading';const rect=panel.getBoundingClientRect();canvas.width=Math.max(1,rect.width);canvas.height=Math.max(1,rect.height);
   loadTimer=setTimeout(()=>fail(Error('Arrival model/compile timeout')),15000);
-  const {createCourtRenderer}=await import('./arrival-renderer.js?v=20261101.4-arrival');
-  const result=await createCourtRenderer({canvas,modelURL:new URL('./assets/arrival-court-v1.glb?v=1bdbe3ab1448',import.meta.url).href,onFrame:project,onFailure:fail,signal:abort.signal});
+  const {createCourtRenderer}=await import('./arrival-renderer.js?v=20261101.5-arrival');
+  const result=await createCourtRenderer({canvas,modelURL:new URL('./assets/arrival-court-v1.glb?v=b8167b258923',import.meta.url).href,onFrame:project,onFailure:fail,signal:abort.signal});
   if(disposed||failed){result.dispose();}else{renderer=result;clearTimeout(loadTimer);ready=true;root.dataset.state='ready';root.hidden=true;sync();}
  }catch(error){if(disposed||reduced()||lowQuality()){clearTimeout(loadTimer);root.dataset.state='fallback';releaseOriginal();}else fail(error);}
 }
+
+// The tiny default entry hands ownership over only after bounded initialization.
+handedOff=true;syncLaunch();launch.addEventListener('click',activateCourt);
