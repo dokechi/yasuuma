@@ -1,4 +1,4 @@
-import {createKeepsakes} from './work-memory.js?v=20261031.1-lottery';
+import {createKeepsakes} from './work-memory.js?v=20261102.1-tanaka';
 import {sampleEntry} from './entry-motion.js';
 // The painting and door faces use the same coordinates; no WebGL is required.
 const W=1536,H=1024,PLATE='assets/lounge-top-20261023.webp';
@@ -97,3 +97,4 @@ export async function createHybridWorld({app,host,rooms,labels,getSettings,getPh
  new ResizeObserver(resize).observe(app);resize();resume();
  return {enter(id,duration){motion={id,start:performance.now(),duration};app.dataset.entering=id;resume();},reset(){motion=null;focused=hovered=null;mouse.x=mouse.y=0;app.dataset.entering='';app.style.removeProperty('--entry-light');for(const e of entries.values()){for(const l of e.leaves){l.leaf.style.transform='translateZ(1px)';l.back.style.transform='translateZ(-2px)';}e.aperture.style.filter='';e.glow.style.opacity='.06';}resize();resume();},highlight(id){focused=id;app.dataset.hover=id||'';},pause,resume};
 }
+

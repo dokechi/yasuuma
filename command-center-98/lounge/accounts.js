@@ -4,7 +4,8 @@ export const publishingAccounts=Object.freeze([
  {key:'otoku',place:'otoku',name:'まだ安く買えるはず',handle:'@thats_a_steal0601',tone:'violet'},
  {key:'rakuten',place:'rakuten',name:'楽天犬',handle:'@bonya0914',tone:'amber'},
  {key:'lottery',place:'lottery',name:'抽選日記',handle:'@chusen1101',tone:'green',artKey:'planned-4'},
- ...[5,6].map(n=>({key:'planned-'+n,name:'アカウント '+n,pending:true}))
+ {key:'tanaka',place:'tanaka',name:'田中卓',handle:'',tone:'violet',artKey:'planned-5'},
+ ...[6].map(n=>({key:'planned-'+n,name:'アカウント '+n,pending:true}))
 ]);
 export function draftsForAccount(rows,account){
  if(!account||account.pending)return [];
@@ -57,11 +58,11 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
    const crest=el('span',undefined,'portal-crest');crest.setAttribute('aria-hidden','true');const symbols={insurance:'M12 3 5 6v6c0 4 7 8 7 8s7-4 7-8V6Z M8 11h8 M12 7v8',otoku:'m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z M12 8v8 M8 12h8',rakuten:'M3 11 12 3l9 8 M6 9v12h12V9 M10 21v-7h4v7',lottery:'m12 2 3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z',sourcing:'M12 3v18 M4 7h16 M5 7l-3 7h6Z M19 7l-3 7h6Z M7 21h10'};crest.innerHTML='<svg viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.2 stroke-linejoin=round><path d="'+(symbols[a.key]||'M8 11V7a4 4 0 0 1 8 0v4 M6 11h12v10H6Z M12 15v3')+'"/></svg>';
    tile.append(frame,crest);
    const art=el('img');if(!spatialLayout())art.src='assets/panel-'+(a.artKey||a.key)+'.webp';art.alt='';art.loading='eager';art.onerror=()=>{art.onerror=null;art.src='assets/'+(['red','purple','orange','silver','purple','red','orange','silver'][i])+'-face.webp';};
-   const caption=el('span',undefined,'account-tile-caption');caption.append(el('small',String(i+1).padStart(2,'0')+' / '+(a.pending?'封印された扉':({insurance:'手紙の書斎',otoku:'宵色の回廊',rakuten:'陽だまりの食卓',lottery:'星巡りの観測室',sourcing:'商人の工房'})[a.key])),el('strong',a.name),el('span',a.handle|| (a.pending?'名前・用途は未設定':a.key==='sourcing'?'購入・在庫・売却':'投稿先未登録')));
+   const caption=el('span',undefined,'account-tile-caption');caption.append(el('small',String(i+1).padStart(2,'0')+' / '+(a.pending?'封印された扉':({insurance:'手紙の書斎',otoku:'宵色の回廊',rakuten:'陽だまりの食卓',lottery:'星巡りの観測室',tanaka:'固定費を掘る書斎',sourcing:'商人の工房'})[a.key])),el('strong',a.name),el('span',a.handle|| (a.pending?'名前・用途は未設定':a.key==='sourcing'?'購入・在庫・売却':'投稿先未登録')));
    const count=a.pending?'未設定':a.key==='sourcing'?'管理画面へ':complete?'保存原稿 '+new Set(draftsForAccount(allRows,a).map(d=>d.source.id)).size+'本':loading?'読込中':'原稿を確認';nextDestinations.push({...a,status:count});const meta=el('span',count,'account-tile-state');caption.append(meta);
    const arrow=el('span',a.pending?'—':'↗','account-tile-arrow');arrow.setAttribute('aria-hidden','true');tile.append(art,caption,arrow);tiles.append(tile);
   }
-  status.textContent=message||(loading?'保存原稿を読み込んでいます…':complete?'保存原稿を読込済み。追加2枠は未設定です。':'保存原稿はまだ確認できていません。更新して再試行できます。');
+  status.textContent=message||(loading?'保存原稿を読み込んでいます…':complete?'保存原稿を読込済み。追加1枠は未設定です。':'保存原稿はまだ確認できていません。更新して再試行できます。');
   for(const [i,a]of publishingAccounts.entries()){
    const column=el('section',undefined,'account-column');column.dataset.account=a.key;column.dataset.tone=a.tone||'empty';
    const heading=el('header'),number=el('small',String(i+1).padStart(2,'0'),'account-number');heading.append(number,el('h2',a.name));
@@ -92,3 +93,4 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
  function hide(){panel.hidden=true;isolate(false);document.getElementById('app')?.classList.remove('board-home');}
  render();return {render,show,hide,element:panel,get state(){return snapshot;},subscribe(fn){subscribers.add(fn);fn(snapshot);return()=>subscribers.delete(fn);},open(key,id,options){const account=destinations().find(a=>a.key===key);if(account&&!account.pending)travel(account,id,options);}};
 }
+

@@ -1,6 +1,6 @@
 /* Spatial publishing desks. No data requests, persistence, or source-record changes.
    The entry opts in with body.spatial-atelier and calls this installer. */
-import {publishingAccounts} from './accounts.js?v=20261101.9-workbook';
+import {publishingAccounts} from './accounts.js?v=20261102.1-tanaka';
 
 // Observed rectangles from command-castle-cutaway-v1-zones.json. The same
 // master artwork underlies the overview and these four publishing rooms.
@@ -8,6 +8,7 @@ const rooms = Object.freeze({
   insurance: {name: '書簡の書斎', rect: [.085, .33, .35, .28]},
   otoku: {name: '紫の目利き書庫', rect: [.17, .06, .27, .25]},
   rakuten: {name: '琥珀の贈りもの室', rect: [.58, .34, .34, .27]},
+  tanaka: {name: '田中卓の書斎', rect: [.17, .06, .27, .25]},
   lottery: {name: '緑青の天文室', rect: [.62, .05, .25, .27]}
 });
 const installations = new WeakMap();
@@ -417,3 +418,4 @@ export function installSpatialDesk({document: doc = globalThis.document, openRoo
   catch (error) { api.destroy(); throw error; }
   return api;
 }
+

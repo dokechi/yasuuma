@@ -4,7 +4,8 @@
 const chapters=Object.freeze([
  {key:'insurance',name:'保険',number:'01'}, {key:'otoku',name:'お得',number:'02'},
  {key:'rakuten',name:'楽天',number:'03'}, {key:'lottery',name:'抽選',number:'04'},
- {key:'sourcing',name:'仕入れ',number:'05'}
+ {key:'tanaka',name:'田中卓',number:'05'},
+ {key:'sourcing',name:'仕入れ',number:'06'}
 ]);
 export function mountWorkingBook({document:doc=globalThis.document,application,board,buildArt=null,onTurn=()=>false,onCancel=()=>{},onInterrupt=onCancel}={}){
  const win=doc?.defaultView,room=doc?.getElementById('room');
@@ -15,14 +16,14 @@ export function mountWorkingBook({document:doc=globalThis.document,application,b
  const safely=(fn,...args)=>{try{return fn(...args);}catch{return false;}};
  let disposed=false,desk=null,artBuilder=buildArt,lastFocus=null,artKey=null,artIntent=0,copyTimer=null,lastOperation='',statusSnapshot=null,workClose=null;
  const header=make('header','workbook-header');header.dataset.workbookReady='true';
- const top=make('div','workbook-top'),brand=make('span','workbook-brand','司令塔'),tabs=make('nav','workbook-chapters');tabs.setAttribute('aria-label','五つの持ち場、すぐ切り替え');
+ const top=make('div','workbook-top'),brand=make('span','workbook-brand','司令塔'),tabs=make('nav','workbook-chapters');tabs.setAttribute('aria-label','六つの持ち場、すぐ切り替え');
  const buttons=new Map();
  for(const c of chapters){const b=button('workbook-chapter','',()=>open(c.key));b.dataset.workingChapter=c.key;const label=make('strong','',c.name),state=make('small','','未確認');b.append(label,state);tabs.append(b);buttons.set(c.key,{button:b,state});}
  const menu=make('details','workbook-menu'),summary=make('summary','','•••');summary.setAttribute('aria-label','司令塔の道具を開く');const menuBody=make('div','workbook-menu-body');
  function invoke(id){safely(onInterrupt);menu.open=false;const opener=summary;opener.focus({preventScroll:true});doc.getElementById(id)?.click();const modal=doc.querySelector('dialog[open]');modal?.addEventListener('close',()=>{if(!disposed&&opener?.isConnected)opener.focus({preventScroll:true});},{once:true});}
  menuBody.append(button('','全体検索',()=>invoke('lounge-search')),button('','あとで読む',()=>invoke('lounge-later')),button('','設定',()=>invoke('settings-open')),button('','本の全景',()=>{menu.open=false;doc.getElementById('back')?.click();}),button('','保存原稿を更新',()=>{safely(onInterrupt);menu.open=false;summary.focus({preventScroll:true});board.element.querySelector('.board-refresh')?.click();}),button('','作業・読取状況',()=>{safely(onInterrupt);menu.open=false;const work=room.querySelector('.spatial-work');if(work){work.open=true;const body=ensureWorkClose();if(body){body.tabIndex=-1;(body.querySelector('button:not(:disabled),input:not(:disabled),a[href]')||body).focus({preventScroll:true});}}}));
  function ensureWorkClose(){const work=room.querySelector('.spatial-work'),body=work?.querySelector('.spatial-work-body');if(body&&!body.querySelector('.workbook-work-close')){workClose=button('workbook-work-close','閉じる',()=>{work.open=false;summary.focus({preventScroll:true});});workClose.setAttribute('aria-label','作業・読取状況を閉じる');body.prepend(workClose);}return body;}
- const preparing=make('p','workbook-preparing','追加の3頁は準備中です。');menuBody.append(preparing);menu.append(summary,menuBody);top.append(brand,tabs,menu);
+ const preparing=make('p','workbook-preparing','追加の2頁は準備中です。');menuBody.append(preparing);menu.append(summary,menuBody);top.append(brand,tabs,menu);
  const context=make('div','workbook-context'),identity=make('div','workbook-identity'),name=make('strong'),handle=make('span');const warningButton=button('workbook-read-warning','読取未確認 · 更新',()=>{safely(onInterrupt);summary.focus({preventScroll:true});board.element.querySelector('.board-refresh')?.click();});warningButton.dataset.workingWarning='';warningButton.hidden=true;identity.append(name,handle,warningButton);
  const actions=make('nav','workbook-actions');actions.setAttribute('aria-label','今の頁の操作');
  const listButton=button('workbook-list-open','原稿一覧',()=>{safely(onInterrupt);desk?.openShelf();});listButton.dataset.workingList='';listButton.setAttribute('aria-haspopup','dialog');listButton.setAttribute('aria-controls','spatial-shelf-dialog');
@@ -38,7 +39,7 @@ export function mountWorkingBook({document:doc=globalThis.document,application,b
  const picture=make('div','workbook-art-picture'),artWork=button('workbook-art-work','この章で作業する',()=>{const key=artKey;dialog.close();open(key);});dialog.append(artHeading,artTabs,picture,artWork);doc.body.append(dialog);
  function current(){return chapters.some(c=>c.key===room.dataset.account)&&!room.hidden?room.dataset.account:application.resolveWorkingChapter?.().key||'insurance';}
  function open(key){if(disposed||!chapters.some(c=>c.key===key))return false;safely(onCancel);menu.open=false;return safely(application.openWorkingChapter,key);}
- function turn(direction){const order=chapters.slice(0,4),source=current(),index=order.findIndex(c=>c.key===source);if(disposed||index<0)return false;const key=order[(index+direction+order.length)%order.length].key;safely(onCancel);safely(onTurn,{room:key,sourceRoom:source,direction:direction<0?'previous':'next'});return safely(application.openWorkingChapter,key);}
+ function turn(direction){const order=chapters.filter(c=>c.key!=='sourcing'),source=current(),index=order.findIndex(c=>c.key===source);if(disposed||index<0)return false;const key=order[(index+direction+order.length)%order.length].key;safely(onCancel);safely(onTurn,{room:key,sourceRoom:source,direction:direction<0?'previous':'next'});return safely(application.openWorkingChapter,key);}
  function paintArt(){
   const token=++artIntent,key=artKey||current(),c=chapters.find(c=>c.key===key);picture.replaceChildren();picture.dataset.storyRoom=key;dialog.dataset.storyRoom=key;artTitle.textContent=(c?.name||'仕事')+'の絵の頁';
   for(const b of artTabs.children)b.setAttribute('aria-pressed',String(b.dataset.workingArtChapter===key));
@@ -60,3 +61,4 @@ export function mountWorkingBook({document:doc=globalThis.document,application,b
  const quiet=()=>{doc.body.dataset.workbookPaused=String(doc.hidden||!!doc.getSelection()?.toString()||/^(INPUT|TEXTAREA|SELECT)$/.test(doc.activeElement?.tagName||''));};doc.addEventListener('visibilitychange',quiet);doc.addEventListener('selectionchange',quiet);doc.addEventListener('focusin',quiet);doc.addEventListener('focusout',quiet);quiet();update();
  return {element:header,shelfDock:dock,open,showArt,setDesk(value){desk=value;ensureWorkClose();update();},setArtBuilder(value){artBuilder=value;if(dialog.open)paintArt();},setLivingStatus(value){statusSnapshot=value;update();},snapshot:()=>({key:current(),view:dialog.open?'illustration':room.hidden?'overview':'work',artKey:dialog.open?artKey:null}),destroy(){if(disposed)return;disposed=true;++artIntent;off();observer.disconnect();win.clearTimeout(copyTimer);doc.removeEventListener('keydown',onKey,true);doc.removeEventListener('pointerdown',outside);doc.removeEventListener('visibilitychange',quiet);doc.removeEventListener('selectionchange',quiet);doc.removeEventListener('focusin',quiet);doc.removeEventListener('focusout',quiet);if(dialog.open)dialog.close();workClose?.remove();header.remove();delete doc.body.dataset.workbookReady;dialog.remove();if(!dock.querySelector('.manuscript-shelf'))dock.remove();}};
 }
+

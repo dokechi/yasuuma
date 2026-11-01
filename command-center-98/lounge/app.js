@@ -1,11 +1,11 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
 import {createMusicControls} from './music.js?v=20261030.8-integrated';
-import {createDesk} from './desk.js?v=20261101.9-workbook';
+import {createDesk} from './desk.js?v=20261102.1-tanaka';
 import {createInteractionSound} from './interaction-sound.js?v=20261022.26-audio';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261101.1-living';
 const $ = (id) => document.getElementById(id);
 let accountContext=null;
-const accountRooms={kyun:{key:'insurance',name:'保険'},otoku:{key:'otoku',name:'まだ安く買えるはず'},rakuten:{key:'rakuten',name:'楽天犬'},lottery:{key:'lottery',name:'抽選日記',artKey:'planned-4'}};
+const accountRooms={tanaka:{key:'tanaka',name:'田中卓',artKey:'planned-5'},kyun:{key:'insurance',name:'保険'},otoku:{key:'otoku',name:'まだ安く買えるはず'},rakuten:{key:'rakuten',name:'楽天犬'},lottery:{key:'lottery',name:'抽選日記',artKey:'planned-4'}};
 const storybookPresentation=document.body.classList.contains('storybook-atelier');
 const workingPresentation=document.body.classList.contains('storybook-workbench');
 const app = $('app');
@@ -25,10 +25,10 @@ let entrySound=null,entryAnimated=false,effectsGain=null,effectsVolume=.5,music=
 let nextContextRoom=null, replayAfterBack=null, historyBackPending=false;
 let navigationIntent=0, routeOptions=null, entryFromHistory=false, entryResumeDraft,entryInitial=false;
 let workingStarted=false;
-const accountRoomIds={insurance:'red',otoku:'purple',rakuten:'purple',lottery:'purple',fp:'silver',sourcing:'orange'};
-const workingKeys=['insurance','otoku','rakuten','lottery','sourcing'];
+const accountRoomIds={insurance:'red',otoku:'purple',rakuten:'purple',lottery:'purple',tanaka:'purple',fp:'silver',sourcing:'orange'};
+const workingKeys=['insurance','otoku','rakuten','lottery','tanaka','sourcing'];
 const roomAccounts={red:'insurance',purple:'otoku',silver:'fp',orange:'sourcing'};
-const accountPlaces={insurance:'kyun',otoku:'otoku',rakuten:'rakuten',lottery:'lottery',fp:'fp',sourcing:'shiire'};
+const accountPlaces={insurance:'kyun',otoku:'otoku',rakuten:'rakuten',lottery:'lottery',tanaka:'tanaka',fp:'fp',sourcing:'shiire'};
 const validDraftId=value=>typeof value==='string'&&value.length>0&&value.length<=1000&&!/[\u0000-\u001f\u007f]/.test(value);
 function historyRoute(state){
  if(!state||typeof state!=='object')return null;
@@ -62,7 +62,7 @@ function restoreHistoryRoute(state,{fromHistory=true,instant=true}={}){
  return true;
 }
 function openContext(place){
- const context=accountRooms[place]||null,id=({kyun:'red',choi:'purple',otoku:'purple',rakuten:'purple',lottery:'purple',fp:'silver',shiire:'orange'})[place];if(!id)return;
+ const context=accountRooms[place]||null,id=({kyun:'red',choi:'purple',otoku:'purple',rakuten:'purple',lottery:'purple',tanaka:'purple',fp:'silver',shiire:'orange'})[place];if(!id)return;
  const instant=routeOptions?.instant??true;
  if((workingPresentation||routeOptions?.working)&&phase==='room'){rememberHistory();goBack(false,true,true);}
  if(phase==='entering')goBack(false,true,true);
@@ -194,7 +194,7 @@ if(!workingPresentation&&history.state?.shireitoRoom)history.replaceState(null,'
 let worldLoading=null;
 function initializeWorld(){if(worldLoading)return worldLoading;worldLoading=(async()=>{
 try{
- const {createHybridWorld}=await import('./hybrid-world.js?v=20261031.1-lottery');
+ const {createHybridWorld}=await import('./hybrid-world.js?v=20261102.1-tanaka');
  world=await createHybridWorld({app,host:$('world'),rooms,labels,getPhase:()=>phase,getSettings:()=>settings,getWorkMarks:()=>desk?.workMarks()||[],onEnter:id=>{accountContext=null;enterRoom(id);}});
  $('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');
 }catch(error){console.error('司令塔の描画を開始できませんでした',error);app.classList.add('fallback-town');$('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');$('town-hint').textContent='看板を選んで、部屋へ'}
@@ -249,3 +249,4 @@ export function startWorkingChapter(){
  if(target.key==='fp'){workingStarted=true;const previous=routeOptions;routeOptions={initial:true,fromHistory:true,resumeDraft:target.draftId};try{accountContext=null;enterRoom('silver',true);return true;}finally{routeOptions=previous;}}
  return openWorkingChapter(target.key,{initial:true,draftId:target.draftId});
 }
+
