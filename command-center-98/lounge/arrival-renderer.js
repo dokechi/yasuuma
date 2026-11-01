@@ -1,7 +1,7 @@
 /* Optional real geometry and light. The existing application owns all routes,
    records and accessible controls. This module never reads user storage. */
 import * as T from './vendor/three-r187/court-three.js?v=20261101.5-arrival';
-import {COURT_KEYS,COURT_BUDGET,COURT_ATMOSPHERE,courtSkyPixels,fitCourtShadow,closedCourtShadowMaterial,renderDimensions,createCameraMotion,createDemandDriver,copyPose,orbitPose,focusPose,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from './arrival-camera.js?v=20261101.5-arrival';
+import {COURT_KEYS,COURT_BUDGET,COURT_ATMOSPHERE,courtSkyPixels,fitCourtShadow,closedCourtShadowMaterial,renderDimensions,createCameraMotion,createDemandDriver,createSurfaceFrames,courtSurfaceAvailable,createPresentationLeases,copyPose,orbitPose,focusPose,inspectCourtGLB,embeddedCourtURL,courtRoomAtHit,disposeCourtResources} from './arrival-camera.js?v=20261101.5-arrival';
 
 export class CourtRendererError extends Error{constructor(code,message,cause){super(message,{cause});this.name='CourtRendererError';this.code=code;}}
 const abortError=()=>new DOMException('Court initialization cancelled','AbortError');
@@ -16,15 +16,15 @@ const boundedRead=async response=>{
 export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFailure=()=>{},signal}={}){
  if(!canvas?.getContext)throw new CourtRendererError('canvas','A visible court canvas is required');
  if(signal?.aborted)throw abortError();
- const win=canvas.ownerDocument?.defaultView||globalThis,now=()=>win.performance.now();
+ const win=canvas.ownerDocument?.defaultView||globalThis,now=()=>win.performance.now(),surfaceView=()=>canvas.ownerDocument?.defaultView||win;
  const url=new URL(modelURL,import.meta.url);if(!['http:','https:'].includes(url.protocol)||url.origin!==new URL(import.meta.url).origin)throw new CourtRendererError('asset-origin','Court assets must stay on this application origin');
- let renderer=null,model=null,scene=null,sky=null,environment=null,environmentTarget=null,pmrem=null,driver=null,motion=null,camera=null,ready=false,disposed=false,contextLost=false,active=true,failureNotified=false,frameCount=0,selected=null,yaw=0,dimensions=null,projected=[];
+ let renderer=null,model=null,scene=null,sky=null,environment=null,environmentTarget=null,pmrem=null,driver=null,leases=null,motion=null,normalVersion=0,camera=null,ready=false,disposed=false,contextLost=false,active=true,failureNotified=false,frameCount=0,selected=null,yaw=0,dimensions=null,projected=[];
  let deadline=0,stopReject;const stopped=new Promise((_,reject)=>{stopReject=reject;});stopped.catch(()=>{});
  const loadAbort=new AbortController(),anchors=new Map(),homePoses=new Map(),roomPoses=new Map();
  const raycaster=new T.Raycaster(),point=new T.Vector3(),bufferSize=new T.Vector2();
  let assetInfo=null,meshTriangles=0,materialCount=0,closedShadowMaterials=0,shadowBounds=null,drawCalls=0,renderedTriangles=0,pose=null;
  function release(reason=abortError()){
-  if(disposed)return;disposed=true;active=false;ready=false;clearTimeout(deadline);loadAbort.abort();driver?.dispose();
+  if(disposed)return;disposed=true;active=false;ready=false;clearTimeout(deadline);loadAbort.abort();driver?.dispose();leases?.dispose();
   canvas.removeEventListener('webglcontextlost',lost,true);signal?.removeEventListener('abort',aborted);stopReject(reason);
   disposeCourtResources(model);model=null;anchors.clear();homePoses.clear();roomPoses.clear();sky?.dispose();sky=null;environment?.dispose();environment=null;environmentTarget?.dispose();environmentTarget=null;pmrem?.dispose();pmrem=null;
   if(scene){scene.traverse(object=>{object.shadow?.map?.dispose();object.shadow?.mapPass?.dispose();});scene.environment=null;scene.background=null;scene.clear();}
@@ -44,29 +44,33 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
  }
  const homePose=()=>copyPose(homePoses.get(dimensions?.width<=600?'phone':'wide'));
  function destinationPose(){const home=homePose();return selected?copyPose(roomPoses.get(selected)||focusPose(home,anchors.get(selected).point.toArray())):home;}
- function applyPose(value){pose=orbitPose(value,yaw);camera.position.fromArray(pose.position);camera.fov=pose.fov;camera.aspect=dimensions.width/dimensions.height;camera.lookAt(...pose.target);camera.updateProjectionMatrix();camera.updateMatrixWorld();}
+ function applyPose(value,useYaw=true){pose=useYaw?orbitPose(value,yaw):copyPose(value);camera.position.fromArray(pose.position);camera.fov=pose.fov;camera.aspect=dimensions.width/dimensions.height;camera.lookAt(...pose.target);camera.updateProjectionMatrix();camera.updateMatrixWorld();}
  function roomAt(x,y){raycaster.setFromCamera(new T.Vector2(x,y),camera);return courtRoomAtHit(raycaster.intersectObject(model,true));}
  function project(){
   projected=[...anchors].map(([key,item])=>{point.copy(item.point).project(camera);const inFrustum=point.z>=-1&&point.z<=1&&point.x>=-1&&point.x<=1&&point.y>=-1&&point.y<=1;const visible=inFrustum&&roomAt(point.x,point.y)===key;return {key,x:(point.x+1)*dimensions.width/2,y:(1-point.y)*dimensions.height/2,depth:point.z,inFrustum,visible,occluded:inFrustum&&!visible};});
   return projected.map(value=>({...value}));
  }
- function draw(time=now()){
-  if(disposed||!active||!model)return false;
+ function renderPose(value,{manual=false}={}){
+  if(disposed||!model)return false;
   try{
-   applyPose(motion.sample(time));renderer.render(scene,camera);if(renderer.getContext().isContextLost())throw new CourtRendererError('context-lost','The court graphics context is unavailable');
+   applyPose(value,!manual);renderer.render(scene,camera);if(renderer.getContext().isContextLost())throw new CourtRendererError('context-lost','The court graphics context is unavailable');
    const info=renderer.info.render;drawCalls=info.calls;renderedTriangles=info.triangles;frameCount++;
-   onFrame({rooms:project(),camera:copyPose(pose),selected});return motion.moving(time);
+   if(!manual)onFrame({rooms:project(),camera:copyPose(pose),selected});return true;
   }catch(error){fail(error instanceof CourtRendererError?error:new CourtRendererError('render','The court could not draw safely',error));return false;}
  }
+ function draw(time=now()){
+  if(disposed||!active||leases?.active()||!model||!courtSurfaceAvailable(canvas))return false;
+  return renderPose(motion.sample(time))&&motion.moving(time);
+ }
  function resize(width,height){
-  if(disposed)return false;const next=renderDimensions(width,height,win.devicePixelRatio||1),changed=!dimensions||next.width!==dimensions.width||next.height!==dimensions.height||next.pixelRatio!==dimensions.pixelRatio;
-  if(!changed)return true;dimensions=next;renderer.setPixelRatio(next.pixelRatio);renderer.setSize(next.width,next.height,false);
+  if(disposed)return false;let next=renderDimensions(width,height,surfaceView().devicePixelRatio||1);const changed=!dimensions||next.width!==dimensions.width||next.height!==dimensions.height||next.pixelRatio!==dimensions.pixelRatio;
+  if(!changed)return true;if(leases?.active()){leases.invalidate('resize');if(disposed)return false;next=renderDimensions(width,height,surfaceView().devicePixelRatio||1);}normalVersion++;dimensions=next;renderer.setPixelRatio(next.pixelRatio);renderer.setSize(next.width,next.height,false);
   if(motion){motion.to(destinationPose(),{instant:true});driver?.invalidate();}return true;
  }
  try{
-  renderer=new T.WebGLRenderer({canvas,alpha:false,antialias:true,powerPreference:'low-power',preserveDrawingBuffer:false});
+  renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power',preserveDrawingBuffer:false});
   const gl=renderer.getContext();if(!String(gl.getParameter(gl.VERSION)).includes('WebGL 2'))throw new CourtRendererError('webgl2','WebGL2 is unavailable');
-  renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=COURT_ATMOSPHERE.exposure;
+  renderer.setClearAlpha(1);renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=COURT_ATMOSPHERE.exposure;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;
   renderer.debug.onShaderError=()=>{throw new CourtRendererError('shader','A court material shader could not compile');};
   const box=canvas.getBoundingClientRect();resize(Math.max(1,box.width||canvas.clientWidth||canvas.width),Math.max(1,box.height||canvas.clientHeight||canvas.height));
@@ -99,16 +103,28 @@ export async function createCourtRenderer({canvas,modelURL,onFrame=()=>{},onFail
   // architecture only: it never claims activity or follows workflow state.
   const lamp=new T.PointLight('#ffc68a',.8,3.5,2);lamp.position.set(-5.6,2.8,-2.852);scene.add(lamp);
   await wait(renderer.compileAsync(scene,camera));alive();draw();alive();if(!frameCount)throw new CourtRendererError('first-frame','Court did not render a first frame');
-  driver=createDemandDriver({render:draw,request:callback=>win.requestAnimationFrame(callback),cancel:id=>win.cancelAnimationFrame(id)});
+  driver=createDemandDriver({render:draw,...createSurfaceFrames(surfaceView,now)});
+  leases=createPresentationLeases({
+   snapshot:()=>({room:selected,pose:copyPose(pose),width:dimensions.width,height:dimensions.height}),version:()=>normalVersion,
+   valid:()=>!disposed&&ready&&courtSurfaceAvailable(canvas),
+   suspend(state){driver.setActive(false);motion.to(state.pose,{instant:true});yaw=0;},
+   paint(value){return renderPose(value,{manual:true});},
+   restore(state){motion.to(state.pose,{instant:true});yaw=0;},
+   resume(){if(disposed)return;const available=active&&courtSurfaceAvailable(canvas);driver.setActive(available);if(available)draw();}
+  });
   ready=true;clearTimeout(deadline);
   return {
    resize,
-   select(key,{instant=false}={}){if(disposed||!anchors.has(key))return false;selected=key;yaw=0;motion.to(destinationPose(),{instant});driver.invalidate();return true;},
-   home({instant=false}={}){if(disposed)return false;selected=null;yaw=0;motion.to(homePose(),{instant});driver.invalidate();return true;},
-   nudge(deltaX){if(disposed||!Number.isFinite(deltaX))return false;yaw=Math.max(-.3,Math.min(.3,yaw+deltaX*.002));driver.invalidate();return true;},
-   setActive(value){if(disposed)return;active=!!value;if(!active)motion.settle();driver.setActive(active);},
-   pick(x,y){if(disposed||!active||!Number.isFinite(x)||!Number.isFinite(y)||Math.abs(x)>1||Math.abs(y)>1)return null;return roomAt(x,y);},
-   diagnostics(){const size=renderer?.getDrawingBufferSize(bufferSize);return {webgl2:true,ready,disposed,contextLost,active,frameCount,meshTriangles,materialCount,shadowEnabled:renderer?.shadowMap.enabled===true,shadowFilter:renderer?.shadowMap.type===T.PCFShadowMap?'pcf':'other',shadowMapSize:sun.shadow.mapSize.x,shadowRadius:sun.shadow.radius,closedShadowMaterials,shadowBounds:shadowBounds?{...shadowBounds}:null,staticShadow:sun.shadow.autoUpdate===false,doorLight:{position:lamp.position.toArray(),intensity:lamp.intensity,distance:lamp.distance,castsShadow:lamp.castShadow},atmosphere:{...COURT_ATMOSPHERE},runtimeSkyTextures:sky?1:0,runtimeSkyTexels:sky?COURT_ATMOSPHERE.skyWidth*COURT_ATMOSPHERE.skyHeight:0,drawCalls,renderedTriangles,assetTextureCount:assetInfo?.textureCount||0,assetTexels:assetInfo?.texels||0,gpuTextures:renderer?.info.memory.textures||0,assetBytes:assetInfo?.bytes||0,physicalPixels:dimensions?.physicalPixels||0,physicalWidth:size?.x||0,physicalHeight:size?.y||0,pixelRatio:dimensions?.pixelRatio||0,width:dimensions?.width||0,height:dimensions?.height||0,pendingFrame:driver?.state().pendingFrame||false,selected,camera:pose?copyPose(pose):null,projectedRooms:projected.map(value=>({...value}))};},
+   select(key,{instant=false}={}){if(disposed||!anchors.has(key))return false;normalVersion++;selected=key;yaw=0;motion.to(destinationPose(),{instant});driver.invalidate();return true;},
+   home({instant=false}={}){if(disposed)return false;normalVersion++;selected=null;yaw=0;motion.to(homePose(),{instant});driver.invalidate();return true;},
+   nudge(deltaX){if(disposed||!Number.isFinite(deltaX))return false;normalVersion++;yaw=Math.max(-.3,Math.min(.3,yaw+deltaX*.002));driver.invalidate();return true;},
+   setActive(value){if(disposed)return;active=!!value;if(!active)motion.settle();driver.setActive(active&&!leases.active()&&courtSurfaceAvailable(canvas));},
+   acquirePresentation(options){return leases.acquire(options);},
+   canPassage(){return false;},
+   prepareDoor(){return null;},
+   beginPassage(){return null;},
+   pick(x,y){if(disposed||!active||leases.active()||!Number.isFinite(x)||!Number.isFinite(y)||Math.abs(x)>1||Math.abs(y)>1)return null;return roomAt(x,y);},
+   diagnostics(){const size=renderer?.getDrawingBufferSize(bufferSize);return {webgl2:true,ready,disposed,contextLost,active,presentation:leases?.state()||{active:false},surfaceOwner:canvas.ownerDocument===win.document?'court':'adopted',frameCount,meshTriangles,materialCount,shadowEnabled:renderer?.shadowMap.enabled===true,shadowFilter:renderer?.shadowMap.type===T.PCFShadowMap?'pcf':'other',shadowMapSize:sun.shadow.mapSize.x,shadowRadius:sun.shadow.radius,closedShadowMaterials,shadowBounds:shadowBounds?{...shadowBounds}:null,staticShadow:sun.shadow.autoUpdate===false,doorLight:{position:lamp.position.toArray(),intensity:lamp.intensity,distance:lamp.distance,castsShadow:lamp.castShadow},atmosphere:{...COURT_ATMOSPHERE},runtimeSkyTextures:sky?1:0,runtimeSkyTexels:sky?COURT_ATMOSPHERE.skyWidth*COURT_ATMOSPHERE.skyHeight:0,drawCalls,renderedTriangles,assetTextureCount:assetInfo?.textureCount||0,assetTexels:assetInfo?.texels||0,gpuTextures:renderer?.info.memory.textures||0,assetBytes:assetInfo?.bytes||0,physicalPixels:dimensions?.physicalPixels||0,physicalWidth:size?.x||0,physicalHeight:size?.y||0,pixelRatio:dimensions?.pixelRatio||0,width:dimensions?.width||0,height:dimensions?.height||0,pendingFrame:driver?.state().pendingFrame||false,selected,camera:pose?copyPose(pose):null,projectedRooms:projected.map(value=>({...value}))};},
    dispose
   };
  }catch(error){fail(error,false);throw error;}

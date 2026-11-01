@@ -51,10 +51,62 @@ export function createCameraMotion(initial,now=()=>performance.now()){
  return {sample,moving:(time=now())=>duration>0&&time<started+duration,to(next,{instant=false,durationMs=680}={}){if(!validPose(next))throw Error('Invalid court camera');const time=now();from=sample(time);to=copyPose(next);started=time;duration=instant?0:clamp(finite(durationMs)?durationMs:680,1,1200);return sample(time);},settle(){duration=0;from=copyPose(to);return copyPose(to);}};
 }
 export function createDemandDriver({render,request=cb=>requestAnimationFrame(cb),cancel=id=>cancelAnimationFrame(id)}){
- let active=true,disposed=false,pending=null;
- const tick=time=>{pending=null;if(disposed||!active)return;if(render(time))invalidate();};
- function invalidate(){if(!disposed&&active&&pending===null)pending=request(tick);}
- return {invalidate,setActive(value){const next=!!value;if(disposed||next===active)return;active=next;if(!active&&pending!==null){cancel(pending);pending=null;}if(active)invalidate();},dispose(){disposed=true;active=false;if(pending!==null)cancel(pending);pending=null;},state:()=>({active,disposed,pendingFrame:pending!==null})};
+ let active=true,disposed=false,pending=null,generation=0;
+ function invalidate(){if(!disposed&&active&&pending===null){const epoch=generation;pending=request(time=>{if(epoch!==generation)return;pending=null;if(disposed||!active)return;if(render(time))invalidate();});}}
+ return {invalidate,setActive(value){const next=!!value;if(disposed||next===active)return;generation++;active=next;if(!active&&pending!==null){cancel(pending);pending=null;}if(active)invalidate();},dispose(){generation++;disposed=true;active=false;if(pending!==null)cancel(pending);pending=null;},state:()=>({active,disposed,pendingFrame:pending!==null})};
+}
+// Each RAF ticket remembers the window that created it. Canvas adoption can
+// change ownerDocument; cancelling on its new window would leave an old RAF live.
+export function courtSurfaceAvailable(canvas){return canvas?.isConnected===true&&!!canvas.ownerDocument&&!canvas.ownerDocument.hidden;}
+export function createSurfaceFrames(getView,now){
+ return {
+  request(callback){const view=getView();if(!view?.requestAnimationFrame)throw Error('Court surface has no animation owner');const ticket={view,id:null};ticket.id=view.requestAnimationFrame(()=>callback(now()));return ticket;},
+  cancel(ticket){if(ticket?.view&&ticket.id!==null)ticket.view.cancelAnimationFrame(ticket.id);}
+ };
+}
+function presentationState(value){
+ if(!value||!validPose(value.pose)||!finite(value.width)||!finite(value.height)||value.width<=0||value.height<=0||value.width>1_000_000||value.height>1_000_000||!(value.room===null||COURT_KEYS.includes(value.room)))throw Error('Invalid court presentation state');
+ const pose=copyPose(value.pose);Object.freeze(pose.position);Object.freeze(pose.target);Object.freeze(pose);
+ return Object.freeze({room:value.room,pose,width:value.width,height:value.height});
+}
+// A renderer-only exclusive lease. Its owner moves/restores the SAME DOM canvas;
+// this state machine never owns DOM, route decisions, timers, or a GL context.
+export function createPresentationLeases({snapshot,version=()=>0,valid=()=>true,suspend,paint,restore,resume}){
+ let current=null,serial=0,disposed=false,lastReason='idle';
+ function close(record,{cancelled=true,direction='in',reason='finished',notify=false,resuming=true}={}){
+  if(current!==record||!record||record.closed)return false;
+  current=null;record.closed=true;lastReason=reason;
+  if(!cancelled&&direction==='out'&&version()===record.version)try{restore(record.returnState);}catch{lastReason='restore-failed';}
+  if(notify)try{record.onInvalidated?.(reason);}catch{ /* The renderer still releases its own lease. */ }
+  if(resuming&&!disposed&&!current)resume();
+  return true;
+ }
+ function invalidate(reason='cancelled'){serial++;return close(current,{reason,notify:true});}
+ function acquire({returnState,onInvalidated}={}){
+  const intent=++serial;
+  close(current,{reason:'replaced',notify:true,resuming:false});
+  if(disposed||serial!==intent)return null;if(!valid()){if(!current)resume();return null;}
+  let start,saved;try{start=presentationState(snapshot());saved=returnState?presentationState(returnState):start;if(saved.width!==start.width||saved.height!==start.height)throw Error('Changed court return viewport');}catch{if(!current&&!disposed)resume();return null;}
+  const record={id:intent,version:version(),start,returnState:saved,onInvalidated,closed:false,paintCount:0};
+  current=record;lastReason='leased';
+  try{suspend(start);}catch{close(record,{reason:'suspend-failed',notify:true});return null;}
+  if(current!==record||disposed)return null;
+  return Object.freeze({
+   id:record.id,returnState:saved,
+   paintPose(pose,{width=start.width,height=start.height}={}){
+    if(current!==record||record.closed||disposed)return false;
+    if(!validPose(pose)){invalidate('invalid-pose');return false;}
+    if(width!==start.width||height!==start.height){invalidate('resize');return false;}
+    if(!valid()){invalidate('surface-unavailable');return false;}
+    let drawn=false;try{drawn=paint(copyPose(pose),{width,height})!==false;}catch{drawn=false;}
+    if(current!==record||record.closed||disposed)return false;
+    if(!drawn){invalidate('paint-failed');return false;}
+    record.paintCount++;return true;
+   },
+   finish({cancelled=true,direction='in'}={}){return close(record,{cancelled:!!cancelled,direction,reason:cancelled?'cancelled':'finished'});}
+  });
+ }
+ return {acquire,invalidate,active:()=>!!current,state:()=>current?{active:true,id:current.id,room:current.returnState.room,paintCount:current.paintCount,width:current.start.width,height:current.start.height}:{active:false,reason:lastReason},dispose(){if(disposed)return;disposed=true;serial++;close(current,{reason:'disposed',notify:true,resuming:false});}};
 }
 function imageDimensions(bytes,mime){
  const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
