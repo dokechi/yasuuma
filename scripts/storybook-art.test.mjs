@@ -5,7 +5,7 @@ const source = fs.readFileSync(path, 'utf8');
 const art = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
 class El {
   constructor(tag) { this.tag = tag; this.style = {setProperty: (k,v) => {this.style[k]=v}}; this.dataset={}; this.children=[]; this.attributes={}; }
-  setAttribute(k,v) {this.attributes[k]=v;} append(e) {this.children.push(e);} replaceChildren() {this.children=[];}
+  addEventListener(k,fn) {(this.events??={})[k]=fn;} setAttribute(k,v) {this.attributes[k]=v;} append(e) {this.children.push(e);} replaceChildren() {this.children=[];}
 }
 const document={createElement:t=>new El(t),createElementNS:(_,t)=>new El(t)};
 const bbox=[611,49,1529,1001];
@@ -23,7 +23,7 @@ for (const [layout,aspect,count] of [['legacy',4/3,6],['spread',2,5],['page',1/1
       assert(!/\bid\s*=|href\s*=|<filter|<text|<image/i.test(node.innerHTML));
     }
   }
-  const actor=root.children.find(p=>p.dataset.prop==='adviser-and-desk');
+  const actor=root.children.find(p=>p.dataset.prop==='adviser-and-desk');const image=actor.children[0];image.events.error();assert.equal(image.hidden,true);assert.equal(root.dataset.artState,'fallback');
   for(const [width,height] of [[1200,460],[712,240],[342,400],[290,320]]) {
     const W=Math.min(width,height*aspect),H=W/aspect;
     const n=k=>parseFloat(actor.style[k])/100;

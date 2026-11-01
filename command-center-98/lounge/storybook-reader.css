@@ -56,7 +56,7 @@ body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial
   position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; aspect-ratio: 1 / 1.05; opacity: 1;
 }
 body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-desk-actor {
-  left: -40%; top: 1%; bottom: auto; width: 140%; height: 97%; z-index: 1;
+  left: var(--story-actor-x,-40%); top: var(--story-actor-y,1%); bottom: auto; width: var(--story-actor-w,140%); height: var(--story-actor-h,97%); z-index: 1;
   object-fit: contain; object-position: center; filter: none;
   -webkit-mask-image: none; mask-image: none;
 }

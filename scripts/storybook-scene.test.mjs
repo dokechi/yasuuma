@@ -78,7 +78,8 @@ test('owner visits synchronize selection while ordinary status updates do not un
 });
 
 test('unknown totals stay unknown, available local counts are scoped, and sourcing invents no inventory',t=>{
- const h=setup(t),readState=h.$('.story-read-state');assert.equal(readState.open,false);readState.querySelector('summary').click();assert.equal(readState.open,true);assert.ok(readState.contains(h.$('.story-memo')));assert.ok(readState.contains(h.$('.story-status')));assert.match(h.$('.story-memo p').textContent,/未確認/);assert.doesNotMatch(h.$('.story-memo p').textContent,/0本/);
+ const h=setup(t),readState=h.$('.story-read-state');assert.equal(readState.open,false);assert.equal(readState.querySelector('summary').textContent,'読取未確認');readState.querySelector('summary').click();assert.equal(readState.open,true);assert.ok(readState.contains(h.$('.story-memo')));assert.ok(readState.contains(h.$('.story-status')));assert.match(h.$('.story-memo p').textContent,/未確認/);assert.doesNotMatch(h.$('.story-memo p').textContent,/0本/);
+ h.emit({loading:true});assert.equal(readState.querySelector('summary').textContent,'読込中');h.emit({loading:false,complete:true});assert.equal(readState.querySelector('summary').textContent,'読取状況');h.emit({complete:false,message:'保存原稿の読取に失敗しました。'});assert.equal(readState.querySelector('summary').textContent,'読取未確認');
  h.scene.setLivingStatus({rooms:[{key:'insurance',totalCount:null,loadedCount:2,unreadCount:1}]});
  assert.match(h.$('.story-memo p').textContent,/利用できる保存原稿 2本/);assert.match(h.$('.story-memo p').textContent,/全体は未確認/);
  h.scene.setLivingStatus({rooms:[{key:'insurance',totalCount:0,loadedCount:0,unreadCount:0}]});

@@ -183,6 +183,7 @@ export function buildStorybookArt({ document, key, actorURL, layout = 'legacy' }
     actor.replaceChildren();
     const img = document.createElement('img');
     img.className = 'story-actor-image';
+    img.addEventListener('error', () => { img.hidden = true; root.dataset.artState = 'fallback'; }, {once: true});
     img.src = actorURL;
     img.alt = '';
     img.width = 1536;

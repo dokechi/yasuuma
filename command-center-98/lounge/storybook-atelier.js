@@ -13,7 +13,10 @@ function decorateRoom(){
  if(!host)return;
  try{
   if(decoratedKey!==key||!host.querySelector('.story-paper-art')){
+   const stage=room.querySelector('.spatial-illustration-stage');for(const name of ['x','y','w','h'])stage?.style.removeProperty('--story-actor-'+name);
    const art=makeArt({document,key,actor:false,layout:'page'});host.replaceChildren(...(art?[art]:[]));decoratedKey=key;
+   const coords=['X','Y','W','H'].map(name=>Number(art?.dataset['storyActor'+name]));
+   if(coords.every(Number.isFinite)&&coords.every(n=>n>=-100&&n<=200)&&coords[2]>0&&coords[3]>0)for(const [i,name]of ['x','y','w','h'].entries())stage?.style.setProperty('--story-actor-'+name,coords[i]+'%');
   }
   room.dataset.storyRoom=key;
   const actor=room.querySelector('.spatial-desk-actor'),failed=!!actor?.complete&&!actor.naturalWidth;

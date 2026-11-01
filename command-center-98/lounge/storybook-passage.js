@@ -54,8 +54,30 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
   const content=target.createElement('div');content.className='story-passage-book-content';Object.assign(content.style,{position:'absolute',inset:'0',overflow:'hidden',borderRadius:win.getComputedStyle(spread.querySelector('.story-chapter-page')||spread).borderRadius,zIndex:'2',pointerEvents:'none'});book.append(content);
   return {node:book,content,rect:r};
  }
- function freshArt(room,actor,intent){
-  const node=typeof buildArt==='function'?buildArt({document:target,key:room,actor}):actor?intent?.makeScene?.(target)||scene.makeScene?.(target,room):null;
+ function readerBookAt(roomNode,page){
+  const r=boxOf(roomNode);if(!r)return;
+  // Pseudo leaves are decorative CSS, not live controls or manuscript nodes.
+  // Copy their resolved coordinates/materials inside the actual room box. This
+  // also preserves the intentionally simpler phone binding without inventing
+  // a second leaf or an illustration which the real reader does not display.
+  const properties='top right bottom left width height min-width min-height max-width max-height box-sizing border-top border-right border-bottom border-left border-radius background-color background-image background-position background-size background-repeat box-shadow opacity transform transform-origin';
+  for(const [pseudo,part]of [['::before','leaves'],['::after','binding']]){
+   const style=win.getComputedStyle(roomNode,pseudo);
+   if(!style.content||['none','normal'].includes(style.content)||style.display==='none'||style.visibility==='hidden'||style.position!=='absolute')continue;
+   const boundary=target.createElement('div');boundary.className='story-passage-reader-boundary';
+   Object.assign(boundary.style,{position:'absolute',left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',pointerEvents:'none',zIndex:part==='binding'?'3':'0'});
+   const leaf=target.createElement('div');leaf.className='story-passage-reader-'+part;leaf.dataset.readerBookPart=part;
+   Object.assign(leaf.style,{position:'absolute',pointerEvents:'none'});
+   for(const property of properties.split(' ')){const value=style.getPropertyValue(property);if(value)leaf.style.setProperty(property,value);}
+   boundary.append(leaf);page.append(boundary);
+  }
+ }
+ function hiddenReaderIllustration(roomNode,artHost,live){
+  const stage=artHost?.closest('.spatial-illustration-stage');
+  return win.innerWidth<=600&&roomNode?.dataset.storyScene==='ready'&&!!live&&!!stage&&roomNode.contains(stage)&&win.getComputedStyle(stage).display==='none';
+ }
+ function freshArt(room,actor,intent,layout){
+  const node=typeof buildArt==='function'?buildArt({document:target,key:room,actor,...(layout?{layout}:{})}):actor?intent?.makeScene?.(target)||scene.makeScene?.(target,room):null;
   if(!node||node.ownerDocument!==target||node.isConnected||node.parentNode||node.classList.contains('story-paper-fallback'))return null;
   // These are fresh decorative images of assets already painted on screen.
   // Sync decoding is only a hint, never an awaited work-route dependency.
@@ -66,14 +88,16 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
  function pageAt(room,bounds,{home=false,intent}={}){
   const roomNode=doc.querySelector('#room'),artHost=home?scene.element.querySelector('.story-art-host'):roomNode?.querySelector('.spatial-study-scene');
   const live=artHost?.querySelector('.story-paper-art'),r=boxOf(live),container=boxOf(artHost);
-  if(!r||!container||!imagesPainted(live))return null;
-  const art=freshArt(room,home,intent);if(!art)return null;
+  const intentionallyHidden=!home&&hiddenReaderIllustration(roomNode,artHost,live);
+  if(!intentionallyHidden&&(!r||!container||!imagesPainted(live)))return null;
   const page=rootPage(color(home?scene.element:roomNode)),book=home?bookAt():null;if(home&&!book)return null;
-  if(book)page.append(book.node);
+  if(book)page.append(book.node);else readerBookAt(roomNode,page);
+  if(intentionallyHidden)return page;
+  const art=freshArt(room,home,intent,live.dataset.storyLayout);if(!art)return null;
   const position=target.createElement('div');position.className='story-passage-art-position';
   // Geometry is child-viewport relative; the full parent-frame surface supplies
   // its one translation. Preserve every prop's own transform and coordinates.
-  Object.assign(position.style,{position:'absolute',left:(r.left-(book?.rect.left||0))+'px',top:(r.top-(book?.rect.top||0))+'px',width:r.width+'px',height:r.height+'px',pointerEvents:'none',perspective:'1000px',transformStyle:'preserve-3d'});
+  Object.assign(position.style,{position:'absolute',left:(r.left-(book?.rect.left||0))+'px',top:(r.top-(book?.rect.top||0))+'px',width:r.width+'px',height:r.height+'px',zIndex:'1',pointerEvents:'none',perspective:'1000px',transformStyle:'preserve-3d'});
   Object.assign(art.style,{width:'100%',height:'100%',margin:'0'});position.append(art);(book?.content||page).append(position);return page;
  }
  function capture(room,bounds){

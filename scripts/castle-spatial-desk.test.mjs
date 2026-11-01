@@ -359,7 +359,7 @@ test('storybook paper preserves readable text, actionable controls, hidden state
   assert.ok(all.some(r => r.style.getPropertyValue('--sb-reader-inset').startsWith('112px')));
   assert.ok(rulesFor(' .spatial-illustration-stage').some(r => r.style.getPropertyValue('display') === 'none'), 'mobile omits the tiny decorative cameo');
   assert.ok(rulesFor(' .living-toggle').some(r => r.style.getPropertyValue('width') === '76px' && r.style.getPropertyValue('white-space') === 'nowrap'), 'the two-character tool label remains horizontal');
-  assert.ok(rulesFor(' .spatial-desk-actor').some(r => r.style.getPropertyValue('left') === '-40%' && r.style.getPropertyValue('width') === '140%'), 'actor and page art use the same authored canvas coordinates');
+  assert.ok(rulesFor(' .spatial-desk-actor').some(r => r.style.getPropertyValue('left') === 'var(--story-actor-x,-40%)' && r.style.getPropertyValue('width') === 'var(--story-actor-w,140%)'), 'actor and page art use the same authored canvas coordinates');
   const hidden = all.find(r => r.selectorText === 'body.storybook-atelier [hidden]');
   assert.equal(hidden.style.getPropertyValue('display'), 'none'); assert.equal(hidden.style.getPropertyPriority('display'), 'important');
   assert.equal(all.find(r => r.selectorText === 'body.storybook-atelier').style.getPropertyValue('--storybook-reader-ready'), '1');
