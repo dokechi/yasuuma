@@ -56,7 +56,12 @@ const server=http.createServer((req,res)=>{
   }
   await lounge.locator('[data-story-chapter=insurance]').click();await lounge.locator('.story-art-host .story-actor-image').evaluate(image=>image.decode());
   await page.frames().find(f=>f.url().includes('/lounge/')).evaluate(async()=>{await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
-  assert.equal(await lounge.locator('[data-story-destination]:visible').count(),8,'all eight original destinations remain represented in the working book');assert.equal(await lounge.locator('[data-story-destination]:disabled').count(),3);assert.equal(await lounge.locator('[data-story-destination]:not(:disabled)').count(),5);
+  assert.equal(await lounge.locator('[data-story-destination]').count(),8,'all eight original destinations remain represented');assert.equal(await lounge.locator('[data-story-destination]:visible').count(),5,'the main book shows the five active chapters');
+  const preparing=lounge.locator('.story-preparing');assert.equal(await preparing.evaluate(node=>node.open),false);await preparing.locator('summary').click();
+  const pending=await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(node=>({name:node.getAttribute('aria-label'),disabled:node.disabled,height:node.getBoundingClientRect().height})));assert.deepEqual(pending.map(node=>node.name),['追加アカウント5、未設定','追加アカウント6、未設定','予備、未設定']);assert.ok(pending.every(node=>node.disabled&&node.height>=44));
+  const selectedBefore=await lounge.locator('.storybook').getAttribute('data-story-room');await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.forEach(node=>node.click()));
+  assert.equal(await lounge.locator('.storybook').getAttribute('data-story-room'),selectedBefore);assert.equal(await lounge.locator('.account-board').evaluate(node=>node.hidden),false);assert.equal(await lounge.locator('#room').evaluate(node=>node.hidden),true);
+  await preparing.locator('summary').click();assert.equal(await lounge.locator('[data-story-destination]:visible').count(),5);
   await page.screenshot({path:path.join(out,`${width}-${height}-host-home.png`)});
   const frameRect=await page.locator('#ccCastleFrame').boundingBox(),barRect=await page.locator('#requestProgressShortcut').boundingBox();
   assert.ok(frameRect.y>=barRect.y+barRect.height);assert.ok(Math.abs(frameRect.y-52)<=1,'the actual host reserves its 52px request rail');assert.ok((await page.locator('#requestProgressOpen').boundingBox()).height>=44);

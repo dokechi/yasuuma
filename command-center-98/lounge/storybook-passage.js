@@ -31,6 +31,29 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
  function cancel(){epoch++;trip=null;forget();win.cancelAnimationFrame(raf);raf=0;journey.cancel();}
  function rootPage(color){const page=target.createElement('div');page.className='story-passage-page';page.inert=true;page.setAttribute('aria-hidden','true');Object.assign(page.style,{position:'absolute',inset:'0',overflow:'hidden',background:color||'#F7F8F2',pointerEvents:'none'});return page;}
  function color(node){const value=win.getComputedStyle(node).backgroundColor;return value&&value!=='transparent'&&value!=='rgba(0, 0, 0, 0)'?value:'#F7F8F2';}
+ function bookAt(){
+  const spread=scene.element.querySelector('.story-spread'),r=boxOf(spread);if(!r)return null;
+  const book=target.createElement('div');book.className='story-passage-book';
+  const style=win.getComputedStyle(spread),palette=win.getComputedStyle(scene.element);
+  const copy=(from,to,properties)=>{for(const property of properties.split(' ')){const value=from.getPropertyValue(property);if(value)to.style.setProperty(property,value);}};
+  Object.assign(book.style,{position:'absolute',left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',boxSizing:'border-box',isolation:'isolate',pointerEvents:'none',backgroundColor:color(spread)});
+  copy(style,book,'border-top border-right border-bottom border-left border-radius box-shadow filter');
+  for(const [side,pseudo]of [['left','::before'],['right','::after']]){
+   const leaf=target.createElement('div');leaf.className='story-passage-book-leaf';leaf.dataset.bookLeaf=side;
+   const material=win.getComputedStyle(spread,pseudo);
+   Object.assign(leaf.style,{position:'absolute',top:'0',bottom:'0',left:side==='left'?'0':'50%',width:'50%',boxSizing:material.boxSizing||'border-box',zIndex:'0',pointerEvents:'none',backgroundColor:style.getPropertyValue('--story-'+side).trim()||palette.getPropertyValue('--story-'+side).trim()||'#F7F8F2'});
+   copy(material,leaf,'border-top border-right border-bottom border-left border-radius box-shadow');book.append(leaf);
+  }
+  const liveBinding=spread.querySelector('.story-binding'),br=boxOf(liveBinding);
+  if(br){
+   const binding=target.createElement('div');binding.className='story-passage-book-binding';
+   Object.assign(binding.style,{position:'absolute',left:br.left-r.left+'px',top:br.top-r.top+'px',width:br.width+'px',height:br.height+'px',boxSizing:'border-box',zIndex:'1',pointerEvents:'none'});
+   copy(win.getComputedStyle(liveBinding),binding,'background-color background-image border-top border-right border-bottom border-left box-shadow');
+   const stitching=target.createElement('div');stitching.className='story-passage-book-stitching';Object.assign(stitching.style,{position:'absolute',inset:'22px 3px',pointerEvents:'none'});copy(win.getComputedStyle(liveBinding,'::after'),stitching,'background-color background-image');binding.append(stitching);book.append(binding);
+  }
+  const content=target.createElement('div');content.className='story-passage-book-content';Object.assign(content.style,{position:'absolute',inset:'0',overflow:'hidden',borderRadius:win.getComputedStyle(spread.querySelector('.story-chapter-page')||spread).borderRadius,zIndex:'2',pointerEvents:'none'});book.append(content);
+  return {node:book,content,rect:r};
+ }
  function freshArt(room,actor,intent){
   const node=typeof buildArt==='function'?buildArt({document:target,key:room,actor}):actor?intent?.makeScene?.(target)||scene.makeScene?.(target,room):null;
   if(!node||node.ownerDocument!==target||node.isConnected||node.parentNode||node.classList.contains('story-paper-fallback'))return null;
@@ -45,12 +68,13 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
   const live=artHost?.querySelector('.story-paper-art'),r=boxOf(live),container=boxOf(artHost);
   if(!r||!container||!imagesPainted(live))return null;
   const art=freshArt(room,home,intent);if(!art)return null;
-  const page=rootPage(color(home?scene.element:roomNode));
+  const page=rootPage(color(home?scene.element:roomNode)),book=home?bookAt():null;if(home&&!book)return null;
+  if(book)page.append(book.node);
   const position=target.createElement('div');position.className='story-passage-art-position';
   // Geometry is child-viewport relative; the full parent-frame surface supplies
   // its one translation. Preserve every prop's own transform and coordinates.
-  Object.assign(position.style,{position:'absolute',left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px',pointerEvents:'none'});
-  Object.assign(art.style,{width:'100%',height:'100%',margin:'0'});position.append(art);page.append(position);return page;
+  Object.assign(position.style,{position:'absolute',left:(r.left-(book?.rect.left||0))+'px',top:(r.top-(book?.rect.top||0))+'px',width:r.width+'px',height:r.height+'px',pointerEvents:'none',perspective:'1000px',transformStyle:'preserve-3d'});
+  Object.assign(art.style,{width:'100%',height:'100%',margin:'0'});position.append(art);(book?.content||page).append(position);return page;
  }
  function capture(room,bounds){
   const liveRoom=doc.querySelector('#room');if(liveRoom?.hidden||liveRoom?.dataset.account!==room||liveRoom.dataset.spatialDesk!=='ready')return null;
@@ -115,7 +139,7 @@ export function createStorybookPassage({document:doc,scene,board,spatialDesk,bui
  const observer=new win.MutationObserver(onBoard);observer.observe(panel,{attributes:true,attributeFilter:['hidden','data-view']});
  listen(target,'storybook:journey-end',event=>{
   if(event.detail?.direction!=='in'||!trip||event.detail.room!==trip.room)return;
-  if(event.detail.cancelled){trip=null;forget();}else trip.arrived=true;
+  if(event.detail.cancelled){trip=null;forget();}else{trip.token=null;trip.arrived=true;}
  });
  listen(doc,'click',beforeExit,true);listen(win,'popstate',beforeExit,true);
  const escape=event=>{if(event.key==='Escape'&&journey.state().active){event.preventDefault();event.stopImmediatePropagation();cancel();return;}if(event.currentTarget===doc)beforeExit(event);};

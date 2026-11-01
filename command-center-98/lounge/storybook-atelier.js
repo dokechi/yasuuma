@@ -4,7 +4,7 @@ import {mountStorybook,storyChapters} from './storybook-scene.js?v=20261101.8-st
 const board=application.getAccountBoard();
 let scene,desk,passage,artBuilder=null,living=null,destroyed=false;
 const actorURL=new URL('./assets/storybook-insurance-actor-v1.webp',import.meta.url).href;
-const makeArt=({document:target,key,actor=true})=>artBuilder?.({document:target,key,actorURL:actor&&key==='insurance'?actorURL:null})||null;
+const makeArt=({document:target,key,actor=true,layout=actor?(window.innerWidth>600?'spread':'page'):undefined})=>artBuilder?.({document:target,key,layout,actorURL:actor&&key==='insurance'?actorURL:null})||null;
 const room=document.getElementById('room');
 const supplementary=document.createElement('button');supplementary.type='button';supplementary.className='system-action';supplementary.id='storybook-fp';supplementary.textContent='FP・TikTok の保存原稿';supplementary.addEventListener('click',()=>{document.getElementById('settings').close();application.openSupplementaryReader('fp');});document.querySelector('.system-management')?.append(supplementary);
 board?.element.addEventListener('click',event=>{if(event.target.closest?.('.board-lounge')){event.preventDefault();event.stopImmediatePropagation();document.getElementById('settings-open').click();}},true);

@@ -18,3 +18,6 @@
 .storybook-journey-fold:after{content:"";position:absolute;left:0;right:0;bottom:8px;height:2px;background:var(--page-accent);opacity:.55}
 .storybook-journey-edge{position:absolute;z-index:5;inset:0;border:1px solid #173A3555;box-shadow:inset 0 -3px #173A3515;opacity:0}
 @media(prefers-reduced-motion:reduce){.storybook-journey{display:none!important}}
+/* Equal-size decorative hinge carriers keep each prop's own authored placement
+   and static tilt intact. They are never added to live or captured manuscripts. */
+.storybook-journey-prop-hinge{transform-style:preserve-3d;backface-visibility:hidden;will-change:transform;pointer-events:none}

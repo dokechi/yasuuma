@@ -1,0 +1,152 @@
+/* Normal-motion proof of the new DEFAULT book in the real production host. Synthetic data only.
+   No iframe URL substitution, production login, remote request or source write. */
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
+const {chromium}=require('playwright-core');
+const {PNG}=require('pngjs');
+const root=path.resolve(__dirname,'..'),out=path.join(root,'artifacts/storybook-motion');
+const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg'};
+const accounts=['insurance','otoku','rakuten','lottery'];
+const titles={insurance:'保険の保存原稿 一',otoku:'お得の保存原稿',rakuten:'楽天犬の保存原稿',lottery:'抽選の保存原稿'};
+const rows=[...accounts.map((key,i)=>({id:951+i,taskId:key+'-threads-v1',eventKey:'storybook-'+key,title:titles[key],occurredAt:'2026-10-31T08:00:00Z',domain:'money',payload:{draft:key+' の合成原稿です。保存条件と出典を確認します。\n\n'+'コピーだけで投稿済みにはしません。この原稿は同じ部屋の机から読み、履歴とお気に入りは既存の記録を使います。\n\n'.repeat(12),date:'2026-10-31',review_status:'検証専用の下書き',sources_note:'合成データ・送信不可'}})),{id:955,taskId:'insurance-threads-v1',eventKey:'storybook-insurance-two',title:'保険の保存原稿 二',occurredAt:'2026-10-30T08:00:00Z',domain:'money',payload:{draft:'insurance 二つ目の合成原稿です。\n\n'+'別の原稿を選んでも出典IDとアカウントを保ちます。\n\n'.repeat(12),date:'2026-10-30',review_status:'検証専用の下書き'}}];
+const fixtureScript=`(()=>{
+ const rows=${JSON.stringify(rows)};__rpgQA.threads.events.push(...rows);
+ window.__storybookRecords={original:JSON.stringify(rows),ids:rows.map(r=>r.id),requests:[],external:[],messages:[]};
+ // Parser-installed after the real loader's document.open(), which erases
+ // earlier Window listeners. Observe the real bridge; never synthesize a ready.
+ window.addEventListener('message',event=>{const frame=document.getElementById('ccCastleFrame');if(event.origin===location.origin&&frame&&event.source===frame.contentWindow&&event.data?.channel==='cc-castle-v1')__storybookRecords.messages.push({type:event.data.type,active:event.data.active,action:event.data.action});});
+ window.open=(...args)=>{__storybookRecords.external.push(args);return null;};
+ const previous=window.fetch;
+ window.fetch=async(input,options={})=>{
+  const url=new URL(input instanceof URL?input.href:typeof input==='string'?input:input.url,location.href),method=(options.method||input?.method||'GET').toUpperCase();
+  __storybookRecords.requests.push({url:url.href,method});
+  const json=data=>new Response(JSON.stringify(data),{status:200,headers:{'Content-Type':'application/json'}});
+  if(method==='GET'&&url.searchParams.get('resource')==='task-events'&&rows.some(r=>r.taskId===url.searchParams.get('taskId')))return json({ok:true,events:rows.filter(r=>r.taskId===url.searchParams.get('taskId')),nextOffset:null});
+  if(method==='GET'&&url.searchParams.get('resource')==='threads-images')return json({ok:true,id:url.searchParams.get('id'),accountKey:url.searchParams.get('accountKey'),manifest:{contract:'threads-post-images-v1',revision:0,images:[]},assets:[]});
+  return previous(input,options);
+ };
+})();`;
+const server=http.createServer((req,res)=>{
+ if(!['GET','HEAD'].includes(req.method))return res.writeHead(405).end();
+ const relative=new URL(req.url,'http://localhost').pathname,file=path.resolve(root,'.'+relative);
+ if(!file.startsWith(root+path.sep))return res.writeHead(403).end();
+ fs.readFile(file,(error,bytes)=>{
+  if(error)return res.writeHead(404).end();let content=bytes;
+  if(relative==='/command-center-98/app.html')content=bytes.toString().replace('<head>','<head><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script><script>'+fixtureScript+'</script>');
+  if(relative==='/scripts/ui-fixtures.js')content=bytes.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
+  res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'}).end(content);
+ });
+});
+const matrix=[[320,640],[390,900],[800,648],[1440,900]],requestedWidth=Number(process.env.STORY_WIDTH||0),requestedHeight=Number(process.env.STORY_HEIGHT||0);
+const sizes=requestedWidth?matrix.filter(([w,h])=>w===requestedWidth&&h===requestedHeight):matrix;
+assert.ok(sizes.length,'only declared actual-host viewport pairs may run');
+const artifact=path.join(out,requestedWidth?`${requestedWidth}-${requestedHeight}`:'all');
+// Test-only observation and ordinary WAAPI pausing. No controller method/state,
+// route, cache, source payload, viewport or production clock is replaced.
+function probe(){
+ const qa=window.__storyMotion||=( {freezeNext:false,mounts:[],events:[],clipboard:[],audio:[],messages:[]} );
+ if(qa.lifecycle)for(const type of ['storybook:journey-start','storybook:journey-end'])document.removeEventListener(type,qa.lifecycle);
+ qa.lifecycle=event=>qa.events.push({type:event.type,...event.detail,time:performance.now()});
+ for(const type of ['storybook:journey-start','storybook:journey-end'])document.addEventListener(type,qa.lifecycle);
+ qa.observer?.disconnect();qa.observer=new MutationObserver(records=>{for(const record of records)for(const node of record.addedNodes){
+  if(node.nodeType!==1||!node.matches('.storybook-journey'))continue;
+  qa.mounts.push({room:node.dataset.room,direction:node.dataset.direction,time:performance.now()});
+  if(qa.freezeNext){qa.freezeNext=false;for(const animation of node.getAnimations({subtree:true})){animation.pause();animation.currentTime=0;}}
+ }});qa.observer.observe(document,{childList:true,subtree:true});
+ if(qa.message)window.removeEventListener('message',qa.message);qa.message=event=>{if(event.origin===location.origin&&event.data?.channel==='cc-castle-v1')qa.messages.push({type:event.data.type,active:event.data.active,action:event.data.action});};window.addEventListener('message',qa.message);
+ if(qa.sourceClick)document.removeEventListener('click',qa.sourceClick,true);
+ qa.sources||=[];qa.sourceClick=event=>{if(window===parent||!event.target.closest?.('[data-story-open]'))return;const offset=frameElement.getBoundingClientRect(),art=document.querySelector('.story-art-host .story-paper-art');if(!art)return;const rect=node=>{const r=node.getBoundingClientRect();return {left:r.left+offset.left,top:r.top+offset.top,width:r.width,height:r.height};};qa.sources.push({art:rect(art),props:[...art.querySelectorAll('.story-prop')].map(node=>({key:node.dataset.prop,rect:rect(node),transform:getComputedStyle(node).transform,rotate:getComputedStyle(node).rotate,translate:getComputedStyle(node).translate,scale:getComputedStyle(node).scale})),frame:{left:offset.left,top:offset.top,width:offset.width,height:offset.height}});};document.addEventListener('click',qa.sourceClick,true);
+ if(qa.patched)return;qa.patched=true;
+ if(navigator.clipboard?.writeText){const write=navigator.clipboard.writeText.bind(navigator.clipboard);navigator.clipboard.writeText=text=>{qa.clipboard.push(String(text));return write(text);};}
+ const play=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){qa.audio.push({kind:'media',src:this.currentSrc||this.src});return play.apply(this,arguments);};
+ for(const name of ['OscillatorNode','AudioBufferSourceNode']){const proto=window[name]?.prototype;if(typeof proto?.start==='function'){const start=proto.start;proto.start=function(){qa.audio.push({kind:name});return start.apply(this,arguments);};}}
+}
+function pixelDifference(a,b,bounds){const p=PNG.sync.read(a),q=PNG.sync.read(b);assert.equal(p.width,q.width);assert.equal(p.height,q.height);let changed=0,max=0,pixels=0;for(let y=Math.max(2,Math.ceil(bounds.top)+2);y<Math.min(p.height-2,Math.floor(bounds.top+bounds.height)-2);y++)for(let x=Math.max(2,Math.ceil(bounds.left)+2);x<Math.min(p.width-2,Math.floor(bounds.left+bounds.width)-2);x++){const at=(y*p.width+x)*4;let delta=0;for(let c=0;c<4;c++)delta=Math.max(delta,Math.abs(p.data[at+c]-q.data[at+c]));if(delta)changed++;max=Math.max(max,delta);pixels++;}return {changedPixels:changed,maxDifference:max,comparedPixels:pixels};}
+const delta=(a,b)=>Math.max(...['left','top','width','height'].map(key=>Math.abs(a[key]-b[key])));
+(async()=>{
+ fs.mkdirSync(artifact,{recursive:true});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const origin='http://127.0.0.1:'+server.address().port,browser=await chromium.launch({channel:'chromium',headless:true,args:['--no-sandbox']});
+ const results=[],save=()=>fs.writeFileSync(path.join(artifact,'results.json'),JSON.stringify({scope:'actual-default insurance page motion; other four destinations true-instant; full chapter art/motion still separate',results},null,2));
+ try{for(const [width,height]of sizes){
+  const context=await browser.newContext({viewport:{width,height},hasTouch:width<=800,reducedMotion:'no-preference',serviceWorkers:'block',permissions:['clipboard-read','clipboard-write']});await context.addInitScript(probe);
+  const page=await context.newPage(),result={width,height,checks:[],frames:[],errors:[],blocked:[],requests:[]};results.push(result);
+  const check=(name,pass,detail)=>{result.checks.push({name,pass:!!pass,...(detail===undefined?{}:{detail})});save();assert.ok(pass,name+(detail===undefined?'':': '+JSON.stringify(detail)));};
+  const screenshot=async name=>{const file=`${width}-${height}-${name}.png`;await page.screenshot({path:path.join(artifact,file)});result.frames.push({name,file});save();};
+  page.on('pageerror',error=>result.errors.push(error.message));page.on('request',request=>result.requests.push(request.url()));
+  await context.route('**/*',route=>{const request=route.request();if(new URL(request.url()).origin===origin&&['GET','HEAD'].includes(request.method()))return route.continue();result.blocked.push({url:request.url(),method:request.method()});return route.abort();});
+  try{
+   await page.goto(origin+'/command-center-98/app-v130.html');await page.waitForFunction(()=>window.CCCastle?.unified&&!document.getElementById('ccCastleFrame').hidden);
+   // app-loader uses document.open/write. Reattach only observation after boot;
+   // retain the pre-boot audio audit and all original production globals.
+   await page.evaluate(probe);
+   const f=page.frameLocator('#ccCastleFrame');await f.locator('.storybook[data-ready=true]').waitFor({state:'visible'});
+   const cf=page.frames().find(frame=>new URL(frame.url()).pathname==='/command-center-98/lounge/index.html');assert.ok(cf,'actual unmodified default frame');
+   await f.locator('.account-board[data-state=ready]').waitFor();
+   await cf.waitForFunction(()=>window.__storybook?.snapshot().journey!==null&&window.__storybook?.snapshot().chapterReady==='ready');
+   await cf.evaluate(async()=>{await document.fonts.ready;await Promise.all([...document.querySelectorAll('.story-art-host img')].map(image=>image.decode()));});
+   check('new default motion boot has no archived 3D renderer, model or second iframe',await page.locator('#ccCastleFrame').count()===1&&!result.requests.some(url=>/\/arrival-(entry|atelier|renderer|camera)\.js|three-r187|arrival-court-v1\.glb/.test(url)),result.requests.filter(url=>/arrival-|three-r187/.test(url)));
+   check('OS and app normal motion are actually enabled',await cf.evaluate(()=>!matchMedia('(prefers-reduced-motion: reduce)').matches&&!document.getElementById('reduce-setting').checked));
+   const identity=await cf.evaluateHandle(()=>({paper:document.getElementById('desk'),body:document.getElementById('draft-body'),copy:document.getElementById('desk-copy'),board:document.querySelector('.account-board'),book:document.querySelector('.storybook')}));
+   const home=()=>f.locator('.account-board:not([hidden])').waitFor({state:'visible'}),none=()=>page.locator('.storybook-journey').waitFor({state:'detached'});
+   const mountCount=()=>page.evaluate(()=>__storyMotion.mounts.length);
+   const waitRoom=async key=>{await f.locator(`#room[data-account=${key}][data-spatial-desk=ready]`).waitFor({state:'visible'});await f.locator('#draft-body').waitFor({state:'visible'});if(key==='insurance')await f.locator('#room[data-story-scene=ready]').waitFor();};
+   const preserve=async label=>check(label+' retains the original board, book and reader DOM owners',await cf.evaluate(nodes=>nodes.paper===document.getElementById('desk')&&nodes.body===document.getElementById('draft-body')&&nodes.copy===document.getElementById('desk-copy')&&nodes.board===document.querySelector('.account-board')&&nodes.book===document.querySelector('.storybook'),identity));
+   const read=async key=>{await waitRoom(key);const state=await f.locator('#desk-scroll').evaluate(node=>({height:node.clientHeight,bodyTop:document.getElementById('draft-body').getBoundingClientRect().top,viewport:innerHeight,font:parseFloat(getComputedStyle(document.getElementById('draft-body')).fontSize),overflow:document.documentElement.scrollWidth>innerWidth,buttons:[...document.querySelectorAll('#desk-copy,#desk-done')].map(button=>{const r=button.getBoundingClientRect();return {width:r.width,height:r.height,top:r.top,bottom:r.bottom};})}));check(key+' work is readable immediately at the actual host height',state.height>=180&&state.bodyTop<state.viewport-80&&state.font>=16&&!state.overflow&&state.buttons.every(r=>r.width>=44&&r.height>=44&&r.top>=0&&r.bottom<=state.viewport+1),state);check(key+' exact canonical source text remains visible',await f.locator('#draft-body').textContent()===rows.find(row=>row.taskId===key+'-threads-v1').payload.draft);};
+   const liveForeground=()=>cf.evaluate(()=>{const offset=frameElement.getBoundingClientRect(),rect=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{left:r.left+offset.left,top:r.top+offset.top,width:r.width,height:r.height};};return{actor:rect(document.querySelector('.spatial-desk-actor')),paper:rect(document.getElementById('desk')),scroll:document.getElementById('desk-scroll').scrollTop,body:document.getElementById('draft-body').textContent};});
+   const start=async({hold=true}={})=>{await home();if(await f.locator('[data-story-chapter=insurance]').getAttribute('aria-pressed')!=='true')await f.locator('[data-story-chapter=insurance]').click();await cf.evaluate(()=>Promise.all([...document.querySelectorAll('.story-art-host img')].map(image=>image.decode())));const sourceCount=await cf.evaluate(()=>__storyMotion.sources.length);if(hold)await page.evaluate(()=>__storyMotion.freezeNext=true);const count=await mountCount();await f.locator('[data-story-open=insurance]').click();await waitRoom('insurance');if(hold){await page.locator('.storybook-journey[data-room=insurance][data-direction=in]').waitFor({state:'attached'});await page.waitForFunction(()=>document.querySelector('.storybook-journey-flat-destination [data-journey-part=paper]'));}const captured=await cf.evaluate(()=>({count:__storyMotion.sources.length,source:__storyMotion.sources.at(-1)}));assert.equal(captured.count,sourceCount+1,'source geometry comes from the real triggering click capture phase');return {original:captured.source,count};};
+   async function frame(fraction,name){
+    const detail=await page.evaluate(async fraction=>{
+     const layer=document.querySelector('.storybook-journey');if(!layer)throw Error('Actual page presentation ended before capture');
+     const animations=layer.getAnimations({subtree:true}),clock=animations.find(animation=>animation.id==='storybook-journey-clock');if(!clock)throw Error('No actual WAAPI page clock');
+     for(const animation of animations){animation.pause();animation.currentTime=Number(animation.effect.getTiming().duration)*fraction;}
+     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+     const inspect=node=>{if(!node)return null;const r=node.getBoundingClientRect(),style=getComputedStyle(node);let opacity=1,parent=node,visible=true;while(parent&&parent!==layer.parentElement){const s=getComputedStyle(parent);opacity*=Number(s.opacity);if(s.visibility==='hidden'||s.display==='none')visible=false;parent=parent.parentElement;}return{left:r.left,top:r.top,width:r.width,height:r.height,opacity,visible,transform:style.transform,rotate:style.rotate,translate:style.translate,scale:style.scale,backgroundColor:style.backgroundColor,backgroundAlpha:(()=>{const c=style.backgroundColor.match(/[\d.]+/g)||[];return c.length===4?Number(c[3]):c.length===3?1:0;})(),flatMatrix:new DOMMatrixReadOnly(style.transform==='none'?undefined:style.transform).isIdentity};};
+     const part=(side,key)=>inspect(layer.querySelector('.storybook-journey-flat-'+side+' [data-journey-part='+key+']'));
+     const result={fraction,room:layer.dataset.room,direction:layer.dataset.direction,phase:layer.dataset.phase,bounds:inspect(layer),pointerEvents:getComputedStyle(layer).pointerEvents,inert:layer.inert,ariaHidden:layer.getAttribute('aria-hidden'),focused:layer.contains(document.activeElement),count:document.querySelectorAll('.storybook-journey').length,animations:animations.map(a=>({id:a.id,time:a.currentTime,duration:a.effect.getTiming().duration,paused:a.playState==='paused'})),source:inspect(layer.querySelector('.storybook-journey-source')),destination:inspect(layer.querySelector('.storybook-journey-destination')),props:[...layer.querySelectorAll('.storybook-journey-source .story-prop')].map(n=>({key:n.dataset.prop,...inspect(n)})),folds:[...layer.querySelectorAll('.storybook-journey-fold')].map(inspect),sourceActor:part('source','actor'),sourcePaper:part('source','paper'),actor:part('destination','actor'),paper:part('destination','paper'),sourceText:layer.querySelector('.storybook-journey-flat-source')?.textContent||'',destinationText:layer.querySelector('.storybook-journey-flat-destination')?.textContent||'',scroll:[...layer.querySelectorAll('[data-journey-scroll-top]')].map(n=>({expected:Number(n.dataset.journeyScrollTop),actual:n.scrollTop})),sourceDecorativeActors:layer.querySelectorAll('.storybook-journey-source [data-prop=adviser-and-desk]').length,destinationDecorativeActors:layer.querySelectorAll('.storybook-journey-destination [data-prop=adviser-and-desk]').length};
+     if(!layer.isConnected)throw Error('Page watchdog expired during frame inspection');return result;
+    },fraction);
+    const file=`${width}-${height}-${name}.png`,bytes=await page.screenshot({path:path.join(artifact,file),animations:'allow'});
+    check(name+' captures the real paused page before its bounded watchdog ends',await page.evaluate(fraction=>{const layer=document.querySelector('.storybook-journey'),clock=layer?.getAnimations().find(a=>a.id==='storybook-journey-clock');return !!clock&&clock.playState==='paused'&&Math.abs(clock.currentTime/clock.effect.getTiming().duration-fraction)<.001;},fraction));
+    result.frames.push({name,file,...detail});save();return{...detail,bytes};
+   }
+   const finish=async()=>{await page.evaluate(()=>{const layer=document.querySelector('.storybook-journey');if(!layer)throw Error('No actual layer to finish');for(const animation of layer.getAnimations({subtree:true}))animation.finish();});await none();};
+   const back=async()=>{await f.locator('#back').click();await home();};
+   const solid=(part)=>part&&part.visible&&Math.abs(part.opacity-1)<.005;
+   const flat=(part,live)=>solid(part)&&delta(part,live)<1&&part.transform==='none'&&part.rotate==='none'&&part.translate==='none'&&part.scale==='none';
+   const first=await start();check('canonical insurance work commits while its page still turns',await f.locator('#room').isVisible()&&await page.locator('.storybook-journey').count()===1);await preserve('entry');
+   const sequence=[];for(const [fraction,name]of [[0,'contact'],[.2,'lift'],[.4,'covered'],[.499,'handoff-before'],[.501,'handoff-after'],[.65,'unfold'],[.9,'settled']])sequence.push(await frame(fraction,'entry-'+name));
+   const [contact,lift,covered,before,after,unfold,settled]=sequence;
+   check('source illustration and every original paper object begin at the same painted book coordinates',contact.props.length===first.original.props.length&&contact.props.every(prop=>{const live=first.original.props.find(p=>p.key===prop.key);return live&&delta(prop,live.rect)<1&&['transform','rotate','translate','scale'].every(k=>prop[k]===live[k]);}),{live:first.original,rendered:contact.props});
+   check('page is one inert nonblocking surface below the 52px request rail',contact.pointerEvents==='none'&&contact.inert&&contact.ariaHidden==='true'&&!contact.focused&&contact.count===1&&delta(contact.bounds,first.original.frame)<1,contact.bounds);
+   check('original scene moves with a genuine paper carrier, not whole-page crossfade',contact.source.transform!==lift.source.transform&&lift.source.opacity===1&&contact.sourceDecorativeActors===1,{source:contact.source,lift:lift.source});
+   const sealed=shot=>shot.folds.length===3&&shot.folds.every(p=>solid(p)&&p.flatMatrix&&p.backgroundAlpha===1&&p.top<=shot.bounds.top&&p.top+p.height>=shot.bounds.top+shot.bounds.height)&&shot.folds.every((p,i)=>i===0||p.left<=shot.folds[i-1].left+shot.folds[i-1].width)&&shot.folds[0].left<=shot.bounds.left&&shot.folds.at(-1).left+shot.folds.at(-1).width>=shot.bounds.left+shot.bounds.width;
+   check('all three opaque paper segments geometrically seal the handoff',sealed(covered)&&sealed(before)&&sealed(after),{covered:covered.folds,before:before.folds,after:after.folds});
+   const pixels=pixelDifference(before.bytes,after.bytes,before.bounds);check('closed paper hides the source/destination swap pixel-for-pixel',pixels.changedPixels===0,pixels);
+   check('source changes only under the closed sheet',before.source.visible&&!before.destination.visible&&!after.source.visible&&after.destination.visible,{before:{source:before.source.visible,destination:before.destination.visible},after:{source:after.source.visible,destination:after.destination.visible}});
+   const foreground=await liveForeground();check('revealed current actor and paper are solid flat real-source snapshots',flat(settled.actor,foreground.actor)&&flat(settled.paper,foreground.paper)&&settled.destinationText.includes(foreground.body)&&settled.destinationDecorativeActors===0,{actor:settled.actor,paper:settled.paper,live:foreground});
+   await finish();await read('insurance');await screenshot('entry-end');
+   const scroll=await f.locator('#desk-scroll').evaluate(node=>{node.scrollTop=180;return node.scrollTop;});check('reverse uses an actual nonzero current reading position',scroll>0,scroll);const departing=await liveForeground();await page.evaluate(()=>__storyMotion.freezeNext=true);await back();await page.locator('.storybook-journey[data-direction=out]').waitFor({state:'attached'});
+   const reverse=[];for(const [fraction,name]of [[0,'contact'],[.2,'lift'],[.4,'covered'],[.499,'handoff-before'],[.501,'handoff-after'],[.65,'unfold'],[.9,'settled']])reverse.push(await frame(fraction,'return-'+name));
+   check('reverse starts with exact current flat paper and companion, without duplicated scenery figure',flat(reverse[0].sourceActor,departing.actor)&&flat(reverse[0].sourcePaper,departing.paper)&&reverse[0].sourceText.includes(departing.body)&&reverse[0].sourceDecorativeActors===0&&reverse[0].scroll.some(s=>s.expected===scroll&&s.actual===scroll),{actor:reverse[0].sourceActor,paper:reverse[0].sourcePaper,scroll:reverse[0].scroll,live:departing});
+   check('reverse actor and paper stay opaque together before handoff',solid(reverse[1].sourceActor)&&solid(reverse[1].sourcePaper));
+   const returnPixels=pixelDifference(reverse[3].bytes,reverse[4].bytes,reverse[3].bounds);check('reverse handoff is physically sealed with no live-source flash',sealed(reverse[2])&&sealed(reverse[3])&&sealed(reverse[4])&&returnPixels.changedPixels===0,returnPixels);
+   await finish();await screenshot('return-end');await preserve('return');check('Back restores actual visible page trigger focus and chapter',await f.locator('[data-story-open=insurance]').evaluate(node=>node===document.activeElement)&&await f.locator('[data-story-chapter=insurance]').getAttribute('aria-pressed')==='true');
+   const naturalBefore=await mountCount();await start({hold:false});await none();check('natural unpaused entry completes once on the committed work',await mountCount()===naturalBefore+1&&await f.locator('#room').getAttribute('data-account')==='insurance'&&await page.evaluate(()=>__storyMotion.events.at(-1)?.cancelled===false));await back();await none();
+   await start();const copiedBefore=await cf.evaluate(()=>__storyMotion.clipboard.length);await f.locator('#desk-copy').click();await none();check('copy during a held turn cancels only visuals and writes the exact source once',await cf.evaluate(n=>__storyMotion.clipboard.length===n+1,copiedBefore)&&(await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n')===rows[0].payload.draft&&await f.locator('#room').isVisible());await back();await none();
+   await start();await f.locator('#desk-copy').focus();await page.keyboard.press('Tab');await none();check('Tab interrupts the page without swallowing ordinary keyboard work',await f.locator('#room').isVisible()&&await cf.evaluate(()=>document.activeElement!==document.getElementById('desk-copy')));await back();
+   await start();await page.keyboard.press('Escape');await none();check('first Escape dismisses presentation, not the canonical room',await f.locator('#room').isVisible());await page.keyboard.press('Escape');await home();await none();
+   await start();const early=await mountCount();await back();await none();check('early Back never manufactures a reverse after interrupted entry',await mountCount()===early&&await f.locator('#room').isHidden());
+   await start();await f.locator('.spatial-room-name').click();await f.locator('#spatial-room-dialog[open]').waitFor();await f.locator('#spatial-room-dialog [data-destination=otoku]').click();await waitRoom('otoku');await none();await page.waitForTimeout(900);check('latest explicit room-picker intent wins over old page completion',await f.locator('#room').getAttribute('data-account')==='otoku'&&await f.locator('#draft-body').textContent()===rows[1].payload.draft);await back();await none();
+   await start();const resized=width===390?{width:800,height:648}:{width:390,height:900};await page.setViewportSize(resized);await none();await cf.waitForFunction(w=>innerWidth===w,resized.width);await read('insurance');await page.setViewportSize({width,height});await cf.waitForFunction(w=>innerWidth===w,width);await none();check('Fold resize cancels old geometry without resurrecting an overlay',await f.locator('#room').getAttribute('data-account')==='insurance');await back();
+   await start();await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));});await none();await page.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});check('browser-hidden signal cancels cosmetics without changing actual work',await f.locator('#room').getAttribute('data-account')==='insurance');await back();
+   await start();await page.emulateMedia({reducedMotion:'reduce'});await none();check('mid-turn OS reduced motion keeps destination and immediately stops movement',await f.locator('#room').getAttribute('data-account')==='insurance');await back();await none();const reducedCount=await mountCount();await f.locator('[data-story-open=insurance]').click();await waitRoom('insurance');await back();await none();check('OS reduced motion skips both page directions entirely',await mountCount()===reducedCount);await page.emulateMedia({reducedMotion:'no-preference'});
+   const directBefore=await mountCount();for(const key of [...accounts,'sourcing']){await home();await f.locator(`[data-story-instant=${key}]`).click();if(key==='sourcing'){await page.locator('body.lounge-workspace #loungeWorkspaceHeader:not([hidden])').waitFor();check('instant sourcing is the original native owner, not a child placeholder',await page.locator('#mainWindow').getAttribute('data-cc-view')==='sourcing'&&await page.locator('#ccCastleFrame').isHidden());await page.locator('[data-lounge-home]').click();await home();}else{await read(key);await back();}await none();}check('all five true-instant routes and matching Back create zero page layers',await mountCount()===directBefore);
+   await preserve('all repeated routes');check('all motion paths leave default sound silent',await page.evaluate(()=>__storyMotion.audio.length===0)&&await cf.evaluate(()=>__storyMotion.audio.length===0)&&await f.locator('#sound').getAttribute('aria-pressed')==='false');
+   check('synthetic original records are byte-for-byte unchanged',await page.evaluate(()=>JSON.stringify(__rpgQA.threads.events.filter(row=>__storybookRecords.ids.includes(row.id)))===__storybookRecords.original));
+   check('no writes, external actions, unexpected requests or browser exceptions',await page.evaluate(()=>__rpgQA.writes.length===0&&__rpgQA.threads.simulatedWrites.length===0&&__storybookRecords.external.length===0)&&result.blocked.length===0&&result.errors.length===0,{blocked:result.blocked,errors:result.errors});
+   result.events=await page.evaluate(()=>__storyMotion.events);await identity.dispose();result.status='passed';
+  }catch(error){result.status='failed';result.failure={message:error.message,stack:error.stack};try{await screenshot('failure');}catch(captureError){result.captureError=captureError.message;}process.exitCode=1;}
+  finally{save();await context.close();}
+ }}finally{await browser.close();server.close();save();}
+ console.log(JSON.stringify(results.map(r=>({width:r.width,height:r.height,status:r.status,checks:r.checks.length,failed:r.checks.filter(c=>!c.pass).length})),null,2));
+})().catch(error=>{fs.mkdirSync(artifact,{recursive:true});fs.writeFileSync(path.join(artifact,'fatal.json'),JSON.stringify({scope:'motion fixture bootstrap/teardown, no UI pass claimed',message:error.message,stack:error.stack},null,2));console.error(error);server.close();process.exitCode=1;});

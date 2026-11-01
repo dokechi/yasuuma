@@ -7,6 +7,7 @@ The new storybook is the actual default. A passing archived component suite is *
 | Suite | Entry | What remains authoritative |
 | --- | --- | --- |
 | `storybook-browser.cjs` | Real `app-v130.html` → unmodified parent → default `lounge/index.html` | New default ownership, visible page/reader/native UI, actual-host geometry and semantic work. The initial insurance slice is not full five-chapter acceptance. |
+| `storybook-motion-browser.cjs` | Real `app-v130.html` → unmodified default, ordinary chapter/reader controls and WAAPI clock | Actual paper/object geometry, opaque handoff, flat same-source reader, latest-intent/interruption cleanup and true-instant bypass. Initial insurance slice is not full five-chapter motion acceptance. |
 | `castle-court-browser.cjs` | Real default → visible **設定** → **以前の城の表示を開く** → explicit **3Dの中庭** | All existing WebGL, triangles, draw calls, shadows, alpha seal, native hinge, projected hitbox, one-context, interruption, same-event native snapshot, source-record and exact copy bounds. |
 | `castle-immersive-browser.cjs` | Real default → same visible archive link, also after optional-renderer fault reload | Exact former castle geometry, opaque doorway, actor/paper coverage, camera/sky depth, motion/interruptions, settings/audio and workflow invariants. |
 | `castle-court-passage-browser.cjs` | Existing isolated `/__passage-host.html` → `/__passage-child.html` | Technical same-canvas/context parent adoption and restoration proof. No entry change; not default application acceptance. |
@@ -30,3 +31,7 @@ The initial insurance visual slice and preserved archive suites do not satisfy t
 - Actual host sizes 320×640, 390×900, 800×648 and 1440×900, unchanged readability/touch/overflow thresholds, independent screenshot review, and exact-head CI.
 
 Archived tests retain their original bounds. New visual expectations replace only intentionally redesigned artwork/selectors in new-default suites, never the functional or accessibility requirement itself.
+
+## Vivid open-book composition
+
+The five active chapters are bookmarks on the book edge, not an oversized management sidebar. The book itself has two saturated paper leaves; the original SVG props and the same-identity figure/desk cluster stand across that spread. Phone uses a separate equal-scale page layout, not a shrunken wide spread. `storybook-art.test.mjs` checks the three layout presets and twelve actor-alpha bounds; screenshots remain the authority for composition. Three unconfigured destinations remain explicit named disabled entries in **準備中 3頁**, and the exact owner status is available in **読取状況**. Neither disclosure invents source readiness or routes. Normal scrolling is allowed on the shortest screen; every immediate route must still have a fully reachable 44px hit area without overlap.

@@ -43,12 +43,14 @@ rows[8].posting={main:rows[8].body,reply:'条件と出典の補足です。保�
   // Eight named bookmarks belong to one spread, not an old castle image map.
   // The task rail and footer cannot overlap the spread; phone content may scroll.
 
+  await frame.locator('.story-preparing summary').click();
   const bounds=await frame.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(n=>{
-   const r=n.getBoundingClientRect(),v=document.querySelector('.story-spread').getBoundingClientRect();
+   const r=n.getBoundingClientRect(),v=n.disabled?document.querySelector('.story-preparing-body').getBoundingClientRect():document.querySelector('.story-chapters').getBoundingClientRect();
    return {name:n.getAttribute('aria-label'),width:r.width,height:r.height,inside:r.left>=v.left-1&&r.top>=v.top-1&&r.right<=v.right+1&&r.bottom<=v.bottom+1};
   }));
   assert.ok(bounds.every(r=>r.name&&r.width>=44&&r.height>=44&&r.inside),JSON.stringify(bounds));
   assert.equal(await frame.locator('[data-story-destination]:visible').count(),8);
+  await frame.locator('.story-preparing summary').click();
   const layers=await cf.evaluate(()=>{
    const box=selector=>document.querySelector(selector).getBoundingClientRect();
    const spread=box('.story-spread'),quick=box('.story-fast'),footer=box('.story-footer'),book=box('.storybook');
@@ -58,7 +60,7 @@ rows[8].posting={main:rows[8].body,reply:'条件と出典の補足です。保�
   const insurance=frame.locator('[data-story-instant=insurance]');
   await insurance.focus();
   await send({type:'records',drafts:rows,complete:true,loading:false,message:'保存原稿を再確認しました'});
-  await frame.locator('.story-status').getByText('保存原稿を再確認しました',{exact:true}).waitFor();
+  await frame.locator('.story-status').getByText('保存原稿を再確認しました',{exact:true}).waitFor({state:'attached'});
   assert.equal(await insurance.evaluate(n=>n===document.activeElement),true,'status refresh preserves the visible quick-route focus');
   await insurance.click();await waitRoom('insurance');
   assert.equal(await frame.locator('#app').getAttribute('inert'),null);

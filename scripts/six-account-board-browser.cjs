@@ -29,7 +29,8 @@ async function capture(page,file){await page.frames()[1].evaluate(()=>Promise.al
   const rows=['insurance','otoku','rakuten'].flatMap((account,i)=>Array.from({length:7},(_,j)=>({id:account+j,place:account==='insurance'?'kyun':account,title:['保険の確認ポイント','安く買う前のチェック','楽天のお得情報'][i]+' '+(j+1),body:account+'だけの本文。ほかのアカウントと混ぜない。',kind:'本文',checkedAt:'2026-10-30',source:{id:account+j,account},posting:{main:account+'本文',reply:account==='insurance'?'':account+'返信'},createdAt:1,updatedAt:10-j})));
   rows.push({id:'legacy',place:'kyun',title:'旧キュン原稿',body:'旧原稿は保険と混ぜない',source:{id:'old',account:'kyun'},createdAt:1,updatedAt:1});
   await page.evaluate(rows=>document.querySelector('iframe').contentWindow.postMessage({channel:'cc-castle-v1',type:'records',drafts:rows,complete:true,loading:false,message:'保存原稿を読込済み'},location.origin),rows);
-  await frame.locator('.story-status').getByText('保存原稿を読込済み',{exact:true}).waitFor();
+  await frame.locator('.story-status').getByText('保存原稿を読込済み',{exact:true}).waitFor({state:'attached'});
+  await frame.locator('.story-read-state summary').click();await frame.locator('.story-status').waitFor();await frame.locator('.story-read-state summary').click();
   await frame.locator('.story-art-host img').evaluateAll(nodes=>Promise.all(nodes.map(image=>image.decode())));
   await capture(page,shot+'-castle.png');
   if(width===800)for(const time of ['day','dusk','night']){await frame.locator('.account-board').evaluate((node,t)=>node.dataset.time=t,time);await capture(page,shot+'-'+time+'.png');}
@@ -42,9 +43,11 @@ async function capture(page,file){await page.frames()[1].evaluate(()=>Promise.al
   // The open book replaces the old architectural overview. All eight named
   // bookmarks remain reachable inside the spread; phone pages may scroll, never shrink.
 
-  const targets=await frame.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect(),v=document.querySelector('.story-spread').getBoundingClientRect();return {name:n.getAttribute('aria-label'),width:r.width,height:r.height,inside:r.left>=v.left-1&&r.top>=v.top-1&&r.right<=v.right+1&&r.bottom<=v.bottom+1};}));
+  await frame.locator('.story-preparing summary').click();
+  const targets=await frame.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect(),v=n.disabled?document.querySelector('.story-preparing-body').getBoundingClientRect():document.querySelector('.story-chapters').getBoundingClientRect();return {name:n.getAttribute('aria-label'),width:r.width,height:r.height,inside:r.left>=v.left-1&&r.top>=v.top-1&&r.right<=v.right+1&&r.bottom<=v.bottom+1};}));
   assert.ok(targets.every(r=>r.name&&r.width>=44&&r.height>=44&&r.inside),JSON.stringify(targets));
   assert.equal(await frame.locator('[data-story-destination]:visible').count(),8);
+  await frame.locator('.story-preparing summary').click();
   const quick=await frame.locator('[data-story-instant]').evaluateAll(nodes=>nodes.map(n=>({width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height})));
   assert.ok(quick.every(r=>r.width>=44&&r.height>=44));
   await frame.locator('.story-list').click();

@@ -18,11 +18,12 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
  function safeResource(value){try{const url=new URL(value,doc.baseURI);return url.origin===win.location.origin&&['https:','http:'].includes(url.protocol);}catch{return false;}}
  function safeSnapshot(root,decorative){
   if(root?.nodeType!==1||root.ownerDocument!==doc||root.isConnected||root.parentNode)return false;
-  let elements=0,text=0,visited=0;
+  let elements=0,text=0,visited=0,props=0;
   const visit=node=>{
    if(++visited>1400)return false;
    if(node.nodeType===3)return (text+=node.textContent.length)<=24000;
    if(node.nodeType!==1)return node.nodeType===8&&(text+=node.textContent.length)<=24000;
+   if(decorative&&node.classList.contains('story-prop')&&++props>24)return false;
    if(++elements>350||forbidden.has(node.tagName)||node.shadowRoot||node.hasAttribute('contenteditable')||decorative&&['BUTTON','A','SUMMARY','DETAILS'].includes(node.tagName))return false;
    if(node.namespaceURI==='http://www.w3.org/2000/svg'&&!svgTags.has(node.localName))return false;
    for(const attr of node.attributes){
@@ -60,14 +61,36 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
    }
   }
  }
+ function hingeProps(record,slot,incoming){
+  for(const animation of record.hinges.get(slot)||[]){try{animation.cancel();}catch{}const at=record.animations.indexOf(animation);if(at>=0)record.animations.splice(at,1);}
+  const animations=[];record.hinges.set(slot,animations);
+  for(const [index,prop]of [...slot.querySelectorAll('.story-prop')].entries()){
+   if(!prop.parentElement?.classList.contains('story-paper-art'))continue;
+   const style=win.getComputedStyle(prop),values=['--x','--y','--w','--h'].map(key=>{const value=style.getPropertyValue(key).trim();return /^-?(?:\d+(?:\.\d*)?|\.\d+)%$/.test(value)?Number.parseFloat(value):NaN;});
+   if(!values.every(value=>finite(value)&&Math.abs(value)<=500))continue;
+   const [x,y,w,h]=values,hinge=make('prop-hinge');hinge.dataset.prop=prop.dataset.prop||String(index);
+   Object.assign(hinge.style,{position:'absolute',inset:'0',width:'100%',height:'100%',transformOrigin:(x+w/2)+'% '+(y+h)+'%',transformStyle:'preserve-3d',zIndex:style.zIndex||'auto',pointerEvents:'none'});
+   // Only fresh decoration is reparented into an equal-size coordinate system.
+   // The prop keeps every original percentage and independent transform intact.
+   prop.before(hinge);hinge.append(prop);
+   const stagger=Math.min(index,7)*.012;
+   const frames=incoming?[
+    {offset:0,transform:'rotateX(72deg)'},{offset:.52,transform:'rotateX(72deg)'},
+    {offset:.57+stagger,transform:'rotateX(58deg)'},{offset:.89+stagger/2,transform:'rotateX(0deg)'},{offset:1,transform:'rotateX(0deg)'}
+   ]:[
+    {offset:0,transform:'rotateX(0deg)'},{offset:.11+stagger,transform:'rotateX(0deg)'},
+    {offset:.34+stagger/2,transform:'rotateX(52deg)'},{offset:.45,transform:'rotateX(72deg)'},{offset:1,transform:'rotateX(72deg)'}
+   ];
+   animations.push(record.animate(hinge,frames,'storybook-prop-'+(incoming?'destination':'source')+'-'+index));
+  }
+ }
  function destination(record,values={}){
   if(current!==record||record.released)return false;
   const entries=[['scene',record.destination,true],['foreground',record.flatDestination,false]].filter(([key])=>Object.hasOwn(values,key));
   if(!entries.length)return false;
   const nodes=entries.map(([key])=>values[key]);
   if(nodes.filter(Boolean).length!==new Set(nodes.filter(Boolean)).size||entries.some(([key,,decorative])=>values[key]!==null&&!safeSnapshot(values[key],decorative)))return false;
-  for(const [key,slot]of entries)attach(slot,values[key]);
-  return true;
+  try{for(const [key,slot]of entries){attach(slot,values[key]);if(key==='scene')hingeProps(record,slot,true);}return true;}catch{release(record);return false;}
  }
  function travel(spec={}){
   const intent=++serial;release(current);
@@ -85,15 +108,16 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
   source.style.transformOrigin=(sign===1?'0%':'100%')+' 50%';incoming.style.transformOrigin=(sign===1?'100%':'0%')+' 50%';
   layer.append(incoming,source,flatSource,flatDestination,cover,edge);
   const folds=[];for(let index=0;index<3;index++){const fold=make('fold');fold.dataset.segment=String(index);fold.style.left=(index*100/3)+'%';fold.style.transformOrigin=(sign===1?'100%':'0%')+' 50%';cover.append(fold);folds.push(fold);}
-  const record={layer,source,destination:incoming,flatSource,flatDestination,cover,room:spec.room,direction:spec.direction,duration,sourceDoc,hostWidth:win.innerWidth,hostHeight:win.innerHeight,animations:[],listeners:[],clock:null,raf:0,watchdog:0,started:false,released:false};
+  const record={layer,source,destination:incoming,flatSource,flatDestination,cover,room:spec.room,direction:spec.direction,duration,sourceDoc,hostWidth:win.innerWidth,hostHeight:win.innerHeight,animations:[],hinges:new Map(),animate:null,listeners:[],clock:null,raf:0,watchdog:0,started:false,released:false};
   current=record;owners.set(doc,record);
   const listen=(target,type,fn,options)=>{target.addEventListener(type,fn,options);record.listeners.push(()=>target.removeEventListener(type,fn,options));};
   const animate=(node,frames,id)=>{
    const animation=node.animate(frames,{duration,easing:'linear',fill:'both'});animation.id=id;
    record.animations.push(animation);Promise.resolve(animation.finished).catch(()=>{});
-   if(finite(doc.timeline?.currentTime))animation.startTime=doc.timeline.currentTime;
+   const start=record.clock?.startTime??doc.timeline?.currentTime;if(finite(start))animation.startTime=start;
+   if(record.clock?.playState==='paused'){animation.pause();animation.currentTime=record.clock.currentTime;}
    return animation;
-  };
+  };record.animate=animate;
   try{
    doc.body.append(layer);attach(source,spec.sourceScene);if(spec.destinationScene)attach(incoming,spec.destinationScene);if(spec.sourceForeground)attach(flatSource,spec.sourceForeground);if(spec.foreground)attach(flatDestination,spec.foreground);
    // The original illustration and all its independent object transforms ride
@@ -110,6 +134,7 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
    animate(flatDestination,[{offset:0,visibility:'hidden'},{offset:.499,visibility:'hidden'},{offset:.5,visibility:'visible'},{offset:1,visibility:'visible'}],'storybook-flat-destination');
    animate(edge,[{offset:0,opacity:0},{offset:.13,opacity:.55},{offset:.4,opacity:0},{offset:.56,opacity:0},{offset:.83,opacity:.35},{offset:1,opacity:0}],'storybook-edge');
    record.clock=animate(layer,[{offset:0,opacity:1},{offset:.93,opacity:1},{offset:1,opacity:0}],'storybook-journey-clock');
+   hingeProps(record,source,false);hingeProps(record,incoming,true);
    Promise.resolve(record.clock.finished).then(()=>{if(current===record)release(record,false);}).catch(()=>{if(current===record)release(record);});
    const interrupt=event=>{if(event.type==='keydown'&&['Shift','Control','Alt','Meta'].includes(event.key))return;if(current===record)cancel();};
    for(const observed of new Set([doc,sourceDoc])){

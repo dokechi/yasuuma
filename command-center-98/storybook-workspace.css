@@ -124,3 +124,6 @@ body.storybook-host .rpg-workspace-dialog :is(button,a,input,summary):focus-visi
 body.storybook-host .purchase-drill-window :is(.title-bar,.purchase-drill-titleline) { background: var(--sb-lime,#AAF618)!important; color: var(--sb-ink,#173A35)!important; font: 700 16px/1.5 system-ui,sans-serif; }
 body.storybook-host .purchase-drill-window .purchase-drill-body { background: var(--sb-paper,#F7F8F2)!important; color: var(--sb-ink,#173A35)!important; }
 body.storybook-host .purchase-drill-window button { min-width: 44px; min-height: 44px; color: var(--sb-ink,#173A35)!important; background: var(--sb-paper,#F7F8F2)!important; border: 1px solid var(--sb-ink,#173A35)!important; }
+/* The persistent request shortcut is a paper margin, not a dark app toolbar. */
+body.storybook-host #requestProgressShortcut{background:#F7F8F2!important;border-bottom:1px solid #173A3538!important;color:#173A35!important;box-shadow:none!important}
+body.storybook-host #requestProgressOpen{background:#DCECC8!important;color:#173A35!important;border:1px solid #173A35!important;border-radius:3px!important;box-shadow:none!important;font-family:system-ui,sans-serif!important}

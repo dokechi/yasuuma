@@ -1,7 +1,8 @@
 /**
  * Original paper-theatre scenery for the command centre.
  * Art direction: broad saturated paper fields, sparse ink, no borrowed artwork.
- * Coordinates: 1000 × 750. All props stand on bottom-origin paper hinges.
+ * All props stand on bottom-origin paper hinges. The enclosing HTML pages own
+ * the broad floor colors; this module never draws a wallpaper or page slab.
  * This first integration proof implements insurance ONLY; no silent room alias.
  */
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -84,6 +85,43 @@ const insurance = [
   },
 ];
 
+// Positions are percentages of the stage, NOT non-uniform mesh scaling.
+// Each SVG/image contains to its box; no circular window or body is stretched.
+// The full-canvas foreground has intentional alpha space at left. These presets
+// place its visible silhouette, rather than treating that alpha as a portrait.
+const INSURANCE_LAYOUTS = Object.freeze({
+  legacy: {
+    aspect: 4 / 3,
+    positions: {
+      'room-fold': [8, 21, 91, 63], window: [62, 1, 33, 51],
+      bookshelf: [10, 45, 28, 43], plant: [29, 20, 29, 66],
+      'dispatch-papers': [7, 82, 27, 14],
+      'adviser-and-desk': [0, 10.8, 100, 88.8889],
+    },
+  },
+  spread: {
+    aspect: 2,
+    positions: {
+      window: [67, 2, 29, 66], bookshelf: [7, 43, 31, 47],
+      plant: [30, 8, 26, 78], 'dispatch-papers': [11, 84, 25, 13],
+      'adviser-and-desk': [7, 0, 100, 96],
+    },
+  },
+  page: {
+    aspect: 1 / 1.05,
+    positions: {
+      window: [60, 0, 35, 50], bookshelf: [0, 42, 35, 43],
+      plant: [17, 18, 33, 65], 'dispatch-papers': [1, 85, 31, 10],
+      'adviser-and-desk': [-40, 1, 140, 97],
+    },
+  },
+});
+
+function positioned(definition, positions) {
+  const [x, y, w, h] = positions[definition.name];
+  return { ...definition, x, y, w, h };
+}
+
 function makeProp(document, definition) {
   const prop = document.createElement('span');
   prop.className = 'story-prop';
@@ -96,12 +134,12 @@ function makeProp(document, definition) {
   Object.assign(prop.style, {
     position: 'absolute', left: 'var(--x)', top: 'var(--y)',
     width: 'var(--w)', height: 'var(--h)',
-    transformOrigin: 'center bottom', rotate: 'var(--tilt)',
+    transformOrigin: 'center bottom', transform: 'rotate(var(--tilt))',
     pointerEvents: 'none', zIndex: String(definition.depth),
   });
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('viewBox', definition.box);
-  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('preserveAspectRatio', 'xMidYMax meet');
   svg.setAttribute('aria-hidden', 'true');
   svg.setAttribute('focusable', 'false');
   svg.setAttribute('width', '100%');
@@ -114,25 +152,34 @@ function makeProp(document, definition) {
 }
 
 /** Returns null for chapters not yet authored, never another room's identity. */
-export function buildStorybookArt({ document, key, actorURL } = {}) {
+export function buildStorybookArt({ document, key, actorURL, layout = 'legacy' } = {}) {
   if (!document?.createElement || !document?.createElementNS) {
     throw new TypeError('buildStorybookArt needs the owner document');
   }
   if (!STORYBOOK_ART_ROOMS.includes(key)) return null;
+  const preset = INSURANCE_LAYOUTS[layout];
+  if (!preset) throw new RangeError(`Unknown storybook art layout: ${layout}`);
   const root = document.createElement('div');
   root.className = 'story-paper-art';
   root.dataset.storyRoom = key;
+  root.dataset.storyLayout = layout;
+  root.dataset.storyAspect = String(preset.aspect);
   root.setAttribute('aria-hidden', 'true');
   Object.assign(root.style, {
-    position: 'relative', width: '100%', aspectRatio: '4 / 3',
+    position: 'relative', width: '100%', aspectRatio: String(preset.aspect),
     isolation: 'isolate', pointerEvents: 'none',
   });
-  for (const prop of insurance) root.append(makeProp(document, prop));
+  // The vivid two-page HTML surface replaces the small lime backdrop panel.
+  for (const prop of insurance) {
+    if (layout === 'legacy' || prop.name !== 'room-fold') {
+      root.append(makeProp(document, positioned(prop, preset.positions)));
+    }
+  }
   if (actorURL) {
-    const actor = makeProp(document, {
+    const actor = makeProp(document, positioned({
       name: 'adviser-and-desk', x: 0, y: 10.8, w: 100, h: 88.8889,
       tilt: 0, depth: 5, box: '0 0 1536 1024', art: '',
-    });
+    }, preset.positions));
     actor.replaceChildren();
     const img = document.createElement('img');
     img.className = 'story-actor-image';

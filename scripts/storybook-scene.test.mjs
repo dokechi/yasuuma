@@ -44,7 +44,10 @@ test('five active chapters and three sealed slots preserve all eight canonical i
   assert.ok(h.$('[data-story-instant="'+account.key+'"]').getAttribute('aria-label').includes(account.name));
  }
  h.scene.select('lottery');assert.match(h.$('.story-account-identity').textContent,/@chusen1101/);
- assert.equal(h.$('[data-story-destination=reserve]').getAttribute('aria-label'),'予備、未設定');
+ const preparing=h.$('.story-preparing');assert.equal(preparing.open,false);preparing.querySelector('summary').click();assert.equal(preparing.open,true);
+ const pending=[...preparing.querySelectorAll('[data-story-destination]')];assert.deepEqual(pending.map(node=>node.getAttribute('aria-label')),['追加アカウント5、未設定','追加アカウント6、未設定','予備、未設定']);
+ for(const node of pending){assert.equal(node.disabled,true);node.click();}assert.equal(h.scene.snapshot().selected,'lottery');
+ preparing.querySelector('summary').click();assert.equal(preparing.open,false);
  assert.deepEqual(h.calls.routes,[]);h.unchanged();
 });
 
@@ -75,7 +78,7 @@ test('owner visits synchronize selection while ordinary status updates do not un
 });
 
 test('unknown totals stay unknown, available local counts are scoped, and sourcing invents no inventory',t=>{
- const h=setup(t);assert.match(h.$('.story-memo p').textContent,/未確認/);assert.doesNotMatch(h.$('.story-memo p').textContent,/0本/);
+ const h=setup(t),readState=h.$('.story-read-state');assert.equal(readState.open,false);readState.querySelector('summary').click();assert.equal(readState.open,true);assert.ok(readState.contains(h.$('.story-memo')));assert.ok(readState.contains(h.$('.story-status')));assert.match(h.$('.story-memo p').textContent,/未確認/);assert.doesNotMatch(h.$('.story-memo p').textContent,/0本/);
  h.scene.setLivingStatus({rooms:[{key:'insurance',totalCount:null,loadedCount:2,unreadCount:1}]});
  assert.match(h.$('.story-memo p').textContent,/利用できる保存原稿 2本/);assert.match(h.$('.story-memo p').textContent,/全体は未確認/);
  h.scene.setLivingStatus({rooms:[{key:'insurance',totalCount:0,loadedCount:0,unreadCount:0}]});

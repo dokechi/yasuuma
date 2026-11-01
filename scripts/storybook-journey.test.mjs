@@ -14,7 +14,7 @@ function setup(t,options={}){
  win.matchMedia=()=>media;win.requestAnimationFrame=fn=>{rafs.set(++id,fn);return id;};win.cancelAnimationFrame=key=>rafs.delete(key);win.setTimeout=(fn,delay)=>{timers.set(++id,{fn,delay});return id;};win.clearTimeout=key=>timers.delete(key);
  win.Element.prototype.animate=function(frames,timing){
   if(++calls===options.failAnimation)throw Error('Animation unavailable');let resolve,reject;
-  const value={node:this,frames,timing,startTime:null,currentTime:0,playState:'running',finished:new Promise((yes,no)=>{resolve=yes;reject=no;}),cancel(){this.playState='idle';reject(Error('cancelled'));},finish(){this.currentTime=timing.duration;this.playState='finished';resolve();}};animations.push(value);return value;
+  const value={node:this,frames,timing,startTime:null,currentTime:0,playState:'running',finished:new Promise((yes,no)=>{resolve=yes;reject=no;}),cancel(){this.playState='idle';reject(Error('cancelled'));},pause(){this.playState='paused';},finish(){this.currentTime=timing.duration;this.playState='finished';resolve();}};animations.push(value);return value;
  };
  for(const type of ['storybook:journey-start','storybook:journey-end'])doc.addEventListener(type,e=>events.push({type,...e.detail}));
  const engine=createStorybookJourney({document:doc,reducedMotion:()=>quiet});
@@ -101,4 +101,41 @@ test('watchdog bounds paused clocks; existing quick/normal/slow durations are ho
 });
 test('renderer never creates a context, captures live HTML, routes, persists, loads art, or adds audio',()=>{
  const source=fs.readFileSync(new URL('../command-center-98/lounge/storybook-journey.js',import.meta.url),'utf8');assert.doesNotMatch(source,/getContext\s*\(|\bfetch\s*\(|localStorage|sessionStorage|innerHTML|outerHTML|cloneNode|toDataURL|createImageBitmap|postMessage|preventDefault|stopPropagation|new Audio|AudioContext|import\s*\(/);
+});
+function paperArt(h,count=6){const art=h.doc.createElement('div');art.className='story-paper-art';for(let index=0;index<count;index++){const prop=h.doc.createElement('span');prop.className='story-prop';prop.dataset.prop=index===5?'adviser-and-desk':'object-'+index;for(const [key,value]of Object.entries({'--x':'10%','--y':'20%','--w':'30%','--h':'40%'}))prop.style.setProperty(key,value);Object.assign(prop.style,{position:'absolute',left:'var(--x)',top:'var(--y)',width:'var(--w)',height:'var(--h)',transform:'rotate(-2deg)',rotate:'4deg',translate:'2px 3px',scale:'.98',zIndex:String(index)});art.append(prop);}return art;}
+test('six original scenery/figure props hinge on equal-size carriers while their authored transforms stay exact',t=>{
+ const h=setup(t),art=paperArt(h),props=[...art.children],styles=props.map(node=>node.getAttribute('style'));assert.ok(h.engine.travel(h.spec({sourceScene:art})));
+ const hinges=[...art.children];assert.equal(hinges.length,6);for(const [index,hinge]of hinges.entries()){assert.ok(hinge.classList.contains('storybook-journey-prop-hinge'));assert.equal(hinge.firstElementChild,props[index]);assert.equal(hinge.style.inset,'0');assert.equal(hinge.style.width,'100%');assert.equal(hinge.style.height,'100%');assert.equal(hinge.style.transformOrigin,'25% 60%');assert.equal(hinge.style.zIndex,String(index));assert.equal(props[index].getAttribute('style'),styles[index]);}
+ const animations=h.animations.filter(a=>a.id.startsWith('storybook-prop-source-'));assert.equal(animations.length,6);assert.ok(animations.every(a=>a.frames[0].transform==='rotateX(0deg)'&&a.frames.find(f=>f.offset===.45).transform==='rotateX(72deg)'&&a.startTime===h.clock().startTime&&a.timing.duration===h.clock().timing.duration));assert.equal(h.animations.some(a=>props.includes(a.node)),false);
+ h.engine.cancel();assert.ok(animations.every(a=>a.playState==='idle'));assert.equal(h.doc.querySelector('.storybook-journey-prop-hinge'),null);assert.equal(h.unchanged(),true);
+});
+test('late incoming props join the current paused clock and stand only after the sealed swap',t=>{
+ const h=setup(t),token=h.engine.travel(h.spec({sourceScene:paperArt(h),destinationScene:null}));h.clock().pause();h.clock().currentTime=310;
+ assert.equal(token.setDestination({scene:paperArt(h,5),foreground:h.foreground()}),true);const animations=h.animations.filter(a=>a.id.startsWith('storybook-prop-destination-'));assert.equal(animations.length,5);
+ assert.ok(animations.every(a=>a.currentTime===310&&a.playState==='paused'&&a.startTime===h.clock().startTime&&a.frames.find(f=>f.offset===.52).transform==='rotateX(72deg)'&&a.frames.some(f=>f.offset>=.89&&f.offset<=.94&&f.transform==='rotateX(0deg)')));
+ assert.equal(h.doc.querySelector('.storybook-journey-flat-destination .storybook-journey-prop-hinge'),null);
+});
+test('replacing a fresh destination retires its old hinge animations instead of accumulating owners',t=>{
+ const h=setup(t),token=h.engine.travel(h.spec({sourceScene:paperArt(h),destinationScene:paperArt(h,5)})),old=h.animations.filter(a=>a.id.startsWith('storybook-prop-destination-'));
+ for(let i=0;i<5;i++){assert.equal(token.setDestination({scene:paperArt(h,5)}),true);assert.equal(h.animations.filter(a=>a.playState!=='idle'&&a.id.startsWith('storybook-prop-destination-')).length,5);assert.equal(h.doc.querySelectorAll('.storybook-journey-destination .storybook-journey-prop-hinge').length,5);}
+ assert.ok(old.every(a=>a.playState==='idle'));h.engine.destroy();assert.equal(h.animations.some(a=>a.playState!=='idle'),false);
+});
+test('flat manuscript/actor nodes are never treated as decorative pop-up props',t=>{
+ const h=setup(t),flat=h.foreground(),actor=paperArt(h,1);flat.append(actor);const original=actor.firstElementChild,style=original.getAttribute('style');assert.ok(h.engine.travel(h.spec({sourceScene:paperArt(h),sourceForeground:flat,foreground:h.foreground()})));assert.equal(actor.firstElementChild,original);assert.equal(original.getAttribute('style'),style);assert.equal(flat.querySelector('.storybook-journey-prop-hinge'),null);
+});
+test('unsupported decorative coordinates preserve their original plane rather than guessing geometry',t=>{
+ const h=setup(t),art=paperArt(h,1),prop=art.firstElementChild;prop.style.setProperty('--x','25px');const before=prop.getAttribute('style');assert.ok(h.engine.travel(h.spec({sourceScene:art})));assert.equal(art.firstElementChild,prop);assert.equal(prop.getAttribute('style'),before);assert.equal(art.querySelector('.storybook-journey-prop-hinge'),null);
+});
+test('more than 24 decorative hinges fails open without touching the original route',t=>{
+ const h=setup(t),art=paperArt(h,25);assert.equal(h.engine.travel(h.spec({sourceScene:art})),null);assert.equal(art.parentNode,null);assert.equal(art.querySelector('.storybook-journey-prop-hinge'),null);assert.equal(h.unchanged(),true);
+});
+test('a hinge animation creation failure cleans up the whole optional presentation',async t=>{
+ const h=setup(t,{failAnimation:10});assert.equal(h.engine.travel(h.spec({sourceScene:paperArt(h)})),null);await flush();assert.equal(h.engine.state().active,false);assert.equal(h.doc.querySelector('.storybook-journey'),null);assert.equal(h.animations.some(a=>a.playState!=='idle'),false);assert.equal(h.rafs.size,0);assert.equal(h.timers.size,0);assert.equal(h.unchanged(),true);
+});
+test('reverse uses the same bounded collapse/stand choreography without touching flat outgoing paper',t=>{
+ const h=setup(t),flat=h.foreground();h.engine.travel(h.spec({direction:'out',sourceScene:paperArt(h,5),destinationScene:paperArt(h),sourceForeground:flat}));assert.equal(h.animations.filter(a=>a.id.startsWith('storybook-prop-source-')).length,5);assert.equal(h.animations.filter(a=>a.id.startsWith('storybook-prop-destination-')).length,6);assert.equal(h.animations.some(a=>flat.contains(a.node)),false);h.seek(.5);assert.equal(h.engine.state().phase,'covered');h.engine.cancel();assert.equal(h.doc.querySelector('.storybook-journey-prop-hinge'),null);
+});
+test('new spread and page compositions retain their authored five props and one figure under the same hinges',async t=>{
+ const {buildStorybookArt}=await import('../command-center-98/lounge/storybook-art.js');const h=setup(t);
+ for(const layout of ['spread','page']){const art=buildStorybookArt({document:h.doc,key:'insurance',layout,actorURL:'https://book.invalid/lounge/assets/storybook-insurance-actor-v1.webp'}),props=[...art.children],styles=props.map(prop=>prop.getAttribute('style'));assert.equal(props.length,5);assert.ok(h.engine.travel(h.spec({sourceScene:art})));assert.equal(art.querySelectorAll('.storybook-journey-prop-hinge').length,5);assert.equal(art.querySelectorAll('[data-prop=adviser-and-desk].story-prop').length,1);assert.equal(art.querySelector('[data-prop=room-fold]'),null);assert.deepEqual(props.map(prop=>prop.getAttribute('style')),styles);assert.equal(art.dataset.storyLayout,layout);h.engine.cancel();}
 });

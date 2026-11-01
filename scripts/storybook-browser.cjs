@@ -10,7 +10,10 @@ const titles={insurance:'保険の保存原稿 一',otoku:'お得の保存原稿
 const rows=[...accounts.map((key,i)=>({id:951+i,taskId:key+'-threads-v1',eventKey:'storybook-'+key,title:titles[key],occurredAt:'2026-10-31T08:00:00Z',domain:'money',payload:{draft:key+' の合成原稿です。保存条件と出典を確認します。\n\n'+'コピーだけで投稿済みにはしません。この原稿は同じ部屋の机から読み、履歴とお気に入りは既存の記録を使います。\n\n'.repeat(12),date:'2026-10-31',review_status:'検証専用の下書き',sources_note:'合成データ・送信不可'}})),{id:955,taskId:'insurance-threads-v1',eventKey:'storybook-insurance-two',title:'保険の保存原稿 二',occurredAt:'2026-10-30T08:00:00Z',domain:'money',payload:{draft:'insurance 二つ目の合成原稿です。\n\n'+'別の原稿を選んでも出典IDとアカウントを保ちます。\n\n'.repeat(12),date:'2026-10-30',review_status:'検証専用の下書き'}}];
 const fixtureScript=`(()=>{
  const rows=${JSON.stringify(rows)};__rpgQA.threads.events.push(...rows);
- window.__storybookRecords={original:JSON.stringify(rows),ids:rows.map(r=>r.id),requests:[],external:[]};
+ window.__storybookRecords={original:JSON.stringify(rows),ids:rows.map(r=>r.id),requests:[],external:[],messages:[]};
+ // Parser-installed after the real loader's document.open(), which erases
+ // earlier Window listeners. Observe the real bridge; never synthesize a ready.
+ window.addEventListener('message',event=>{const frame=document.getElementById('ccCastleFrame');if(event.origin===location.origin&&frame&&event.source===frame.contentWindow&&event.data?.channel==='cc-castle-v1')__storybookRecords.messages.push({type:event.data.type,active:event.data.active,action:event.data.action});});
  window.open=(...args)=>{__storybookRecords.external.push(args);return null;};
  const previous=window.fetch;
  window.fetch=async(input,options={})=>{
@@ -44,8 +47,6 @@ function probe(){
  try{localStorage.setItem('storybook-owner-note','untouched');}catch{}
  window.addEventListener('message',event=>{
   if(event.origin!==location.origin||event.data?.channel!=='cc-castle-v1')return;
-  const frame=document.getElementById('ccCastleFrame');
-  if(frame&&event.source===frame.contentWindow)__storyProbe.messages.push({type:event.data.type,active:event.data.active,action:event.data.action});
   if(window!==parent&&event.source===parent&&event.data.type==='records'&&event.data.complete===true&&Array.isArray(event.data.drafts))__storyProbe.records=structuredClone(event.data);
  });
  if(navigator.clipboard?.writeText){const original=navigator.clipboard.writeText.bind(navigator.clipboard);navigator.clipboard.writeText=text=>{__storyProbe.clipboard.push(String(text));return original(text);};}
@@ -86,16 +87,25 @@ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
    check('five explicit instant paths preserve exact account routing',same([...new Set(home.instant)].sort(),['insurance','otoku','rakuten','lottery','sourcing'].sort())&&home.instant.length===5,home.instant);
    check('default neither overflows nor eagerly imports archived presentation',!home.overflow&&!moduleRequests.some(url=>/\/(?:spatial-atelier|castle-scene|arrival-entry|arrival-atelier|arrival-renderer)\.js|three-r187|\.glb(?:\?|$)/.test(url)),[...moduleRequests]);
    const appRequests=moduleRequests.filter(url=>url.startsWith('/command-center-98/lounge/app.js'));
-   check('one exact app URL and one ready handshake initialize the current host',same(appRequests,['/command-center-98/lounge/app.js?v='+version])&&await page.evaluate(()=>__storyProbe.messages.filter(m=>m.type==='ready').length===1),{appRequests,ready:await page.evaluate(()=>__storyProbe.messages.filter(m=>m.type==='ready'))});
+   check('one exact app URL and one ready handshake initialize the current host',same(appRequests,['/command-center-98/lounge/app.js?v='+version])&&await page.evaluate(()=>__storybookRecords.messages.filter(m=>m.type==='ready').length===1),{appRequests,ready:await page.evaluate(()=>__storybookRecords.messages.filter(m=>m.type==='ready'))});
    check('lottery current identity remains @chusen1101',(await roomState('lottery')).handle==='@chusen1101');
    check('saved counts are local source-scoped and native inventory stays unknown',(await roomState('insurance')).loadedCount===2&&(await roomState('sourcing')).loadedCount===null);
+   const disclosureVisit=await cf.evaluate(()=>__storyBoard.state.visitVersion);await f.locator('.story-preparing>summary').click();
+   const sealed=await f.locator('[data-story-destination]:disabled').evaluateAll(ns=>ns.map(n=>{const r=n.getBoundingClientRect();return {key:n.dataset.storyDestination,visible:n.checkVisibility(),w:r.width,h:r.height,label:n.getAttribute('aria-label')};}));
+   check('prepared-page disclosure exposes three real disabled labelled destinations without routing',sealed.length===3&&sealed.every(n=>n.visible&&n.w>=44&&n.h>=44&&/未設定/.test(n.label))&&(await cf.evaluate(()=>__storyBoard.state.visitVersion))===disclosureVisit,sealed);await f.locator('.story-preparing>summary').click();
+   await f.locator('.story-read-state>summary').click();check('read-state disclosure reveals the actual owner status rather than fake progress',await f.locator('.story-status').isVisible()&&(await f.locator('.story-status').textContent())===(await cf.evaluate(()=>__storyBoard.state.message)));await f.locator('.story-read-state>summary').click();
    const frameRect=await page.locator('#ccCastleFrame').boundingBox(),rail=await page.locator('#requestProgressShortcut').boundingBox();
    check('actual host request rail never covers the storybook',frameRect.y>=rail.y+rail.height&&await page.locator('#requestProgressOpen').evaluate(n=>n.getBoundingClientRect().height)>=44,{frameRect,rail});
    const targets=await f.locator('[data-story-instant]').evaluateAll(ns=>ns.map(n=>{const r=n.getBoundingClientRect();return {key:n.dataset.storyInstant,w:r.width,h:r.height,visible:!!n.checkVisibility(),name:n.getAttribute('aria-label')||n.textContent};}));
    check('instant actions have visible names and at least 44px targets',targets.every(n=>n.visible&&n.w>=44&&n.h>=44&&n.name.trim()),targets);
-   const before=await cf.evaluate(()=>({visit:__storyBoard.state.visitVersion,copies:__storyProbe.clipboard.length})),beforeMessages=await page.evaluate(()=>__storyProbe.messages.filter(m=>m.type==='reading-room'&&m.active).length);
+   // A small phone may scroll naturally; prove the full real tap areas after
+   // ordinary scroll-into-view, never by shrinking content or forcing a click.
+   await f.locator('.story-fast').scrollIntoViewIfNeeded();
+   const targetHits=await f.locator('[data-story-instant]').evaluateAll(ns=>{const book=document.querySelector('.story-chapter-page')?.getBoundingClientRect();return ns.map(n=>{const r=n.getBoundingClientRect(),inset=Math.min(r.width,r.height)/4,points=[[r.left+r.width/2,r.top+r.height/2],[r.left+inset,r.top+inset],[r.right-inset,r.top+inset],[r.left+inset,r.bottom-inset],[r.right-inset,r.bottom-inset]];return {key:n.dataset.storyInstant,rect:r.toJSON(),book:book?.toJSON(),inViewport:r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight,overlap:!!book&&r.left<book.right&&r.right>book.left&&r.top<book.bottom&&r.bottom>book.top,hits:points.map(([x,y])=>{const hit=document.elementFromPoint(x,y);return hit===n||n.contains(hit);})};});});
+   check('every instant target is fully reachable after normal scrolling and not covered by the painted book',targetHits.every(n=>n.inViewport&&!n.overlap&&n.hits.every(Boolean)),targetHits);
+   const before=await cf.evaluate(()=>({visit:__storyBoard.state.visitVersion,copies:__storyProbe.clipboard.length})),beforeMessages=await page.evaluate(()=>__storybookRecords.messages.filter(m=>m.type==='reading-room'&&m.active).length);
    await f.locator('[data-story-instant=insurance]').click();await f.locator('#room[data-account=insurance][data-spatial-desk=ready]').waitFor();await f.locator('#room[data-story-scene=ready]').waitFor();await f.locator('.living-toggle').waitFor();
-   check('one instant gesture commits exactly one canonical insurance route',(await cf.evaluate(()=>__storyBoard.state.visitVersion))===before.visit+1&&(await page.evaluate(()=>__storyProbe.messages.filter(m=>m.type==='reading-room'&&m.active).length))===beforeMessages+1);
+   check('one instant gesture commits exactly one canonical insurance route',(await cf.evaluate(()=>__storyBoard.state.visitVersion))===before.visit+1&&(await page.evaluate(()=>__storybookRecords.messages.filter(m=>m.type==='reading-room'&&m.active).length))===beforeMessages+1);
    const body=await f.locator('#draft-body').textContent();check('the visible manuscript is the original account source text',body===rows[0].payload.draft&&(await roomState('insurance')).current.source.account==='insurance');
    const geometry=await f.locator('#desk-scroll').evaluate(n=>({height:n.clientHeight,top:document.getElementById('draft-body').getBoundingClientRect().top,viewport:innerHeight,font:parseFloat(getComputedStyle(document.getElementById('draft-body')).fontSize),overflow:document.documentElement.scrollWidth>innerWidth,actions:[...document.querySelectorAll('#desk-copy,#desk-done')].map(b=>{const r=b.getBoundingClientRect();return {width:r.width,height:r.height,top:r.top,bottom:r.bottom};})}));
    check('paper remains first-fold readable, unshrunk and usable at actual host size',geometry.height>=180&&geometry.top<geometry.viewport-80&&geometry.font>=16&&!geometry.overflow&&geometry.actions.every(r=>r.width>=44&&r.height>=44&&r.top>=0&&r.bottom<=geometry.viewport+1),geometry);await capture('insurance-reader');
