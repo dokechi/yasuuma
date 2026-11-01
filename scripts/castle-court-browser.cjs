@@ -430,6 +430,35 @@ async function capturePassage(ctx,name,progress){
  const expected=name.startsWith('return-')?1-progress:progress;
  check(ctx.result,name+' screenshot remained inside its real paused lease (no watchdog-expired frame)',after.clock&&after.paused&&after.active&&Math.abs(after.u-expected)<.0001,{...after,captureMs:Date.now()-start,clickMs:ctx.lastPassageClickMs});
 }
+async function armNativeCloneComparison(ctx){
+ await ctx.page.evaluate(()=>{
+  const properties=('background-color background-image color opacity border-top-width border-right-width border-bottom-width border-left-width border-top-style border-right-style border-bottom-style border-left-style border-top-color border-right-color border-bottom-color border-left-color border-radius font-family font-size font-weight font-style line-height letter-spacing white-space display box-sizing width height min-width max-width min-height max-height flex-basis flex-grow flex-shrink flex-wrap gap row-gap column-gap padding-top padding-right padding-bottom padding-left margin-top margin-right margin-bottom margin-left').split(' ');
+  const measure=node=>{const r=node.getBoundingClientRect(),s=getComputedStyle(node);let opacity=1;for(let n=node;n;n=n.parentElement)opacity*=Number(getComputedStyle(n).opacity);return {rect:{left:r.left,top:r.top,width:r.width,height:r.height},style:Object.fromEntries(properties.map(p=>[p,s.getPropertyValue(p)])),effectiveOpacity:opacity,hover:node.matches(':hover')};};
+  window.__testNativeCloneMeasure=measure;window.__testNativeCloneSource=null;
+  document.addEventListener('cc:castle-home',()=>{
+   const surface=window.__passageOriginal.frameRect;
+   const records=[...document.querySelectorAll('#sourcingTabs button[data-sourcing-sub]')].filter(node=>{const r=node.getBoundingClientRect();return r.width&&r.height&&r.right>surface.left&&r.bottom>surface.top&&r.left<surface.left+surface.width&&r.top<surface.top+surface.height;}).map(node=>({key:node.dataset.sourcingSub,text:node.textContent.replace(/\s+/g,' ').trim(),button:measure(node),group:measure(node.parentElement)}));
+   window.__testNativeCloneSource={surface:{...surface},nativeView:document.getElementById('mainWindow').dataset.ccView,frameHidden:document.getElementById('ccCastleFrame').hidden,records};
+  },{once:true,capture:true});
+ });
+}
+async function compareNativeClone(ctx){
+ return ctx.page.evaluate(()=>{
+  const source=window.__testNativeCloneSource,host=document.querySelector('.court-passage-foreground'),measure=window.__testNativeCloneMeasure;
+  if(!source||!host)return {pass:false,reason:'same-event source or actual attached clone missing',source:!!source,clone:!!host};
+  const rectDelta=(a,b)=>Math.max(...['left','top','width','height'].map(k=>Math.abs(a[k]-b[k])));
+  const records=source.records.map(original=>{
+   const matches=[...host.querySelectorAll('button')].filter(node=>node.textContent.replace(/\s+/g,' ').trim()===original.text);
+   if(matches.length!==1)return {...original,pass:false,reason:'unique visible button clone required',matches:matches.length};
+   const button=measure(matches[0]),group=measure(matches[0].parentElement),diffs=[];
+   for(const kind of ['button','group'])for(const [prop,value]of Object.entries(original[kind].style))if(({button,group})[kind].style[prop]!==value)diffs.push({kind,prop,source:value,clone:({button,group})[kind].style[prop]});
+   const buttonDelta=rectDelta(original.button.rect,button.rect),groupDelta=rectDelta(original.group.rect,group.rect),opacityDelta=Math.max(Math.abs(original.button.effectiveOpacity-button.effectiveOpacity),Math.abs(original.group.effectiveOpacity-group.effectiveOpacity));
+   return {...original,clone:{button,group},buttonDelta,groupDelta,opacityDelta,diffs,pass:diffs.length===0&&buttonDelta<=.1&&groupDelta<=.1&&opacityDelta<.000001};
+  });
+  const required=innerWidth===800?['hold','purchases','discoveries','suppliers']:['hold','purchases'];
+  return {pass:source.nativeView==='sourcing'&&source.frameHidden&&required.every(key=>records.some(r=>r.key===key))&&records.length>0&&records.every(r=>r.pass),source:{surface:source.surface,nativeView:source.nativeView,frameHidden:source.frameHidden},required,records};
+ });
+}
 async function backWithPausedClock(ctx,key='insurance'){
  await armPassageClock(ctx);await backFromRoom(ctx,key);
  await ctx.page.waitForFunction(()=>document.getAnimations().some(a=>a.id==='court-passage-clock'),null,{timeout:10_000});
@@ -481,9 +510,9 @@ async function otherRoomPassageCase(browser,origin,width,height,key){
    if(progress===.84){await destinationReady(ctx,key);await capture(ctx,'destination');}
    await backWithPausedClock(ctx,key);await finishPassage(ctx);await settled(ctx.frame);
   }
-  await beginNativePassage(ctx);await finishPassage(ctx);await backWithPausedClock(ctx,key);const reverse=await samplePassage(ctx,0);
+  await beginNativePassage(ctx);await finishPassage(ctx);if(key==='sourcing')await armNativeCloneComparison(ctx);await backWithPausedClock(ctx,key);const reverse=await samplePassage(ctx,0),nativeClone=key==='sourcing'?await compareNativeClone(ctx):null;
   check(ctx.result,key+' reverse begins from its own completed work surface without a new context',reverse.direction==='out'&&reverse.renderer.passage.room===key&&reverse.renderer.passage.u===1&&reverse.sameCanvas&&reverse.sameContext,reverse);
-  await capturePassage(ctx,'return-0',0);await finishPassage(ctx);await settled(ctx.frame);await restoredPassage(ctx,key+' return');
+  await capturePassage(ctx,'return-0',0);if(nativeClone)check(ctx.result,'same-event native source button and parent-group geometry/materials survive attached reverse snapshot',nativeClone.pass,nativeClone);await finishPassage(ctx);await settled(ctx.frame);await restoredPassage(ctx,key+' return');
   const end=await snapshot(ctx.frame);check(ctx.result,key+' returns to its exact physical source and original entrance focus',end.selected===key&&end.renderer.selected===key&&samePose(end.renderer.camera)&&end.projection.find(p=>p.key===key)?.visible&&await ctx.f.locator('.arrival-enter').evaluate(node=>node===document.activeElement),end);await capture(ctx,'return-end');await unchanged(ctx);
  }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{await ctx?.context.close();}
 }
