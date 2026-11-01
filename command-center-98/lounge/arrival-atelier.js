@@ -173,7 +173,13 @@ if(reduced()||lowQuality()){
   loadTimer=setTimeout(()=>fail(Error('Arrival model/compile timeout')),15000);
   const {createCourtRenderer}=await import('./arrival-renderer.js?v=20261101.5-arrival');
   const result=await createCourtRenderer({canvas,modelURL:new URL('./assets/arrival-court-v1.glb?v=b8167b258923',import.meta.url).href,onFrame:project,onFailure:fail,signal:abort.signal});
-  if(disposed||failed){result.dispose();}else{renderer=result;clearTimeout(loadTimer);ready=true;root.dataset.state='ready';root.hidden=true;sync();}
+  if(disposed||failed){result.dispose();}else{
+   renderer=result;
+   // A reader may have been chosen while the model was loading. Replay that
+   // latest room into the still-hidden renderer, never promote the old intent.
+   if(selected&&!overview)renderer.select(selected,{instant:true});
+   clearTimeout(loadTimer);ready=true;root.dataset.state='ready';root.hidden=true;sync();
+  }
  }catch(error){if(disposed||reduced()||lowQuality()){clearTimeout(loadTimer);root.dataset.state='fallback';releaseOriginal();}else fail(error);}
 }
 

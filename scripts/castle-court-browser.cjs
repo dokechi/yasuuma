@@ -8,6 +8,7 @@ const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),
 const {chromium}=require('playwright-core');
 const {PNG}=require('pngjs');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'artifacts/castle-court');
+const authoredCourt=JSON.parse(fs.readFileSync(path.join(root,'command-center-98/lounge/assets/arrival-court-v1-layout.json'),'utf8'));
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.glb':'model/gltf-binary'};
 const keys=['insurance','otoku','rakuten','lottery'];
 const titles={insurance:'保険の保存原稿',otoku:'お得の保存原稿',rakuten:'楽天犬の保存原稿',lottery:'抽選の保存原稿'};
@@ -90,7 +91,7 @@ async function openHost(browser,origin,{width=390,height=900,label,fault=null,sh
   await ctx.frame.evaluate(async()=>{await document.fonts.ready;const script=document.querySelector('script[src^="app.js"]');if(script)window.__courtLiving=(await import(script.src)).getLivingDesk();});
   await ctx.frame.waitForFunction(()=>window.__courtLiving?.snapshot().complete===true);
   await ctx.f.locator('[data-arrival-entry]').waitFor();await ctx.f.locator('.spatial-castle').waitFor({state:'visible'});
-  check(result,'default real host has no prototype route or eagerly loaded graphics',!new URL(ctx.frame.url()).searchParams.has('experience')&&result.heavyRequests.length===0&&await ctx.frame.evaluate(()=>!window.__arrivalCourt),result.heavyRequests);
+  check(result,'default real host has no prototype route or eagerly loaded graphics',!new URL(ctx.frame.url()).searchParams.has('experience')&&result.heavyRequests.length===0&&await ctx.frame.evaluate(()=>!window.__arrivalCourt),[...result.heavyRequests]);
   const entry=await ctx.f.locator('[data-arrival-entry]').evaluate(node=>{const r=node.getBoundingClientRect();return {width:r.width,height:r.height,left:r.left,right:r.right,bottom:r.bottom,viewport:[innerWidth,innerHeight],overflow:document.documentElement.scrollWidth>innerWidth};});
   check(result,'default castle exposes a bounded 44px optional 3D entry',entry.width>=44&&entry.height>=44&&entry.left>=-.5&&entry.right<=entry.viewport[0]+.5&&entry.bottom<=entry.viewport[1]+.5&&!entry.overflow,entry);
   await capture(ctx,'default-castle');
@@ -319,11 +320,12 @@ async function lazyCancellationCase(browser,origin){
   const focused=await ctx.frame.evaluate(()=>document.activeElement?.id);ctx.releaseModel();
   await ctx.frame.waitForFunction(()=>window.__arrivalCourt?.snapshot().ready===true);await ctx.f.locator('[data-arrival-entry][data-arrival-entry-state=ready]').waitFor({state:'attached'});
   const late=await snapshot(ctx.frame);
-  check(ctx.result,'late module and first frame cannot reopen the castle over a deliberately chosen reader',!late.active&&late.renderer.active===false&&await ctx.f.locator('#room[data-account=insurance]').isVisible()&&await ctx.frame.evaluate(id=>document.activeElement?.id===id,focused),late);
+  check(ctx.result,'late module replays the owner selection without reopening the castle over its reader',!late.active&&late.selected==='insurance'&&late.renderer.selected==='insurance'&&late.renderer.active===false&&await ctx.f.locator('#room[data-account=insurance]').isVisible()&&await ctx.frame.evaluate(id=>document.activeElement?.id===id,focused),late);
   await capture(ctx,'late-ready-reader');await back(ctx);await ctx.f.locator('.spatial-castle').waitFor({state:'visible'});
   check(ctx.result,'Back after canceled preparation retains the original castle until another explicit tap',!(await snapshot(ctx.frame)).active&&await ctx.f.locator('[data-arrival-entry]').isEnabled());await capture(ctx,'canceled-return');
   await ctx.f.locator('[data-arrival-entry]').click();await ctx.frame.waitForFunction(()=>window.__arrivalCourt?.snapshot().active===true);await settled(ctx.frame);
-  check(ctx.result,'a fresh explicit tap enters the already prepared renderer',(await snapshot(ctx.frame)).active===true);await capture(ctx,'explicit-reentry');await unchanged(ctx);
+  const reentered=await snapshot(ctx.frame),camera=reentered.renderer.camera,near=(a,b)=>a?.length===3&&a.every((value,index)=>Math.abs(value-b[index])<.0001);
+  check(ctx.result,'a fresh explicit tap enters the matching authored insurance camera, not a mislabeled overview',reentered.active===true&&reentered.selected==='insurance'&&reentered.renderer.selected==='insurance'&&near(camera.position,authoredCourt.anchors['approach-insurance'])&&near(camera.target,authoredCourt.anchors['focus-insurance'])&&camera.fov===40,reentered);await capture(ctx,'explicit-reentry');await unchanged(ctx);
  }catch(error){if(ctx)await fail(ctx,error);else console.error(error);}finally{ctx?.releaseModel();await ctx?.context.close();}
 }
 
@@ -332,9 +334,9 @@ async function initialReducedCase(browser,origin){
  try{
   ctx=await openHost(browser,origin,{label:'390-900-initial-reduced',autoActivate:false,reducedMotion:'reduce'});
   const entry=ctx.f.locator('[data-arrival-entry]');
-  check(ctx.result,'initial reduced motion keeps a visible explained disabled entry without loading graphics',await entry.isDisabled()&&!!await entry.getAttribute('title')&&ctx.result.heavyRequests.length===0,ctx.result.heavyRequests);
+  check(ctx.result,'initial reduced motion keeps a visible explained disabled entry without loading graphics',await entry.isDisabled()&&!!await entry.getAttribute('title')&&ctx.result.heavyRequests.length===0,[...ctx.result.heavyRequests]);
   await ctx.f.locator('.castle-quick-open[data-room=insurance]').click();await reader(ctx,'insurance');await back(ctx);
-  check(ctx.result,'default reduced-motion reader use still loads no optional renderer',ctx.result.heavyRequests.length===0,ctx.result.heavyRequests);
+  check(ctx.result,'default reduced-motion reader use still loads no optional renderer',ctx.result.heavyRequests.length===0,[...ctx.result.heavyRequests]);
   await ctx.page.emulateMedia({reducedMotion:'no-preference'});await entry.waitFor();
   check(ctx.result,'ending OS reduce does not override the established app motion preference',await ctx.f.locator('#reduce-setting').isChecked()&&await entry.isDisabled()&&ctx.result.heavyRequests.length===0);
   await ctx.f.locator('.castle-experience-settings').click();await ctx.f.locator('#settings .setting-line:has(#reduce-setting)').click();await closeSettings(ctx);

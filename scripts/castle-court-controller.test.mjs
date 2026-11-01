@@ -45,7 +45,7 @@ async function setup(t,options={}){
  if(options.focusOriginal)doc.querySelector('.castle-quick-open').focus();
  const finished=run(win,doc,()=>media,win.navigator,win.MutationObserver,ResizeObserver,win.AbortController,win.getComputedStyle.bind(win),spatial,application,load,'https://castle.invalid/lounge/arrival-atelier.js',fetch,win.location);
  await flush();
- return {win,doc,panel,originalChildren,finished,gate,renderer,graphics,opened,emitMedia,resizeObservers,get imports(){return imports;},get init(){return init;},snapshot:()=>win.__arrivalCourt.snapshot(),sourceUnchanged:()=>JSON.stringify(stored)===sourceBefore&&transport.length===0&&win.localStorage.length===0,back:async()=>{panel.hidden=false;await flush();}};
+ return {win,doc,panel,originalChildren,finished,gate,renderer,graphics,opened,emitMedia,resizeObservers,ownerOpen:key=>scene.open(key,doc.querySelector('.castle-quick-open[data-room='+key+']'),{instant:true}),get imports(){return imports;},get init(){return init;},snapshot:()=>win.__arrivalCourt.snapshot(),sourceUnchanged:()=>JSON.stringify(stored)===sourceBefore&&transport.length===0&&win.localStorage.length===0,back:async()=>{panel.hidden=false;await flush();}};
 }
 
 test('loading enhancement leaves the proven castle accessible; only successful first-frame contract isolates it',async t=>{
@@ -70,6 +70,15 @@ test('external entry initialization never reopens a reader and later needs a fre
  assert.equal(api.getCourtState().active,false);assert.equal(api.getCourtState().available,false);assert.equal(h.doc.activeElement,copy);assert.equal(api.activateCourt(),false);
  await h.back();assert.equal(api.getCourtState().active,false);assert.equal(h.panel.dataset.court,undefined);
  h.doc.querySelector('[data-arrival-entry]').click();await flush();assert.equal(api.getCourtState().active,true);assert.equal(h.sourceUnchanged(),true);
+});
+
+test('late first renderer replays the owner room selected while loading without reopening or stealing reader focus',async t=>{
+ const h=await setup(t,{externalEntry:true,pending:true});h.ownerOpen('insurance');await flush();
+ const copy=h.doc.createElement('button');copy.textContent='Owner manuscript copy';h.doc.body.append(copy);copy.focus();
+ assert.equal(h.snapshot().selected,'insurance');h.gate.resolve();const api=await h.finished;await flush();
+ assert.equal(h.graphics.selected,'insurance');assert.equal(api.getCourtState().active,false);assert.equal(h.doc.activeElement,copy);
+ await h.back();assert.equal(api.getCourtState().active,false);h.doc.querySelector('[data-arrival-entry]').click();await flush();
+ assert.equal(api.getCourtState().active,true);assert.equal(h.snapshot().selected,'insurance');assert.equal(h.graphics.selected,'insurance');assert.equal(h.sourceUnchanged(),true);
 });
 
 test('slow enhancement does not steal existing keyboard work; explicit launch is required',async t=>{
