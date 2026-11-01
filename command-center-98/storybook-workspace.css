@@ -137,3 +137,13 @@ body.storybook-host .story-workspace-art .story-paper-art{width:100%;height:100%
 /* On a phone the chapter has already introduced its character. Working pages
    open onto work, not a second full-screen illustrated cover. */
 @media(max-width:600px){body.storybook-host.lounge-workspace #loungeWorkspaceHeader[data-story-art=ready]{padding:12px;display:flex;flex-direction:column;min-height:0}body.storybook-host.lounge-workspace #loungeWorkspaceHeader[data-story-art=ready] .lounge-workspace-caption{max-width:none;margin-top:12px;padding:8px 10px;align-self:flex-start}body.storybook-host .story-workspace-art{display:none}}
+@media(max-width:600px){
+  /* Keep the five real utilities, but let work follow a compact chapter head.
+     The subsidiary destinations are a keyboard/touch-scrollable tab strip,
+     not three extra rows before the saved sourcing records. */
+  body.storybook-host.lounge-workspace #loungeWorkspaceHeader nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;align-items:stretch}
+  body.storybook-host.lounge-workspace #loungeWorkspaceHeader nav>div{display:contents}
+  body.storybook-host.lounge-workspace #loungeWorkspaceHeader button{min-width:0;padding:7px 5px;font-size:13px;overflow-wrap:anywhere}
+  body.storybook-host.lounge-workspace #rpgSourcingAux{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;max-width:100%;gap:7px!important;margin-bottom:12px!important;padding:3px 3px 8px!important;scroll-padding-inline:3px;scrollbar-width:thin;overscroll-behavior-x:contain}
+  body.storybook-host.lounge-workspace #rpgSourcingAux .push-button{flex:0 0 auto!important;min-height:44px!important;min-width:44px;white-space:nowrap;max-width:none;padding:8px 12px!important}
+}

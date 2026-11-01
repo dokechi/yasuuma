@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const origin='https://storybook.invalid/';
 const version='20261101.8-storybook';
-const canonical=new Set(['app.js','desk.js','accounts.js','desk-model.js','qol.js','hall-tools.js','spatial-desk.js','living-room-model.js']);
+const canonical=new Set(['app.js','desk.js','accounts.js','desk-model.js','qol.js','hall-tools.js','spatial-desk.js','living-room-model.js','arrival-passage.js','court-native-snapshot.js']);
 const filename=url=>path.join(root,new URL(url).pathname);
 function literals(source){
  const urls=[];

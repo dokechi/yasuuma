@@ -263,6 +263,10 @@ body.storybook-atelier [hidden] { display: none!important; }
 body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-dialog .manuscript-card { background: var(--sb-paper,#F7F8F2)!important; border-color: var(--sb-ink,#173A35)!important; border-left: 6px solid var(--sb-accent,var(--sb-coral,#F15F50))!important; }
 body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .spatial-shelf-dialog .manuscript-card[aria-pressed='true'] { background: var(--sb-lime,#AAF618)!important; border-color: var(--sb-ink,#173A35)!important; border-left-color: var(--sb-ink,#173A35)!important; box-shadow: 2px 3px 0 var(--sb-ink,#173A35); }
 body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions #desk-copy:hover { background: var(--sb-teal,#106762)!important; }
+/* Mounting this page changes the old owner's palette in one paint. Do not
+   freeze an inherited 180ms theme-color transition into its travel snapshot.
+   Explicit press/lift feedback remains available without delaying the route. */
+body.storybook-atelier.spatial-atelier #room[data-spatial-desk='ready'] .reader-actions button { transition-property: transform; }
 
 body.storybook-atelier.spatial-atelier #settings :is(.audio-panel,.audio-settings>summary,.system-action) { background: var(--sb-paper,#F7F8F2); color: var(--sb-ink,#173A35); border-color: var(--sb-ink,#173A35); box-shadow: none; backdrop-filter: none; }
 body.storybook-atelier.spatial-atelier #settings :is(.audio-panel p,.music-credit p,.audio-panel output) { font-size: 13px; color: #365B54; }

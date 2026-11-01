@@ -44,11 +44,15 @@ rows[8].posting={main:rows[8].body,reply:'条件と出典の補足です。保�
   // The task rail and footer cannot overlap the spread; phone content may scroll.
 
   await frame.locator('.story-preparing summary').click();
-  const bounds=await frame.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(n=>{
-   const r=n.getBoundingClientRect(),v=n.disabled?document.querySelector('.story-preparing-body').getBoundingClientRect():document.querySelector('.story-chapters').getBoundingClientRect();
-   return {name:n.getAttribute('aria-label'),width:r.width,height:r.height,inside:r.left>=v.left-1&&r.top>=v.top-1&&r.right<=v.right+1&&r.bottom<=v.bottom+1};
-  }));
-  assert.ok(bounds.every(r=>r.name&&r.width>=44&&r.height>=44&&r.inside),JSON.stringify(bounds));
+  const bounds=[];
+  for(const target of await frame.locator('[data-story-destination]').all()){
+   await target.scrollIntoViewIfNeeded();
+   bounds.push(await target.evaluate(n=>{
+    const r=n.getBoundingClientRect(),points=[[.1,.1],[.9,.1],[.5,.5],[.1,.9],[.9,.9]];
+    return {name:n.getAttribute('aria-label'),width:r.width,height:r.height,inside:r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight,hit:points.every(([x,y])=>{const hit=document.elementFromPoint(r.left+r.width*x,r.top+r.height*y);return hit===n||n.contains(hit);})};
+   }));
+  }
+  assert.ok(bounds.every(r=>r.name&&r.width>=44&&r.height>=44&&r.inside&&r.hit),JSON.stringify(bounds));
   assert.equal(await frame.locator('[data-story-destination]:visible').count(),8);
   await frame.locator('.story-preparing summary').click();
   const layers=await cf.evaluate(()=>{

@@ -11,7 +11,7 @@ const finite = value => typeof value === 'number' && Number.isFinite(value);
 const box = rect => rect && ['left','top','width','height'].every(key => finite(rect[key])) && rect.width >= 0 && rect.height >= 0;
 const intersects = (a,b) => a.left+a.width>b.left && a.left<b.left+b.width && a.top+a.height>b.top && a.top<b.top+b.height;
 
-export function captureNativeWorkspace(source, {document: target = source, surface, maxElements = 350, maxText = 24000, maxMilliseconds = 40} = {}) {
+export function captureNativeWorkspace(source, {document: target = source, surface, maxElements = 350, maxText = 24000, maxMilliseconds = 40, presentationImage = null} = {}) {
  const win = source?.defaultView, main = source?.getElementById('mainWindow'), header = source?.getElementById('loungeWorkspaceHeader');
  if (!win || target !== source || !box(surface) || !surface.width || !surface.height || source.hidden || !source.body.classList.contains('lounge-workspace') || main?.dataset.ccView !== 'sourcing' || !main?.isConnected || !header?.isConnected || !main.contains(header) || header.hidden) return null;
  const limit = Math.min(350, Math.max(1, Math.floor(maxElements) || 350)), textLimit = Math.min(24000, Math.max(1, Math.floor(maxText) || 24000)), timeLimit = Math.min(80, Math.max(1, Number(maxMilliseconds) || 40));
@@ -71,6 +71,19 @@ export function captureNativeWorkspace(source, {document: target = source, surfa
   elementBudget(); const option = target.createElement('option'); budget(selected.textContent); option.textContent = selected.textContent; option.selected = true; clone.append(option);
   clone.disabled = node.disabled; clone.tabIndex = -1;
  }
+ function preparedPresentationImage(node) {
+  // Explicit opt-in for one already-decoded authored decoration. The ordinary
+  // native/archive contract still rejects every IMG. Never clone ledger/media
+  // images or discover an arbitrary URL from source content.
+  if (!presentationImage || presentationImage.sourceNode !== node || node.tagName !== 'IMG') return null;
+  const prepared=presentationImage.preparedImage, stage=node.closest('.story-workspace-art'), art=node.closest('.story-paper-art');
+  const expected=new URL('./lounge/assets/storybook-sourcing-actor-v1.webp',source.baseURI).href;
+  if (!stage || !header.contains(stage) || !stage.inert || stage.getAttribute('aria-hidden')!=='true' || art?.dataset.storyRoom!=='sourcing' || node.dataset.storyActor!=='sourcing' || stage.querySelectorAll('img').length!==1 || stage.querySelector('img')!==node) return null;
+  if (!node.complete || !node.naturalWidth || node.naturalWidth>4096 || !node.naturalHeight || node.naturalHeight>4096 || node.srcset || node.currentSrc&&node.currentSrc!==expected || node.src!==expected) return null;
+  if (!prepared || prepared===node || prepared.ownerDocument!==target || prepared.tagName!=='IMG' || prepared.onload || prepared.onerror || prepared.isConnected || prepared.parentNode || !prepared.complete || prepared.naturalWidth!==node.naturalWidth || prepared.naturalHeight!==node.naturalHeight || prepared.srcset || prepared.src!==expected || prepared.currentSrc&&prepared.currentSrc!==expected) return null;
+  for(const attr of [...prepared.attributes])if(!['src','decoding'].includes(attr.name))prepared.removeAttribute(attr.name);
+  prepared.alt='';prepared.draggable=false;prepared.decoding='sync';return prepared;
+ }
  function copy(node, root = false, transformedAncestor = false) {
   if (node.nodeType === 3) { budget(node.textContent); return target.createTextNode(node.textContent); }
   if (node.nodeType !== 1) return null;
@@ -84,8 +97,9 @@ export function captureNativeWorkspace(source, {document: target = source, surfa
   const inView = root || !rect.width || !rect.height || intersects(rect, surface);
   // Invisible subtrees retain their exact layout box, not their unseen records.
   if (!inView || style.visibility === 'hidden' || style.visibility === 'collapse') { elementBudget(); const spacer = target.createElement('div'); copyStyle(style, spacer); spacer.style.visibility = 'hidden'; if (!transformedBox) { spacer.style.boxSizing = 'border-box'; spacer.style.width = rect.width+'px'; spacer.style.height = rect.height+'px'; } if (style.display === 'inline') throw Error('snapshot-inline-layout'); return spacer; }
-  if (unsupported.has(node.tagName) || node.shadowRoot || node.hasAttribute('contenteditable') && node.getAttribute('contenteditable') !== 'false' || !root && ['fixed','sticky'].includes(style.position)) throw Error('snapshot-unsupported');
-  elementBudget(); const clone = isSvg ? target.createElementNS(node.namespaceURI,node.localName) : target.createElement(node.tagName === 'FORM' ? 'div' : node.localName);
+  const presentationCopy=node.tagName==='IMG'?preparedPresentationImage(node):null;
+  if (unsupported.has(node.tagName) && !presentationCopy || node.shadowRoot || node.hasAttribute('contenteditable') && node.getAttribute('contenteditable') !== 'false' || !root && ['fixed','sticky'].includes(style.position)) throw Error('snapshot-unsupported');
+  elementBudget(); const clone = presentationCopy || (isSvg ? target.createElementNS(node.namespaceURI,node.localName) : target.createElement(node.tagName === 'FORM' ? 'div' : node.localName));
   copyStyle(style,clone);
   // A transformed rect is a visual bound, not its CSS layout size. Preserve
   // that subtree's original transforms/used CSS instead of scaling it twice.

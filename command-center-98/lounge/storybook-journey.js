@@ -16,7 +16,7 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
  const canMove=()=>{try{return !disposed&&!doc.hidden&&!quiet?.matches&&!reducedMotion()&&typeof win.Element?.prototype.animate==='function'&&win.getComputedStyle(doc.documentElement).getPropertyValue('--storybook-journey-ready').trim()==='1';}catch{return false;}};
  const make=name=>{const node=doc.createElement('div');node.className='storybook-journey-'+name;return node;};
  function safeResource(value){try{const url=new URL(value,doc.baseURI);return url.origin===win.location.origin&&['https:','http:'].includes(url.protocol);}catch{return false;}}
- function safeSnapshot(root,decorative){
+ function safeSnapshot(root,decorative,native=false){
   if(root?.nodeType!==1||root.ownerDocument!==doc||root.isConnected||root.parentNode)return false;
   let elements=0,text=0,visited=0,props=0;
   const visit=node=>{
@@ -24,7 +24,8 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
    if(node.nodeType===3)return (text+=node.textContent.length)<=24000;
    if(node.nodeType!==1)return node.nodeType===8&&(text+=node.textContent.length)<=24000;
    if(decorative&&node.classList.contains('story-prop')&&++props>24)return false;
-   if(++elements>350||forbidden.has(node.tagName)||node.shadowRoot||node.hasAttribute('contenteditable')||decorative&&['BUTTON','A','SUMMARY','DETAILS'].includes(node.tagName))return false;
+   const staticSelect=native&&!decorative&&node.tagName==='SELECT'&&node.tabIndex===-1&&!node.multiple&&node.children.length===1&&node.firstElementChild.tagName==='OPTION'&&node.selectedOptions.length===1;
+   if(++elements>350||forbidden.has(node.tagName)&&!staticSelect||node.shadowRoot||node.hasAttribute('contenteditable')||decorative&&['BUTTON','A','SUMMARY','DETAILS'].includes(node.tagName))return false;
    if(node.namespaceURI==='http://www.w3.org/2000/svg'&&!svgTags.has(node.localName))return false;
    for(const attr of node.attributes){
     if(/^(id|name|form|action|formaction|srcdoc|srcset|href|xlink:href)$/i.test(attr.name)||/^on/i.test(attr.name))return false;
@@ -49,6 +50,15 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
   record.layer.remove();
   if(record.started)notify('storybook:journey-end',record,cancelled);
  }
+ function nativeFrame(record,{hidden=false,restored=false}={}){
+  try{const frame=record.sourceFrame;if(!frame||!frame.isConnected||frame.ownerDocument!==doc||frame.contentDocument!==record.sourceDoc||win.innerWidth!==record.hostWidth||win.innerHeight!==record.hostHeight||doc.hidden)return false;
+   const style=win.getComputedStyle(frame),isHidden=frame.hidden||style.display==='none'||style.visibility==='hidden';
+   if(hidden)return record.nativeIn&&record.nativeAcknowledged&&isHidden;
+   if(restored){const r=frame.getBoundingClientRect(),s=record.surface,v=record.sourceDoc.defaultView;return !isHidden&&['left','top','width','height'].every(k=>r[k]===s[k])&&v.innerWidth===s.width&&v.innerHeight===s.height;}
+   return true;
+  }catch{return false;}
+ }
+ function nativeLanded(record){try{return record.nativeAcknowledged&&record.nativeVisible?.()===true;}catch{return false;}}
  function cancel(){serial++;release(current);}
  function progress(record){return clamp((Number(record.clock?.currentTime)||0)/record.duration,0,1);}
  function state(){return current?{active:true,room:current.room,direction:current.direction,phase:phaseAt(progress(current)),progress:progress(current),duration:current.duration}:{active:false,room:null,direction:null,phase:'idle',progress:0,duration:0};}
@@ -89,7 +99,7 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
   const entries=[['scene',record.destination,true],['foreground',record.flatDestination,false]].filter(([key])=>Object.hasOwn(values,key));
   if(!entries.length)return false;
   const nodes=entries.map(([key])=>values[key]);
-  if(nodes.filter(Boolean).length!==new Set(nodes.filter(Boolean)).size||entries.some(([key,,decorative])=>values[key]!==null&&!safeSnapshot(values[key],decorative)))return false;
+  if(nodes.filter(Boolean).length!==new Set(nodes.filter(Boolean)).size||entries.some(([key,,decorative])=>values[key]!==null&&!safeSnapshot(values[key],decorative,record.nativeIn||record.nativeOut)))return false;
   try{for(const [key,slot]of entries){attach(slot,values[key]);if(key==='scene')hingeProps(record,slot,true);}return true;}catch{release(record);return false;}
  }
  function travel(spec={}){
@@ -98,8 +108,11 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
   const surface=spec.surface,sourceDoc=spec.sourceDocument||doc;
   if(!surface||!['left','top','width','height'].every(key=>finite(surface[key]))||surface.width<=0||surface.height<=0||surface.width>20000||surface.height>20000||Math.abs(surface.left)>20000||Math.abs(surface.top)>20000)return null;
   try{if(sourceDoc.hidden||sourceDoc.defaultView.location.origin!==win.location.origin)return null;}catch{return null;}
+  let sourceFrame=null;try{if(sourceDoc!==doc)sourceFrame=sourceDoc.defaultView.frameElement;}catch{}
+  const native=spec.native===true&&spec.room==='sourcing'&&!!sourceFrame&&sourceFrame.ownerDocument===doc;
+  if(spec.native===true&&!native)return null;
   const inputs=[['sourceScene',true],['destinationScene',true],['sourceForeground',false],['foreground',false]],nodes=inputs.map(([key])=>spec[key]).filter(Boolean);
-  if(!spec.sourceScene||nodes.length!==new Set(nodes).size||inputs.some(([key,decorative])=>spec[key]!=null&&!safeSnapshot(spec[key],decorative)))return null;
+  if(!spec.sourceScene||nodes.length!==new Set(nodes).size||inputs.some(([key,decorative])=>spec[key]!=null&&!safeSnapshot(spec[key],decorative,native)))return null;
   const allowed=canMove();if(intent!==serial||!allowed||owners.has(doc))return null;
   const duration=finite(spec.duration)?clamp(spec.duration,260,1100):620,sign=spec.direction==='out'?-1:1,uprightSource=!!spec.sourceForeground,uprightDestination=spec.uprightDestination===true||!!spec.foreground;
   const layer=make('stage');layer.classList.add('storybook-journey');layer.dataset.room=spec.room;layer.dataset.direction=spec.direction;layer.dataset.phase='press';layer.inert=true;layer.setAttribute('aria-hidden','true');
@@ -108,7 +121,7 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
   source.style.transformOrigin=(sign===1?'0%':'100%')+' 50%';incoming.style.transformOrigin=(sign===1?'100%':'0%')+' 50%';
   layer.append(incoming,source,flatSource,flatDestination,cover,edge);
   const folds=[];for(let index=0;index<3;index++){const fold=make('fold');fold.dataset.segment=String(index);fold.style.left=(index*100/3)+'%';fold.style.transformOrigin=(sign===1?'100%':'0%')+' 50%';cover.append(fold);folds.push(fold);}
-  const record={layer,source,destination:incoming,flatSource,flatDestination,cover,room:spec.room,direction:spec.direction,duration,sourceDoc,hostWidth:win.innerWidth,hostHeight:win.innerHeight,animations:[],hinges:new Map(),animate:null,listeners:[],clock:null,raf:0,watchdog:0,started:false,released:false};
+  const record={layer,source,destination:incoming,flatSource,flatDestination,cover,room:spec.room,direction:spec.direction,duration,sourceDoc,sourceFrame,surface:{...surface},nativeIn:native&&spec.direction==='in',nativeOut:native&&spec.direction==='out',nativeAcknowledged:false,nativeVisible:spec.nativeVisible,hostWidth:win.innerWidth,hostHeight:win.innerHeight,animations:[],hinges:new Map(),animate:null,listeners:[],clock:null,raf:0,watchdog:0,started:false,released:false};
   current=record;owners.set(doc,record);
   const listen=(target,type,fn,options)=>{target.addEventListener(type,fn,options);record.listeners.push(()=>target.removeEventListener(type,fn,options));};
   const animate=(node,frames,id)=>{
@@ -139,14 +152,15 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
    const interrupt=event=>{if(event.type==='keydown'&&['Shift','Control','Alt','Meta'].includes(event.key))return;if(current===record)cancel();};
    for(const observed of new Set([doc,sourceDoc])){
     for(const type of ['pointerdown','keydown','input','copy','cut','paste'])listen(observed,type,interrupt,true);
-    listen(observed,'visibilitychange',()=>{if(observed.hidden&&current===record)cancel();});
-    for(const type of ['resize','orientationchange','pagehide','popstate'])listen(observed.defaultView,type,interrupt);
+    listen(observed,'visibilitychange',()=>{if(observed.hidden&&current===record&&!(observed===sourceDoc&&nativeFrame(record,{hidden:true})))cancel();});
+    listen(observed.defaultView,'resize',event=>{if(observed===sourceDoc&&sourceDoc!==doc&&(nativeFrame(record,{hidden:true})||record.nativeOut&&nativeFrame(record,{restored:true})))return;interrupt(event);});
+    for(const type of ['orientationchange','pagehide','popstate'])listen(observed.defaultView,type,interrupt);
    }
-   const tick=()=>{if(current!==record)return;if(!canMove()||sourceDoc.hidden||!layer.isConnected||win.innerWidth!==record.hostWidth||win.innerHeight!==record.hostHeight){release(record);return;}layer.dataset.phase=phaseAt(progress(record));record.raf=win.requestAnimationFrame(tick);};
+   const tick=()=>{if(current!==record)return;if(!canMove()||(record.nativeIn||record.nativeOut)&&!nativeFrame(record)||sourceDoc.hidden&&!nativeFrame(record,{hidden:true})||record.nativeIn&&progress(record)>=.48&&!nativeLanded(record)||!layer.isConnected||win.innerWidth!==record.hostWidth||win.innerHeight!==record.hostHeight){release(record);return;}layer.dataset.phase=phaseAt(progress(record));record.raf=win.requestAnimationFrame(tick);};
    record.raf=win.requestAnimationFrame(tick);record.watchdog=win.setTimeout(()=>{if(current===record)cancel();},duration+4000);
    record.started=true;notify('storybook:journey-start',record);
    if(current!==record||record.released)return null;
-   return Object.freeze({cancel(){if(current===record)cancel();},setDestination:values=>destination(record,values)});
+   return Object.freeze({cancel(){if(current===record)cancel();},setDestination:values=>destination(record,values),acknowledgeNativeHide(){if(current!==record||record.released||!record.nativeIn||!nativeFrame(record))return false;record.nativeAcknowledged=true;return true;}});
   }catch{release(record);return null;}
  }
  const motion=()=>{if(quiet?.matches)cancel();};quiet?.addEventListener?.('change',motion);
