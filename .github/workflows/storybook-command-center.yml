@@ -16,7 +16,7 @@ jobs:
       - run: node --check scripts/storybook-browser.cjs
       - run: node command-center-98/app-loader.test.cjs
       - run: npm install --prefix "$RUNNER_TEMP/storybook-unit" --ignore-scripts --no-audit --no-fund jsdom@26.1.0 linkedom@0.18.13
-      - run: NODE_PATH="$RUNNER_TEMP/storybook-unit/node_modules" node --test scripts/storybook-*.test.mjs scripts/castle-spatial-desk.test.mjs scripts/castle-living-model.test.mjs scripts/castle-living-room.test.mjs scripts/eight-panel-dom.test.mjs
+      - run: NODE_PATH="$RUNNER_TEMP/storybook-unit/node_modules" node --test scripts/storybook-*.test.mjs scripts/storybook-workbench-entry.test.cjs scripts/castle-spatial-desk.test.mjs scripts/castle-living-model.test.mjs scripts/castle-living-room.test.mjs scripts/eight-panel-dom.test.mjs
   actual-default:
     name: Storybook default (${{ matrix.width }}x${{ matrix.height }})
     runs-on: ubuntu-latest

@@ -2,6 +2,7 @@
 // Retained classic-castle visuals are exercised by their direct-entry fixtures.
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium}=require('playwright-core');
+const {openStorybookOverview,openReaderWork,closeReaderWork}=require('./storybook-workbench-entry.cjs');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'artifacts/unified-castle');
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg'};
 const insuranceBody='合成データの保険原稿です。保障内容と条件を確認してから判断します。\n\nコピーは投稿ではありません。保存済みの文章をそのまま読みます。';
@@ -51,7 +52,7 @@ const server=http.createServer((req,res)=>{
       await page.waitForFunction(()=>window.CCCastle?.unified&&!document.querySelector('#ccCastleFrame').hidden);
       const lounge=page.frameLocator('#ccCastleFrame');
       assert.equal(new URL(await page.locator('#ccCastleFrame').getAttribute('src'),page.url()).pathname,'/command-center-98/lounge/index.html');
-      await lounge.locator('.account-board[data-state=ready]').waitFor();
+      await openStorybookOverview(lounge);await lounge.locator('.account-board[data-state=ready]').waitFor();
       await lounge.locator('.storybook[data-ready=true]').waitFor();
       assert.equal(await lounge.locator('[data-story-destination]').count(),8);
       assert.equal(await lounge.locator('[data-story-destination]:disabled').count(),3);
@@ -92,16 +93,16 @@ const server=http.createServer((req,res)=>{
       assert.ok(reading.font>=16);assert.ok(reading.bodyHeight>=180);assert.ok(reading.copyHeight>=44);assert.equal(reading.actorReady,true);assert.match(reading.actorURL,/storybook-insurance-actor/);assert.equal(reading.illustrated,true);assert.equal(reading.overflow,false);
       assert.equal(await lounge.locator('#draft-body').textContent(),insuranceBody);
       assert.equal(await lounge.locator('#room-title').textContent(),'保険');
-      await lounge.locator('.spatial-work > summary').click();
+      await openReaderWork(lounge);
       assert.equal(await lounge.locator('#desk-routes strong').textContent(),'保険 @sucker0508');
-      await lounge.locator('.spatial-work > summary').click();
+      await closeReaderWork(page,lounge);
       assert.equal(await page.evaluate(()=>localStorage.getItem('cc-castle-mode')),'castle');
       assert.equal(await page.locator('#ccRpgHome').textContent(),'');
       assert.equal(await page.locator('#commandHome').isVisible(),false);
       await lounge.locator('#desk-copy').click();await lounge.locator('#desk-operation').getByText('本文をコピーしました。',{exact:true}).waitFor();
       assert.equal((await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n'),insuranceBody);
       // Open the supported native insurance review, not the retired kyun reader.
-      await lounge.locator('.spatial-work > summary').click();
+      await openReaderWork(lounge);
       await lounge.locator('#desk-routes').getByRole('button',{name:'出典・確認記録',exact:true}).click();
       const review=page.locator('.manual-operation-review[open]');await review.waitFor();
       assert.equal(await review.locator('h2').textContent(),'保険｜@sucker0508');
@@ -114,7 +115,7 @@ const server=http.createServer((req,res)=>{
       assert.equal(await lounge.locator('#draft-body').textContent(),insuranceBody);
       // Keyboard routes originate inside the current iframe, just as user input does.
       for(const key of ['F1','Alt+f','Alt+v','Alt+a','Alt+j']){
-        await lounge.locator('#back').focus();await page.keyboard.press(key);
+        await lounge.locator('[data-working-tools]').focus();await page.keyboard.press(key);
         const management=page.locator('.rpg-workspace-dialog[open]');await management.waitFor();
         assert.equal(await page.locator('#commandHome').isVisible(),false);
         assert.doesNotMatch(await management.textContent(),/以前の画面・すべての入口/);
@@ -139,7 +140,7 @@ const server=http.createServer((req,res)=>{
       for(const init of audit.initializations){assert.equal(init.action,'ensure');assert.equal(init.method,'POST');assert.equal(init.url,'https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-workflow-api');assert.equal(init.count,{fp_content:9,house_content:2}[init.entityType]);}
       assert.deepEqual(audit.requests.filter(r=>!['GET','HEAD'].includes(r.method)),audit.initializations);assert.equal(audit.sourceUnchanged,true);
       await page.reload();await page.waitForFunction(()=>window.CCCastle?.unified&&!document.querySelector('#ccCastleFrame').hidden);
-      await lounge.locator('.account-board[data-state=ready]').waitFor();
+      await openStorybookOverview(lounge);await lounge.locator('.account-board[data-state=ready]').waitFor();
       assert.equal(await page.locator('#commandHome').isVisible(),false);
       await lounge.locator('.storybook[data-ready=true]').waitFor();
       await lounge.locator('[data-story-chapter=insurance]').click();

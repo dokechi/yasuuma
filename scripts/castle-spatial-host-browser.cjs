@@ -2,6 +2,7 @@
 // Retained classic-castle visuals are exercised by their direct-entry fixtures.
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium}=require('playwright-core');
+const {openStorybookOverview,openReaderWork,toggleLivingTools}=require('./storybook-workbench-entry.cjs');
 // Keep the established artifact directory for CI upload compatibility only.
 // Coverage is the new default book, never archive.html or a substituted frame.
 const root=path.resolve(__dirname,'..'),out=path.join(root,'artifacts/castle-spatial-prototype');
@@ -47,7 +48,7 @@ const server=http.createServer((req,res)=>{
   const context=await browser.newContext({viewport:{width,height},reducedMotion:'reduce',serviceWorkers:'block',permissions:['clipboard-read','clipboard-write']}),page=await context.newPage(),errors=[],blocked=[],requested=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('request',request=>requested.push(request.url()));await context.route('**/*',r=>{if(new URL(r.request().url()).origin===origin&&['GET','HEAD'].includes(r.request().method()))return r.continue();blocked.push(r.request().url());return r.abort();});
   await page.goto(origin+'/command-center-98/app-v130.html');await page.waitForFunction(()=>window.CCCastle?.unified&&!document.querySelector('#ccCastleFrame').hidden);
-  const lounge=page.frameLocator('#ccCastleFrame');await lounge.locator('.storybook[data-ready=true][data-story-scene=ready]').waitFor();await lounge.locator('[data-story-instant=sourcing]').waitFor();
+  const lounge=page.frameLocator('#ccCastleFrame');await openStorybookOverview(lounge);await lounge.locator('.storybook[data-ready=true][data-story-scene=ready]').waitFor();await lounge.locator('[data-story-instant=sourcing]').waitFor();
   // All five authored characters remain required, not just the initially
   // selected insurance illustration. This deliberately fails incomplete art.
   const identities=handles;
@@ -82,7 +83,7 @@ const server=http.createServer((req,res)=>{
    const reader=await lounge.locator('#desk-scroll').evaluate(n=>({font:parseFloat(getComputedStyle(document.getElementById('draft-body')).fontSize),height:n.clientHeight,bodyTop:document.getElementById('draft-body').getBoundingClientRect().top,viewport:innerHeight,overflow:document.documentElement.scrollWidth>innerWidth,actions:[...document.querySelectorAll('#desk-copy,#desk-done')].map(button=>{const r=button.getBoundingClientRect();return {height:r.height,width:r.width,top:r.top,bottom:r.bottom};})}));
    assert.ok(reader.font>=16&&reader.height>=180&&reader.bodyTop<reader.viewport-80&&!reader.overflow&&reader.actions.every(r=>r.height>=44&&r.width>=44&&r.top>=0&&r.bottom<=reader.viewport),JSON.stringify({key,...reader}));
    await page.screenshot({path:path.join(out,`${width}-${height}-host-study${key==='insurance'?'':'-'+key}.png`)});
-   await lounge.locator('.spatial-work>summary').click();assert.ok(await lounge.locator('#desk-refresh').isVisible());
+   await openReaderWork(lounge);assert.ok(await lounge.locator('#desk-refresh').isVisible());
    assert.ok((await lounge.locator('#desk-routes strong').textContent()).includes(handles[key]));
    if(key==='insurance')await page.screenshot({path:path.join(out,`${width}-${height}-host-tools.png`)});
    await lounge.locator('#desk-read').click();assert.equal(await lounge.locator('#room').evaluate(n=>n.scrollTop),0);
@@ -92,7 +93,7 @@ const server=http.createServer((req,res)=>{
    await lounge.locator('#desk-pin').click();assert.equal(await lounge.locator('#desk-pin').getAttribute('aria-pressed'),'true');
    const scroll=await lounge.locator('#desk-scroll').evaluate(node=>{node.scrollTop=150;window.__hostPaper=document.getElementById('desk');window.__hostBody=document.getElementById('draft-body');return node.scrollTop;});
    assert.ok(scroll>0,'the retention test must use a real nonzero reading offset');
-   await lounge.locator('.living-toggle').click();await lounge.locator('[data-object=chest]').click();
+   await toggleLivingTools(lounge);await lounge.locator('[data-object=chest]').click();
    await lounge.locator('#living-record-dialog[open]').waitFor();assert.equal(await lounge.locator('#living-record-dialog [data-living-draft]').count(),1);
    assert.equal(await lounge.locator('#living-record-dialog [data-living-draft] strong').textContent(),titles[key]);
    assert.ok((await lounge.locator('#living-record-dialog [data-living-draft] span').textContent()).includes(handles[key]));
@@ -104,7 +105,7 @@ const server=http.createServer((req,res)=>{
    await lounge.locator('.living-reader-return').click();
    assert.equal(await lounge.locator('#desk').evaluate(n=>n===window.__hostPaper&&!n.inert&&document.getElementById('draft-body')===window.__hostBody),true);
    assert.equal(await lounge.locator('#draft-body').textContent(),bodies[key]);assert.equal(await lounge.locator('#desk-scroll').evaluate(n=>n.scrollTop),scroll);
-   await lounge.locator('#back').click();await lounge.locator('.account-board:not([hidden])').waitFor();
+   await openStorybookOverview(lounge);await lounge.locator('.account-board:not([hidden])').waitFor();
    assert.equal(await lounge.locator('[data-story-instant='+key+']').evaluate(n=>n===document.activeElement),true);
    publishingResults.push({key,handle:handles[key],reader,exactCopy:true,accountLocalNotes:true,scrollRetained:scroll});
   }
@@ -135,7 +136,19 @@ const server=http.createServer((req,res)=>{
   assert.ok(initialWork.tab.key&&initialWork.tab.rect?.width>=44&&initialWork.tab.rect.height>=44,'real native sourcing tab remains a 44px action: '+JSON.stringify(initialWork));
   if(width<=600)assert.ok(initialWork.scrollY===0&&initialWork.tab.rect.top>=0&&initialWork.tab.rect.bottom<=initialWork.viewport&&initialWork.tab.rect.left>=0&&initialWork.tab.rect.right<=width&&initialWork.tab.hit&&initialWork.information.some(n=>n.rect.height>0&&n.rect.top>=0&&n.rect.bottom<=initialWork.viewport&&n.rect.left>=0&&n.rect.right<=width),'phone instant entry must expose the full unobstructed purchase tab and exact record-derived 1-order/2-unit summary before scrolling: '+JSON.stringify(initialWork));
   const geometry=await page.locator('#loungeWorkspaceHeader').evaluate(n=>({overflow:document.documentElement.scrollWidth>innerWidth,buttons:[...n.querySelectorAll('button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height,left:b.getBoundingClientRect().left,right:b.getBoundingClientRect().right})),background:getComputedStyle(document.body).backgroundImage,sceneCount:document.querySelectorAll('.story-workspace-art .story-paper-art[data-story-room=sourcing]').length,actor:document.querySelector('.story-workspace-art .story-actor-image')?.src}));
-  assert.equal(geometry.overflow,false);assert.ok(geometry.buttons.every(b=>b.height>=44&&b.left>=0&&b.right<=width+1),JSON.stringify(geometry));assert.equal(geometry.sceneCount,1);assert.match(geometry.actor,/storybook-sourcing-actor-v1\.webp/);assert.doesNotMatch(geometry.background,/castle-interior|sourcing-desk-actor/);
+  assert.equal(geometry.overflow,false);
+  // All five working chapters remain visible together. Auxiliary controls may
+  // occupy their deliberate horizontal strip, but each focused real action
+  // must become fully visible/hit-testable without scrolling the document.
+  const primary=page.locator('#loungeWorkspaceHeader [data-working-chapter]');assert.equal(await primary.count(),5);
+  assert.ok(await primary.evaluateAll(nodes=>nodes.every(n=>{const r=n.getBoundingClientRect();return r.width>=44&&r.height>=44&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;})));
+  const headerScroll=await page.evaluate(()=>({x:scrollX,y:scrollY})),reachable=[];
+  for(const action of await page.locator('#loungeWorkspaceHeader button').all()){
+   await action.focus();reachable.push(await action.evaluate(n=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return{text:n.textContent,width:r.width,height:r.height,left:r.left,right:r.right,top:r.top,bottom:r.bottom,viewport:innerHeight,focused:n===document.activeElement,hit:hit===n||n.contains(hit)};}));
+   assert.deepEqual(await page.evaluate(()=>({x:scrollX,y:scrollY})),headerScroll,'revealing a native header control scrolls only its own strip');
+  }
+  assert.ok(reachable.every(b=>b.width>=44&&b.height>=44&&b.left>=0&&b.right<=width+1&&b.top>=0&&b.bottom<=b.viewport&&b.focused&&b.hit),JSON.stringify(reachable));geometry.focusReachable=reachable;
+  assert.equal(geometry.sceneCount,1);assert.match(geometry.actor,/storybook-sourcing-actor-v1\.webp/);assert.doesNotMatch(geometry.background,/castle-interior|sourcing-desk-actor/);
   await page.screenshot({path:path.join(out,`${width}-${height}-sourcing.png`)});
   await page.locator('[data-lounge-tools]').click();await page.locator('.rpg-workspace-dialog[open]').waitFor();await page.locator('.rpg-workspace-dialog[open]>button').click();
   await page.locator('[data-lounge-home]').click();await lounge.locator('.account-board:not([hidden])').waitFor();assert.equal(await lounge.locator('[data-story-instant=sourcing]').evaluate(n=>n===document.activeElement),true);

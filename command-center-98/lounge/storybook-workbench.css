@@ -108,3 +108,22 @@ body.storybook-workbench[data-workbook-paused=true] .story-prop{animation:none!i
 body.storybook-workbench #room:not([data-spatial-desk=ready]) .reading-desk{position:absolute;inset:var(--work-header) 14px 20px!important;margin:0!important;max-height:none}
 body.storybook-workbench #room:not([data-spatial-desk=ready]) .room-caption{display:none}
 body.storybook-workbench:has(#reduce-setting:checked) :is(.workbook-chapter,.workbook-actions button){transition:none!important;transform:none!important}
+/* The left catalogue is written onto the illustrated leaf, not an unrelated
+   white form below a miniature. Ruled bookmarks share the same colored paper. */
+body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .workbook-list>.manuscript-shelf{background:transparent;border:0;border-top:2px solid #173A35;border-radius:0;box-shadow:none;padding:9px 3px 0}
+body.storybook-workbench .workbook-list-title{display:inline-block;align-self:flex-start;padding:3px 14px 4px 8px;margin-bottom:0;background:var(--work-under);border:1px solid #173A35;border-bottom:0;border-radius:2px 12px 0 0}
+body.storybook-workbench .workbook-list .manuscript-card{border-bottom:1px solid #173A3560}
+body.storybook-workbench .workbook-list .manuscript-card[aria-pressed=true]{background:#F7F8F2;border-left-color:#106762}
+@media(max-width:600px){
+ /* A real, recognizable scene fragment remains above the working leaf. Its
+    lower edge is concealed by the same opaque paper, never a cropped bitmap. */
+ body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready]{--work-scene-strip:112px;--sb-reader-inset:calc(var(--work-header) + var(--work-scene-strip)) 9px 18px}
+ body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready]::before{background:linear-gradient(105deg,var(--work-under) 0 45%,var(--work-left) 45% 100%);border-left-width:1.5px}
+ body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready]::after{display:block;left:45%;top:var(--work-header);bottom:auto;height:var(--work-scene-strip);width:3px;background:#173A3530;border:0;box-shadow:3px 0 0 #ffffff60;z-index:0}
+ body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .spatial-illustration-stage{display:block;left:14px;right:auto;top:calc(var(--work-header) + 3px);bottom:auto;width:calc(100% - 28px);height:calc((100vw - 28px) / 2);aspect-ratio:2/1;transform:none}
+ body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .spatial-study-scene>.story-paper-art{aspect-ratio:2/1}
+ body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .reading-desk{top:calc(var(--work-header) + var(--work-scene-strip));border-top:1.5px solid #173A35;border-radius:3px 9px 4px 0;box-shadow:0 -4px 0 #F7F8F2,0 -5px 0 #173A35}
+ body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .reader-actions{grid-template-columns:minmax(0,1fr) 44px 88px;align-items:stretch;padding:8px 8px 8px 12px;gap:5px}
+ body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .reader-actions #desk-done{grid-column:auto;font-size:12px;white-space:normal;line-height:1.35;padding-inline:5px}
+ body.storybook-workbench.spatial-atelier #room[data-spatial-desk=ready] .reader-actions #desk-copy{font-size:13px;padding-inline:4px;white-space:normal}
+}

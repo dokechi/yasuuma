@@ -4,6 +4,7 @@
  * controller imports, request outcomes, or any component acceptance threshold.
  */
 const assert=require('node:assert/strict');
+const {openStorybookOverview}=require('./storybook-workbench-entry.cjs');
 const heavyPath=/\/arrival-(?:entry|atelier|renderer|camera)\.js$|\/vendor\/three-r187\/|\/arrival-court-v1\.glb$/;
 async function openStorybookArchive(page,origin,{check}={}){
  const requests=[];
@@ -15,7 +16,7 @@ async function openStorybookArchive(page,origin,{check}={}){
   await page.goto(origin+'/command-center-98/app-v130.html');
   await page.waitForFunction(()=>window.CCCastle?.unified&&!document.getElementById('ccCastleFrame').hidden);
   const f=page.frameLocator('#ccCastleFrame');
-  await f.locator('.storybook[data-ready=true]').waitFor({state:'visible'});
+  await openStorybookOverview(f);await f.locator('.storybook[data-ready=true]').waitFor({state:'visible'});
   const frame=page.frames().find(value=>new URL(value.url()).pathname==='/command-center-98/lounge/index.html');
   verify('compatibility entry begins at the actual default storybook index',!!frame&&!new URL(frame.url()).searchParams.has('experience'),frame?.url());
   await frame.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));

@@ -7,9 +7,9 @@ const dir=new URL('../command-center-98/lounge/',import.meta.url);
 const text=fs.readFileSync(new URL('storybook-atelier.js',dir),'utf8');
 const source=text.replace(/^import \* as application from .*;\n/m,'').replace(/\bimport\(/g,'load(').replaceAll('import.meta.url',JSON.stringify('https://example.test/lounge/storybook-atelier.js'));
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
-async function boot({missing='',sceneFailure=false,artFailure=false,brokenImage=false,coords=null}={}){
+async function boot({missing='',sceneFailure=false,artFailure=false,brokenImage=false,coords=null,workbench=false,width=1024}={}){
  const dom=new JSDOM('<body class="storybook-atelier spatial-atelier"><section id="room" data-spatial-desk="ready" data-account="insurance"><div class="spatial-illustration-stage"><div class="spatial-study-scene"></div><img class="spatial-desk-actor"></div></section><dialog id="settings"></dialog><button id="settings-open"></button><div class="system-management"></div></body>',{url:'https://example.test/lounge/index.html',pretendToBeVisual:true});
- const {window}=dom,document=window.document,board={element:document.createElement('section')},calls=[],artCalls=[],presentations=[];
+ const {window}=dom,document=window.document;Object.defineProperty(window,'innerWidth',{value:width,writable:true,configurable:true});if(workbench)document.body.classList.add('storybook-workbench');const board={element:document.createElement('section')},calls=[],artCalls=[],presentations=[];
  const actor=document.querySelector('img');Object.defineProperties(actor,{complete:{value:true},naturalWidth:{value:brokenImage?0:1536}});
  const app={getAccountBoard:()=>board,getLivingDesk:()=>null,openSupplementaryReader:()=>{}};
  const scene={setArtBuilder(){},open(){},snapshot:()=>({}),destroy(){}};
@@ -36,3 +36,4 @@ test('each publishing chapter keeps its own new actor and scene while supplement
  b.document.getElementById('room').dataset.account='fp';await new Promise(resolve=>setImmediate(resolve));assert.equal(b.document.getElementById('room').dataset.storyScene,'fallback');assert(!Object.hasOwn(config,'fp'));b.close();
 });
 test('pagehide releases the actual spatial installer lifecycle once',async()=>{const b=await boot();b.close();assert.equal(b.calls.filter(x=>x==='destroy-reader').length,1);});
+test('phone work chapter uses the same spread art and updates layout on a real viewport resize',async()=>{const b=await boot({workbench:true,width:390});assert.equal(b.artCalls.at(-1).layout,'spread');const body=b.document.getElementById('room');b.window.innerWidth=800;b.window.dispatchEvent(new b.window.Event('resize'));assert.equal(b.artCalls.at(-1).layout,'page');assert.equal(b.document.getElementById('room'),body);b.close();});

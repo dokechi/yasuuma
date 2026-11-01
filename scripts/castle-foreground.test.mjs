@@ -94,3 +94,10 @@ test('a large live shelf keeps only exact visible rows plus its full measured sc
 for(const reason of ['unexpected-row','visible-editor','transformed-row','scan-time'])test('visible shelf pruning '+reason+' fails whole-page safely without raising the budget',t=>{
  const h=longShelf(t);if(reason==='unexpected-row')h.list.append(h.doc.createElement('section'));if(reason==='visible-editor')h.list.children[20].append(h.doc.createElement('input'));if(reason==='transformed-row')h.list.children[20].style.transform='scale(.9)';if(reason==='scan-time'){let n=0;h.doc.defaultView.performance.now=()=>n++*2;}assert.equal(captureCastleForeground(h.doc,h.options),null);assert.equal(h.list.children.length,reason==='unexpected-row'?501:500);assert.equal(h.list.scrollTop,1600);
 });
+
+test('strict visible-list copies the actual thin stable scrollbar gutter and material rather than widening its viewport',t=>{
+ const h=longShelf(t);h.list.style.setProperty('scrollbar-width','thin');h.list.style.setProperty('scrollbar-gutter','stable');h.list.style.setProperty('scrollbar-color','rgb(16, 103, 98) rgb(247, 248, 242)');
+ const before=h.doc.body.innerHTML,computed=h.doc.defaultView.getComputedStyle(h.list),result=captureCastleForeground(h.doc,h.options),extent=result.querySelector('[data-journey-list-extent]'),copy=extent.parentElement;
+ for(const property of ['scrollbar-width','scrollbar-gutter','scrollbar-color']){assert.equal(copy.style.getPropertyValue(property),computed.getPropertyValue(property),property);assert.equal(copy.style.getPropertyPriority(property),'important',property);}
+ assert.equal(copy.style.getPropertyValue('scrollbar-width'),'thin');assert.equal(copy.style.getPropertyValue('scrollbar-gutter'),'stable');assert.equal(extent.style.width,'220px');assert.equal(extent.style.height,'40000px');assert.equal(copy.dataset.journeyScrollTop,'1600');assert.equal(h.list.scrollTop,1600);assert.equal(h.doc.body.innerHTML,before);
+});

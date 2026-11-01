@@ -1,6 +1,7 @@
 /* Current storybook home and original six-account manuscript board, synthetic records only. */
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium}=require('playwright-core');
+const {openStorybookOverview,openReaderWork}=require('./storybook-workbench-entry.cjs');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'artifacts/six-accounts');
 const server=http.createServer((req,res)=>{const file=path.join(root,new URL(req.url,'http://localhost').pathname);fs.readFile(file,(err,data)=>{if(err)return res.writeHead(404).end();res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/octet-stream');res.end(data);});});
 async function capture(page,file){await page.frames()[1].evaluate(()=>Promise.all(document.getAnimations().filter(a=>Number.isFinite(a.effect?.getTiming().iterations)).map(a=>a.finished.catch(()=>{}))));await page.screenshot({path:path.join(out,file)});}
@@ -22,7 +23,7 @@ async function capture(page,file){await page.frames()[1].evaluate(()=>Promise.al
   await page.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());
   await page.route('**/qa.html',r=>r.fulfill({contentType:'text/html',body:'<style>body{margin:0}iframe{display:block;width:100vw;height:100dvh;border:0}</style><iframe src="/command-center-98/lounge/index.html"></iframe>'}));
   await page.goto(origin+'/qa.html');const frame=page.frameLocator('iframe');
-  await frame.locator('[data-story-destination]').first().waitFor();
+  await openStorybookOverview(frame);await frame.locator('[data-story-destination]').first().waitFor();
   assert.equal(await frame.locator('[data-story-destination]').count(),8);
   assert.equal(await frame.locator('[data-story-destination]:disabled').count(),3);
   assert.equal(await frame.locator('[data-story-instant]').count(),5);
@@ -70,7 +71,7 @@ async function capture(page,file){await page.frames()[1].evaluate(()=>Promise.al
    assert.equal(await frame.locator('#room-title').textContent(),({insurance:'保険',otoku:'まだ安く買えるはず',rakuten:'楽天犬'})[key]);
    assert.ok((await frame.locator('.spatial-desk-actor').getAttribute('src')).endsWith('/storybook-'+key+'-actor-v1.webp'));
    assert.ok((await frame.locator('#draft-body').textContent()).startsWith(key));
-   await frame.locator('.spatial-work > summary').click();
+   await openReaderWork(frame);
    assert.equal(await frame.locator('#desk-routes strong').textContent(),({insurance:'保険 @sucker0508',otoku:'まだ安く買えるはず @thats_a_steal0601',rakuten:'楽天犬 @bonya0914'})[key]);
    await frame.locator('#desk-routes').getByText('← 司令塔へ').click();
    await frame.locator('.account-board').waitFor();
@@ -88,7 +89,7 @@ async function capture(page,file){await page.frames()[1].evaluate(()=>Promise.al
   await frame.getByRole('button',{name:'旧データの保管庫'}).click();await frame.locator('.legacy-account-archive').waitFor();
   assert.ok((await frame.locator('.legacy-account-archive').textContent()).includes('OLD ACCOUNT BODY'));
   await frame.locator('.legacy-account-archive button').click();
-  await page.reload();await frame.locator('[data-story-destination]').first().waitFor();
+  await page.reload();await openStorybookOverview(frame);await frame.locator('[data-story-destination]').first().waitFor();
   assert.equal(await frame.locator('.storybook').getAttribute('data-story-room'),'insurance','room emphasis is memory-only and resets on reload');
   assert.equal(await frame.locator('.account-board').getAttribute('data-destination'),null,'last visit is not persisted');
   await frame.locator('.story-list').click();

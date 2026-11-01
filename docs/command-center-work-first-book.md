@@ -4,8 +4,8 @@ The default is the existing live manuscript owner, not an illustrated landing
 screen or a second content preview. Five permanent chapter bookmarks keep the
 current work and other accounts reachable on the first screen. Wide layouts bind
 the exact existing shelf and a substantial colored illustration leaf beside the
-reader; phones retain explicit shelf/tools controls without hiding work behind a
-full-screen picture. The original five characters, chapter colors and art remain.
+reader; phones retain a compact, recognizable two-color scene above the working
+leaf plus explicit shelf/tools controls, never a mandatory full-screen picture. The original five characters, chapter colors and art remain.
 
 ## Ownership and meaning
 
