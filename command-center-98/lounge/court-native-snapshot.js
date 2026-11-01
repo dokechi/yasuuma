@@ -29,9 +29,14 @@ export function captureNativeWorkspace(source, {document: target = source, surfa
   }
   return value;
  }
+ function fixedStyle(node, values) { for (const [property,value] of Object.entries(values)) node.style.setProperty(property.replace(/[A-Z]/g,letter=>'-'+letter.toLowerCase()),String(value),'important'); }
  function copyStyle(style, clone) {
-  for (const property of properties) { const value = style.getPropertyValue(property); if (value) clone.style.setProperty(property, assetsOnly(value)); }
-  clone.style.pointerEvents = 'none'; clone.style.animation = 'none'; clone.style.transition = 'none';
+  // The inert copy intentionally has no source IDs/classes. Freeze its sampled
+  // appearance above generic host !important rules, never by carrying selectors
+  // or changing the live workspace. Geometry corrections below use the same
+  // priority, so their exact measured values still replace sampled dimensions.
+  for (const property of properties) { const value = style.getPropertyValue(property); if (value) clone.style.setProperty(property, assetsOnly(value),'important'); }
+  fixedStyle(clone,{pointerEvents:'none',animation:'none',transition:'none'});
  }
  function transformed(style) {
   return ['transform','translate','rotate','scale'].some(key => { const value=style.getPropertyValue(key); return value && value !== 'none'; }) || !['','normal','1'].includes(style.getPropertyValue('zoom'));
@@ -46,7 +51,7 @@ export function captureNativeWorkspace(source, {document: target = source, surfa
    const inset=style.boxSizing === 'border-box' ? 0 : sides.reduce((sum,side)=>sum+edge('padding-'+side)+edge('border-'+side+'-width'),0);
    const size=rect[dimension]-inset;
    if (!finite(size) || size < 0) throw Error('snapshot-used-box');
-   clone.style.setProperty(dimension,size+'px');
+   clone.style.setProperty(dimension,size+'px','important');
   }
  }
  function pseudo(node, which) {
@@ -96,7 +101,7 @@ export function captureNativeWorkspace(source, {document: target = source, surfa
   const transformedBox = transformedAncestor || transformed(style);
   const inView = root || atomicButton || !rect.width || !rect.height || intersects(rect, surface);
   // Invisible subtrees retain their exact layout box, not their unseen records.
-  if (!inView || style.visibility === 'hidden' || style.visibility === 'collapse') { elementBudget(); const spacer = target.createElement('div'); copyStyle(style, spacer); spacer.style.visibility = 'hidden'; if (!transformedBox) { spacer.style.boxSizing = 'border-box'; spacer.style.width = rect.width+'px'; spacer.style.height = rect.height+'px'; } if (style.display === 'inline') throw Error('snapshot-inline-layout'); return spacer; }
+  if (!inView || style.visibility === 'hidden' || style.visibility === 'collapse') { elementBudget(); const spacer = target.createElement('div'); copyStyle(style, spacer); fixedStyle(spacer,{visibility:'hidden'}); if (!transformedBox) fixedStyle(spacer,{boxSizing:'border-box',width:rect.width+'px',height:rect.height+'px'}); if (style.display === 'inline') throw Error('snapshot-inline-layout'); return spacer; }
   const presentationCopy=node.tagName==='IMG'?preparedPresentationImage(node):null;
   if (unsupported.has(node.tagName) && !presentationCopy || node.shadowRoot || node.hasAttribute('contenteditable') && node.getAttribute('contenteditable') !== 'false' || !root && ['fixed','sticky'].includes(style.position)) throw Error('snapshot-unsupported');
   elementBudget(); const clone = presentationCopy || (isSvg ? target.createElementNS(node.namespaceURI,node.localName) : target.createElement(node.tagName === 'FORM' ? 'div' : node.localName));
@@ -138,14 +143,14 @@ export function captureNativeWorkspace(source, {document: target = source, surfa
   }
   const rect = main.getBoundingClientRect(); if (!box(rect) || !rect.width || !rect.height || !intersects(rect,surface)) return null;
   const foreground = target.createElement('div'), roomBackdrop = target.createElement('div');
-  for (const node of [foreground,roomBackdrop]) { node.inert = true; node.setAttribute('aria-hidden','true'); Object.assign(node.style,{position:'absolute',inset:'0',overflow:'hidden',pointerEvents:'none'}); }
+  for (const node of [foreground,roomBackdrop]) { node.inert = true; node.setAttribute('aria-hidden','true'); fixedStyle(node,{position:'absolute',inset:'0',overflow:'hidden',pointerEvents:'none'}); }
   // The workspace stylesheet uses a viewport-fixed, already-loaded background.
   // Reproduce its viewport sizing even when the passage begins below the rail.
   const bodyStyle = styleOf(source.body), backdrop = target.createElement('div');
-  Object.assign(backdrop.style,{position:'absolute',left:-surface.left+'px',top:-surface.top+'px',width:win.innerWidth+'px',height:win.innerHeight+'px'});
-  for (const property of ['background-color','background-image','background-position','background-size','background-repeat','background-origin','background-clip']) backdrop.style.setProperty(property,assetsOnly(bodyStyle.getPropertyValue(property)));
+  fixedStyle(backdrop,{position:'absolute',left:-surface.left+'px',top:-surface.top+'px',width:win.innerWidth+'px',height:win.innerHeight+'px'});
+  for (const property of ['background-color','background-image','background-position','background-size','background-repeat','background-origin','background-clip']) backdrop.style.setProperty(property,assetsOnly(bodyStyle.getPropertyValue(property)),'important');
   roomBackdrop.append(backdrop);
-  const content = copy(main,true); Object.assign(content.style,{position:'absolute',left:rect.left-surface.left+'px',top:rect.top-surface.top+'px',right:'auto',bottom:'auto',margin:'0',transform:'none'}); foreground.append(content);
+  const content = copy(main,true); fixedStyle(content,{position:'absolute',left:rect.left-surface.left+'px',top:rect.top-surface.top+'px',right:'auto',bottom:'auto',margin:'0',transform:'none'}); foreground.append(content);
   budget(); return {foreground,roomBackdrop};
  } catch { return null; }
 }

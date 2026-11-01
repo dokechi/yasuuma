@@ -5,6 +5,7 @@ const rooms = new Set(['insurance','otoku','rakuten','lottery','sourcing']);
 const forbidden = new Set(['SCRIPT','STYLE','LINK','META','BASE','IFRAME','OBJECT','EMBED','CANVAS','VIDEO','AUDIO','INPUT','TEXTAREA','SELECT','FORM']);
 const svgTags = new Set(['svg','g','path','rect','circle','ellipse','line','polyline','polygon','title','desc']);
 const finite = value => typeof value === 'number' && Number.isFinite(value);
+const validSurface = surface => surface && ['left','top','width','height'].every(key=>finite(surface[key])) && surface.width>0 && surface.height>0 && surface.width<=20000 && surface.height<=20000 && Math.abs(surface.left)<=20000 && Math.abs(surface.top)<=20000;
 const clamp = (value,min,max) => Math.min(max,Math.max(min,value));
 const phaseAt = progress => progress < .13 ? 'press' : progress < .4 ? 'fold' : progress < .56 ? 'covered' : progress < .9 ? 'unfold' : 'settle';
 
@@ -54,7 +55,7 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
   try{const frame=record.sourceFrame;if(!frame||!frame.isConnected||frame.ownerDocument!==doc||frame.contentDocument!==record.sourceDoc||win.innerWidth!==record.hostWidth||win.innerHeight!==record.hostHeight||doc.hidden)return false;
    const style=win.getComputedStyle(frame),isHidden=frame.hidden||style.display==='none'||style.visibility==='hidden';
    if(hidden)return record.nativeIn&&record.nativeAcknowledged&&isHidden;
-   if(restored){const r=frame.getBoundingClientRect(),s=record.surface,v=record.sourceDoc.defaultView;return !isHidden&&['left','top','width','height'].every(k=>r[k]===s[k])&&v.innerWidth===s.width&&v.innerHeight===s.height;}
+   if(restored){const r=frame.getBoundingClientRect(),s=record.sourceSurface,v=record.sourceDoc.defaultView;return !isHidden&&['left','top','width','height'].every(k=>r[k]===s[k])&&v.innerWidth===s.width&&v.innerHeight===s.height;}
    return true;
   }catch{return false;}
  }
@@ -106,11 +107,13 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
   const intent=++serial;release(current);
   if(intent!==serial||!canMove()||spec.quick||!rooms.has(spec.room)||!['in','out','switch'].includes(spec.direction)||owners.has(doc))return null;
   const surface=spec.surface,sourceDoc=spec.sourceDocument||doc;
-  if(!surface||!['left','top','width','height'].every(key=>finite(surface[key]))||surface.width<=0||surface.height<=0||surface.width>20000||surface.height>20000||Math.abs(surface.left)>20000||Math.abs(surface.top)>20000)return null;
+  if(!validSurface(surface))return null;
   try{if(sourceDoc.hidden||sourceDoc.defaultView.location.origin!==win.location.origin)return null;}catch{return null;}
   let sourceFrame=null;try{if(sourceDoc!==doc)sourceFrame=sourceDoc.defaultView.frameElement;}catch{}
   const native=spec.native===true&&spec.room==='sourcing'&&!!sourceFrame&&sourceFrame.ownerDocument===doc;
   if(spec.native===true&&!native)return null;
+  const sourceSurface=native?(spec.sourceSurface||surface):surface;
+  if(native){if(!validSurface(sourceSurface))return null;try{const r=sourceFrame.getBoundingClientRect(),v=sourceDoc.defaultView;if(!['left','top','width','height'].every(key=>r[key]===sourceSurface[key])||v.innerWidth!==sourceSurface.width||v.innerHeight!==sourceSurface.height)return null;}catch{return null;}}
   const inputs=[['sourceScene',true],['destinationScene',true],['sourceForeground',false],['foreground',false]],nodes=inputs.map(([key])=>spec[key]).filter(Boolean);
   if(!spec.sourceScene||nodes.length!==new Set(nodes).size||inputs.some(([key,decorative])=>spec[key]!=null&&!safeSnapshot(spec[key],decorative,native)))return null;
   const allowed=canMove();if(intent!==serial||!allowed||owners.has(doc))return null;
@@ -121,7 +124,7 @@ export function createStorybookJourney({document:doc=globalThis.document,reduced
   source.style.transformOrigin=(sign===1?'0%':'100%')+' 50%';incoming.style.transformOrigin=(sign===1?'100%':'0%')+' 50%';
   layer.append(incoming,source,flatSource,flatDestination,cover,edge);
   const folds=[];for(let index=0;index<3;index++){const fold=make('fold');fold.dataset.segment=String(index);fold.style.left=(index*100/3)+'%';fold.style.transformOrigin=(sign===1?'100%':'0%')+' 50%';cover.append(fold);folds.push(fold);}
-  const record={layer,source,destination:incoming,flatSource,flatDestination,cover,room:spec.room,direction:spec.direction,duration,sourceDoc,sourceFrame,surface:{...surface},nativeIn:native&&spec.direction==='in',nativeOut:native&&spec.direction==='out',nativeAcknowledged:false,nativeVisible:spec.nativeVisible,hostWidth:win.innerWidth,hostHeight:win.innerHeight,animations:[],hinges:new Map(),animate:null,listeners:[],clock:null,raf:0,watchdog:0,started:false,released:false};
+  const record={layer,source,destination:incoming,flatSource,flatDestination,cover,room:spec.room,direction:spec.direction,duration,sourceDoc,sourceFrame,surface:{...surface},sourceSurface:{...sourceSurface},nativeIn:native&&spec.direction==='in',nativeOut:native&&spec.direction==='out',nativeAcknowledged:false,nativeVisible:spec.nativeVisible,hostWidth:win.innerWidth,hostHeight:win.innerHeight,animations:[],hinges:new Map(),animate:null,listeners:[],clock:null,raf:0,watchdog:0,started:false,released:false};
   current=record;owners.set(doc,record);
   const listen=(target,type,fn,options)=>{target.addEventListener(type,fn,options);record.listeners.push(()=>target.removeEventListener(type,fn,options));};
   const animate=(node,frames,id)=>{
