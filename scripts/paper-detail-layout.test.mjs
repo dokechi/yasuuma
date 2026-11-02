@@ -59,13 +59,13 @@ test('only completed reads show the actual filtered count or a genuine empty sta
  assert.equal(paperReadStatus({loading:false,complete:true},{availableCount:27,visibleCount:0,futureOnly:true}),'このカテゴリに今後使う原稿はありません。');
 });
 
-function setup(t,{count=27,loading=false,complete=true}={}){
+function setup(t,{count=27,loading=false,complete=true,canPin=()=>true}={}){
  const dom=new JSDOM('<body><main><section id="room" data-account="insurance"><article id="desk"><div id="desk-scroll" tabindex="0"><p id="draft-body">唯一のリーダー</p></div></article></section></main></body>',{url:'https://test.invalid',pretendToBeVisual:true});
  const document=dom.window.document;
  const titles=['左右の目でも手術給付は1回の例','年払いの残りは契約日で返金が違う','80歳と90歳で払込総額が逆転'];
  const rows=Array.from({length:count},(_,index)=>({id:'detail-'+index,title:titles[index%titles.length],body:'契約日と払込総額を確かめ、1回ごとの記録を読む。\n\n  空白も変えない本文  '+index,source:{id:'source-'+index,account:'insurance'},place:'kyun'}));
  const source=JSON.stringify(rows),opened=[],pins=new Set(),board={state:{loading,complete},subscribe(fn){fn();return()=>{};}};
- const owner={rows:()=>rows,open:id=>{opened.push(id);return true;},isFuture:id=>pins.has(id),toggleFuture:id=>{pins.has(id)?pins.delete(id):pins.add(id);},persistent:()=>true,canPin:()=>true};
+ const owner={rows:()=>rows,open:id=>{opened.push(id);return true;},isFuture:id=>pins.has(id),toggleFuture:id=>{pins.has(id)?pins.delete(id):pins.add(id);},persistent:()=>true,canPin};
  const application={getPaperDesk:()=>owner,getAccountBoard:()=>board,openWorkingChapter:key=>{document.getElementById('room').dataset.account=key;return true;}};
  const stage=mountPaperStage({document,application,accounts:[{key:'insurance',name:'保険'}]});
  t.after(()=>{stage.destroy();dom.window.close();});
@@ -112,4 +112,38 @@ test('formatted titles remain text, never HTML from manuscript content',async t=
  assert.equal(s.$('.paper-title').textContent,s.rows[0].title);
  assert.equal(s.$('.paper-excerpt').textContent,s.rows[0].body);
  assert.equal(s.$('.paper-title img'),null);assert.equal(s.$('.paper-excerpt script'),null);
+});
+
+
+test('cached identical rows update disabled pins when the trusted owner becomes ready',async t=>{
+ let ready=false;const s=setup(t,{count:3,loading:true,complete:false,canPin:()=>ready});await tick();
+ assert.ok([...s.document.querySelectorAll('.paper-pin')].every(pin=>pin.disabled));
+ ready=true;s.board.state={loading:false,complete:true};s.stage.paint();
+ assert.ok([...s.document.querySelectorAll('.paper-pin')].every(pin=>!pin.disabled),'same rows and false future marks must not cache a disabled control');
+ assert.ok([...s.document.querySelectorAll('.paper-pin')].every(pin=>pin.title==='今後使う（この端末・現在のログイン）'));
+ assert.equal(JSON.stringify(s.rows),s.source);
+});
+
+test('an open live reader preserves DOM and focus while pin capability updates in both directions',async t=>{
+ let ready=false;const s=setup(t,{count:3,canPin:()=>ready});await tick();s.$('.paper-open').click();
+ const host=s.$('.paper-reader'),reader=s.$('#desk'),pin=host.querySelector('.paper-pin'),scroller=s.$('#desk-scroll');
+ scroller.focus();const readerText=reader.textContent,style=host.getAttribute('style');
+ assert.equal(pin.disabled,true);
+ for(const allowed of [true,false]){
+  ready=allowed;s.stage.paint();
+  assert.equal(s.$('.paper-reader'),host);assert.equal(s.$('#desk'),reader);assert.equal(host.querySelector('.paper-pin'),pin);
+  assert.equal(reader.textContent,readerText);assert.equal(host.getAttribute('style'),style);assert.equal(s.document.activeElement,scroller);
+  assert.equal(pin.disabled,!allowed,'open pin capability follows its existing owner without replacing the reader');
+  assert.equal(pin.title,allowed?'今後使う（この端末・現在のログイン）':'ログイン中の本体から利用できます');
+ }
+ assert.equal(JSON.stringify(s.rows),s.source);
+});
+
+test('revoking pin capability updates identical closed source papers immediately',async t=>{
+ let ready=true;const s=setup(t,{count:3,canPin:()=>ready});await tick();
+ assert.ok([...s.document.querySelectorAll('.paper-pin')].every(pin=>!pin.disabled));
+ ready=false;s.stage.paint();
+ assert.ok([...s.document.querySelectorAll('.paper-pin')].every(pin=>pin.disabled),'same-signature rendering must also disable controls when the owner does');
+ assert.ok([...s.document.querySelectorAll('.paper-pin')].every(pin=>pin.title==='ログイン中の本体から利用できます'));
+ assert.equal(JSON.stringify(s.rows),s.source);
 });

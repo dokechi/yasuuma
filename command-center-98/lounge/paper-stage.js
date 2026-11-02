@@ -25,6 +25,7 @@ export function mountPaperStage({document:doc=globalThis.document,application,ac
  const setReadingText=(node,text)=>{for(const part of readingSegments(text)){if(!part.keepTogether){node.append(doc.createTextNode(part.text));continue;}const word=doc.createElement('span');word.className='paper-word';word.textContent=part.text;node.append(word);}};
  const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
  const button=(cls,text,fn)=>{const n=make('button',cls,text);n.type='button';n.addEventListener('click',fn);return n;};
+ const updatePinAvailability=pin=>{pin.disabled=owner.canPin?.()===false;pin.title=pin.disabled?'ログイン中の本体から利用できます':'今後使う（この端末・現在のログイン）';};
  const anchor=doc.createComment('paper: original live reader');reader.before(anchor);
  let key=room.dataset.account||'insurance',lastPaperKey=['sourcing','fp'].includes(key)?'insurance':key,opened=null,returnFocus=null,onlyFuture=false,limit=20,queued=false,disposed=false,signature='',scrollOrigin=null,openingMotion=null,pendingPaperId=null,openingIntent=false,cardStyleBefore=null,layersBefore=[],readingPin=null,pinAnchor=null;
  const reduced=()=>doc.getElementById('app')?.dataset.feedbackMotion==='reduced'||win.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -55,6 +56,9 @@ export function mountPaperStage({document:doc=globalThis.document,application,ac
   const status=board.state;state.textContent=paperReadStatus(status,{availableCount:available.length,visibleCount:rows.length,futureOnly:onlyFuture});
   if(!owner.persistent())state.textContent+=' 端末保存は利用できないため、この画面内で保持します。';
   const revealIndex=rows.findIndex(d=>d.id===pendingPaperId);if(revealIndex>=limit)limit=Math.ceil((revealIndex+1)/20)*20;
+  // Cached papers can arrive before the current login's pin scope. Capability
+  // changes must update controls even when source text and saved marks match.
+  for(const pin of papers.querySelectorAll('[data-paper-pin]'))updatePinAvailability(pin);
   const sig=JSON.stringify([key,onlyFuture,limit,rows.map(d=>[d.id,d.title,d.body,owner.isFuture(d.id)])]);if(sig===signature)return;
   // Source receipts must never replace an open reader or move the focused paper.
   if(opened){for(const pin of papers.querySelectorAll('[data-paper-pin]'))pin.setAttribute('aria-pressed',String(owner.isFuture(pin.dataset.paperPin)));return;}
@@ -64,7 +68,7 @@ export function mountPaperStage({document:doc=globalThis.document,application,ac
    const platform=make('div','paper-platform');platform.setAttribute('aria-hidden','true');
    const backing=make('div','paper-backing');backing.setAttribute('aria-hidden','true');
    const leaf=make('div','paper-leaf'),category=make('small','paper-category',current?.label||'原稿'),title=make('h2','paper-title'),excerpt=make('p','paper-excerpt');setReadingText(title,d.title);setReadingText(excerpt,d.body.slice(0,i===0?240:105));
-   const pin=button('paper-pin','',()=>{owner.toggleFuture(d.id);pin.setAttribute('aria-pressed',String(owner.isFuture(d.id)));schedule();});pin.dataset.paperPin=d.id;pin.setAttribute('aria-pressed',String(owner.isFuture(d.id)));pin.setAttribute('aria-label',d.title+'を今後使う');pin.disabled=owner.canPin?.()===false;pin.title=pin.disabled?'ログイン中の本体から利用できます':'今後使う（この端末・現在のログイン）';const icon=make('span','paper-pin-icon');icon.setAttribute('aria-hidden','true');pin.append(icon);
+   const pin=button('paper-pin','',()=>{owner.toggleFuture(d.id);pin.setAttribute('aria-pressed',String(owner.isFuture(d.id)));schedule();});pin.dataset.paperPin=d.id;pin.setAttribute('aria-pressed',String(owner.isFuture(d.id)));pin.setAttribute('aria-label',d.title+'を今後使う');updatePinAvailability(pin);const icon=make('span','paper-pin-icon');icon.setAttribute('aria-hidden','true');pin.append(icon);
    const opener=button('paper-open','ここで開く ＋',()=>open(d,card,opener));opener.setAttribute('aria-expanded','false');opener.setAttribute('aria-label',d.title+'をここで開く');opener.dataset.paperOpenLabel=opener.getAttribute('aria-label');if([1,2,3,4].includes(i%5))opener.textContent='開く';opener.dataset.paperClosedLabel=opener.textContent;leaf.append(category,pin,title,excerpt);card.append(platform,backing,sculpture(doc,i%5),leaf,sculpture(doc,i%5,true));if(i>=5||[1,2,3,4].includes(i%5)){const actions=make('div','paper-action-row');actions.append(opener,pin);if(i>=5||i%5===3)leaf.append(actions);else card.append(actions);}else leaf.append(opener);papers.append(card);
   }
   updateLayout();
