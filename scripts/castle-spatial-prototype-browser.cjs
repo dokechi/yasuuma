@@ -130,7 +130,7 @@ function drawerContrast() {
       const switchRoom = async (from, to) => {
         await f.locator('.spatial-room-name').click();
         await f.locator('#spatial-room-dialog[open]').waitFor();
-        assert.equal(await f.locator('.spatial-destination').count(), 5);
+        assert.equal(await f.locator('.spatial-destination').count(), 6);
         assert.equal(await f.locator('.spatial-account-identity h3').textContent(), from.name);
         assert.equal(await f.locator('.spatial-account-identity p').first().textContent(), from.handle);
         assert.equal(await f.locator(`.spatial-destination[data-destination=${from.key}]`).getAttribute('aria-current'), 'page');

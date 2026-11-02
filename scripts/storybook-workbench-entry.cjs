@@ -21,6 +21,14 @@ async function menuAction(frame,name){
  await action.click();
 }
 async function openStorybookOverview(frame){
+ // Compatibility scenarios explicitly enter the retained book through its
+ // visible settings link. New-default acceptance is scripts/paper-browser.cjs.
+ if(await frame.locator('body.paper-popup').count()){
+  const menu=frame.locator('.paper-tools');if(!await menu.evaluate(n=>n.open))await menu.locator('summary').click();
+  await menu.getByRole('button',{name:'設定',exact:true}).click();
+  await frame.locator('#settings').getByRole('link',{name:'以前の原稿表示を開く',exact:true}).click();
+  await frame.locator('body:not(.paper-popup)[data-workbook-ready=true]').waitFor({state:'attached'});
+ }
  if(await working(frame)){
   if(!await frame.locator('#room').evaluate(node=>node.hidden))await menuAction(frame,'本の全景');
  }else if(await frame.locator('#room').isVisible())await frame.locator('#back').click();

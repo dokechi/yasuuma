@@ -25,8 +25,8 @@ async function capture(page,file){await page.frames()[1].evaluate(()=>Promise.al
   await page.goto(origin+'/qa.html');const frame=page.frameLocator('iframe');
   await openStorybookOverview(frame);await frame.locator('[data-story-destination]').first().waitFor();
   assert.equal(await frame.locator('[data-story-destination]').count(),8);
-  assert.equal(await frame.locator('[data-story-destination]:disabled').count(),3);
-  assert.equal(await frame.locator('[data-story-instant]').count(),5);
+  assert.equal(await frame.locator('[data-story-destination]:disabled').count(),2);
+  assert.equal(await frame.locator('[data-story-instant]').count(),6);
   const rows=['insurance','otoku','rakuten'].flatMap((account,i)=>Array.from({length:7},(_,j)=>({id:account+j,place:account==='insurance'?'kyun':account,title:['保険の確認ポイント','安く買う前のチェック','楽天のお得情報'][i]+' '+(j+1),body:account+'だけの本文。ほかのアカウントと混ぜない。',kind:'本文',checkedAt:'2026-10-30',source:{id:account+j,account},posting:{main:account+'本文',reply:account==='insurance'?'':account+'返信'},createdAt:1,updatedAt:10-j})));
   rows.push({id:'legacy',place:'kyun',title:'旧キュン原稿',body:'旧原稿は保険と混ぜない',source:{id:'old',account:'kyun'},createdAt:1,updatedAt:1});
   await page.evaluate(rows=>document.querySelector('iframe').contentWindow.postMessage({channel:'cc-castle-v1',type:'records',drafts:rows,complete:true,loading:false,message:'保存原稿を読込済み'},location.origin),rows);
