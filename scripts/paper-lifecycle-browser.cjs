@@ -58,7 +58,7 @@ const server=http.createServer((req,res)=>{
   await page.goto(origin+'/command-center-98/app-v130.html');await page.waitForFunction(()=>window.CCCastle?.unified);const f=page.frameLocator('#ccCastleFrame');await f.locator('body').waitFor({state:'attached'});const cf=page.frames().find(f=>new URL(f.url()).pathname.endsWith('/lounge/index.html'));await cf.waitForFunction(()=>__paperProbe.records?.complete===true);
   return {context,page,f,cf,appRequests,paperRequests};
  }
- const check=(name,ok)=>{results.push({name,pass:!!ok});assert.ok(ok,name);};
+ const check=(name,ok,detail)=>{results.push({name,pass:!!ok,...(detail===undefined?{}:{detail})});assert.ok(ok,name);};
  try{
   const {context,page,f,cf}=await setup();
   await f.locator('.paper-card').first().waitFor();check('initial audio is silent',await page.evaluate(()=>__paperProbe.audio===0)&&await cf.evaluate(()=>__paperProbe.audio===0));
@@ -92,8 +92,18 @@ const server=http.createServer((req,res)=>{
   await f.locator('[data-paper-chapter=insurance]').click();await f.locator('.paper-card').first().waitFor();check('publishing category returns after FP',await f.locator('.paper-title').first().isVisible());
   await f.locator('.paper-pin').first().click();await f.locator('.paper-future').click();await f.locator('.paper-pin').first().click();await cf.waitForFunction(()=>document.querySelectorAll('.paper-card').length===0);
   check('unpinning final filtered paper restores a visible focus target',await f.locator('.paper-future').evaluate(n=>{const r=n.getBoundingClientRect();return document.activeElement===n&&r.top>=0&&r.bottom<=innerHeight&&document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)===n;}));await f.locator('.paper-future').click();await f.locator('.paper-pin').first().click();
-  await page.reload();await f.locator('.paper-card').first().waitFor();check('reload restores the future mark in the same authenticated scope',await f.locator('.paper-pin').first().getAttribute('aria-pressed')==='true');
-  authFixture='isolated-other-fixture-session';await page.reload();await f.locator('.paper-card').first().waitFor();check('different authenticated scope does not inherit future marks',await f.locator('.paper-pin').first().getAttribute('aria-pressed')==='false');
+  // Cached source cards may precede the new host's authenticated-scope receipt.
+  // Assert persistence only after that real receipt and its live enabled control,
+  // never by sleeping, retrying the expected aria value, or exposing the scope.
+  const settledFutureScope=async()=>{
+   const frame=page.frames().find(frame=>new URL(frame.url()).pathname.endsWith('/lounge/index.html'));
+   const observe=()=>frame.evaluate(()=>{const pin=document.querySelector('.paper-pin'),records=window.__paperProbe.records;return {complete:records?.complete===true,scopeReady:typeof records?.pinScope==='string'&&/^[a-f0-9]{64}$/.test(records.pinScope),pinEnabled:!!pin&&!pin.disabled,pressed:pin?.getAttribute('aria-pressed')??null};});
+   const before=await observe();
+   if(!before.complete||!before.scopeReady||!before.pinEnabled)try{await frame.waitForFunction(()=>{const pin=document.querySelector('.paper-pin'),records=window.__paperProbe.records;return records?.complete===true&&typeof records.pinScope==='string'&&/^[a-f0-9]{64}$/.test(records.pinScope)&&!!pin&&!pin.disabled;});}catch(error){error.message+=' (initial scope observation: '+JSON.stringify(before)+')';throw error;}
+   return {before,settled:await observe()};
+  };
+  await page.reload();await f.locator('.paper-card').first().waitFor();const sameScope=await settledFutureScope();check('reload restores the future mark in the same authenticated scope',await f.locator('.paper-pin').first().getAttribute('aria-pressed')==='true',sameScope);
+  authFixture='isolated-other-fixture-session';await page.reload();await f.locator('.paper-card').first().waitFor();const otherScope=await settledFutureScope();check('different authenticated scope does not inherit future marks',await f.locator('.paper-pin').first().getAttribute('aria-pressed')==='false',otherScope);
   await context.close();
   for(const mode of ['empty','css','module','cache']){
    const {context,page,f,cf,appRequests,paperRequests}=await setup(mode);
