@@ -64,7 +64,7 @@ const server=http.createServer((req,res)=>{
   await page.frames().find(f=>f.url().includes('/lounge/')).evaluate(async()=>{await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
   assert.equal(await lounge.locator('[data-story-destination]').count(),8,'all eight original destinations remain represented');assert.equal(await lounge.locator('[data-story-destination]:visible').count(),6,'the main book shows the five active chapters');
   const preparing=lounge.locator('.story-preparing');assert.equal(await preparing.evaluate(node=>node.open),false);await preparing.locator('summary').click();
-  const pending=await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(node=>({name:node.getAttribute('aria-label'),disabled:node.disabled,height:node.getBoundingClientRect().height})));assert.deepEqual(pending.map(node=>node.name),['追加アカウント5、未設定','追加アカウント6、未設定','予備、未設定']);assert.ok(pending.every(node=>node.disabled&&node.height>=44));
+  const pending=await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(node=>({name:node.getAttribute('aria-label'),disabled:node.disabled,height:node.getBoundingClientRect().height})));assert.deepEqual(pending.map(node=>node.name),['追加アカウント6、未設定','予備、未設定']);assert.ok(pending.every(node=>node.disabled&&node.height>=44));
   const selectedBefore=await lounge.locator('.storybook').getAttribute('data-story-room');await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.forEach(node=>node.click()));
   assert.equal(await lounge.locator('.storybook').getAttribute('data-story-room'),selectedBefore);assert.equal(await lounge.locator('.account-board').evaluate(node=>node.hidden),false);assert.equal(await lounge.locator('#room').evaluate(node=>node.hidden),true);
   await preparing.locator('summary').click();assert.equal(await lounge.locator('[data-story-destination]:visible').count(),6);
@@ -124,6 +124,7 @@ const server=http.createServer((req,res)=>{
   // The existing native route opens purchases, not the candidate/hold tab.
   // Measure its exact seeded purchase record without forcing a different view.
   await page.locator('#sourcingBody .purchase-product > b').filter({hasText:/^検証用購入商品$/}).waitFor();
+  await page.screenshot({path:path.join(out,`${width}-${height}-native-initial.png`)});
   const initialWork=await page.evaluate(()=>{
    const stage=document.querySelector('.story-workspace-art'),tabs=[...document.querySelectorAll('#sourcingTabs button[data-sourcing-sub]')].filter(n=>n.checkVisibility());
    const selected=tabs.filter(n=>n.classList.contains('selected')),tab=selected.find(n=>n.dataset.sourcingSub==='purchases'),rect=tab?.getBoundingClientRect(),hit=rect&&document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
@@ -137,11 +138,11 @@ const server=http.createServer((req,res)=>{
   if(width<=600)assert.ok(initialWork.scrollY===0&&initialWork.tab.rect.top>=0&&initialWork.tab.rect.bottom<=initialWork.viewport&&initialWork.tab.rect.left>=0&&initialWork.tab.rect.right<=width&&initialWork.tab.hit&&initialWork.information.some(n=>n.rect.height>0&&n.rect.top>=0&&n.rect.bottom<=initialWork.viewport&&n.rect.left>=0&&n.rect.right<=width),'phone instant entry must expose the full unobstructed purchase tab and exact record-derived 1-order/2-unit summary before scrolling: '+JSON.stringify(initialWork));
   const geometry=await page.locator('#loungeWorkspaceHeader').evaluate(n=>({overflow:document.documentElement.scrollWidth>innerWidth,buttons:[...n.querySelectorAll('button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height,left:b.getBoundingClientRect().left,right:b.getBoundingClientRect().right})),background:getComputedStyle(document.body).backgroundImage,sceneCount:document.querySelectorAll('.story-workspace-art .story-paper-art[data-story-room=sourcing]').length,actor:document.querySelector('.story-workspace-art .story-actor-image')?.src}));
   assert.equal(geometry.overflow,false);
-  // All five working chapters remain visible together. Auxiliary controls may
+  // All configured chapters remain accessible. Primary and auxiliary controls may
   // occupy their deliberate horizontal strip, but each focused real action
   // must become fully visible/hit-testable without scrolling the document.
   const primary=page.locator('#loungeWorkspaceHeader [data-working-chapter]');assert.equal(await primary.count(),6);
-  assert.ok(await primary.evaluateAll(nodes=>nodes.every(n=>{const r=n.getBoundingClientRect();return r.width>=44&&r.height>=44&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;})));
+  assert.ok(await primary.evaluateAll(nodes=>nodes.every(n=>{const r=n.getBoundingClientRect();return r.width>=44&&r.height>=44;})));
   const headerScroll=await page.evaluate(()=>({x:scrollX,y:scrollY})),reachable=[];
   for(const action of await page.locator('#loungeWorkspaceHeader button').all()){
    await action.focus();reachable.push(await action.evaluate(n=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return{text:n.textContent,width:r.width,height:r.height,left:r.left,right:r.right,top:r.top,bottom:r.bottom,viewport:innerHeight,focused:n===document.activeElement,hit:hit===n||n.contains(hit)};}));

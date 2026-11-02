@@ -59,7 +59,7 @@ const server=http.createServer((req,res)=>{
       assert.equal(await lounge.locator('[data-story-destination]:not(:disabled)').count(),6);
       assert.equal(await lounge.locator('[data-story-destination]:visible').count(),6);
       const preparing=lounge.locator('.story-preparing');await preparing.locator('summary').click();
-      const pending=await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(node=>({name:node.getAttribute('aria-label'),disabled:node.disabled,height:node.getBoundingClientRect().height})));assert.deepEqual(pending.map(node=>node.name),['追加アカウント5、未設定','追加アカウント6、未設定','予備、未設定']);assert.ok(pending.every(node=>node.disabled&&node.height>=44));
+      const pending=await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(node=>({name:node.getAttribute('aria-label'),disabled:node.disabled,height:node.getBoundingClientRect().height})));assert.deepEqual(pending.map(node=>node.name),['追加アカウント6、未設定','予備、未設定']);assert.ok(pending.every(node=>node.disabled&&node.height>=44));
       const selectedBefore=await lounge.locator('.storybook').getAttribute('data-story-room');await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.forEach(node=>node.click()));
       assert.equal(await lounge.locator('.storybook').getAttribute('data-story-room'),selectedBefore);assert.equal(await lounge.locator('.account-board').evaluate(node=>node.hidden),false);assert.equal(await lounge.locator('#room').evaluate(node=>node.hidden),true);
       await preparing.locator('summary').click();assert.equal(await lounge.locator('[data-story-destination]:visible').count(),6);

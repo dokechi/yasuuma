@@ -97,7 +97,8 @@ const server=http.createServer((req,res)=>{
    await f.locator('.paper-tools summary').click();await f.locator('.paper-tools-menu button').filter({hasText:'設定'}).click();await f.locator('#settings').waitFor({state:'visible'});await f.locator('#settings-close').click();
    await f.locator('[data-paper-chapter=sourcing]').click();await page.locator('#ccCastleFrame').waitFor({state:'hidden'});
    check('sourcing opens its retained native ledger',await page.evaluate(()=>sourcingApp.sub==='purchases'&&!document.getElementById('ccCastleReturn').hidden));
-   await page.locator('[data-lounge-home]').click();await f.locator('.paper-header').waitFor({state:'visible'});
+   if(process.env.PAPER_EIGHT){await page.locator('#loungeWorkspaceHeader [data-working-chapter=qa-category-a]').click();await f.locator('[data-paper-chapter=qa-category-a][aria-current=page]').waitFor();check('native ledger header activates the added canonical category',await f.locator('.paper-title').first().textContent()==='検証カテゴリ qa-a');}
+   else await page.locator('[data-lounge-home]').click();await f.locator('.paper-header').waitFor({state:'visible'});
    await f.locator('[data-paper-chapter=insurance]').click();await f.locator('.paper-card').first().waitFor();
    check('real source records unchanged and zero source writes',await page.evaluate(original=>JSON.stringify(__rpgQA.threads.events)===original&&__rpgQA.writes.length===0&&__rpgQA.threads.simulatedWrites.length===0,original));
    check('no browser errors or unexpected external transport',errors.length===0&&blocked.length===0,{errors,blocked});

@@ -230,7 +230,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   if(m.type==='later-context')conveniences.nativeLater(m.context);
   if(m.type==='search-open')conveniences.showSearch();
   if(m.type==='reading-settings')onSettings();
-  if(m.type==='working-chapter'&&document.body.classList.contains('storybook-workbench')&&['insurance','otoku','rakuten','lottery','tanaka','sourcing'].includes(m.key)){autoReturn=false;nativeReturnAwaiting=null;onWorkingChapter(m.key);}
+  if(m.type==='working-chapter'&&document.body.classList.contains('storybook-workbench')&&(m.key==='sourcing'||publishingAccounts.some(a=>!a.pending&&a.key===m.key))){autoReturn=false;nativeReturnAwaiting=null;onWorkingChapter(m.key);}
   if(m.type==='interaction'&&['tap','paper','latch','back','door'].includes(m.kind))onFeedback(m.kind,'orange');
   if(m.type==='reading-copy'&&m.event){notebook.inheritCopy(m.event,m.event.eventId);render();}
   if(m.type==='host-update'){operation('管理画面の更新があります。');}
