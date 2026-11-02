@@ -6,7 +6,8 @@
   "module": {
     "file": "storybook-art.js",
     "bytes": 26842,
-    "sha256": "27a82ffa09232baf2cc98c7a6a18310f91b8de596093b1e357b1180bda2f77df"
+    "sha256": "27a82ffa09232baf2cc98c7a6a18310f91b8de596093b1e357b1180bda2f77df",
+    "revisionNote": "Rebind proof to current main native-art module after the Tanaka fallback alias; original raster assets and proof unchanged."
   },
   "test": {
     "file": "storybook-art.test.mjs",

@@ -60,7 +60,7 @@ test('variants group by explicit source and account; same titles and cross-accou
   const snapshot=ready(fixture(rows));
   assert.equal(by(snapshot).loadedCount,2);assert.equal(by(snapshot).unreadCount,2);
   assert.equal(by(snapshot,'otoku').loadedCount,1);assert.equal(by(snapshot,'rakuten').loadedCount,0);
-  assert.equal(snapshot.rooms.length,5);assert.deepEqual(by(snapshot).drafts.map(d=>d.source.account),['insurance','insurance']);
+  assert.equal(snapshot.rooms.length,6);assert.deepEqual(by(snapshot).drafts.map(d=>d.source.account),['insurance','insurance']);
 });
 
 test('seen revisions distinguish new text, title, links and variant changes without using timestamps',()=>{

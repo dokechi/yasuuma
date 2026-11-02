@@ -159,7 +159,7 @@ test('picker shows canonical full identity and five destinations; only a differe
     assert.equal(b.$('#spatial-room-dialog').open, true); assert.equal(b.$('.spatial-account-identity h3').textContent, account.name);
     assert.equal(b.$('.spatial-account-identity p').textContent, account.handle);
     assert.match(b.$('.spatial-room-name').getAttribute('aria-label'), new RegExp(account.handle));
-    assert.deepEqual([...b.doc.querySelectorAll('.spatial-destination')].map(node => node.dataset.destination), [...accounts, 'sourcing']);
+    assert.deepEqual([...b.doc.querySelectorAll('.spatial-destination')].map(node => node.dataset.destination), [...accounts, 'tanaka', 'sourcing']);
     b.$('.spatial-destination[aria-current=page]').click();
     assert.equal(b.$('#spatial-room-dialog').open, false); assert.equal(b.doc.activeElement, b.$('.spatial-room-name'));
   }

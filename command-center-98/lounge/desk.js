@@ -139,7 +139,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   if(passiveEntry&&initialDraftId){const resumed=rows.flat().find(d=>d.id===initialDraftId);if(resumed){active=resumed;initialDraftId=null;restore=true;}else if(complete)initialDraftId=null;}
   if(!active||!rows.some(g=>g.some(d=>d.id===active.id))){const remembered=selections.get(place)||notebook.selected(place);active=rows.flat().find(d=>d.id===remembered)||rows[0]?.[0]||null;restore=true;}
   renderList();renderReader({restore});$('desk-undo').hidden=!notebook.canUndo();
-  document.dispatchEvent(new CustomEvent('cc:paper-render'));
+  document.dispatchEvent(new window.CustomEvent('cc:paper-render'));
  }
  function select(id){
   const next=notebook.get(id);if(!next||next.place!==place)return;
@@ -242,7 +242,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   openDraft(id){const account=publishingAccounts.find(a=>a.place===place),row=account&&draftsForAccount(notebook.all(),account).find(d=>d.id===id);if(!row)return false;if(active?.id===id)return true;query='';filter='all';$('desk-query').value='';rememberView();select(id);return true;},
   history,read:()=>$('desk-read').click(),applyPending:()=>{if(!pending)return false;activateReading();applyPending();return true;},hasPending:()=>!!pending
  };
- const paper={rows:key=>{const a=publishingAccounts.find(a=>a.key===key&&!a.pending);return a?draftsForAccount(notebook.all(),a):[];},selected:()=>active?.id,open:id=>living.openDraft(id),isFuture:id=>notebook.futureFlag(id),toggleFuture(id){notebook.toggleFuture(id);operation(!notebook.hasFutureScope()?'ログイン中の本体から開くと今後使うメモを保存できます。':notebook.persistent()?'今後使うメモをこの端末・現在のログインに保存しました。':'端末に保存できないため、この画面内で保持します。');document.dispatchEvent(new CustomEvent('cc:paper-render'));return notebook.futureFlag(id);},persistent:()=>notebook.persistent(),canPin:()=>notebook.hasFutureScope()};
+ const paper={rows:key=>{const a=publishingAccounts.find(a=>a.key===key&&!a.pending);return a?draftsForAccount(notebook.all(),a):[];},selected:()=>active?.id,open:id=>living.openDraft(id),isFuture:id=>notebook.futureFlag(id),toggleFuture(id){notebook.toggleFuture(id);operation(!notebook.hasFutureScope()?'ログイン中の本体から開くと今後使うメモを保存できます。':notebook.persistent()?'今後使うメモをこの端末・現在のログインに保存しました。':'端末に保存できないため、この画面内で保持します。');document.dispatchEvent(new window.CustomEvent('cc:paper-render'));return notebook.futureFlag(id);},persistent:()=>notebook.persistent(),canPin:()=>notebook.hasFutureScope()};
  return {paper,living,accountBoard:board,requestWorkingChapter,enter,leave:()=>{send('reading-room',{active:false});savePosition();rememberView();place=null;active=null;nativeWork=null;nativeReturnAwaiting=null;passiveEntry=false;initialDraftId=null;conveniences.update(null);emitLiving();if(pending)applyPending();if(returnToAccounts)board.show();},native,ready:()=>{if(embedded){setStatus('本体の保存原稿に接続しています…',{loading:true});send('ready');}},receive,notebook,workMarks:conveniences.workMarks};
 }
 

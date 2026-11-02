@@ -72,3 +72,10 @@ body{--paper-ready:1}
 @media(prefers-reduced-motion:reduce){.paper-popup *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 .paper-popup .paper-excerpt{font-size:16px}.paper-popup .paper-form-0 .paper-excerpt{font-size:clamp(16px,1.7vw,23px)}
+.paper-popup #room{overflow-x:clip!important}.paper-popup #room::before,.paper-popup #room::after{display:none!important}
+.paper-card>.paper-open{position:absolute!important;left:24px;bottom:42px;z-index:4!important;width:calc(100% - 48px);margin:0!important}
+.paper-card[data-paper-open=true]>.paper-open{position:relative!important;left:auto;bottom:auto;width:100%;padding:14px 24px!important;background:#fffdf5!important;border:1px solid #869184!important;box-sizing:border-box}
+.paper-pin:disabled{opacity:.45;cursor:default}
+.paper-future::after{content:'端末';font-size:10px;display:block;font-weight:500;line-height:1}
+.paper-header,.paper-popup .paper-card button{font-family:"Noto Sans CJK JP","Noto Sans JP",system-ui,sans-serif}
+.paper-popup .paper-brand{font-family:"Noto Sans CJK JP","Noto Sans JP",system-ui,sans-serif!important;font-weight:800}

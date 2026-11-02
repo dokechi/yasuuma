@@ -34,6 +34,7 @@ const server=http.createServer((req,res)=>{
   if(error)return res.writeHead(404).end();let content=bytes;
   if(relative==='/command-center-98/app.html')content=bytes.toString().replace('<head>','<head><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script><script>'+fixtureScript+'</script>');
   if(relative==='/scripts/ui-fixtures.js')content=bytes.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
+  if(process.env.PAPER_EIGHT&&relative==='/command-center-98/lounge/accounts.js')content=bytes.toString().replace('...[6].map',"{key:'qa-category-a',place:'qa-a',name:'検証カテゴリA'}, {key:'qa-category-b',place:'qa-b',name:'検証カテゴリB'}, ...[6].map");
   res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'}).end(content);
  });
 });
@@ -46,7 +47,7 @@ const server=http.createServer((req,res)=>{
  try{for(const [width,height] of (process.env.PAPER_WIDTH?[[Number(process.env.PAPER_WIDTH),Number(process.env.PAPER_HEIGHT||900)]]:[[320,640],[390,900],[800,648],[1440,900]])){
   const context=await browser.newContext({viewport:{width,height},hasTouch:width<=800,reducedMotion:process.env.PAPER_MOTION==='normal'?'no-preference':'reduce',serviceWorkers:'block',permissions:['clipboard-read','clipboard-write']});
   const page=await context.newPage(),errors=[],blocked=[];page.on('pageerror',e=>errors.push(e.message));
-  await context.route('**/*',route=>{const r=route.request();if(new URL(r.url()).origin===origin&&['GET','HEAD'].includes(r.method()))return route.continue();blocked.push({url:r.url(),method:r.method()});return route.abort();});
+  await context.route('**/*',route=>{const r=route.request();if(process.env.PAPER_NO_ART&&new URL(r.url()).pathname.endsWith('/storybook-art.js'))return route.abort();if(new URL(r.url()).origin===origin&&['GET','HEAD'].includes(r.method()))return route.continue();blocked.push({url:r.url(),method:r.method()});return route.abort();});
   const result={width,height,checks:[],errors,blocked};results.push(result);
   function check(name,ok,detail){result.checks.push({name,pass:!!ok,detail});assert.ok(ok,name+': '+JSON.stringify(detail));}
   try{
@@ -62,6 +63,7 @@ const server=http.createServer((req,res)=>{
    check('no initial semantic records',await cf.evaluate(()=>Object.keys(localStorage).filter(k=>/^castle-production\.v1\.(?:visited:|visit:|copy:|seen:|done:|future:)/.test(k)).length===0));
    const geometry=await cf.evaluate(()=>({width:document.documentElement.scrollWidth,client:innerWidth,tabs:[...document.querySelectorAll('.paper-tab')].map(n=>({text:n.textContent,font:parseFloat(getComputedStyle(n).fontSize),height:n.getBoundingClientRect().height})),body:parseFloat(getComputedStyle(document.querySelector('.paper-excerpt')).fontSize)}));
    check('no page horizontal overflow; readable text and tap areas',geometry.width<=geometry.client+1&&geometry.tabs.every(t=>t.font>=16&&t.height>=44)&&geometry.body>=16,geometry);
+   if(process.env.PAPER_EIGHT)check('8 categories remain accessible in the same scrollable header',geometry.tabs.length===8&&await cf.evaluate(()=>{const nav=document.querySelector('.paper-tabs');return nav.scrollWidth<=nav.clientWidth+1||getComputedStyle(nav).overflowX==='auto';}));
    await page.screenshot({path:path.join(out,width+'-'+height+'-closed.png')});
    const first=f.locator('.paper-card').first(),id=await first.getAttribute('data-paper-id'),pin=first.locator('.paper-pin');
    await pin.click();await pin.waitFor({state:'visible'});check('future pin persists separately',await cf.evaluate(id=>{const keys=Object.keys(localStorage);return keys.some(k=>k.startsWith('castle-production.v1.future:')&&k.includes(id))&&!keys.some(k=>k==='castle-production.v1.pin:'+id||k==='castle-production.v1.done:'+id);},id));
