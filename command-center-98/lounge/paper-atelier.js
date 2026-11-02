@@ -1,6 +1,6 @@
 import * as application from './app.js?v=20261102.2-paper';
 import {publishingAccounts} from './accounts.js?v=20261102.3-paper';
-import {mountPaperStage} from './paper-stage.js?v=20261102.2-paper';
+import {mountPaperStage} from './paper-stage.js?v=20261102.3-depth';
 // Mount independently of optional illustrations or the old book animation.
 try{
  if(getComputedStyle(document.body).getPropertyValue('--paper-ready').trim()!=='1')throw Error('Paper styles unavailable');
