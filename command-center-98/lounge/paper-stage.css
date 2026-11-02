@@ -312,3 +312,14 @@ body{--paper-ready:1}
 .paper-card.paper-form-2 .paper-leaf{top:calc(10% + 12px);left:calc(10% + 12px);right:calc(14% + 12px)}
 @media(min-width:601px) and (max-height:740px){.paper-card.paper-form-2:nth-child(-n+5){height:36cqw}}
 .paper-card:nth-child(n+6) .paper-leaf{inset:auto}
+/* Pin location follows the heading band, never the variable paper height. */
+@media(min-width:601px){.paper-card.paper-form-0:nth-child(-n+5) .paper-leaf>.paper-pin{top:24px}}
+/* Keep the complete excerpt rectangle above the pocket's diagonal opening,
+   including its inner edge (four-corner checks alone miss that fold). */
+.paper-card.paper-form-4:nth-child(-n+5) .paper-leaf{left:24%;right:14%;top:33%}
+@media(min-width:601px) and (max-height:740px){.paper-card.paper-form-4:nth-child(-n+5){height:22cqw}}
+@media(max-width:600px){
+ .paper-card.paper-form-4:nth-child(-n+5){height:170px}
+ .paper-papers{padding-top:calc(var(--hero-height,400px) + 510px)}
+ .paper-papers::before{height:calc(var(--hero-height,400px) + 500px)}
+}
