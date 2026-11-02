@@ -72,6 +72,7 @@ const server=http.createServer((req,res)=>{
   const normalFont=await f.locator('#draft-body').evaluate(n=>parseFloat(getComputedStyle(n).fontSize));await settings();await f.locator('#desk-font').selectOption('large');await f.locator('#settings-close').click();
   check('large body setting overrides paper typography at this viewport',await f.locator('#draft-body').evaluate((n,before)=>parseFloat(getComputedStyle(n).fontSize)>before,normalFont));
   check('settings close restores visible menu summary focus',await f.locator('.paper-tools summary').evaluate(n=>{const r=n.getBoundingClientRect();return n===document.activeElement&&r.top>=0&&r.bottom<=innerHeight&&document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)===n;}));
+  await f.locator('#desk-scroll').evaluate(n=>n.scrollTop=200);await f.locator('.paper-close').click();await f.locator('.paper-open').first().click();check('closing and reopening preserves the existing notebook reading position',await f.locator('#desk-scroll').evaluate(n=>n.scrollTop>=180));
   const oldBody=await f.locator('#draft-body').textContent(),payload=await cf.evaluate(()=>structuredClone(__paperProbe.records)),id=await cf.evaluate(()=>document.querySelector('#desk-list .manuscript-card[aria-pressed=true]').dataset.draftId);
   payload.drafts=payload.drafts.map(d=>d.id===id?{...d,body:d.body+'\n検証用の更新差分'}:d);
   const send=p=>page.evaluate(p=>document.getElementById('ccCastleFrame').contentWindow.postMessage(p,location.origin),p);
