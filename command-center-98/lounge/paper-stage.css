@@ -323,3 +323,4 @@ body{--paper-ready:1}
  .paper-papers{padding-top:calc(var(--hero-height,400px) + 510px)}
  .paper-papers::before{height:calc(var(--hero-height,400px) + 500px)}
 }
+@media(max-width:600px){.paper-card.paper-form-4:nth-child(-n+5) .paper-action-row{bottom:12px}}
