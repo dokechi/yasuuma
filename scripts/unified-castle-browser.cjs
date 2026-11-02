@@ -55,14 +55,14 @@ const server=http.createServer((req,res)=>{
       await openStorybookOverview(lounge);await lounge.locator('.account-board[data-state=ready]').waitFor();
       await lounge.locator('.storybook[data-ready=true]').waitFor();
       assert.equal(await lounge.locator('[data-story-destination]').count(),8);
-      assert.equal(await lounge.locator('[data-story-destination]:disabled').count(),3);
-      assert.equal(await lounge.locator('[data-story-destination]:not(:disabled)').count(),5);
-      assert.equal(await lounge.locator('[data-story-destination]:visible').count(),5);
+      assert.equal(await lounge.locator('[data-story-destination]:disabled').count(),2);
+      assert.equal(await lounge.locator('[data-story-destination]:not(:disabled)').count(),6);
+      assert.equal(await lounge.locator('[data-story-destination]:visible').count(),6);
       const preparing=lounge.locator('.story-preparing');await preparing.locator('summary').click();
       const pending=await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(node=>({name:node.getAttribute('aria-label'),disabled:node.disabled,height:node.getBoundingClientRect().height})));assert.deepEqual(pending.map(node=>node.name),['追加アカウント5、未設定','追加アカウント6、未設定','予備、未設定']);assert.ok(pending.every(node=>node.disabled&&node.height>=44));
       const selectedBefore=await lounge.locator('.storybook').getAttribute('data-story-room');await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.forEach(node=>node.click()));
       assert.equal(await lounge.locator('.storybook').getAttribute('data-story-room'),selectedBefore);assert.equal(await lounge.locator('.account-board').evaluate(node=>node.hidden),false);assert.equal(await lounge.locator('#room').evaluate(node=>node.hidden),true);
-      await preparing.locator('summary').click();assert.equal(await lounge.locator('[data-story-destination]:visible').count(),5);
+      await preparing.locator('summary').click();assert.equal(await lounge.locator('[data-story-destination]:visible').count(),6);
       // Every chapter uses its own actual decorative source, not insurance art
       // reused under another label. Selection alone never enters a route.
       const handles={insurance:'@sucker0508',otoku:'@thats_a_steal0601',rakuten:'@bonya0914',lottery:'@chusen1101'};

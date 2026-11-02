@@ -1,6 +1,6 @@
 /* Optional architectural courtyard. Existing owners keep all records,
    routing and paper. Nothing here reads an API or changes source records. */
-import * as spatial from './spatial-atelier.js?v=20261101.9-workbook';
+import * as spatial from './spatial-atelier.js?v=20261102.3-paper';
 import * as application from './app.js?v=20261102.2-paper';
 
 const rooms=[

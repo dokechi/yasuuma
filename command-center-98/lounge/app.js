@@ -1,11 +1,13 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
 import {createMusicControls} from './music.js?v=20261030.8-integrated';
 import {createDesk} from './desk.js?v=20261102.2-paper';
+import {publishingAccounts} from './accounts.js?v=20261102.3-paper';
 import {createInteractionSound} from './interaction-sound.js?v=20261022.26-audio';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261101.1-living';
 const $ = (id) => document.getElementById(id);
 let accountContext=null;
-const accountRooms={tanaka:{key:'tanaka',name:'田中卓',artKey:'planned-5'},kyun:{key:'insurance',name:'保険'},otoku:{key:'otoku',name:'まだ安く買えるはず'},rakuten:{key:'rakuten',name:'楽天犬'},lottery:{key:'lottery',name:'抽選日記',artKey:'planned-4'}};
+const activeAccounts=publishingAccounts.filter(a=>!a.pending);
+const accountRooms=Object.fromEntries(activeAccounts.map(a=>[a.place,{key:a.key,name:a.name,artKey:a.artKey}]));
 const storybookPresentation=document.body.classList.contains('storybook-atelier');
 const workingPresentation=document.body.classList.contains('storybook-workbench');
 const app = $('app');
@@ -25,10 +27,10 @@ let entrySound=null,entryAnimated=false,effectsGain=null,effectsVolume=.5,music=
 let nextContextRoom=null, replayAfterBack=null, historyBackPending=false;
 let navigationIntent=0, routeOptions=null, entryFromHistory=false, entryResumeDraft,entryInitial=false;
 let workingStarted=false;
-const accountRoomIds={insurance:'red',otoku:'purple',rakuten:'purple',lottery:'purple',tanaka:'purple',fp:'silver',sourcing:'orange'};
-const workingKeys=['insurance','otoku','rakuten','lottery','tanaka','sourcing'];
+const accountRoomIds={...Object.fromEntries(activeAccounts.map(a=>[a.key,a.roomId||'purple'])),fp:'silver',sourcing:'orange'};
+const workingKeys=[...activeAccounts.map(a=>a.key),'sourcing'];
 const roomAccounts={red:'insurance',purple:'otoku',silver:'fp',orange:'sourcing'};
-const accountPlaces={insurance:'kyun',otoku:'otoku',rakuten:'rakuten',lottery:'lottery',tanaka:'tanaka',fp:'fp',sourcing:'shiire'};
+const accountPlaces={...Object.fromEntries(activeAccounts.map(a=>[a.key,a.place])),fp:'fp',sourcing:'shiire'};
 const validDraftId=value=>typeof value==='string'&&value.length>0&&value.length<=1000&&!/[\u0000-\u001f\u007f]/.test(value);
 function historyRoute(state){
  if(!state||typeof state!=='object')return null;
@@ -62,7 +64,7 @@ function restoreHistoryRoute(state,{fromHistory=true,instant=true}={}){
  return true;
 }
 function openContext(place){
- const context=accountRooms[place]||null,id=({kyun:'red',choi:'purple',otoku:'purple',rakuten:'purple',lottery:'purple',tanaka:'purple',fp:'silver',shiire:'orange'})[place];if(!id)return;
+ const context=accountRooms[place]||null,id=context?accountRoomIds[context.key]:({choi:'purple',fp:'silver',shiire:'orange'})[place];if(!id)return;
  const instant=routeOptions?.instant??true;
  if((workingPresentation||routeOptions?.working)&&phase==='room'){rememberHistory();goBack(false,true,true);}
  if(phase==='entering')goBack(false,true,true);
@@ -233,7 +235,7 @@ export function resolveWorkingChapter(){
  const remembered=last&&typeof last==='object'&&from(last.place,last.id);if(remembered)return remembered;
  const place=desk?.notebook.lastPlace();return from(place,desk?.notebook.selected(place))||{key:'insurance'};
 }
-export function openWorkingChapter(key,{initial=false,draftId}={}){
+export function openWorkingChapter(key,{initial=false,draftId,fromHistory=false}={}){
  if(!workingKeys.includes(key)||!desk)return false;
  if(initial){
   if(!workingPresentation||workingStarted||navigationIntent!==0||phase!=='town')return false;
@@ -242,7 +244,7 @@ export function openWorkingChapter(key,{initial=false,draftId}={}){
   const saved=historyRoute(history.state);if(saved&&workingKeys.includes(saved.shireitoAccount)){key=saved.shireitoAccount;draftId=saved.shireitoDraft;}
  }else if(phase==='room'&&room.dataset.account===key&&(!draftId||currentHistoryRoute()?.shireitoDraft===draftId))return true;
  const target=historyRoute({shireitoRoom:accountRoomIds[key],shireitoAccount:key,...(draftId?{shireitoDraft:draftId}:{})});
- const previous=routeOptions;routeOptions={instant:true,working:true,initial};
+ const previous=routeOptions;routeOptions={instant:true,working:true,initial,fromHistory};
  try{return desk.requestWorkingChapter(key,{draftId:target?.shireitoDraft,initial});}finally{routeOptions=previous;}
 }
 export function startWorkingChapter(){

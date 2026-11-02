@@ -1,5 +1,5 @@
 import * as application from './app.js?v=20261102.2-paper';
-import {publishingAccounts} from './accounts.js?v=20261102.1-tanaka';
+import {publishingAccounts} from './accounts.js?v=20261102.3-paper';
 import {mountPaperStage} from './paper-stage.js?v=20261102.2-paper';
 // Mount independently of optional illustrations or the old book animation.
 try{

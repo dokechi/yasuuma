@@ -62,12 +62,12 @@ const server=http.createServer((req,res)=>{
   }
   await lounge.locator('[data-story-chapter=insurance]').click();await lounge.locator('.story-art-host .story-actor-image').evaluate(image=>image.decode());
   await page.frames().find(f=>f.url().includes('/lounge/')).evaluate(async()=>{await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
-  assert.equal(await lounge.locator('[data-story-destination]').count(),8,'all eight original destinations remain represented');assert.equal(await lounge.locator('[data-story-destination]:visible').count(),5,'the main book shows the five active chapters');
+  assert.equal(await lounge.locator('[data-story-destination]').count(),8,'all eight original destinations remain represented');assert.equal(await lounge.locator('[data-story-destination]:visible').count(),6,'the main book shows the five active chapters');
   const preparing=lounge.locator('.story-preparing');assert.equal(await preparing.evaluate(node=>node.open),false);await preparing.locator('summary').click();
   const pending=await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(node=>({name:node.getAttribute('aria-label'),disabled:node.disabled,height:node.getBoundingClientRect().height})));assert.deepEqual(pending.map(node=>node.name),['追加アカウント5、未設定','追加アカウント6、未設定','予備、未設定']);assert.ok(pending.every(node=>node.disabled&&node.height>=44));
   const selectedBefore=await lounge.locator('.storybook').getAttribute('data-story-room');await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.forEach(node=>node.click()));
   assert.equal(await lounge.locator('.storybook').getAttribute('data-story-room'),selectedBefore);assert.equal(await lounge.locator('.account-board').evaluate(node=>node.hidden),false);assert.equal(await lounge.locator('#room').evaluate(node=>node.hidden),true);
-  await preparing.locator('summary').click();assert.equal(await lounge.locator('[data-story-destination]:visible').count(),5);
+  await preparing.locator('summary').click();assert.equal(await lounge.locator('[data-story-destination]:visible').count(),6);
   await page.screenshot({path:path.join(out,`${width}-${height}-host-home.png`)});
   const frameRect=await page.locator('#ccCastleFrame').boundingBox(),barRect=await page.locator('#requestProgressShortcut').boundingBox();
   assert.ok(frameRect.y>=barRect.y+barRect.height);assert.ok(Math.abs(frameRect.y-52)<=1,'the actual host reserves its 52px request rail');assert.ok((await page.locator('#requestProgressOpen').boundingBox()).height>=44);
@@ -140,7 +140,7 @@ const server=http.createServer((req,res)=>{
   // All five working chapters remain visible together. Auxiliary controls may
   // occupy their deliberate horizontal strip, but each focused real action
   // must become fully visible/hit-testable without scrolling the document.
-  const primary=page.locator('#loungeWorkspaceHeader [data-working-chapter]');assert.equal(await primary.count(),5);
+  const primary=page.locator('#loungeWorkspaceHeader [data-working-chapter]');assert.equal(await primary.count(),6);
   assert.ok(await primary.evaluateAll(nodes=>nodes.every(n=>{const r=n.getBoundingClientRect();return r.width>=44&&r.height>=44&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;})));
   const headerScroll=await page.evaluate(()=>({x:scrollX,y:scrollY})),reachable=[];
   for(const action of await page.locator('#loungeWorkspaceHeader button').all()){

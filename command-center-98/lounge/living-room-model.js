@@ -1,6 +1,6 @@
 /* Read-only presentation of records already available to this browser.
    No requests, timers, writes, inferred inventory, or claims of remote posting. */
-import {publishingAccounts,draftsForAccount} from './accounts.js?v=20261102.1-tanaka';
+import {publishingAccounts,draftsForAccount} from './accounts.js?v=20261102.3-paper';
 import {groupDrafts,dayInJapan} from './notebook.js?v=20261102.1-tanaka';
 import {seenRevision,currentPosted} from './qol-model.js?v=20261102.1-tanaka';
 import {holdsActiveText} from './desk-model.js?v=20261102.1-tanaka';

@@ -52,3 +52,18 @@ writes. It captures phone, Fold and desktop views; normal/reduced motion;
 eight-category fixture; missing optional illustration; actual copy; exact-source
 opening; future marks; close geometry; search and settings. It never logs into
 production or modifies user data. CI uploads screenshots and result JSON.
+
+The same category configuration supplies task IDs to the host reader, notebook
+places/seeds, and app room/history mappings. The eight-category fixture activates
+two added configurations through that complete path, reads their separate
+sources, opens/closes them and tests independent pins. Supplementary FP remains
+available through settings using the retained reader.
+
+`scripts/paper-lifecycle-browser.cjs` verifies application motion reduction with
+OS normal, initial audio silence, pending/failed/empty reads, Back/Forward through
+a null history entry with actual browser indices, search-selection ID alignment,
+visible focus restoration, FP, larger text, same-scope reload and separate-scope
+isolation. Missing new CSS/module scenarios verify the retained fallback. A
+non-routed local HTTP-cache scenario preloads stale bootstrap bytes and proves
+repeat reads hit the cache, then checks that the current default and explicit
+archive never execute the old application owner.

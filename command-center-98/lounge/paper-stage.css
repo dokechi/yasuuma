@@ -79,3 +79,15 @@ body{--paper-ready:1}
 .paper-future::after{content:'端末';font-size:10px;display:block;font-weight:500;line-height:1}
 .paper-header,.paper-popup .paper-card button{font-family:"Noto Sans CJK JP","Noto Sans JP",system-ui,sans-serif}
 .paper-popup .paper-brand{font-family:"Noto Sans CJK JP","Noto Sans JP",system-ui,sans-serif!important;font-weight:800}
+.paper-tabs{scroll-behavior:auto!important}.paper-header .paper-tab{max-width:calc(100% - 6px);overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}
+.paper-form-3{z-index:2}
+@media(max-width:600px){.paper-header .paper-future{font-size:0;width:44px;padding:3px}.paper-future::before{content:'';display:block;width:16px;height:20px;margin:0 auto 2px;background:var(--ink);clip-path:polygon(10% 0,90% 0,72% 51%,100% 76%,55% 76%,55% 100%,45% 100%,45% 76%,0 76%,28% 51%)}.paper-future::after{font-size:10px}}
+/* Supplementary FP uses its retained reader and native work routes. It is not
+   a publishing tab and must never inherit the closed-paper hiding rule. */
+.paper-popup #room[data-account=fp]>#desk{display:block!important;position:relative!important;inset:auto!important;width:min(100%,1080px)!important;height:auto!important;margin:0 auto!important;padding:20px!important;transform:none!important;background:#fffdf5!important;color:var(--ink)!important;border:1px solid #869184!important;border-radius:0!important}
+.paper-popup #room[data-account=fp] .desk-content{display:grid!important;grid-template-columns:minmax(160px,240px) minmax(0,1fr);min-height:400px;height:auto!important}
+.paper-popup #room[data-account=fp] :is(.manuscript-reader,.manuscript-shelf){background:#fffdf5!important;color:var(--ink)!important}
+.paper-popup #room[data-account=fp] #draft-body{font-size:16px!important;line-height:1.95!important;color:var(--ink)!important}
+.paper-popup #room[data-account=fp] .reader-scroll{min-height:250px;max-height:65dvh}
+.paper-popup[data-reading-font=large] .paper-reader #draft-body,.paper-popup[data-reading-font=large] #room[data-account=fp] #draft-body{font-size:20px!important;line-height:2!important}
+@media(max-width:600px){.paper-popup #room[data-account=fp]>#desk{padding:12px!important}.paper-popup #room[data-account=fp] .desk-content{display:block!important}.paper-popup #room[data-account=fp] .manuscript-shelf{max-height:220px;overflow:auto}.paper-popup #room[data-account=fp] .reader-actions{flex-wrap:wrap}.paper-popup #room[data-account=fp] #desk-routes{flex-wrap:wrap}}
