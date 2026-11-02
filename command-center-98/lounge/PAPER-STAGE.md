@@ -6,6 +6,10 @@ independent DOM/CSS layers. The reference image is not served as application UI.
 Titles and excerpts come from the existing notebook through the narrow
 `getPaperDesk()` adapter. Selecting a paper moves the exact existing `#desk`
 inside that paper. Closing restores its DOM position, focus and viewport scroll.
+Every paper keeps its original grid anchor while open. Backings/supports retain
+their closed geometry; the reading face can widen within the viewport. Pocket
+rims overlap only blank insert margins, preserving all preview text. The exact
+existing reader scrollport and notebook position storage remain authoritative.
 Existing copy, variants, editing, images, posting preparation and read actions
 remain owned by the original reader. No API or source records are rewritten.
 
