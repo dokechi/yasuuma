@@ -65,7 +65,25 @@ const server=http.createServer((req,res)=>{
    const cf=page.frames().find(f=>new URL(f.url()).pathname.endsWith('/lounge/index.html'));
    await cf.waitForFunction(()=>document.querySelectorAll('.paper-card').length===20&&document.querySelector('.paper-state').textContent.includes('件'));
    await cf.evaluate(async()=>{window.__paperOwner=await import('./app.js?v=20261102.2-paper');});
-   const pinClear=async label=>{const collisions=await f.locator('.paper-card').evaluateAll(nodes=>nodes.slice(0,5).flatMap((card,index)=>{const pin=card.querySelector('.paper-pin').getBoundingClientRect();return [...card.querySelectorAll('.paper-category,.paper-title,.paper-excerpt,.paper-open,.paper-close,#draft-title,#draft-body')].filter(n=>n.getBoundingClientRect().width&&n.getBoundingClientRect().height).filter(n=>{const r=n.getBoundingClientRect();return Math.min(pin.right,r.right)-Math.max(pin.left,r.left)>.5&&Math.min(pin.bottom,r.bottom)-Math.max(pin.top,r.top)>.5;}).map(n=>({index,element:n.id||n.className,pin:pin.toJSON(),text:n.getBoundingClientRect().toJSON()}));}));check(label,collisions.length===0,collisions);};
+   const pinClear=async label=>{
+    const report=await f.locator('.paper-card').evaluateAll(nodes=>{
+     const collisions=[],categories=[],overlaps=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>.5&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>.5;
+     for(const [index,card] of nodes.slice(0,5).entries()){
+      const pin=card.querySelector('.paper-pin').getBoundingClientRect();
+      for(const n of card.querySelectorAll('.paper-category,.paper-title,.paper-excerpt,.paper-open,.paper-close,#draft-title,#draft-body')){
+       const box=n.getBoundingClientRect();if(!box.width||!box.height)continue;
+       // Category is a full-width block with reserved right padding. Probe its
+       // actual text Range, not the deliberately empty pin reservation.
+       const range=document.createRange();range.selectNodeContents(n);const glyphs=[...range.getClientRects()].filter(r=>r.width&&r.height);
+       if(n.classList.contains('paper-category'))categories.push({index,block:box.toJSON(),glyphs:glyphs.map(r=>r.toJSON()),pin:pin.toJSON()});
+       const tested=n.classList.contains('paper-category')?glyphs:[box];
+       if(tested.some(rect=>overlaps(pin,rect)))collisions.push({index,element:n.id||n.className,pin:pin.toJSON(),text:box.toJSON(),glyphs:glyphs.map(r=>r.toJSON())});
+      }
+     }
+     return {collisions,categories};
+    });
+    check(label,report.collisions.length===0,report);
+   };
    const original=await page.evaluate(()=>JSON.stringify(__rpgQA.threads.events));
    check('correct initial category and no automatic open',await cf.evaluate(()=>document.getElementById('room').dataset.account==='insurance'&&!__paperStage.snapshot().opened));
    check('initial actual title and excerpt visible',await f.locator('.paper-title').first().isVisible()&&await f.locator('.paper-excerpt').first().isVisible());
@@ -76,7 +94,7 @@ const server=http.createServer((req,res)=>{
    const previewFidelity=await cf.evaluate(()=>{const rows=__paperOwner.getPaperDesk().rows('insurance');return [...document.querySelectorAll('.paper-card')].map((card,index)=>{const row=rows.find(d=>d.id===card.dataset.paperId);return {id:card.dataset.paperId,title:card.querySelector('.paper-title').textContent===row?.title,excerpt:card.querySelector('.paper-excerpt').textContent===row?.body.slice(0,index===0?240:105)};});});
    check('preview formatting preserves exact source title and excerpt textContent',previewFidelity.every(x=>x.title&&x.excerpt),previewFidelity);
    if(!process.env.PAPER_SHORT){
-    const safeWords=await f.locator('.paper-title .paper-word').evaluateAll(nodes=>nodes.filter(n=>['1回','契約日','払込総額'].includes(n.textContent)).map(n=>{const range=document.createRange();range.selectNodeContents(n);const rects=[...range.getClientRects()].filter(r=>r.width&&r.height),lineTops=[...new Set(rects.map(r=>Math.round(r.top)))];return {text:n.textContent,lines:lineTops.length,nowrap:getComputedStyle(n).whiteSpace==='nowrap',width:n.getBoundingClientRect().width,available:n.parentElement.clientWidth};}));
+    const safeWords=await f.locator('.paper-title .paper-word').evaluateAll(nodes=>nodes.filter(n=>['1回','契約日','払込総額'].includes(n.textContent)).map(n=>{const range=document.createRange();range.selectNodeContents(n);const rects=[...range.getClientRects()].filter(r=>r.width&&r.height),lineTops=[...new Set(rects.map(r=>Math.round(r.top)))];return {cardIndex:[...document.querySelectorAll('.paper-card')].indexOf(n.closest('.paper-card')),text:n.textContent,lines:lineTops.length,nowrap:getComputedStyle(n).whiteSpace==='nowrap',width:n.getBoundingClientRect().width,available:n.parentElement.clientWidth};}));
     check('1回, 契約日 and 払込総額 never split across rendered title lines',safeWords.length>0&&['1回','契約日','払込総額'].every(text=>safeWords.some(word=>word.text===text))&&safeWords.every(word=>word.lines===1&&word.nowrap&&word.width<=word.available),safeWords);
    }
    const completedRecords=await cf.evaluate(()=>structuredClone(window.__paperDetailRecords));
@@ -130,6 +148,17 @@ const server=http.createServer((req,res)=>{
    const after=await f.locator('[data-paper-id="'+id+'"]').boundingBox();check('close restores paper geometry',Math.abs(before.x-after.x)<2&&Math.abs(before.y-after.y)<2,{before,after});
    await f.locator('.paper-future').click();check('future filter isolates this manuscript',await f.locator('.paper-card').count()===1);await f.locator('.paper-future').click();
    await f.locator('.paper-more').click();check('all manuscripts remain accessible',await f.locator('.paper-card').count()>=27);
+   const continuationGeometry=await f.locator('.paper-card').evaluateAll(nodes=>nodes.slice(5).map((n,i)=>({index:i+5,rect:n.getBoundingClientRect().toJSON()})));
+   const continuationOverlaps=continuationGeometry.flatMap((a,i)=>continuationGeometry.slice(i+1).filter(b=>Math.min(a.rect.right,b.rect.right)-Math.max(a.rect.left,b.rect.left)>1&&Math.min(a.rect.bottom,b.rect.bottom)-Math.max(a.rect.top,b.rect.top)>1).map(b=>[a.index,b.index]));
+   check('continued source papers occupy separate readable grid cells, not inherited stage offsets',continuationOverlaps.length===0,{cards:continuationGeometry,overlaps:continuationOverlaps});
+   const continuationHits=[];
+   for(let i=5;i<await f.locator('.paper-card').count();i++)for(const selector of ['.paper-pin','.paper-open']){
+    const target=f.locator('.paper-card').nth(i).locator(selector);await target.evaluate(n=>n.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'}));
+    continuationHits.push(await target.evaluate((n,index)=>{const r=n.getBoundingClientRect(),points=[];for(const x of [r.left+.5,r.left+r.width/2,r.right-.5])for(const y of [r.top+.5,r.top+r.height/2,r.bottom-.5]){const hit=document.elementFromPoint(x,y);points.push(hit===n||n.contains(hit));}return {index,selector:n.className,rect:r.toJSON(),ok:r.width>=44&&r.height>=44&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&points.every(Boolean)};},i));
+    if(i===5&&selector==='.paper-open')await page.screenshot({path:path.join(out,width+'-'+height+'-continued.png')});
+   }
+   check('every continued manuscript pin and opener is fully reachable after real scrolling',continuationHits.every(x=>x.ok),continuationHits);
+
    await f.locator('[data-paper-chapter=tanaka]').click();await cf.waitForFunction(()=>document.getElementById('room').dataset.account==='tanaka');await f.locator('.paper-title').first().waitFor();
    check('exact Tanaka category maintained',await f.locator('.paper-title').first().textContent()==='田中卓の保存原稿');
    if(process.env.PAPER_EIGHT)for(const suffix of ['a','b']){
