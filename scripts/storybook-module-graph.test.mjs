@@ -49,4 +49,13 @@ test('explicit archive uses the same canonical identity/owner graph, never the s
 
 test('changed foreground and its retained archive import graph use the same current cache pin',()=>{for(const file of ['command-center-98/lounge/storybook-passage.js','command-center-98/lounge/arrival-passage.js','command-center-98/lounge/castle-scene.js','command-center-98/castle-journey-host.js']){const source=fs.readFileSync(new URL('../'+file,import.meta.url),'utf8');assert.match(source,/castle-foreground\.js\?v=20261101\.9-workbook/);assert.doesNotMatch(source,/castle-foreground\.js\?v=20261101\.1-living/);}});
 
-test('depth paper bootstrap and style invalidate prior cached presentation without changing the owner',()=>{const {html,modules}=checkOwners('command-center-98/lounge/index.html');assert.match(html,/paper-stage\.css\?v=20261102\.3-depth/);assert.match(html,/paper-atelier\.js\?v=20261102\.3-depth/);assert.ok([...modules.keys()].some(url=>url.endsWith('/paper-stage.js?v=20261102.3-depth')));assert.ok(![...modules.keys()].some(url=>url.endsWith('/paper-stage.js?v=20261102.2-paper')));});
+test('detail paper bootstrap and style invalidate both prior paper revisions without changing the owner',()=>{
+ const {html,modules}=checkOwners('command-center-98/lounge/index.html');
+ assert.match(html,/paper-stage\.css\?v=20261102\.4-detail/);
+ assert.match(html,/paper-atelier\.js\?v=20261102\.4-detail/);
+ for(const file of ['paper-atelier.js','paper-stage.js','paper-detail-model.js']){
+  assert.ok([...modules.keys()].some(url=>url.endsWith('/'+file+'?v=20261102.4-detail')),'current presentation dependency '+file);
+  for(const stale of ['20261102.2-paper','20261102.3-depth'])assert.ok(![...modules.keys()].some(url=>url.endsWith('/'+file+'?v='+stale)),'never reuse cached '+stale+' '+file);
+ }
+ assert.doesNotMatch(html,/paper-(?:stage\.css|atelier\.js)\?v=20261102\.(?:2-paper|3-depth)/);
+});

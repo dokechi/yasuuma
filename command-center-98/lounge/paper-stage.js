@@ -1,6 +1,7 @@
 /* Live paper scenery. No fetches, credentials, copies of stored manuscripts or
    replacement reader: the exact existing #desk moves into the chosen paper. */
 import {groupDrafts} from './notebook.js?v=20261102.2-paper';
+import {readingSegments,paperReadStatus} from './paper-detail-model.js?v=20261102.4-detail';
 
 const paperSculptures=[
  {back:'<path fill="#b7e72d" d="M70 40 925 125 960 850 170 980 40 900Z"/><path fill="#ddfa6e" d="M0 170 70 140 95 890 40 900Z"/><path fill="#add42e" d="M70 40 0 170 45 900 170 980 125 840Z"/><path fill="#9bbd35" opacity=".3" d="M95 865 920 820 960 900 170 990Z"/><path fill="#fffdf5" d="M80 0 Q440 24 930 85 L985 790 Q1000 860 910 900 L865 916 Q885 958 850 980 L490 1000 45 930 120 900 Q90 500 80 0Z"/><path fill="none" stroke="#d9dccc" d="M120 900 Q480 920 865 916 M45 930 490 1000"/><path fill="#f1f0e7" stroke="none" d="M865 916Q885 958 850 980L910 900Z"/>',front:''},
@@ -21,8 +22,10 @@ export function mountPaperStage({document:doc=globalThis.document,application,ac
  const win=doc.defaultView,room=doc.getElementById('room'),reader=doc.getElementById('desk'),owner=application.getPaperDesk(),board=application.getAccountBoard();
  if(!room||!reader||!owner||!board)throw Error('Paper stage needs the existing manuscript owner');
  const chapters=[...accounts.filter(a=>!a.pending).map(a=>({...a,label:({insurance:'保険',otoku:'お得',rakuten:'楽天',lottery:'抽選'})[a.key]||a.name})),{key:'sourcing',label:'仕入れ',name:'仕入れ'}];
+ const setReadingText=(node,text)=>{for(const part of readingSegments(text)){if(!part.keepTogether){node.append(doc.createTextNode(part.text));continue;}const word=doc.createElement('span');word.className='paper-word';word.textContent=part.text;node.append(word);}};
  const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
  const button=(cls,text,fn)=>{const n=make('button',cls,text);n.type='button';n.addEventListener('click',fn);return n;};
+ const updatePinAvailability=pin=>{pin.disabled=owner.canPin?.()===false;pin.title=pin.disabled?'ログイン中の本体から利用できます':'今後使う（この端末・現在のログイン）';};
  const anchor=doc.createComment('paper: original live reader');reader.before(anchor);
  let key=room.dataset.account||'insurance',lastPaperKey=['sourcing','fp'].includes(key)?'insurance':key,opened=null,returnFocus=null,onlyFuture=false,limit=20,queued=false,disposed=false,signature='',scrollOrigin=null,openingMotion=null,pendingPaperId=null,openingIntent=false,cardStyleBefore=null,layersBefore=[],readingPin=null,pinAnchor=null;
  const reduced=()=>doc.getElementById('app')?.dataset.feedbackMotion==='reduced'||win.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -49,10 +52,13 @@ export function mountPaperStage({document:doc=globalThis.document,application,ac
   header.hidden=room.hidden;stage.hidden=room.hidden||key==='sourcing'||key==='fp';
   for(const [k,b]of tabButtons)b.setAttribute('aria-current',k===key?'page':'false');future.setAttribute('aria-pressed',String(onlyFuture));
   const current=chapters.find(c=>c.key===key);stage.setAttribute('aria-label',(current?.label||'保存')+'の原稿舞台');
-  const rows=groupDrafts(owner.rows(key)).map(g=>g.find(d=>d.id===(pendingPaperId||owner.selected?.()))||g[0]).filter(d=>!onlyFuture||owner.isFuture(d.id));
-  const status=board.state;state.textContent=status.loading?'保存原稿を読み込み中…':!status.complete?'読取未確認 · 保存分を表示。道具から更新できます。':rows.length?rows.length+'件の保存原稿'+(onlyFuture?' · 今後使う（この端末・現在のログイン）':''):'このカテゴリに'+(onlyFuture?'今後使う原稿は':'保存原稿は')+'ありません。';
+  const available=groupDrafts(owner.rows(key)).map(g=>g.find(d=>d.id===(pendingPaperId||owner.selected?.()))||g[0]),rows=available.filter(d=>!onlyFuture||owner.isFuture(d.id));
+  const status=board.state;state.textContent=paperReadStatus(status,{availableCount:available.length,visibleCount:rows.length,futureOnly:onlyFuture});
   if(!owner.persistent())state.textContent+=' 端末保存は利用できないため、この画面内で保持します。';
   const revealIndex=rows.findIndex(d=>d.id===pendingPaperId);if(revealIndex>=limit)limit=Math.ceil((revealIndex+1)/20)*20;
+  // Cached papers can arrive before the current login's pin scope. Capability
+  // changes must update controls even when source text and saved marks match.
+  for(const pin of papers.querySelectorAll('[data-paper-pin]'))updatePinAvailability(pin);
   const sig=JSON.stringify([key,onlyFuture,limit,rows.map(d=>[d.id,d.title,d.body,owner.isFuture(d.id)])]);if(sig===signature)return;
   // Source receipts must never replace an open reader or move the focused paper.
   if(opened){for(const pin of papers.querySelectorAll('[data-paper-pin]'))pin.setAttribute('aria-pressed',String(owner.isFuture(pin.dataset.paperPin)));return;}
@@ -61,16 +67,25 @@ export function mountPaperStage({document:doc=globalThis.document,application,ac
    const card=make('article','paper-card paper-form-'+(i%5));card.dataset.paperId=d.id;
    const platform=make('div','paper-platform');platform.setAttribute('aria-hidden','true');
    const backing=make('div','paper-backing');backing.setAttribute('aria-hidden','true');
-   const leaf=make('div','paper-leaf'),category=make('small','paper-category',current?.label||'原稿'),title=make('h2','paper-title',d.title),excerpt=make('p','paper-excerpt',d.body.slice(0,i===0?240:105));
-   const pin=button('paper-pin','',()=>{owner.toggleFuture(d.id);pin.setAttribute('aria-pressed',String(owner.isFuture(d.id)));schedule();});pin.dataset.paperPin=d.id;pin.setAttribute('aria-pressed',String(owner.isFuture(d.id)));pin.setAttribute('aria-label',d.title+'を今後使う');pin.disabled=owner.canPin?.()===false;pin.title=pin.disabled?'ログイン中の本体から利用できます':'今後使う（この端末・現在のログイン）';const icon=make('span','paper-pin-icon');icon.setAttribute('aria-hidden','true');pin.append(icon);
-   const opener=button('paper-open','ここで開く ＋',()=>open(d,card,opener));opener.setAttribute('aria-expanded','false');opener.setAttribute('aria-label',d.title+'をここで開く');opener.dataset.paperOpenLabel=opener.getAttribute('aria-label');if([1,2,3,4].includes(i%5))opener.textContent='開く';opener.dataset.paperClosedLabel=opener.textContent;leaf.append(category,pin,title,excerpt);card.append(platform,backing,sculpture(doc,i%5),leaf,sculpture(doc,i%5,true));if([1,2,3,4].includes(i%5)){const actions=make('div','paper-action-row');actions.append(opener,pin);if(i%5===3)leaf.append(actions);else card.append(actions);}else leaf.append(opener);papers.append(card);
+   const leaf=make('div','paper-leaf'),category=make('small','paper-category',current?.label||'原稿'),title=make('h2','paper-title'),excerpt=make('p','paper-excerpt');setReadingText(title,d.title);setReadingText(excerpt,d.body.slice(0,i===0?240:105));
+   const pin=button('paper-pin','',()=>{owner.toggleFuture(d.id);pin.setAttribute('aria-pressed',String(owner.isFuture(d.id)));schedule();});pin.dataset.paperPin=d.id;pin.setAttribute('aria-pressed',String(owner.isFuture(d.id)));pin.setAttribute('aria-label',d.title+'を今後使う');updatePinAvailability(pin);const icon=make('span','paper-pin-icon');icon.setAttribute('aria-hidden','true');pin.append(icon);
+   const opener=button('paper-open','ここで開く ＋',()=>open(d,card,opener));opener.setAttribute('aria-expanded','false');opener.setAttribute('aria-label',d.title+'をここで開く');opener.dataset.paperOpenLabel=opener.getAttribute('aria-label');if([1,2,3,4].includes(i%5))opener.textContent='開く';opener.dataset.paperClosedLabel=opener.textContent;leaf.append(category,pin,title,excerpt);card.append(platform,backing,sculpture(doc,i%5),leaf,sculpture(doc,i%5,true));if(i>=5||[1,2,3,4].includes(i%5)){const actions=make('div','paper-action-row');actions.append(opener,pin);if(i>=5||i%5===3)leaf.append(actions);else card.append(actions);}else leaf.append(opener);papers.append(card);
   }
-  const main=papers.querySelector('.paper-form-0');if(main)papers.style.setProperty('--hero-height',Math.ceil(main.getBoundingClientRect().height)+'px');
+  updateLayout();
   more.hidden=rows.length<=limit;more.textContent='次の20件（残り '+Math.max(0,rows.length-limit)+'件）';
   if(focusId){const card=[...papers.children].find(n=>n.dataset.paperId===focusId);if(card)card.querySelector(focusPin?'.paper-pin':'.paper-open')?.focus({preventScroll:true});else future.focus({preventScroll:true});}
   if(pendingPaperId){const target=pendingPaperId;pendingPaperId=null;const d=rows.find(d=>d.id===target),card=[...papers.children].find(n=>n.dataset.paperId===target);if(d&&card)open(d,card,card.querySelector('.paper-open'));}
  }
- function updateLayout(){if(opened)return;const main=papers.querySelector('.paper-form-0');if(main)papers.style.setProperty('--hero-height',Math.ceil(main.getBoundingClientRect().height)+'px');}
+ function updateLayout(){
+  if(disposed||opened)return;
+  // A long indivisible name must never overflow a narrow paper. Relax only
+  // that visual grouping, without adding/removing source characters.
+  for(const word of papers.querySelectorAll('.paper-word')){word.classList.remove('paper-word-wrap');const available=word.parentElement.getBoundingClientRect().width;if(available>0&&word.getBoundingClientRect().width>available)word.classList.add('paper-word-wrap');}
+  const main=papers.querySelector('.paper-form-0');if(!main)return;
+  papers.style.setProperty('--hero-height',Math.ceil(main.getBoundingClientRect().height)+'px');
+  if(win.innerWidth>600){const origin=papers.getBoundingClientRect().top,rear=[...papers.children].slice(0,3);const frontTop=Math.ceil(Math.max(...rear.map(n=>n.getBoundingClientRect().bottom-origin))+20);papers.style.setProperty('--front-top',frontTop+'px');const fronts=[...papers.children].slice(3,5);const end=Math.ceil(Math.max(frontTop,...fronts.map(n=>n.getBoundingClientRect().bottom-origin))+28);papers.style.setProperty('--stage-height',end+'px');}
+ }
+ const onFonts=()=>updateLayout();doc.fonts?.ready?.then(()=>{if(!disposed)updateLayout();});doc.fonts?.addEventListener?.('loadingdone',onFonts);
  function schedule(){if(!queued&&!disposed){queued=true;win.queueMicrotask(paint);}}
  const off=board.subscribe(schedule),observer=new win.MutationObserver(schedule);observer.observe(room,{attributes:true,attributeFilter:['hidden','data-account']});const app=doc.getElementById('app');if(app)observer.observe(app,{attributes:true,attributeFilter:['data-feedback-motion']});doc.addEventListener('cc:paper-render',schedule);
  const onKey=e=>{if(e.key==='Escape'&&!doc.querySelector('dialog[open]')){e.preventDefault();e.stopImmediatePropagation();if(opened)close();else tools.open=false;}};doc.addEventListener('keydown',onKey,true);
@@ -78,5 +93,5 @@ export function mountPaperStage({document:doc=globalThis.document,application,ac
  win.addEventListener('resize',updateLayout);
  const onPop=()=>{pendingPaperId=null;close({focus:false});schedule();};win.addEventListener('popstate',onPop);
  doc.body.classList.add('paper-popup');paint();revealTab(tabButtons.get(key));
- return {close,paint,snapshot:()=>({key,opened,onlyFuture,count:papers.children.length}),destroy(){disposed=true;close({focus:false});restore();anchor.remove();off();observer.disconnect();doc.removeEventListener('cc:paper-render',schedule);doc.removeEventListener('cc:paper-select',onSelect);doc.removeEventListener('keydown',onKey,true);win.removeEventListener('popstate',onPop);win.removeEventListener('resize',updateLayout);header.remove();stage.remove();doc.body.classList.remove('paper-popup');}};
+ return {close,paint,snapshot:()=>({key,opened,onlyFuture,count:papers.children.length}),destroy(){disposed=true;close({focus:false});restore();anchor.remove();off();observer.disconnect();doc.removeEventListener('cc:paper-render',schedule);doc.removeEventListener('cc:paper-select',onSelect);doc.removeEventListener('keydown',onKey,true);win.removeEventListener('popstate',onPop);win.removeEventListener('resize',updateLayout);doc.fonts?.removeEventListener?.('loadingdone',onFonts);header.remove();stage.remove();doc.body.classList.remove('paper-popup');}};
 }

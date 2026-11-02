@@ -7,7 +7,8 @@ const root=path.resolve(__dirname,'..'),out=path.join(root,process.env.PAPER_OUT
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg'};
 const accounts=['insurance','otoku','rakuten','lottery','tanaka'];
 const titles={insurance:'保険の保存原稿 一',otoku:'お得の保存原稿',rakuten:'楽天犬の保存原稿',lottery:'抽選の保存原稿',tanaka:'田中卓の保存原稿'};
-const previewTitles=['毎月の支払いを見直す前に、確認しておきたい三つのこと','年払いと月払いは、途中で見直すと差が出ることもある','同じ条件に見えても、保障の範囲を比べると違いが見つかる'];
+// Synthetic versions of the line-break patterns in the user screenshot.
+const previewTitles=['左右の目でも手術給付は1回の例','年払いの残りは契約日で返金が違う','80歳と90歳で払込総額が逆転'];
 const previewBody='暮らしに合った選び方を考えるときは、毎月の金額だけでなく、必要な条件と続けやすさを一緒に確認します。気になった項目を残しておき、元の資料と照らし合わせながら読み返せる原稿です。';
 const rows=[...accounts.map((key,i)=>({id:951+i,taskId:key+'-threads-v1',eventKey:'storybook-'+key,title:key==='insurance'?previewTitles[0]:titles[key],occurredAt:'2026-10-31T08:00:00Z',domain:'money',payload:{draft:key+' の合成原稿です。保存条件と出典を確認します。\n\n'+'コピーだけで投稿済みにはしません。この原稿は同じ部屋の机から読み、履歴とお気に入りは既存の記録を使います。\n\n'.repeat(12),date:'2026-10-31',review_status:'検証専用の下書き',sources_note:'合成データ・送信不可'}})),{id:955,taskId:'insurance-threads-v1',eventKey:'storybook-insurance-two',title:'保険の保存原稿 二',occurredAt:'2026-10-30T08:00:00Z',domain:'money',payload:{draft:'insurance 二つ目の合成原稿です。\n\n'+'別の原稿を選んでも出典IDとアカウントを保ちます。\n\n'.repeat(12),date:'2026-10-30',review_status:'検証専用の下書き'}}];
 for(let i=0;i<26;i++)rows.push({...rows[0],id:1100+i,eventKey:'extra-'+i,title:previewTitles[(i+1)%previewTitles.length]+'（検証'+i+'）',occurredAt:'2026-10-29T08:00:00Z'});
@@ -50,11 +51,12 @@ const server=http.createServer((req,res)=>{
  const origin='http://127.0.0.1:'+server.address().port;
  const browser=await chromium.launch({...(process.env.PAPER_BROWSER?{executablePath:process.env.PAPER_BROWSER}:{channel:'chromium'}),headless:true,args:['--no-sandbox']});
  const results=[];
- try{for(const [width,height] of (process.env.PAPER_WIDTH?[[Number(process.env.PAPER_WIDTH),Number(process.env.PAPER_HEIGHT||900)]]:[[800,900],[320,640],[390,900],[800,648],[1440,900]])){
+ try{for(const [width,height] of (process.env.PAPER_WIDTH?[[Number(process.env.PAPER_WIDTH),Number(process.env.PAPER_HEIGHT||900)]]:[[800,900],[320,640],[390,900],[800,648],[800,800],[1440,900]])){
   const context=await browser.newContext({viewport:{width,height},hasTouch:width<=800,reducedMotion:process.env.PAPER_MOTION==='normal'?'no-preference':'reduce',serviceWorkers:'block',permissions:['clipboard-read','clipboard-write']});
+  await context.addInitScript(()=>{window.addEventListener('message',event=>{if(event.origin===location.origin&&event.source===parent&&event.data?.channel==='cc-castle-v1'&&event.data.type==='records')window.__paperDetailRecords=structuredClone(event.data);});});
   const page=await context.newPage(),errors=[],blocked=[];page.on('pageerror',e=>errors.push(e.message));
   await context.route('**/*',route=>{const r=route.request();if(process.env.PAPER_NO_ART&&new URL(r.url()).pathname.endsWith('/storybook-art.js'))return route.abort();if(new URL(r.url()).origin===origin&&['GET','HEAD'].includes(r.method()))return route.continue();blocked.push({url:r.url(),method:r.method()});return route.abort();});
-  const result={width,height,checks:[],errors,blocked};results.push(result);
+  const result={width,height,scenario:process.env.PAPER_SHORT?'short':'long',checks:[],errors,blocked};results.push(result);
   function check(name,ok,detail){result.checks.push({name,pass:!!ok,detail});assert.ok(ok,name+': '+JSON.stringify(detail));}
   try{
    await page.goto(origin+'/command-center-98/app-v130.html');
@@ -63,7 +65,25 @@ const server=http.createServer((req,res)=>{
    const cf=page.frames().find(f=>new URL(f.url()).pathname.endsWith('/lounge/index.html'));
    await cf.waitForFunction(()=>document.querySelectorAll('.paper-card').length===20&&document.querySelector('.paper-state').textContent.includes('件'));
    await cf.evaluate(async()=>{window.__paperOwner=await import('./app.js?v=20261102.2-paper');});
-   const pinClear=async label=>{const collisions=await f.locator('.paper-card').evaluateAll(nodes=>nodes.slice(0,5).flatMap((card,index)=>{const pin=card.querySelector('.paper-pin').getBoundingClientRect();return [...card.querySelectorAll('.paper-title,.paper-excerpt,.paper-open,.paper-close,#draft-title,#draft-body')].filter(n=>n.getBoundingClientRect().width&&n.getBoundingClientRect().height).filter(n=>{const r=n.getBoundingClientRect();return Math.min(pin.right,r.right)-Math.max(pin.left,r.left)>.5&&Math.min(pin.bottom,r.bottom)-Math.max(pin.top,r.top)>.5;}).map(n=>({index,element:n.id||n.className,pin:pin.toJSON(),text:n.getBoundingClientRect().toJSON()}));}));check(label,collisions.length===0,collisions);};
+   const pinClear=async label=>{
+    const report=await f.locator('.paper-card').evaluateAll(nodes=>{
+     const collisions=[],categories=[],overlaps=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>.5&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>.5;
+     for(const [index,card] of nodes.slice(0,5).entries()){
+      const pin=card.querySelector('.paper-pin').getBoundingClientRect();
+      for(const n of card.querySelectorAll('.paper-category,.paper-title,.paper-excerpt,.paper-open,.paper-close,#draft-title,#draft-body')){
+       const box=n.getBoundingClientRect();if(!box.width||!box.height)continue;
+       // Category is a full-width block with reserved right padding. Probe its
+       // actual text Range, not the deliberately empty pin reservation.
+       const range=document.createRange();range.selectNodeContents(n);const glyphs=[...range.getClientRects()].filter(r=>r.width&&r.height);
+       if(n.classList.contains('paper-category'))categories.push({index,block:box.toJSON(),glyphs:glyphs.map(r=>r.toJSON()),pin:pin.toJSON()});
+       const tested=n.classList.contains('paper-category')?glyphs:[box];
+       if(tested.some(rect=>overlaps(pin,rect)))collisions.push({index,element:n.id||n.className,pin:pin.toJSON(),text:box.toJSON(),glyphs:glyphs.map(r=>r.toJSON())});
+      }
+     }
+     return {collisions,categories};
+    });
+    check(label,report.collisions.length===0,report);
+   };
    const original=await page.evaluate(()=>JSON.stringify(__rpgQA.threads.events));
    check('correct initial category and no automatic open',await cf.evaluate(()=>document.getElementById('room').dataset.account==='insurance'&&!__paperStage.snapshot().opened));
    check('initial actual title and excerpt visible',await f.locator('.paper-title').first().isVisible()&&await f.locator('.paper-excerpt').first().isVisible());
@@ -71,6 +91,25 @@ const server=http.createServer((req,res)=>{
    const geometry=await cf.evaluate(()=>({width:document.documentElement.scrollWidth,client:innerWidth,tabs:[...document.querySelectorAll('.paper-tab')].map(n=>({text:n.textContent,font:parseFloat(getComputedStyle(n).fontSize),height:n.getBoundingClientRect().height})),body:parseFloat(getComputedStyle(document.querySelector('.paper-excerpt')).fontSize)}));
    check('no page horizontal overflow; readable text and tap areas',geometry.width<=geometry.client+1&&geometry.tabs.every(t=>t.font>=16&&t.height>=44)&&geometry.body>=16,geometry);
    if(process.env.PAPER_EIGHT)check('8 categories remain accessible in the same scrollable header',geometry.tabs.length===8&&await cf.evaluate(()=>{const nav=document.querySelector('.paper-tabs');return nav.scrollWidth<=nav.clientWidth+1||getComputedStyle(nav).overflowX==='auto';}));
+   const previewFidelity=await cf.evaluate(()=>{const rows=__paperOwner.getPaperDesk().rows('insurance');return [...document.querySelectorAll('.paper-card')].map((card,index)=>{const row=rows.find(d=>d.id===card.dataset.paperId);return {id:card.dataset.paperId,title:card.querySelector('.paper-title').textContent===row?.title,excerpt:card.querySelector('.paper-excerpt').textContent===row?.body.slice(0,index===0?240:105)};});});
+   check('preview formatting preserves exact source title and excerpt textContent',previewFidelity.every(x=>x.title&&x.excerpt),previewFidelity);
+   if(!process.env.PAPER_SHORT){
+    const safeWords=await f.locator('.paper-title .paper-word').evaluateAll(nodes=>nodes.filter(n=>['1回','契約日','払込総額'].includes(n.textContent)).map(n=>{const range=document.createRange();range.selectNodeContents(n);const rects=[...range.getClientRects()].filter(r=>r.width&&r.height),lineTops=[...new Set(rects.map(r=>Math.round(r.top)))];return {cardIndex:[...document.querySelectorAll('.paper-card')].indexOf(n.closest('.paper-card')),text:n.textContent,lines:lineTops.length,nowrap:getComputedStyle(n).whiteSpace==='nowrap',width:n.getBoundingClientRect().width,available:n.parentElement.clientWidth};}));
+    check('1回, 契約日 and 払込総額 never split across rendered title lines',safeWords.length>0&&['1回','契約日','払込総額'].every(text=>safeWords.some(word=>word.text===text))&&safeWords.every(word=>word.lines===1&&word.nowrap&&word.width<=word.available),safeWords);
+   }
+   const completedRecords=await cf.evaluate(()=>structuredClone(window.__paperDetailRecords));
+   await page.evaluate(()=>document.getElementById('ccCastleFrame').contentWindow.postMessage({channel:'cc-castle-v1',type:'status',loading:true,message:'検証用の更新を読み込み中'},location.origin));
+   await cf.waitForFunction(()=>document.querySelector('.paper-state').textContent==='取得済み原稿を表示中 · 最新の原稿・履歴・仕入れを読み込み中…');
+   check('available source papers remain shown while status explains pending updates without a completed total',await f.locator('.paper-card').count()===20&&!/\d+件|完了|ありません/.test(await f.locator('.paper-state').textContent()));
+   await page.screenshot({path:path.join(out,width+'-'+height+'-loading-available.png')});
+   await f.locator('.paper-future').click();
+   check('empty future filter during refresh does not misreport an empty source set',await f.locator('.paper-card').count()===0&&(await f.locator('.paper-state').textContent()).startsWith('取得済み原稿を表示中'));
+   await f.locator('.paper-future').click();
+   await page.evaluate(records=>document.getElementById('ccCastleFrame').contentWindow.postMessage(records,location.origin),completedRecords);
+   await cf.waitForFunction(()=>document.querySelector('.paper-state').textContent.includes('件'));
+
+   const mainBalance=await f.locator('.paper-card').first().evaluate(n=>{const excerpt=n.querySelector('.paper-excerpt').getBoundingClientRect(),opener=n.querySelector('.paper-open').getBoundingClientRect();return {gap:opener.top-excerpt.bottom,height:n.getBoundingClientRect().height,excerptHeight:excerpt.height,openerHeight:opener.height};});
+   check('main opening action follows actual excerpt by 24–40px at every viewport',mainBalance.gap>=24&&mainBalance.gap<=40,{...mainBalance,short:!!process.env.PAPER_SHORT});
    if(width<=600){const gap=await f.locator('.paper-card').first().evaluate(n=>n.querySelector('.paper-open').getBoundingClientRect().top-n.querySelector('.paper-excerpt').getBoundingClientRect().bottom);check('phone opening action follows excerpt without dead space',gap>=23&&gap<=33,{gap,short:!!process.env.PAPER_SHORT});}
    await page.screenshot({path:path.join(out,width+'-'+height+'-closed.png')});
    await pinClear('every 44px pin target has reserved space before selection');
@@ -79,26 +118,48 @@ const server=http.createServer((req,res)=>{
    check('foreground controls are horizontal transparent actions on their own paper surfaces',foreground.every(x=>x.onSurface&&x.horizontal&&x.transparent),foreground);
    const excerptClearance=await f.locator('.paper-card').evaluateAll(nodes=>[1,2,4].map(i=>{const card=nodes[i],svg=card.querySelector('.paper-sculpture-front'),rect=card.querySelector('.paper-excerpt').getBoundingClientRect(),matrix=svg.getScreenCTM().inverse(),paths=[...svg.querySelectorAll('path')].filter(p=>getComputedStyle(p).fill!=='none');const points=[[rect.left+2,rect.top+2],[rect.right-2,rect.top+2],[rect.left+2,rect.bottom-2],[rect.right-2,rect.bottom-2]];return {index:i,clear:points.every(([x,y])=>!paths.some(p=>p.isPointInFill(new DOMPoint(x,y).matrixTransform(matrix)))),rect:rect.toJSON()};}));
    check('SVG pocket fronts do not obscure any preview excerpt',excerptClearance.every(x=>x.clear),excerptClearance);
+   const previewFrontClearance=await f.locator('.paper-card').evaluateAll(nodes=>nodes.slice(0,5).flatMap((card,index)=>{const svg=card.querySelector('.paper-sculpture-front'),matrix=svg.getScreenCTM().inverse(),paths=[...svg.querySelectorAll('path')].filter(p=>getComputedStyle(p).fill!=='none');return [...card.querySelectorAll('.paper-title,.paper-excerpt')].map(n=>{const rect=n.getBoundingClientRect(),points=[];for(let y=rect.top+1;y<rect.bottom;y+=3)for(let x=rect.left+1;x<rect.right;x+=3)points.push(new DOMPoint(x,y).matrixTransform(matrix));const intersections=points.filter(point=>paths.some(p=>p.isPointInFill(point)));return {index,element:n.className,clear:intersections.length===0,intersectionCount:intersections.length,sample:intersections.slice(0,5).map(point=>({x:point.x,y:point.y})),rect:rect.toJSON(),card:card.getBoundingClientRect().toJSON()};});}));
+   check('no filled front SVG intersects a preview title or excerpt safe rectangle',previewFrontClearance.every(x=>x.clear),previewFrontClearance);
    await f.locator('.paper-tab').first().focus();const tabHits=[];for(let i=0;i<geometry.tabs.length;i++){if(i)await page.keyboard.press('ArrowRight');tabHits.push(await cf.evaluate(()=>{const n=document.activeElement,r=n.getBoundingClientRect(),b=n.closest('.paper-tabs').getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return r.height>=44&&r.width>=44&&r.left>=b.left-1&&r.right<=b.right+1&&r.top>=-1&&r.bottom<=innerHeight+1&&(hit===n||n.contains(hit));}));}
    check('every category is keyboard reachable with an in-viewport unobstructed hit target',tabHits.every(Boolean),tabHits);
-   const paperHits=[];for(let i=0;i<5;i++)for(const selector of ['.paper-pin','.paper-open']){const target=f.locator('.paper-card').nth(i).locator(selector);await target.scrollIntoViewIfNeeded();paperHits.push(await target.evaluate(n=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {ok:r.height>=44&&r.width>=44&&r.top>=-1&&r.bottom<=innerHeight+1&&(hit===n||n.contains(hit)),rect:r.toJSON(),hit:hit?.outerHTML.slice(0,200),selector:n.className};}));}
+   await cf.evaluate(()=>window.scrollTo({top:0,left:0,behavior:'instant'}));
+   const initialScroll=await cf.evaluate(()=>window.scrollY),paperHits=[];
+   for(let i=0;i<5;i++)for(const selector of ['.paper-pin','.paper-open']){
+    const target=f.locator('.paper-card').nth(i).locator(selector);
+    // Exercise genuine scrolling to the lower papers, not a bounding-box-only claim.
+    await target.evaluate(n=>n.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'}));
+    paperHits.push(await target.evaluate((n,index)=>{const r=n.getBoundingClientRect(),points=[];for(const x of [r.left+.5,r.left+r.width/2,r.right-.5])for(const y of [r.top+.5,r.top+r.height/2,r.bottom-.5]){const hit=document.elementFromPoint(x,y);points.push({x,y,clear:hit===n||n.contains(hit),hit:hit?.outerHTML.slice(0,140)});}return {index,ok:r.height>=44&&r.width>=44&&r.top>=0&&r.bottom<=innerHeight&&points.every(p=>p.clear),rect:r.toJSON(),scrollY:window.scrollY,points,selector:n.className};},i));
+   }
    check('five paper pins and openers retain real unobstructed 44px targets',paperHits.every(x=>x.ok),paperHits);
+   check('lower actions are reached by real page scrolling with their entire targets exposed',paperHits.filter(x=>x.index>=3).every(x=>x.ok)&&paperHits.filter(x=>x.index>=3).some(x=>x.scrollY>initialScroll),{initialScroll,lower:paperHits.filter(x=>x.index>=3)});
    const anchors=[];for(let i=0;i<5;i++){const card=f.locator('.paper-card').nth(i),opener=card.locator('.paper-open');await card.scrollIntoViewIfNeeded();await opener.scrollIntoViewIfNeeded();const before=await card.boundingBox(),frontBefore=await card.locator('.paper-sculpture-front').boundingBox();await opener.click();const frontDuring=await card.locator('.paper-sculpture-front').boundingBox();check('pocket front stays fixed during open '+i,Math.abs(frontBefore.x-frontDuring.x)<2&&Math.abs(frontBefore.y-frontDuring.y)<2&&Math.abs(frontBefore.height-frontDuring.height)<2);await pinClear('opened paper pin stays clear of heading body and close '+i);await f.locator('.paper-reader').evaluate(n=>Promise.all(n.getAnimations({subtree:true}).map(a=>a.finished.catch(()=>{}))));const after=await card.boundingBox();anchors.push({index:i,before,after,kept:Math.abs(before.x-after.x)<2&&Math.abs(before.y-after.y)<2});await f.locator('.paper-close').click();await pinClear('closed paper pin returns to reserved space '+i);}
    check('all five paper forms open at their original anchors',anchors.every(x=>x.kept),anchors);
    const first=f.locator('.paper-card').first(),id=await first.getAttribute('data-paper-id'),pin=first.locator('.paper-pin');
    await pin.click();await pin.waitFor({state:'visible'});check('future pin persists separately',await cf.evaluate(id=>{const keys=Object.keys(localStorage);return keys.some(k=>k.startsWith('castle-production.v1.future:')&&k.includes(id))&&!keys.some(k=>k==='castle-production.v1.pin:'+id||k==='castle-production.v1.done:'+id);},id));
    await first.locator('.paper-open').scrollIntoViewIfNeeded();const before=await first.boundingBox();await first.locator('.paper-open').click();
    await f.locator('.paper-reader #draft-body').waitFor({state:'visible'});await f.locator('.paper-reader').evaluate(async n=>{await Promise.all(n.getAnimations({subtree:true}).map(a=>a.finished.catch(()=>{})));await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});const openAnchor=await first.boundingBox();check('opened manuscript keeps its original paper anchor',Math.abs(before.x-openAnchor.x)<2&&Math.abs(before.y-openAnchor.y)<2,{before,openAnchor});
-   const live=await cf.evaluate(()=>({id:document.querySelector('#desk-list .manuscript-card[aria-pressed=true]')?.dataset.draftId,body:document.getElementById('draft-body').textContent,count:document.querySelectorAll('#desk').length}));
+   const live=await cf.evaluate(()=>({source:__paperOwner.getPaperDesk().rows('insurance').find(d=>d.id===document.querySelector('#desk-list .manuscript-card[aria-pressed=true]')?.dataset.draftId)?.body,id:document.querySelector('#desk-list .manuscript-card[aria-pressed=true]')?.dataset.draftId,body:document.getElementById('draft-body').textContent,count:document.querySelectorAll('#desk').length}));
    check('one visible manuscript heading and one close action',await cf.evaluate(()=>{const card=document.querySelector('[data-paper-open=true]'),visible=n=>n.getBoundingClientRect().width>0&&n.getBoundingClientRect().height>0;return [card.querySelector('.paper-title'),card.querySelector('#draft-title')].filter(visible).length===1&&[card.querySelector('.paper-open'),card.querySelector('.paper-close')].filter(visible).length===1;}));
-   check('opens exact live reader on clicked paper',live.id===id&&live.body.includes('insurance')&&live.count===1,live);
+   check('opens exact live reader on clicked paper',live.id===id&&live.body===live.source&&live.body.includes('insurance')&&live.count===1,live);
    check('open screenshot is settled and fully opaque',await f.locator('.paper-reader').evaluate(n=>getComputedStyle(n).opacity==='1'&&n.getAnimations().every(a=>a.playState!=='running')));await page.screenshot({path:path.join(out,width+'-'+height+'-open.png')});
    await f.locator('#desk-copy').click();await cf.waitForFunction(()=>document.getElementById('desk-operation').textContent.includes('コピー'));
+   check('copied manuscript is byte-for-byte source text, without line-break helper characters',await cf.evaluate(async expected=>await navigator.clipboard.readText()===expected,live.source));
    check('existing copy action still works',await cf.evaluate(()=>document.getElementById('desk-operation').textContent.includes('コピー')));
    await f.locator('.paper-close').click();await cf.waitForFunction(()=>!__paperStage.snapshot().opened);
    const after=await f.locator('[data-paper-id="'+id+'"]').boundingBox();check('close restores paper geometry',Math.abs(before.x-after.x)<2&&Math.abs(before.y-after.y)<2,{before,after});
    await f.locator('.paper-future').click();check('future filter isolates this manuscript',await f.locator('.paper-card').count()===1);await f.locator('.paper-future').click();
    await f.locator('.paper-more').click();check('all manuscripts remain accessible',await f.locator('.paper-card').count()>=27);
+   const continuationGeometry=await f.locator('.paper-card').evaluateAll(nodes=>nodes.slice(5).map((n,i)=>({index:i+5,rect:n.getBoundingClientRect().toJSON()})));
+   const continuationOverlaps=continuationGeometry.flatMap((a,i)=>continuationGeometry.slice(i+1).filter(b=>Math.min(a.rect.right,b.rect.right)-Math.max(a.rect.left,b.rect.left)>1&&Math.min(a.rect.bottom,b.rect.bottom)-Math.max(a.rect.top,b.rect.top)>1).map(b=>[a.index,b.index]));
+   check('continued source papers occupy separate readable grid cells, not inherited stage offsets',continuationOverlaps.length===0,{cards:continuationGeometry,overlaps:continuationOverlaps});
+   const continuationHits=[];
+   for(let i=5;i<await f.locator('.paper-card').count();i++)for(const selector of ['.paper-pin','.paper-open']){
+    const target=f.locator('.paper-card').nth(i).locator(selector);await target.evaluate(n=>n.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'}));
+    continuationHits.push(await target.evaluate((n,index)=>{const r=n.getBoundingClientRect(),points=[];for(const x of [r.left+.5,r.left+r.width/2,r.right-.5])for(const y of [r.top+.5,r.top+r.height/2,r.bottom-.5]){const hit=document.elementFromPoint(x,y);points.push(hit===n||n.contains(hit));}return {index,selector:n.className,rect:r.toJSON(),ok:r.width>=44&&r.height>=44&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&points.every(Boolean)};},i));
+    if(i===5&&selector==='.paper-open')await page.screenshot({path:path.join(out,width+'-'+height+'-continued.png')});
+   }
+   check('every continued manuscript pin and opener is fully reachable after real scrolling',continuationHits.every(x=>x.ok),continuationHits);
+
    await f.locator('[data-paper-chapter=tanaka]').click();await cf.waitForFunction(()=>document.getElementById('room').dataset.account==='tanaka');await f.locator('.paper-title').first().waitFor();
    check('exact Tanaka category maintained',await f.locator('.paper-title').first().textContent()==='田中卓の保存原稿');
    if(process.env.PAPER_EIGHT)for(const suffix of ['a','b']){

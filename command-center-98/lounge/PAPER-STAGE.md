@@ -71,3 +71,11 @@ isolation. Missing new CSS/module scenarios verify the retained fallback. A
 non-routed local HTTP-cache scenario preloads stale bootstrap bytes and proves
 repeat reads hit the cache, then checks that the current default and explicit
 archive never execute the old application owner.
+
+
+## Content-led detail balance (2026-11-02)
+- The lead paper grows from its actual title/excerpt, rather than a width-derived fixed height. Its Open control follows the excerpt with 24px separation. Rear papers determine the foreground row's position, including after font loading and viewport changes.
+- Japanese words and numeric units receive bounded nonbreaking presentation spans; exact source text, IDs and clipboard contents are unchanged. A token wider than its own paper becomes breakable.
+- Available papers remain usable while the existing multi-source read is pending; the status explicitly distinguishes available content from unfinished manuscript/history/sourcing reads. An incomplete read never claims a completed count.
+- Paper detail modules/styles use `.4-detail`; the unchanged app owner stays `.2-paper`. The HTTP-cache regression includes prior production `.3-depth` resources.
+- Synthetic short/long browser coverage includes 320×640, 390×900, 800×648, 800×800, 800×900 and 1440×900, real lower-page scrolling and full 44px control hit checks. Local Chromium availability is not browser acceptance; exact-head Actions captures are required.
