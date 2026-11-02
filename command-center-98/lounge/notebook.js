@@ -20,7 +20,7 @@ export function postingAssets(value){
 export function productLinks(value){return ['yahoo','official','affiliate'].map(key=>{const raw=Array.isArray(value)?value.find(r=>r?.key===key)?.url:'',url=safeLink(raw);let safe='';if(url){const u=new URL(url);if(u.protocol==='https:'&&!u.username&&!u.password&&(key!=='yahoo'||u.hostname==='store.shopping.yahoo.co.jp'&&/^\/[^/]+\/[^/]+\.html$/.test(u.pathname)))safe=url;}return {key,label:{yahoo:'Yahoo 商品ページ',official:'公式 商品ページ',affiliate:'投稿用アフィリエイトURL'}[key],url:safe};});}
 export function dayInJapan(time=Date.now()){if(!Number.isFinite(Number(time))||!Number.isFinite(new Date(Number(time)).getTime()))return '';return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(time));}
 export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>{},archive=globalThis.CCThreadsArchive,sourceArchive=globalThis.CCSourcingArchive}={}){
- const records=new Map(),undoStack=[],freshSourceKeys=new Set();let serial=0,persistent=true;
+ const records=new Map(),undoStack=[],freshSourceKeys=new Set();let serial=0,persistent=true,futureScope='';
  const clone=x=>x===undefined?undefined:JSON.parse(JSON.stringify(x));
  const id=()=>`n-${now().toString(36)}-${Math.random().toString(36).slice(2,9)}-${serial++}`;
  function sync(){if(!storage)return;try{records.clear();for(let i=0;i<storage.length;i++){const k=storage.key(i);if(k?.startsWith(NOTEBOOK_PREFIX)){const key=k.slice(NOTEBOOK_PREFIX.length);if(sourceArchive?.enabled&&sourceArchive.isArchivedCacheKey(key))continue;if(archive?.enabled&&archive.isRemoteThreadsCacheKey(key)&&!freshSourceKeys.has(key))continue;try{records.set(key,JSON.parse(storage.getItem(k)));}catch{}}}}catch{persistent=false;onError();}}
@@ -47,6 +47,12 @@ export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>
  function hiddenDrafts(){return all({includeHidden:true}).filter(d=>isHidden(d.id));}
  function restore(draftId){const d=hiddenDrafts().find(d=>d.id===draftId);if(!d)return false;const legacyKey='draft:'+draftId,hiddenKey='hidden:'+draftId,marker=records.get(hiddenKey),changes=[];let saved=true;if(records.get(legacyKey)?.deleted){changes.push({key:legacyKey,before:clone(records.get(legacyKey)),after:undefined});saved=remove(legacyKey)&&saved;}if(marker){const next={...(typeof marker==='object'?marker:{}),draft:d,hidden:false};changes.push({key:hiddenKey,before:clone(marker),after:next});saved=put(hiddenKey,next)&&saved;}undoStack.push({batch:changes});return saved;}
  function toggle(type,draftId){if(!['pin','tray'].includes(type)||!get(draftId))return false;change(`${type}:${draftId}`,!flag(type,draftId));return flag(type,draftId);}
+ // Existing login uses one shared access-code session, with no user subject.
+ // Scope new future marks to its opaque digest, then exact publishing identity.
+ // Missing identity never reads a previous session's marks or persists a guess.
+ const futureKey=draftId=>{const d=get(draftId);return futureScope&&d?'future:'+futureScope+':'+JSON.stringify([d.place,d.source?.account||'',d.source?.id||'',d.id]):null;};
+ const futureFlag=draftId=>{const key=futureKey(draftId);return key?Boolean(records.get(key)):false;};
+ function toggleFuture(draftId){const key=futureKey(draftId);if(!key)return false;change(key,!futureFlag(draftId));return futureFlag(draftId);}
  function remember(place,draftId,scroll){put('read:'+draftId,Math.max(0,Math.min(Number(scroll)||0,1e7)));put('selected:'+place,draftId);}
  function visit(place){put('lastPlace',place);put('visit:'+place,now());const first=!records.get('visited:'+place);put('visited:'+place,true);return first;}
  function copied(draft,kind,text){const event={id:id(),draftId:draft.id,place:draft.place,title:draft.title,source:clone(draft.source),kind,text,time:now()};put('copy:'+event.id,event);return event;}
@@ -93,6 +99,7 @@ export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>
  function replaceSources(rows,{complete=false}={}){const normalized=rows.filter(d=>(!archive?.enabled||archive.acceptsSource(d))&&!sourceArchive?.isArchivedDraft(d)).map(d=>normalize(d));const ids=new Set(normalized.map(d=>d.id));if(complete)for(const [k,v]of [...records])if(k.startsWith('source:')&&!ids.has(v.id)){if(isLegacyPublishingDraft(v)){if(put('legacy-source:'+v.id,v))remove(k);}else remove(k);}for(const d of normalized){freshSourceKeys.add('source:'+d.id);put('source:'+d.id,d);}migrateLegacy();}
  migrateLegacy();
  return {sources,legacySources,replaceSources,list,all,get,save,erase,hiddenDrafts,restore,toggle,flag,remember,visit,copied,copies,copyMark,finish,completed,sync,parseImport,applyImport,migrateLegacy,sourceDraft,inheritCopy,undo:undoAny,
+  setFutureScope:scope=>{futureScope=typeof scope==='string'&&/^[a-f0-9]{64}$/.test(scope)?scope:'';},futureFlag,toggleFuture,hasFutureScope:()=>!!futureScope,
   position:draftId=>Number(records.get('read:'+draftId))||0,selected:place=>records.get('selected:'+place),lastPlace:()=>records.get('lastPlace'),usedToday:place=>dayInJapan(records.get('visit:'+place)||1)===dayInJapan(now()),
   pref:(key,fallback)=>records.has('pref:'+key)?clone(records.get('pref:'+key)):fallback,setPref:(key,v)=>put('pref:'+key,v),
   changePref:(key,v)=>change('pref:'+key,v),

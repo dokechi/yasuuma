@@ -1,5 +1,5 @@
 /* One working book, one application owner. Presentation never fetches records. */
-import * as application from './app.js?v=20261102.1-tanaka';
+import * as application from './app.js?v=20261102.2-paper';
 const board=application.getAccountBoard();
 let scene,desk,passage,workbench,artBuilder=null,living=null,destroyed=false;
 const actorURLs=Object.freeze(Object.fromEntries(['insurance','otoku','rakuten','lottery','sourcing'].map(key=>[key,new URL('./assets/storybook-'+key+'-actor-v1.webp',import.meta.url).href])));

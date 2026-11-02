@@ -1,6 +1,6 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
 import {createMusicControls} from './music.js?v=20261030.8-integrated';
-import {createDesk} from './desk.js?v=20261102.1-tanaka';
+import {createDesk} from './desk.js?v=20261102.2-paper';
 import {createInteractionSound} from './interaction-sound.js?v=20261022.26-audio';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261101.1-living';
 const $ = (id) => document.getElementById(id);
@@ -208,6 +208,8 @@ export const getAccountBoard=()=>desk?.accountBoard;
 
 // Read-only room summaries and existing owner actions for optional living tools.
 export const getLivingDesk=()=>desk?.living;
+// Presentation adapter: the existing owner remains the only manuscript store.
+export const getPaperDesk=()=>desk?.paper;
 
 // Existing supplementary reader remains reachable from the book's settings.
 // It does not add an account or a second reader/controller.
