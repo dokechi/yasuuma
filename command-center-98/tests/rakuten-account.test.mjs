@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {createNotebook} from '../lounge/notebook.js';
+import {publishingAccounts} from '../lounge/accounts.js';
 import {postingSteps,postingReadiness,roomForPlace} from '../lounge/qol-model.js';
 import {nativeForDraft,placeNames} from '../lounge/desk-model.js';
 
@@ -23,7 +24,7 @@ test('Rakuten drafts survive reload without mixing accounts or losing reply copy
 test('production bridge routes explicit task ids to separate account drafts',()=>{
  const code=fs.readFileSync(new URL('../castle-parent.js',import.meta.url),'utf8');
  const start=code.indexOf(' function drafts('),end=code.indexOf('\n async function read()',start);
- const context={H:{unique:x=>x,isSuppressed:()=>false,payload:i=>i.payload,matchesAccount:()=>false},w:{}};
+ const context={publishingConfig:publishingAccounts.filter(a=>!a.pending),H:{unique:x=>x,isSuppressed:()=>false,payload:i=>i.payload,matchesAccount:()=>false},w:{}};
  vm.createContext(context);vm.runInContext(code.slice(start,end),context);
  const items=['rakuten','otoku','insurance','lottery'].map((key,i)=>({id:'task:'+key,eventRecordId:100+i,taskId:key+'-threads-v1',title:key,payload:{draft:key+'本文',reply:key+'返信'},occurredAt:'2026-10-30T07:00:00Z'}));
  const rows=context.drafts(items);

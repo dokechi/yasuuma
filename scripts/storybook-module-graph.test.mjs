@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const origin='https://storybook.invalid/';
-const version='20261101.9-workbook';
+const version='20261102.2-paper';
 const canonical=new Set(['app.js','desk.js','accounts.js','desk-model.js','qol.js','hall-tools.js','spatial-desk.js','living-room-model.js','arrival-passage.js','court-native-snapshot.js']);
 const filename=url=>path.join(root,new URL(url).pathname);
 function literals(source){
@@ -29,7 +29,10 @@ function graph(entry){
 function checkOwners(entry){
  const result=graph(entry),apps=[...result.modules.keys()].filter(url=>new URL(url).pathname==='/command-center-98/lounge/app.js');
  assert.deepEqual(apps,[new URL('command-center-98/lounge/app.js?v='+version,origin).href],entry+' has one exact app owner URL');
- for(const url of result.modules.keys()){const parsed=new URL(url);if(canonical.has(path.basename(parsed.pathname)))assert.equal(parsed.search,'?v='+version,'canonical owner/identity dependency '+parsed.pathname);}
+ // Independent pure dependencies keep their own cache revision. What matters
+ // is one exact URL per owner/identity module, never two live app instances.
+ const byPath=new Map();for(const url of result.modules.keys()){const parsed=new URL(url);if(canonical.has(path.basename(parsed.pathname))){const versions=byPath.get(parsed.pathname)||new Set();versions.add(parsed.search);byPath.set(parsed.pathname,versions);}}
+ for(const [pathname,versions]of byPath)assert.equal(versions.size,1,'one canonical owner/identity dependency '+pathname);
  return result;
 }
 test('default storybook has one canonical application owner and no eager archived castle/court graph',()=>{

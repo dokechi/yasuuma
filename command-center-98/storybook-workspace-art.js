@@ -15,8 +15,9 @@
  function syncChapters(){
   const enabled=workingBook();header.classList.toggle('workbook-native-header',enabled);if(chapterNav)chapterNav.hidden=!enabled;
   if(!enabled||chapterNav)return;
-  const nav=d.createElement('nav');nav.className='workbook-native-chapters';nav.setAttribute('aria-label','五つの持ち場、すぐ切り替え');
-  for(const [key,label]of [['insurance','保険'],['otoku','お得'],['rakuten','楽天'],['lottery','抽選'],['sourcing','仕入れ']]){
+  const categories=w.CCCastle?.categories?.();if(!categories?.length)return;
+  const nav=d.createElement('nav');nav.className='workbook-native-chapters';nav.setAttribute('aria-label','カテゴリを切り替える');
+  for(const {key,label}of [...categories,{key:'sourcing',label:'仕入れ'}]){
    const b=d.createElement('button');b.type='button';b.textContent=label;b.dataset.workingChapter=key;if(key==='sourcing')b.setAttribute('aria-current','page');
    b.addEventListener('click',()=>{if(!active()||!workingBook()||key==='sourcing')return;frame.contentWindow.postMessage({channel:'cc-castle-v1',type:'working-chapter',key},w.location.origin);w.CCCastle?.show?.();});nav.append(b);
   }
@@ -27,7 +28,7 @@
  function revealFocusedControl(event){
   const target=event.target;
   if(!active()||!d.body.classList.contains('storybook-host')||target!==d.activeElement)return;
-  const strip=target.closest?.('#rpgSourcingAux,#sourcingTabs .sourcing-tab-group,#sourcingBody .ledger-month-tabs,#loungeWorkspaceHeader.workbook-native-header>nav:not(.workbook-native-chapters)');
+  const strip=target.closest?.('#rpgSourcingAux,#sourcingTabs .sourcing-tab-group,#sourcingBody .ledger-month-tabs,#loungeWorkspaceHeader.workbook-native-header>nav');
   if(!strip||strip.scrollWidth<=strip.clientWidth||!['auto','scroll','overlay'].includes(w.getComputedStyle(strip).overflowX))return;
   const control=target.getBoundingClientRect(),bounds=strip.getBoundingClientRect(),left=bounds.left+strip.clientLeft,right=Math.min(bounds.right,left+strip.clientWidth);
   if(control.width<=0||control.height<=0||strip.clientWidth<=0)return;
@@ -54,7 +55,7 @@
   }).catch(()=>{if(!disposed)header.dataset.storyArt='fallback';});
  }
  const observer=new MutationObserver(sync);observer.observe(header,{attributes:true,attributeFilter:['hidden']});observer.observe(d.body,{attributes:true,attributeFilter:['class']});
- d.addEventListener('focusin',revealFocusedControl);
+ d.addEventListener('focusin',revealFocusedControl);d.addEventListener('cc:categories-ready',sync);
  frame?.addEventListener('load',sync);
- w.addEventListener('pagehide',()=>{disposed=true;++serial;observer.disconnect();d.removeEventListener('focusin',revealFocusedControl);frame?.removeEventListener('load',sync);stage?.remove();chapterNav?.remove();},{once:true});sync();
+ w.addEventListener('pagehide',()=>{disposed=true;++serial;observer.disconnect();d.removeEventListener('focusin',revealFocusedControl);d.removeEventListener('cc:categories-ready',sync);frame?.removeEventListener('load',sync);stage?.remove();chapterNav?.remove();},{once:true});sync();
 })(window);

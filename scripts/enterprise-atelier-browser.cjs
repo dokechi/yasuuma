@@ -32,9 +32,9 @@ rows[8].posting={main:rows[8].body,reply:'条件と出典の補足です。保�
   await frame.locator('.story-art-host img').evaluateAll(nodes=>Promise.all(nodes.map(n=>n.decode())));
   await cf.evaluate(()=>document.fonts.ready);await screenshot('home');
   assert.equal(await frame.locator('#app').getAttribute('inert'),'');
-  assert.equal(await frame.locator('[data-story-destination]:disabled').count(),3);
+  assert.equal(await frame.locator('[data-story-destination]:disabled').count(),2);
   assert.equal(await frame.locator('[data-story-destination]').count(),8);
-  assert.equal(await frame.locator('[data-story-instant]').count(),5);
+  assert.equal(await frame.locator('[data-story-instant]').count(),6);
   const layout=await cf.evaluate(()=>({viewport:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth,
    buttons:[...document.querySelectorAll('.story-utilities button,[data-story-instant],[data-story-chapter]')].filter(n=>n.checkVisibility()).map(n=>({label:n.textContent,height:n.getBoundingClientRect().height,width:n.getBoundingClientRect().width,font:parseFloat(getComputedStyle(n).fontSize)})),
    labels:[...document.querySelectorAll('.story-folio,.story-account-identity,.story-memo')].filter(n=>n.checkVisibility()).map(n=>({text:n.textContent,font:parseFloat(getComputedStyle(n).fontSize)}))}));

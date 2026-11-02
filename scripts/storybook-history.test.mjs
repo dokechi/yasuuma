@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
 import {createDesk} from '../command-center-98/lounge/desk.js';
+import {publishingAccounts} from '../command-center-98/lounge/accounts.js';
 const {JSDOM}=createRequire(import.meta.url)('jsdom');
 const html=fs.readFileSync(new URL('../command-center-98/lounge/index.html',import.meta.url),'utf8');
 const source=fs.readFileSync(new URL('../command-center-98/lounge/app.js',import.meta.url),'utf8');
@@ -24,7 +25,7 @@ function setup(t,{workbench=false,stored={},initialState=null,receive=true,embed
  win.fetch=()=>{throw Error('History cannot request data');};win.addEventListener('error',event=>{errors.push(event.error);event.preventDefault();});
  const history={get state(){return entries[index];},get length(){return entries.length;},pushState(state){entries.splice(++index,entries.length,state);pushes++;},replaceState(state){entries[index]=state;replaces++;},back(){pending.push(-1);},forward(){pending.push(1);}};
  Object.defineProperty(win,'history',{value:history});win.requestAnimationFrame=fn=>{frames.push(fn);return frames.length;};win.setTimeout=fn=>{timers.set(++serial,fn);return serial;};win.clearTimeout=id=>timers.delete(id);
- win.createDesk=createDesk;win.createEntrySound=()=>({cancel(){},begin(){},arrive(){}});win.createInteractionSound=()=>({cancel(){},play(){}});win.createMusicControls=()=>({refresh(){}});win.createInteractionFeedback=()=>({clear(){}});
+ win.publishingAccounts=publishingAccounts;win.createDesk=createDesk;win.createEntrySound=()=>({cancel(){},begin(){},arrive(){}});win.createInteractionSound=()=>({cancel(){},play(){}});win.createMusicControls=()=>({refresh(){}});win.createInteractionFeedback=()=>({clear(){}});
  const script=source.replace(/^import .*;\n/gm,'').replace(/^export /gm,'')+'\nwindow.__historyQA={desk:()=>desk,phase:()=>phase,openSupplementaryReader,openWorkingChapter,startWorkingChapter,resolveWorkingChapter};';
  win.eval(script);const desk=win.__historyQA.desk();
  const rows=['insurance','otoku','rakuten','lottery','fp'].flatMap(key=>['a','b'].map((letter,i)=>({id:key+'-'+letter,place:key==='insurance'?'kyun':key,title:key+' 原稿 '+letter,body:key+' exact body '+letter,kind:'本文',source:{id:key+'-'+letter,account:key==='fp'?'tiktok':key},createdAt:1,updatedAt:2-i})));

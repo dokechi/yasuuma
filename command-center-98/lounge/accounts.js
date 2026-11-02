@@ -1,10 +1,10 @@
 // Current publishing identities. Slots are presentation only, never new accounts.
 export const publishingAccounts=Object.freeze([
- {key:'insurance',place:'kyun',name:'保険',handle:'@sucker0508',tone:'rose'},
- {key:'otoku',place:'otoku',name:'まだ安く買えるはず',handle:'@thats_a_steal0601',tone:'violet'},
- {key:'rakuten',place:'rakuten',name:'楽天犬',handle:'@bonya0914',tone:'amber'},
- {key:'lottery',place:'lottery',name:'抽選日記',handle:'@chusen1101',tone:'green',artKey:'planned-4'},
- {key:'tanaka',place:'tanaka',name:'田中卓',handle:'',tone:'violet',artKey:'planned-5'},
+ {key:'insurance',place:'kyun',name:'保険',handle:'@sucker0508',tone:'rose',roomId:'red',taskId:'insurance-threads-v1'},
+ {key:'otoku',place:'otoku',name:'まだ安く買えるはず',handle:'@thats_a_steal0601',tone:'violet',taskId:'otoku-threads-v1'},
+ {key:'rakuten',place:'rakuten',name:'楽天犬',handle:'@bonya0914',tone:'amber',taskId:'rakuten-threads-v1'},
+ {key:'lottery',place:'lottery',name:'抽選日記',handle:'@chusen1101',tone:'green',artKey:'planned-4',taskId:'lottery-threads-v1'},
+ {key:'tanaka',place:'tanaka',name:'田中卓',handle:'',tone:'violet',artKey:'planned-5',taskId:'tanaka-threads-v1'},
  ...[6].map(n=>({key:'planned-'+n,name:'アカウント '+n,pending:true}))
 ]);
 export function draftsForAccount(rows,account){

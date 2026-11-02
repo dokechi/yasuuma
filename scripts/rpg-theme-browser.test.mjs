@@ -195,10 +195,10 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   // decoded or its finite entrance transitions have painted. Final screenshots
   // await the actual embedded lounge; delayed/loading-gate captures do not.
   const loungeReady=async()=>{
-   // Startup now exposes the live working page, not the optional overview.
-   // Do not click anything for cold/warm first-frame captures.
-   await waitFor(`(()=>{const f=document.getElementById('ccCastleFrame'),d=f?.contentDocument,room=d?.querySelector('#room:not([hidden])[data-spatial-desk="ready"][data-story-scene="ready"]'),art=room?.querySelector('.story-paper-art'),actor=room?.querySelector('.spatial-desk-actor');return !!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')&&f&&!f.hidden&&d?.body?.dataset.workbookReady==='true'&&d.querySelector('.workbook-header')?.checkVisibility()&&d.querySelectorAll('[data-working-chapter]').length===5&&d.querySelectorAll('[data-story-destination]').length===8&&d.querySelector('.account-board[data-state="ready"]')?.hidden&&room&&art&&art.dataset.storyRoom===room.dataset.account&&art.querySelectorAll('svg').length>0&&actor&&d.getElementById('draft-body')?.checkVisibility()})()`);
-   await evaluate(`(async()=>{const c=document.getElementById('ccCastleFrame').contentWindow,d=c.document;await d.fonts.ready;const room=d.getElementById('room'),image=room.querySelector('.spatial-desk-actor');await image.decode();await Promise.all(d.getAnimations().filter(a=>a.effect?.target?.closest?.('#room')&&Number.isFinite(a.effect.getTiming().iterations)).map(a=>a.finished.catch(()=>{})));await new Promise(resolve=>c.requestAnimationFrame(()=>c.requestAnimationFrame(resolve)));if(!image.complete||!image.naturalWidth||!image.src.endsWith('/storybook-'+room.dataset.account+'-actor-v1.webp'))throw Error('Current working chapter artwork did not decode');})()`);
+   // Cold/warm/login startup now exposes a real, closed manuscript stage.
+   // The retained FP reader is an explicit supplementary resume destination.
+   await waitFor(`(()=>{const f=document.getElementById('ccCastleFrame'),d=f?.contentDocument,room=d?.getElementById('room'),paper=d?.querySelector('.paper-card'),fp=room?.dataset.account==='fp';return !!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')&&f&&!f.hidden&&d?.body?.classList.contains('paper-popup')&&d.querySelector('.paper-header')?.checkVisibility()&&d.querySelectorAll('[data-paper-chapter]').length===6&&d.querySelector('.account-board[data-state="ready"]')?.hidden&&room&&!room.hidden&&(fp?d.getElementById('draft-body')?.checkVisibility():paper?.querySelector('.paper-title')?.checkVisibility()&&paper.querySelector('.paper-excerpt')?.checkVisibility()&&!d.querySelector('.paper-reader'))})()`);
+   await evaluate(`(async()=>{const c=document.getElementById('ccCastleFrame').contentWindow,d=c.document;await d.fonts.ready;await Promise.all(d.getAnimations().filter(a=>a.effect?.target?.closest?.('.paper-stage')&&Number.isFinite(a.effect.getTiming().iterations)).map(a=>a.finished.catch(()=>{})));await new Promise(resolve=>c.requestAnimationFrame(()=>c.requestAnimationFrame(resolve)));})()`);
   };
   // Physical CDP clicks for the new visible workbench menu. Legacy component
   // fixtures below keep their own original controls; no route-owner shortcut.
@@ -207,6 +207,11 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
    await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});
   };
   const loungeMenu=async name=>{
+   if(await evaluate(`document.getElementById('ccCastleFrame').contentDocument?.body?.classList.contains('paper-popup')`)){
+    if(!await evaluate(`document.getElementById('ccCastleFrame').contentDocument.querySelector('.paper-tools').open`))await loungeClick('.paper-tools>summary');
+    await loungeClick('.paper-tools-menu button','設定');await loungeClick('#settings a','以前の原稿表示を開く');
+    await waitFor(`(()=>{const d=document.getElementById('ccCastleFrame').contentDocument;return d?.body?.dataset.workbookReady==='true'&&!d.body.classList.contains('paper-popup')})()`);
+   }
    await waitFor(`document.getElementById('ccCastleFrame').contentDocument?.body?.dataset.workbookReady==='true'`);
    if(await evaluate(`!!document.getElementById('ccCastleFrame').contentDocument.querySelector('.spatial-work[open]')`))await loungeClick('.spatial-work-body #desk-read');
    if(!await evaluate(`document.getElementById('ccCastleFrame').contentDocument.querySelector('.workbook-menu').open`))await loungeClick('.workbook-menu>summary');
@@ -265,7 +270,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
    // Compare computed top geometry/paint with the new theme disabled, in the same browser.
    // An iframe's inherited font/color cannot paint its child document. Compare
    // the embedding box itself plus every child's actual computed paint/type.
-   const signature=`(()=>{const frame=document.getElementById('ccCastleFrame');return JSON.stringify([frame,...frame.contentDocument.querySelectorAll('.account-board,.account-board *,#room,#room *,.workbook-header,.workbook-header *')].map(e=>{const s=e.ownerDocument.defaultView.getComputedStyle(e),r=e.getBoundingClientRect(),box=[e.tagName,e.className,r.x,r.y,r.width,r.height];return e===frame?[...box,s.backgroundColor,s.backgroundImage,s.borderWidth,s.borderStyle,s.padding,s.margin]:[...box,s.color,s.backgroundColor,s.fontFamily,s.fontSize,s.border,s.padding,s.margin]}))})()`;
+   const signature=`(()=>{const frame=document.getElementById('ccCastleFrame');return JSON.stringify([frame,...frame.contentDocument.querySelectorAll('.account-board,.account-board *,#room,#room *,.workbook-header,.workbook-header *,.paper-header,.paper-header *,.paper-stage,.paper-stage *')].map(e=>{const s=e.ownerDocument.defaultView.getComputedStyle(e),r=e.getBoundingClientRect(),box=[e.tagName,e.className,r.x,r.y,r.width,r.height];return e===frame?[...box,s.backgroundColor,s.backgroundImage,s.borderWidth,s.borderStyle,s.padding,s.margin]:[...box,s.color,s.backgroundColor,s.fontFamily,s.fontSize,s.border,s.padding,s.margin]}))})()`;
    // Take both snapshots in one browser task. Between separate CDP calls,
    // an async home render or animation frame can change geometry independently
    // of the stylesheet being compared. Keep the same exact equality assertion.
@@ -454,11 +459,11 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   await loungeOverview();
   for(const [width,height] of [[360,800],[834,900]]){
    await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
-   await capture(width+'x'+height+'-lounge-home',`(()=>{const c=${L},f=document.getElementById('ccCastleFrame');return !f.hidden&&f.clientWidth===innerWidth&&c.location.pathname.endsWith('/lounge/index.html')&&c.document.querySelectorAll('[data-story-destination]').length===8&&c.document.querySelectorAll('[data-story-destination]:disabled').length===3&&[...c.document.querySelectorAll('[data-story-destination]')].filter(n=>n.checkVisibility()).length===5&&c.document.documentElement.scrollWidth<=c.innerWidth+1})()`);
+   await capture(width+'x'+height+'-lounge-home',`(()=>{const c=${L},f=document.getElementById('ccCastleFrame');return !f.hidden&&f.clientWidth===innerWidth&&c.location.pathname.endsWith('/lounge/index.html')&&c.document.querySelectorAll('[data-story-destination]').length===8&&c.document.querySelectorAll('[data-story-destination]:disabled').length===2&&[...c.document.querySelectorAll('[data-story-destination]')].filter(n=>n.checkVisibility()).length===6&&c.document.documentElement.scrollWidth<=c.innerWidth+1})()`);
    await evaluate(`window.__storySelectionBefore=${L}.document.querySelector('.storybook').dataset.storyRoom;${L}.document.querySelector('.story-preparing>summary').click()`);
    await waitFor(`${L}.document.querySelector('.story-preparing').open===true`);
    await evaluate(`[...${L}.document.querySelectorAll('.story-preparing [data-story-destination]')].forEach(n=>n.click())`);
-   await capture(width+'x'+height+'-storybook-preparing',`(()=>{const d=${L}.document,nodes=[...d.querySelectorAll('.story-preparing [data-story-destination]')];return nodes.length===3&&JSON.stringify(nodes.map(n=>n.getAttribute('aria-label')))===JSON.stringify(['追加アカウント5、未設定','追加アカウント6、未設定','予備、未設定'])&&nodes.every(n=>n.disabled&&n.checkVisibility()&&n.getBoundingClientRect().height>=44)&&d.querySelectorAll('[data-story-destination]').length===8&&d.querySelector('.storybook').dataset.storyRoom===window.__storySelectionBefore&&!d.querySelector('.account-board').hidden&&d.getElementById('room').hidden})()`);
+   await capture(width+'x'+height+'-storybook-preparing',`(()=>{const d=${L}.document,nodes=[...d.querySelectorAll('.story-preparing [data-story-destination]')];return nodes.length===2&&JSON.stringify(nodes.map(n=>n.getAttribute('aria-label')))===JSON.stringify(['追加アカウント6、未設定','予備、未設定'])&&nodes.every(n=>n.disabled&&n.checkVisibility()&&n.getBoundingClientRect().height>=44)&&d.querySelectorAll('[data-story-destination]').length===8&&d.querySelector('.storybook').dataset.storyRoom===window.__storySelectionBefore&&!d.querySelector('.account-board').hidden&&d.getElementById('room').hidden})()`);
    await evaluate(`${L}.document.querySelector('.story-preparing>summary').click()`);await waitFor(`${L}.document.querySelector('.story-preparing').open===false`);
    for(const chapter of ['insurance','otoku','rakuten','lottery','sourcing']){
     await evaluate(`${L}.document.querySelector('[data-story-chapter="${chapter}"]').click()`);
