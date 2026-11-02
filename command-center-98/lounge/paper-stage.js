@@ -8,7 +8,7 @@ export function mountPaperStage({document:doc=globalThis.document,application,ac
  const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
  const button=(cls,text,fn)=>{const n=make('button',cls,text);n.type='button';n.addEventListener('click',fn);return n;};
  const anchor=doc.createComment('paper: original live reader');reader.before(anchor);
- let key=room.dataset.account||'insurance',opened=null,returnFocus=null,onlyFuture=false,limit=20,queued=false,disposed=false,signature='',scrollOrigin=null;
+ let key=room.dataset.account||'insurance',lastPaperKey=['sourcing','fp'].includes(key)?'insurance':key,opened=null,returnFocus=null,onlyFuture=false,limit=20,queued=false,disposed=false,signature='',scrollOrigin=null;
  const header=make('header','paper-header'),brand=make('h1','paper-brand','司令塔'),tabs=make('nav','paper-tabs');tabs.setAttribute('aria-label','カテゴリ');
  const tabButtons=new Map();
  for(const c of chapters){const b=button('paper-tab',c.label,()=>switchChapter(c.key));b.dataset.paperChapter=c.key;tabs.append(b);tabButtons.set(c.key,b);}
@@ -27,7 +27,7 @@ export function mountPaperStage({document:doc=globalThis.document,application,ac
   const host=make('div','paper-reader'),shut=button('paper-close','原稿を閉じる −',()=>close());host.append(shut,reader);card.append(host);reader.querySelector('#desk-scroll')?.focus({preventScroll:true});
   if(!win.matchMedia?.('(prefers-reduced-motion: reduce)').matches)host.animate?.([{opacity:0,transform:'translateY(18px) rotateX(-7deg)'},{opacity:1,transform:'none'}],{duration:240,easing:'ease-out'});
  }
- function paint(){if(disposed)return;queued=false;if(room.hidden&&key!=='sourcing')application.openWorkingChapter(key);const next=room.dataset.account||key;if(next!==key){close({focus:false});key=next;onlyFuture=false;limit=20;signature='';tabButtons.get(key)?.scrollIntoView?.({block:'nearest',inline:'nearest'});}
+ function paint(){if(disposed)return;queued=false;if(room.hidden)application.openWorkingChapter(['sourcing','fp'].includes(key)?lastPaperKey:key);const next=room.dataset.account||key;if(next!==key){close({focus:false});key=next;if(!['sourcing','fp'].includes(key))lastPaperKey=key;onlyFuture=false;limit=20;signature='';tabButtons.get(key)?.scrollIntoView?.({block:'nearest',inline:'nearest'});}
   header.hidden=room.hidden;stage.hidden=room.hidden||key==='sourcing'||key==='fp';
   for(const [k,b]of tabButtons)b.setAttribute('aria-current',k===key?'page':'false');future.setAttribute('aria-pressed',String(onlyFuture));
   const current=chapters.find(c=>c.key===key);stage.setAttribute('aria-label',(current?.label||'保存')+'の原稿舞台');
