@@ -28,3 +28,4 @@ body.paper-popup{--ink:#14352c;--sage:#dce5cd;background:var(--sage) url('./back
 .paper-reader #desk,.paper-popup #room[data-account=fp]>#desk{position:relative!important;inset:auto!important;width:100%!important;height:auto!important;max-height:none!important;min-height:0!important;transform:none!important;clip-path:none!important;overflow:visible!important;z-index:auto!important}
 .paper-reader .desk-content,.paper-reader .manuscript-reader,.paper-reader .reader-actions,.paper-reader .desk-footer{position:relative!important;inset:auto!important;height:auto!important;max-height:none!important;transform:none!important;clip-path:none!important}
 .paper-reader #desk-scroll{position:relative!important;inset:auto!important;height:auto!important;min-height:0!important;transform:none!important;clip-path:none!important}
+@media(max-width:650px){.paper-card.paper-lead:not([data-paper-open=true]) .paper-action-row{margin-top:24px}}

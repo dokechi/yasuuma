@@ -1,4 +1,4 @@
-import{surface,at,project}from'./paper-fold.js?v=20261103.2-notebook';
+import {surface,at,project} from'./paper-fold.js?v=20261103.2-notebook';
 export function createReadingFold({card,leaf,svg,art,visual,window:win,reduced=()=>false}={}){
  const draw=surface(svg);let value=0,frame=0,serial=0,settle=null,target=0;
  const clean=()=>{card.style.height='';leaf.style.transform='';leaf.style.maxHeight='';art.style.transform='';for(const n of art.querySelectorAll('.actor'))n.style.transform='';delete card.dataset.foldMotion;card.dataset.curve='0';};
