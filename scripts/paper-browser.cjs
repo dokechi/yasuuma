@@ -66,6 +66,17 @@ const server=http.createServer((req,res)=>{
    const f=page.frameLocator('#ccCastleFrame');await f.locator('.paper-card').first().waitFor();
    const cf=page.frames().find(f=>new URL(f.url()).pathname.endsWith('/lounge/index.html'));
    await cf.waitForFunction(()=>document.querySelectorAll('.paper-card').length===20&&document.querySelector('.paper-state').textContent.includes('件'));
+   // Native input must work: programmatic scrollIntoView also moves overflow:hidden roots.
+   const documentTop=()=>cf.evaluate(()=>document.scrollingElement.scrollTop);
+   await cf.evaluate(async()=>{await document.fonts.ready;window.scrollTo(0,0)});
+   await page.mouse.move(width/2,height*.75);await page.mouse.wheel(0,700);await page.waitForTimeout(220);
+   check('native wheel scrolls the manuscript document',await documentTop()>100,await documentTop());
+   await cf.evaluate(()=>window.scrollTo(0,0));await f.locator('.paper-book-heading h2').click();await page.keyboard.press('PageDown');await page.waitForTimeout(220);
+   check('PageDown scrolls the manuscript document',await documentTop()>100,await documentTop());
+   if(width<=800){await cf.evaluate(()=>window.scrollTo(0,0));const touch=await context.newCDPSession(page);const x=width*.52,y=height*.82;await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,id:1}]});for(let step=1;step<=7;step++){await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x,y:y-step*height*.06,id:1}]});await page.waitForTimeout(35)}await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(450);check('native finger swipe scrolls the manuscript document',await documentTop()>80,await documentTop());await touch.detach();}
+   await page.mouse.move(width/2,height*.75);for(let n=0;n<22;n++){await page.mouse.wheel(0,900);await page.waitForTimeout(35)}await page.waitForTimeout(150);
+   check('native wheel reaches the bottom and continuation control',await cf.evaluate(()=>{const e=document.scrollingElement,b=document.querySelector('.paper-more')?.getBoundingClientRect();return e.scrollHeight-e.clientHeight-e.scrollTop<4&&b&&b.top>=0&&b.bottom<=innerHeight}),await documentTop());
+   await page.screenshot({path:path.join(out,width+'-'+height+'-native-bottom.png')});await cf.evaluate(()=>window.scrollTo(0,0));
    await cf.evaluate(async()=>{window.__paperOwner=await import('./app.js?v=20261102.2-paper');});
    const pinClear=async label=>{
     const report=await f.locator('.paper-card').evaluateAll(nodes=>{
@@ -141,6 +152,8 @@ const server=http.createServer((req,res)=>{
    check('one visible manuscript heading and one close action',await cf.evaluate(()=>{const card=document.querySelector('[data-paper-open=true]'),visible=n=>n.getBoundingClientRect().width>0&&n.getBoundingClientRect().height>0;return [card.querySelector('.paper-title'),card.querySelector('#draft-title')].filter(visible).length===1&&[...new Set([card.querySelector('.paper-open'),card.querySelector('.paper-close')])].filter(visible).length===1;}));
    check('opens exact live reader on clicked paper',live.id===id&&live.body===live.source&&live.body.includes('insurance')&&live.count===1,live);
    check('open screenshot is settled and fully opaque',await f.locator('.paper-reader').evaluate(n=>getComputedStyle(n).opacity==='1'&&n.getAnimations().every(a=>a.playState!=='running')));await page.screenshot({path:path.join(out,width+'-'+height+'-open.png')});
+   const scrollReader=f.locator('.paper-reader #desk-scroll');await scrollReader.scrollIntoViewIfNeeded();await scrollReader.evaluate(n=>n.scrollTop=0);if(await scrollReader.evaluate(n=>n.scrollHeight>n.clientHeight+80)){let rr=await scrollReader.boundingBox();await page.mouse.move(rr.x+rr.width/2,rr.y+Math.min(rr.height/2,90));await page.mouse.wheel(0,550);await page.waitForTimeout(220);check('native wheel scrolls the long manuscript reader',await scrollReader.evaluate(n=>n.scrollTop>80),await scrollReader.evaluate(n=>({top:n.scrollTop,total:n.scrollHeight,height:n.clientHeight})));
+   if(width<=800){await scrollReader.evaluate(n=>n.scrollTop=0);rr=await scrollReader.boundingBox();const touch=await context.newCDPSession(page),x=rr.x+rr.width*.55,y=rr.y+rr.height*.85;await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,id:1}]});for(let step=1;step<=6;step++){await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x,y:y-step*rr.height*.1,id:1}]});await page.waitForTimeout(35)}await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(400);check('native finger swipe scrolls the manuscript reader',await scrollReader.evaluate(n=>n.scrollTop>40));await touch.detach();}await scrollReader.evaluate(n=>n.scrollTop=0);}else check('short manuscript is fully visible without an inner scroll trap',await scrollReader.evaluate(n=>n.scrollHeight<=n.clientHeight+80));
    await f.locator('#desk-copy').click();await cf.waitForFunction(()=>document.getElementById('desk-operation').textContent.includes('コピー'));
    // Windows native clipboard reads LF as CRLF. Check the API payload exactly,
    // then allow only native newline conversion in the real clipboard readback.

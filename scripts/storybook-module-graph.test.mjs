@@ -51,7 +51,7 @@ test('changed foreground and its retained archive import graph use the same curr
 
 test('unified notebook presentation invalidates changed code and keeps one canonical owner',()=>{
  const {html,modules}=checkOwners('command-center-98/lounge/index.html');
- assert.match(html,/paper-stage\.css\?v=20261103\.2-notebook/);assert.match(html,/paper-atelier\.js\?v=20261103\.2-notebook/);
+ assert.match(html,/paper-stage\.css\?v=20261103\.3-scroll/);assert.match(html,/paper-atelier\.js\?v=20261103\.2-notebook/);
  for(const file of ['paper-atelier.js','paper-stage.js','paper-fold.js','paper-motion.js','paper-images.js','paper-cutouts.js']){
   assert.ok([...modules.keys()].some(url=>url.endsWith('/'+file+'?v=20261103.2-notebook')),'current notebook dependency '+file);
   for(const old of ['20261102.2-paper','20261102.3-depth','20261102.4-detail','20261103.1-world'])assert.ok(![...modules.keys()].some(url=>url.endsWith('/'+file+'?v='+old)),'never execute stale presentation '+file+' '+old);
