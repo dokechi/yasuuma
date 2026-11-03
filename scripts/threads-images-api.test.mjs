@@ -77,3 +77,18 @@ test('insurance attachments preserve draft and reject wrong identity or asset ow
  assert.equal((await patch(s,request({id:2,accountKey:'insurance',images:[{assetKey:first.assets[0].assetKey}]}))).status,404);
  s.rows[0].payload.handle='@another';assert.notEqual((await get(s,1,'insurance')).status,200);
 });
+
+
+test('all current publishing tasks save and reload images without changing manuscript evidence',async()=>{
+ for(const [account,task]of [['otoku','otoku-threads-v1'],['rakuten','rakuten-threads-v1'],['lottery','lottery-threads-v1'],['tanaka','tanaka-threads-v1']]){
+  const s=fixture(),target={id:3,task_id:task,event_key:'synthetic-'+account,domain:'sns',title:'Synthetic '+account,payload:{draft:'Exact '+account+' body',reply:'Exact reply',posted:false}};s.rows.push(target);const before=structuredClone(target.payload);
+  const result=await patch(s,request({id:3,accountKey:account}));good(result);assert.equal(result.body.accountKey,account);assert.equal(result.body.assets.length,1);assert.equal(target.payload.draft,before.draft);assert.equal(target.payload.reply,before.reply);assert.equal(target.payload.posted,false);
+  const loaded=await get(s,3,account);good(loaded);assert.equal(loaded.body.assets[0].dataUrl,png);assert.equal(loaded.body.manifest.revision,1);
+ }
+});
+test('publishing image scope rejects wrong category, non-publishing rows and non-sns records before any write',async()=>{
+ for(const [task,domain,account]of [['rakuten-threads-v1','sns','insurance'],['unrelated-task','sns','rakuten'],['rakuten-threads-v1','money','rakuten']]){const s=fixture();s.rows.push({id:3,task_id:task,event_key:'synthetic',domain,title:'Synthetic',payload:{draft:'preserve'}});const result=await patch(s,request({id:3,accountKey:account}));assert.ok(result.status>=400);assert.equal(s.assets.length,0);assert.equal(s.writes.length,0);}
+});
+test('preview reads only first attachment while preserving full saved order and never writing',async()=>{
+ const s=fixture();good(await patch(s,request({images:[{dataUrl:png,label:'first'},{url:'https://example.invalid/second.png',label:'second'}]})));const before=JSON.stringify(s.writes),result=await threadsImagesGet(new Request('https://example.invalid/?resource=threads-images&id=1&accountKey=choi&preview=1'),s.d);good(result);assert.equal(result.body.assets.length,1);assert.equal(result.body.manifest.images.length,2);assert.equal(result.body.assets[0].dataUrl,png);assert.equal(JSON.stringify(s.writes),before);
+});

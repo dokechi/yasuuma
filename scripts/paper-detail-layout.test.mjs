@@ -126,12 +126,12 @@ test('cached identical rows update disabled pins when the trusted owner becomes 
 
 test('an open live reader preserves DOM and focus while pin capability updates in both directions',async t=>{
  let ready=false;const s=setup(t,{count:3,canPin:()=>ready});await tick();s.$('.paper-open').click();
- const host=s.$('.paper-reader'),reader=s.$('#desk'),pin=host.querySelector('.paper-pin'),scroller=s.$('#desk-scroll');
+ const host=s.$('.paper-reader'),reader=s.$('#desk'),pin=s.$('.paper-card[data-paper-open=true] .paper-pin'),scroller=s.$('#desk-scroll');
  scroller.focus();const readerText=reader.textContent,style=host.getAttribute('style');
  assert.equal(pin.disabled,true);
  for(const allowed of [true,false]){
   ready=allowed;s.stage.paint();
-  assert.equal(s.$('.paper-reader'),host);assert.equal(s.$('#desk'),reader);assert.equal(host.querySelector('.paper-pin'),pin);
+  assert.equal(s.$('.paper-reader'),host);assert.equal(s.$('#desk'),reader);assert.equal(s.$('.paper-card[data-paper-open=true] .paper-pin'),pin);
   assert.equal(reader.textContent,readerText);assert.equal(host.getAttribute('style'),style);assert.equal(s.document.activeElement,scroller);
   assert.equal(pin.disabled,!allowed,'open pin capability follows its existing owner without replacing the reader');
   assert.equal(pin.title,allowed?'今後使う（この端末・現在のログイン）':'ログイン中の本体から利用できます');

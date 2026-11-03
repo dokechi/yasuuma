@@ -1,13 +1,11 @@
 // Private image attachments. Originals are immutable and fetched only on demand.
 // Reuse the existing excluded asset store and the guarded Threads payload update.
 import {readEvent as readLegacyEvent, threadsAccount as legacyAccount} from './threads-manual-api.mjs';
-function threadsAccount(row) {
- if(row?.task_id==='insurance-threads-v1' && row?.domain==='sns' && row?.payload?.account==='保険' && row?.payload?.handle==='@sucker0508') return 'insurance';
- return legacyAccount(row);
-}
+import {publishingImageAccount} from './publishing-image-scope.mjs';
+function threadsAccount(row) { return publishingImageAccount(row)||legacyAccount(row); }
 async function readEvent(d,id) {
  if(/^[1-9]\d{0,14}$/.test(String(id))){
-  const {data,error}=await d.admin.from('command_center_task_events').select('*').eq('task_id','insurance-threads-v1').eq('id',Number(id)).maybeSingle();
+  const {data,error}=await d.admin.from('command_center_task_events').select('*').eq('id',Number(id)).eq('domain','sns').maybeSingle();
   if(error)throw error;
   if(data){threadsAccount(data);return data;}
  }
@@ -55,9 +53,9 @@ function legacy(row) {
   const p = row.payload, raw = Array.isArray(p.post_images) ? p.post_images : Array.isArray(p.image_urls) ? p.image_urls : Array.isArray(p.finished_images?.pages) ? p.finished_images.pages : [];
   return raw.slice(0,LIMIT).map((x,i) => ({url:imageUrl(typeof x === 'string' ? x : x?.url || x?.image_url || x?.src),label:String(x?.label || (i+1)+'枚目').slice(0,100)})).filter(x => x.url);
 }
-async function project(d,row,account) {
+async function project(d,row,account,{preview=false}={}) {
   const saved = manifest(row), images = row.payload.threads_images_v1 ? saved.images : legacy(row), assets = [];
-  for (const image of images) {
+  for (const image of (preview?images.slice(0,1):images)) {
     if (image.assetKey) {
       const record = await asset(d,image.assetKey,row,account);
       assets.push({...image,dataUrl:record.payload.data_url,size:record.payload.size,mime:record.payload.mime_type});
@@ -72,7 +70,7 @@ export async function threadsImagesGet(req,d) {
   try {
     const row = await readEvent(d,u.searchParams.get('id')), account = threadsAccount(row);
     if (u.searchParams.get('accountKey') !== account) fail('threads_account_mismatch',409);
-    return d.json(req,await project(d,row,account));
+    return d.json(req,await project(d,row,account,{preview:u.searchParams.get('preview')==='1'}));
   } catch (error) { return failure(req,d,error); }
 }
 export async function threadsImagesPatch(req,body,d) {

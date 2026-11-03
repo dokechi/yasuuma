@@ -16,7 +16,7 @@ jobs:
       - run: node --check scripts/paper-browser.cjs
       - run: node command-center-98/app-loader.test.cjs
       - run: npm install --prefix "$RUNNER_TEMP/storybook-unit" --ignore-scripts --no-audit --no-fund jsdom@26.1.0 linkedom@0.18.13
-      - run: NODE_PATH="$RUNNER_TEMP/storybook-unit/node_modules" node --test scripts/paper-stage.test.mjs scripts/paper-detail-layout.test.mjs scripts/storybook-*.test.mjs scripts/storybook-workbench-entry.test.cjs scripts/castle-spatial-desk.test.mjs scripts/castle-living-model.test.mjs scripts/castle-living-room.test.mjs scripts/eight-panel-dom.test.mjs scripts/six-account-board.test.mjs
+      - run: NODE_PATH="$RUNNER_TEMP/storybook-unit/node_modules" node --test scripts/paper-fold.test.mjs scripts/threads-images-api.test.mjs scripts/threads-images-ui.test.cjs scripts/paper-stage.test.mjs scripts/paper-detail-layout.test.mjs scripts/storybook-*.test.mjs scripts/storybook-workbench-entry.test.cjs scripts/castle-spatial-desk.test.mjs scripts/castle-living-model.test.mjs scripts/castle-living-room.test.mjs scripts/eight-panel-dom.test.mjs scripts/six-account-board.test.mjs
   actual-paper-default:
     name: Paper default (${{ matrix.viewport.width }}×${{ matrix.viewport.height }} / ${{ matrix.mode }})
     runs-on: ubuntu-latest
@@ -47,6 +47,7 @@ jobs:
         env:
           PAPER_WIDTH: ${{ matrix.viewport.width }}
           PAPER_HEIGHT: ${{ matrix.viewport.height }}
+          PAPER_IMAGES: '1'
           PAPER_OUT: artifacts/paper/long
           PAPER_MOTION: ${{ matrix.mode == 'normal' && 'normal' || '' }}
           PAPER_EIGHT: ${{ matrix.mode == 'eight-no-art' && '1' || '' }}
@@ -57,6 +58,7 @@ jobs:
         env:
           PAPER_WIDTH: ${{ matrix.viewport.width }}
           PAPER_HEIGHT: ${{ matrix.viewport.height }}
+          PAPER_IMAGES: '1'
           PAPER_OUT: artifacts/paper/short
           PAPER_SHORT: '1'
           PAPER_MOTION: ${{ matrix.mode == 'normal' && 'normal' || '' }}
