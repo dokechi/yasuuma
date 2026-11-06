@@ -5,7 +5,8 @@ const chapters=Object.freeze([
  {key:'insurance',name:'保険',number:'01'}, {key:'otoku',name:'お得',number:'02'},
  {key:'rakuten',name:'楽天',number:'03'}, {key:'lottery',name:'抽選',number:'04'},
  {key:'tanaka',name:'田中卓',number:'05'},
- {key:'sourcing',name:'仕入れ',number:'06'}
+ {key:'kensho',name:'懸賞小ナス',number:'06'},
+ {key:'sourcing',name:'仕入れ',number:'07'}
 ]);
 export function mountWorkingBook({document:doc=globalThis.document,application,board,buildArt=null,onTurn=()=>false,onCancel=()=>{},onInterrupt=onCancel}={}){
  const win=doc?.defaultView,room=doc?.getElementById('room');
@@ -16,14 +17,14 @@ export function mountWorkingBook({document:doc=globalThis.document,application,b
  const safely=(fn,...args)=>{try{return fn(...args);}catch{return false;}};
  let disposed=false,desk=null,artBuilder=buildArt,lastFocus=null,artKey=null,artIntent=0,copyTimer=null,lastOperation='',statusSnapshot=null,workClose=null;
  const header=make('header','workbook-header');header.dataset.workbookReady='true';
- const top=make('div','workbook-top'),brand=make('span','workbook-brand','司令塔'),tabs=make('nav','workbook-chapters');tabs.setAttribute('aria-label','六つの持ち場、すぐ切り替え');
+ const top=make('div','workbook-top'),brand=make('span','workbook-brand','司令塔'),tabs=make('nav','workbook-chapters');tabs.setAttribute('aria-label','七つの持ち場、すぐ切り替え');
  const buttons=new Map();
  for(const c of chapters){const b=button('workbook-chapter','',()=>open(c.key));b.dataset.workingChapter=c.key;const label=make('strong','',c.name),state=make('small','','未確認');b.append(label,state);tabs.append(b);buttons.set(c.key,{button:b,state});}
  const menu=make('details','workbook-menu'),summary=make('summary','','•••');summary.setAttribute('aria-label','司令塔の道具を開く');const menuBody=make('div','workbook-menu-body');
  function invoke(id){safely(onInterrupt);menu.open=false;const opener=summary;opener.focus({preventScroll:true});doc.getElementById(id)?.click();const modal=doc.querySelector('dialog[open]');modal?.addEventListener('close',()=>{if(!disposed&&opener?.isConnected)opener.focus({preventScroll:true});},{once:true});}
  menuBody.append(button('','全体検索',()=>invoke('lounge-search')),button('','あとで読む',()=>invoke('lounge-later')),button('','設定',()=>invoke('settings-open')),button('','本の全景',()=>{menu.open=false;doc.getElementById('back')?.click();}),button('','保存原稿を更新',()=>{safely(onInterrupt);menu.open=false;summary.focus({preventScroll:true});board.element.querySelector('.board-refresh')?.click();}),button('','作業・読取状況',()=>{safely(onInterrupt);menu.open=false;const work=room.querySelector('.spatial-work');if(work){work.open=true;const body=ensureWorkClose();if(body){body.tabIndex=-1;(body.querySelector('button:not(:disabled),input:not(:disabled),a[href]')||body).focus({preventScroll:true});}}}));
  function ensureWorkClose(){const work=room.querySelector('.spatial-work'),body=work?.querySelector('.spatial-work-body');if(body&&!body.querySelector('.workbook-work-close')){workClose=button('workbook-work-close','閉じる',()=>{work.open=false;summary.focus({preventScroll:true});});workClose.setAttribute('aria-label','作業・読取状況を閉じる');body.prepend(workClose);}return body;}
- const preparing=make('p','workbook-preparing','追加の2頁は準備中です。');menuBody.append(preparing);menu.append(summary,menuBody);top.append(brand,tabs,menu);
+ const preparing=make('p','workbook-preparing','予備の頁は未設定です。');menuBody.append(preparing);menu.append(summary,menuBody);top.append(brand,tabs,menu);
  const context=make('div','workbook-context'),identity=make('div','workbook-identity'),name=make('strong'),handle=make('span');const warningButton=button('workbook-read-warning','読取未確認 · 更新',()=>{safely(onInterrupt);summary.focus({preventScroll:true});board.element.querySelector('.board-refresh')?.click();});warningButton.dataset.workingWarning='';warningButton.hidden=true;identity.append(name,handle,warningButton);
  const actions=make('nav','workbook-actions');actions.setAttribute('aria-label','今の頁の操作');
  const listButton=button('workbook-list-open','原稿一覧',()=>{safely(onInterrupt);desk?.openShelf();});listButton.dataset.workingList='';listButton.setAttribute('aria-haspopup','dialog');listButton.setAttribute('aria-controls','spatial-shelf-dialog');

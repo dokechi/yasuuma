@@ -1,5 +1,5 @@
 /* One continuous notebook. The existing reader, data and semantic actions keep their owner. */
-import {groupDrafts} from './notebook.js?v=20261102.2-paper';
+import {groupDrafts} from './notebook.js?v=20261106.1-kensho';
 import {readingSegments,paperReadStatus} from './paper-detail-model.js?v=20261102.4-detail';
 import {createReadingFold} from './paper-motion.js?v=20261103.2-notebook';
 import {cutout} from './paper-cutouts.js?v=20261103.2-notebook';

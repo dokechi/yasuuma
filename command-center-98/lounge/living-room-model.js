@@ -1,9 +1,9 @@
 /* Read-only presentation of records already available to this browser.
    No requests, timers, writes, inferred inventory, or claims of remote posting. */
-import {publishingAccounts,draftsForAccount} from './accounts.js?v=20261102.3-paper';
-import {groupDrafts,dayInJapan} from './notebook.js?v=20261102.1-tanaka';
-import {seenRevision,currentPosted} from './qol-model.js?v=20261102.1-tanaka';
-import {holdsActiveText} from './desk-model.js?v=20261102.1-tanaka';
+import {publishingAccounts,draftsForAccount} from './accounts.js?v=20261106.1-kensho';
+import {groupDrafts,dayInJapan} from './notebook.js?v=20261106.1-kensho';
+import {seenRevision,currentPosted} from './qol-model.js?v=20261106.1-kensho';
+import {holdsActiveText} from './desk-model.js?v=20261106.1-kensho';
 
 const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const validTime = value => Number.isFinite(value) && value > 0 && Number.isFinite(new Date(value).getTime());
