@@ -6,7 +6,7 @@ export const publishingAccounts=Object.freeze([
  {key:'lottery',place:'lottery',name:'抽選日記',handle:'@chusen1101',tone:'green',artKey:'planned-4',taskId:'lottery-threads-v1'},
  {key:'tanaka',place:'tanaka',name:'田中卓',handle:'',tone:'violet',artKey:'planned-5',taskId:'tanaka-threads-v1'},
  {key:'kensho',place:'kensho',name:'懸賞小ナス',handle:'@nasbi.777',tone:'violet',artKey:'planned-6',taskId:'kensho-threads-v1'},
- {key:'manga',place:'manga',name:'漫画',handle:'',tone:'violet',artKey:'planned-5',taskId:'manga-threads-v1'},
+ {key:'manga',place:'manga',name:'漫画',handle:'@kousaka_san_',tone:'violet',artKey:'planned-5',taskId:'manga-threads-v1'},
  {key:'everyday',place:'everyday',name:'日常の言葉',handle:'',tone:'amber',artKey:'planned-6',taskId:'everyday-words-v1'}
 ]);
 export function draftsForAccount(rows,account){

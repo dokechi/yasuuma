@@ -27,7 +27,8 @@
     "./lounge-feedback.css?v=20261021.5-boot",
     "./overseas-profit-readiness.css?v=20261023.1-profit-route",
     "./storybook-presentation.css?v=20261101.9-workbook",
-    "./storybook-workspace.css?v=20261109.5-full-height"
+    "./storybook-workspace.css?v=20261109.5-full-height",
+    "./stained-sourcing.css?v=20261109.1"
   ],
   "scripts": [
     "./sourcing-atomic-save.js?v=20261011.atomic2",
@@ -95,7 +96,7 @@
     "./sourcing-archive.js?v=20261018.43-empty",
     "./sourcing-profit-guard.js?v=20261022.12-profit",
     "./threads-images.js?v=20261103.2-notebook",
-    "./manual-operation-hub.js?v=20261109.6-everyday",
+    "./manual-operation-hub.js?v=20261109-manga-20261109.6-everyday",
     "./rpg-home.js?v=20261029-insurance",
     "./rpg-workspaces.js?v=20261017.33-unified",
     "./rpg-daily-store.js?v=20261015.1",
@@ -103,7 +104,7 @@
     "./castle-parent.js?v=20261109.6-everyday",
     "./castle-journey-host.js?v=20261101.9-workbook",
     "./lounge-workspace.js?v=20261021.8-hall",
-    "./storybook-workspace-art.js?v=20261102.3-paper"
+    "./storybook-workspace-art.js?v=20261102.3-paper",
+    "./stained-sourcing.js?v=20261109.1"
   ]
 }
-
