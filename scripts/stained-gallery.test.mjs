@@ -34,3 +34,13 @@ test('source status updates retain the same glass controls and manuscript editor
  const h=setup(t),body=h.w.document.getElementById('draft-body');h.board.state={destinations:[{key:'insurance',status:'保存原稿 3本'}],complete:true};h.render();await Promise.resolve();
  assert.equal(h.cards[0].querySelector('.sg-count').textContent,'保存原稿 3本');assert.equal(h.w.document.getElementById('draft-body'),body);assert.equal(h.w.document.querySelector('.sg-card'),h.cards[0]);
 });
+test('arrow glide is halfway at 650ms, finishes at 1300ms and touch interrupts it',t=>{
+ const h=setup(t),w=h.w,rail=w.document.querySelector('.sg-rail');let frame;
+ w.matchMedia=()=>({matches:false});w.performance.now=()=>0;
+ w.requestAnimationFrame=fn=>{frame=fn;return 1;};w.cancelAnimationFrame=()=>{frame=null;};
+ Object.defineProperties(rail,{clientWidth:{value:1000},scrollWidth:{value:3000}});rail.dispatchEvent(new w.Event('scroll'));
+ w.document.querySelector('[aria-label="右へスクロール"]').click();
+ frame(650);assert.equal(rail.scrollLeft,350);frame(1300);assert.equal(rail.scrollLeft,700);
+ w.document.querySelector('[aria-label="右へスクロール"]').click();
+ rail.dispatchEvent(new w.Event('pointerdown'));assert.equal(frame,null);assert.equal(rail.style.scrollSnapType,'');
+});

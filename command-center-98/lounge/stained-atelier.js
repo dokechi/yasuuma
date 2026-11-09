@@ -5,7 +5,21 @@ const doc=document,board=application.getAccountBoard(),owner=application.getPape
 const room=doc.getElementById('room');
 const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text)n.textContent=text;return n;};
 const button=(text,action,cls='sg-tool')=>{const b=make('button',cls,text);b.type='button';b.addEventListener('click',action);return b;};
-const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches||doc.getElementById('reduce-setting')?.checked;
+const motionDuration=1300;
+let passage=null;
+function travel(action){
+  passage?.skipTransition();
+  if(reduced()){action();return;}
+  if(doc.startViewTransition){
+    passage=doc.startViewTransition(action);
+    passage.finished.catch(()=>{});
+  }else{
+    action();
+    const destination=board.element.hidden?room:home;
+    destination.animate?.([{opacity:0,transform:'translateY(14px)'},{opacity:1,transform:'translateY(0)'}],{duration:motionDuration,easing:'cubic-bezier(.22,.61,.36,1)'});
+  }
+}
 let selected='insurance',queued=false;
 let serial=0;
 function art(slot){
@@ -24,19 +38,31 @@ function settings(){
 }
 function header(reader=false){
   const h=make('header','sg-header');
-  h.append(reader?button('‹ 司令塔',()=>doc.getElementById('back').click(),'sg-title'):make('h1','sg-title','司令塔　原稿'));
+  h.append(reader?button('‹ 司令塔',()=>travel(()=>doc.getElementById('back').click()),'sg-title'):make('h1','sg-title','司令塔　原稿'));
   const nav=make('nav','sg-tools');nav.setAttribute('aria-label','司令塔の操作');
   nav.append(button('原稿を検索',()=>doc.getElementById('lounge-search').click()),button('更新',()=>doc.getElementById('desk-refresh').click()),button('設定',settings));h.append(nav);return h;
 }
 const home=make('section','sg-home'),head=header(),rail=make('nav','sg-rail');
 rail.setAttribute('aria-label','8つの持ち場と2つの空き枠。左右にスクロールして選択');
 const cards=new Map();
+let scrollFrame=0,scrollGoal=null;
+function cancelScroll(){cancelAnimationFrame(scrollFrame);scrollFrame=0;scrollGoal=null;rail.style.scrollSnapType='';}
+function glideTo(left){
+  cancelScroll();
+  const start=rail.scrollLeft,target=Math.max(0,Math.min(left,rail.scrollWidth-rail.clientWidth));
+  if(reduced()){rail.scrollLeft=target;return;}
+  scrollGoal=target;rail.style.scrollSnapType='none';const began=performance.now();
+  function frame(now){const t=Math.min(1,(now-began)/motionDuration),ease=t*t*(3-2*t);rail.scrollLeft=start+(target-start)*ease;
+    if(t<1)scrollFrame=requestAnimationFrame(frame);else{scrollFrame=0;scrollGoal=null;}}
+  scrollFrame=requestAnimationFrame(frame);
+}
+rail.addEventListener('pointerdown',cancelScroll,{passive:true});
 function select(key){
   selected=key;
   for(const [k,card]of cards){const yes=k===key;card.dataset.selected=String(yes);if(yes)card.setAttribute('aria-current','true');else card.removeAttribute('aria-current');}
 }
 for(const [index,slot]of glassSlots.entries()){
-  const card=button('',()=>{if(slot.pending)return;select(slot.key);board.open(slot.key);},'sg-card');
+  const card=button('',()=>{if(slot.pending)return;select(slot.key);travel(()=>board.open(slot.key));},'sg-card');
   card.dataset.key=slot.key;card.dataset.empty=String(!!slot.pending);card.setAttribute('aria-label',slot.label+(slot.pending?'、空き枠': 'の原稿を開く'));
   if(slot.pending)card.setAttribute('aria-disabled','true');
   card.append(make('span','sg-beam'),art(slot),make('span','sg-label',slot.label));
@@ -46,15 +72,17 @@ for(const [index,slot]of glassSlots.entries()){
   card.addEventListener('keydown',e=>{
     if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
     e.preventDefault();const next=e.key==='Home'?0:e.key==='End'?glassSlots.length-1:adjacentSlot(index,e.key==='ArrowRight'?1:-1);
-    const target=cards.get(glassSlots[next].key);target.focus({preventScroll:true});target.scrollIntoView({behavior:reduced()?'instant':'smooth',block:'nearest',inline:'center'});
+    const target=cards.get(glassSlots[next].key);target.focus({preventScroll:true});
+    if(reduced())target.scrollIntoView({behavior:'instant',block:'nearest',inline:'center'});
+    else glideTo(rail.scrollLeft+target.getBoundingClientRect().left-rail.getBoundingClientRect().left+(target.clientWidth-rail.clientWidth)/2);
   });cards.set(slot.key,card);rail.append(card);
 }
 // Native touch scrolling and trackpad gestures; wheel also works with a mouse.
-rail.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)&&rail.scrollWidth>rail.clientWidth){const old=rail.scrollLeft;rail.scrollLeft+=e.deltaY;if(old!==rail.scrollLeft)e.preventDefault();}},{passive:false});
+rail.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)&&rail.scrollWidth>rail.clientWidth){e.preventDefault();glideTo((scrollGoal??rail.scrollLeft)+e.deltaY);}else cancelScroll();},{passive:false});
 const footer=make('footer','sg-footer'),status=make('span','sg-status','原稿を確認しています…');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
 const controls=make('div','sg-scroll-controls');
-const previous=button('‹',()=>rail.scrollBy({left:-rail.clientWidth*.7,behavior:reduced()?'instant':'smooth'}));previous.setAttribute('aria-label','左へスクロール');
-const next=button('›',()=>rail.scrollBy({left:rail.clientWidth*.7,behavior:reduced()?'instant':'smooth'}));next.setAttribute('aria-label','右へスクロール');
+const previous=button('‹',()=>glideTo((scrollGoal??rail.scrollLeft)-rail.clientWidth*.7));previous.setAttribute('aria-label','左へスクロール');
+const next=button('›',()=>glideTo((scrollGoal??rail.scrollLeft)+rail.clientWidth*.7));next.setAttribute('aria-label','右へスクロール');
 controls.append(previous,make('span','','左右にスワイプ'),next);footer.append(status,controls);home.append(head,rail,footer);board.element.append(home);board.element.setAttribute('aria-label','司令塔のステンドグラス');
 function scrollState(){previous.disabled=rail.scrollLeft<2;next.disabled=rail.scrollLeft+rail.clientWidth>=rail.scrollWidth-3;}
 rail.addEventListener('scroll',scrollState,{passive:true});window.addEventListener('resize',scrollState);

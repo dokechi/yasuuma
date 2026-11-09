@@ -124,3 +124,20 @@ body.stained-atelier #room{background-image:linear-gradient(#08090970,#080909aa)
 body.stained-atelier #desk-list{display:flex!important;flex-direction:column!important;max-height:none!important;overflow-x:hidden!important;scrollbar-width:thin;scrollbar-color:#79796b #1119}
 body.stained-atelier #desk .manuscript-card{flex:0 0 auto!important;width:100%!important;max-width:none!important}
 body.stained-atelier #desk-scroll{scrollbar-width:thin;scrollbar-color:#79796b #1119}
+
+/* Warm overhead light, illuminated frame and a pool of light at the feet. */
+body.stained-atelier .sg-card:is(:hover,:focus,:active){background:transparent!important}
+.sg-card>.sg-art{transition:filter 1.3s cubic-bezier(.22,.61,.36,1);filter:brightness(.68) drop-shadow(0 0 0 transparent)}
+.sg-card[data-selected=true]:not([data-empty=true])>.sg-art{filter:brightness(1.2) saturate(1.08) drop-shadow(0 0 6px #fff3d9a0) drop-shadow(0 0 24px #ffe4bb66)}
+.sg-beam{inset:-55px -55% 35px;background:radial-gradient(ellipse at 50% 0%,#fff4df8c 0%,#ffe7c44d 24%,#ffdfb31a 52%,transparent 72%);filter:blur(15px);transition:opacity 1.3s cubic-bezier(.22,.61,.36,1)}
+.sg-card::after{content:'';position:absolute;bottom:60px;left:-25%;width:150%;height:85px;z-index:-1;pointer-events:none;background:radial-gradient(ellipse,#ffebc960 0%,#ffe1a62b 38%,transparent 72%);filter:blur(10px);opacity:0;transition:opacity 1.3s cubic-bezier(.22,.61,.36,1)}
+.sg-card[data-selected=true]:not([data-empty=true])::after{opacity:1}
+.sg-selected-art:before{inset:-55px -55% 0;background:radial-gradient(ellipse at 50% 0%,#fff4df73,#ffe7c433 32%,transparent 72%);filter:blur(15px)}
+.sg-selected-art>.sg-art{filter:brightness(1.16) drop-shadow(0 0 6px #fff3d980) drop-shadow(0 0 24px #ffe4bb55)}
+::view-transition-group(root){animation-duration:1.3s;animation-timing-function:cubic-bezier(.22,.61,.36,1)}
+::view-transition-old(root){animation:sg-leave 1.3s cubic-bezier(.22,.61,.36,1) both}
+::view-transition-new(root){animation:sg-arrive 1.3s cubic-bezier(.22,.61,.36,1) both}
+@keyframes sg-leave{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(1.025)}}
+@keyframes sg-arrive{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.sg-card>.sg-art,.sg-beam,.sg-card::after{transition:none}::view-transition-old(root),::view-transition-new(root){animation:none}}
+body:has(#reduce-setting:checked) :is(.sg-card>.sg-art,.sg-beam,.sg-card::after){transition:none}
