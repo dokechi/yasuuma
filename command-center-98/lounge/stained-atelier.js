@@ -11,13 +11,31 @@ let passage=null;
 function travel(action){
   passage?.skipTransition();
   if(reduced()){action();return;}
+  const returning=!room.hidden;
+  doc.documentElement.dataset.sgDirection=returning?'back':'forward';
+  const change=async()=>{
+    // Back uses browser history; wait for its DOM change before capturing the destination.
+    await new Promise(resolve=>{
+      let timer;
+      const done=()=>{observer.disconnect();clearTimeout(timer);resolve();};
+      const observer=new MutationObserver(()=>{if(room.hidden===returning)done();});
+      observer.observe(room,{attributes:true,attributeFilter:['hidden']});
+      timer=setTimeout(done,800);action();if(room.hidden===returning)done();
+    });
+    paint();
+  };
   if(doc.startViewTransition){
-    passage=doc.startViewTransition(action);
+    passage=doc.startViewTransition(change);
     passage.finished.catch(()=>{});
   }else{
-    action();
-    const destination=board.element.hidden?room:home;
-    destination.animate?.([{opacity:0,transform:'translateY(14px)'},{opacity:1,transform:'translateY(0)'}],{duration:motionDuration,easing:'cubic-bezier(.22,.61,.36,1)'});
+    const origin=cards.get(selected)?.querySelector('.sg-art');
+    const from=(returning?selectedArt.querySelector('.sg-art'):origin)?.getBoundingClientRect();
+    change().then(()=>{
+      const target=returning?origin:selectedArt.querySelector('.sg-art');
+      const to=target?.getBoundingClientRect();
+      if(from&&to&&to.width)target.animate?.([{transform:`translateX(${from.left-to.left}px)`},{transform:'translateX(0)'}],{duration:motionDuration,easing:'cubic-bezier(.22,.61,.36,1)'});
+      if(!returning)doc.getElementById('desk').animate?.([{transform:'translateX(100vw)'},{transform:'translateX(0)'}],{duration:motionDuration,easing:'cubic-bezier(.22,.61,.36,1)'});
+    });
   }
 }
 let selected='insurance',queued=false;
@@ -59,7 +77,7 @@ function glideTo(left){
 rail.addEventListener('pointerdown',cancelScroll,{passive:true});
 function select(key){
   selected=key;
-  for(const [k,card]of cards){const yes=k===key;card.dataset.selected=String(yes);if(yes)card.setAttribute('aria-current','true');else card.removeAttribute('aria-current');}
+  for(const [k,card]of cards){const yes=k===key;card.dataset.selected=String(yes);card.querySelector('.sg-art').style.viewTransitionName=yes?'sg-panel':'none';if(yes)card.setAttribute('aria-current','true');else card.removeAttribute('aria-current');}
 }
 for(const [index,slot]of glassSlots.entries()){
   const card=button('',()=>{if(slot.pending)return;select(slot.key);travel(()=>board.open(slot.key));},'sg-card');
@@ -98,7 +116,7 @@ function paint(){
   const slot=glassFor(room.dataset.account);
   if(!room.hidden&&slot){
     select(slot.key);
-    if(readerKey!==slot.key){readerKey=slot.key;selectedArt.replaceChildren(art(slot),make('span','sg-label',slot.label));}
+    if(readerKey!==slot.key){readerKey=slot.key;const panel=art(slot);panel.style.viewTransitionName='sg-panel';selectedArt.replaceChildren(panel,make('span','sg-label',slot.label));}
     doc.getElementById('desk-title').textContent=slot.label+'の原稿';
   }
   scrollState();

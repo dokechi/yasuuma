@@ -134,10 +134,26 @@ body.stained-atelier .sg-card:is(:hover,:focus,:active){background:transparent!i
 .sg-card[data-selected=true]:not([data-empty=true])::after{opacity:1}
 .sg-selected-art:before{inset:-55px -55% 0;background:radial-gradient(ellipse at 50% 0%,#fff4df73,#ffe7c433 32%,transparent 72%);filter:blur(15px)}
 .sg-selected-art>.sg-art{filter:brightness(1.16) drop-shadow(0 0 6px #fff3d980) drop-shadow(0 0 24px #ffe4bb55)}
-::view-transition-group(root){animation-duration:1.3s;animation-timing-function:cubic-bezier(.22,.61,.36,1)}
-::view-transition-old(root){animation:sg-leave 1.3s cubic-bezier(.22,.61,.36,1) both}
-::view-transition-new(root){animation:sg-arrive 1.3s cubic-bezier(.22,.61,.36,1) both}
-@keyframes sg-leave{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(1.025)}}
-@keyframes sg-arrive{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-@media(prefers-reduced-motion:reduce){.sg-card>.sg-art,.sg-beam,.sg-card::after{transition:none}::view-transition-old(root),::view-transition-new(root){animation:none}}
+/* The selected glass is one shared object moving into the left reader column. */
+.sg-rail{view-transition-name:sg-gallery}
+body.stained-atelier #desk{view-transition-name:sg-desk}
+::view-transition-group(*){animation-duration:1.3s;animation-timing-function:cubic-bezier(.22,.61,.36,1)}
+::view-transition-old(root){display:none}
+::view-transition-new(root){animation:none}
+::view-transition-old(sg-panel){display:none}
+::view-transition-new(sg-panel){animation:none;height:100%;object-fit:fill}
+::view-transition-group(sg-panel){z-index:3}
+::view-transition-old(sg-gallery){animation:sg-slide-left 1.3s cubic-bezier(.22,.61,.36,1) both}
+::view-transition-new(sg-desk){animation:sg-slide-in 1.3s cubic-bezier(.22,.61,.36,1) both}
+::view-transition-old(sg-desk){animation:sg-slide-right 1.3s cubic-bezier(.22,.61,.36,1) both}
+::view-transition-new(sg-gallery){animation:sg-return 1.3s cubic-bezier(.22,.61,.36,1) both}
+@keyframes sg-slide-left{to{transform:translateX(-100vw)}}
+@keyframes sg-slide-in{from{transform:translateX(100vw)}to{transform:translateX(0)}}
+@keyframes sg-slide-right{to{transform:translateX(100vw)}}
+@keyframes sg-return{from{transform:translateX(-100vw)}to{transform:translateX(0)}}
+@media(max-width:560px){
+ html[data-sg-direction=forward]::view-transition-old(sg-panel){display:block;animation:sg-slide-left 1.3s cubic-bezier(.22,.61,.36,1) both}
+ html[data-sg-direction=back]::view-transition-new(sg-panel){animation:sg-return 1.3s cubic-bezier(.22,.61,.36,1) both}
+}
+@media(prefers-reduced-motion:reduce){.sg-card>.sg-art,.sg-beam,.sg-card::after{transition:none}::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none}}
 body:has(#reduce-setting:checked) :is(.sg-card>.sg-art,.sg-beam,.sg-card::after){transition:none}
