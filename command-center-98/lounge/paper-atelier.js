@@ -1,6 +1,6 @@
-import * as application from './app.js?v=20261109.1-manga';
-import {publishingAccounts} from './accounts.js?v=20261109.1-manga';
-import {mountPaperStage} from './paper-stage.js?v=20261109.1-manga';
+import * as application from './app.js?v=20261109.6-everyday';
+import {publishingAccounts} from './accounts.js?v=20261109.6-everyday';
+import {mountPaperStage} from './paper-stage.js?v=20261109.6-everyday';
 // Mount independently of optional illustrations or the old book animation.
 try{
  if(getComputedStyle(document.body).getPropertyValue('--paper-ready').trim()!=='1')throw Error('Paper styles unavailable');

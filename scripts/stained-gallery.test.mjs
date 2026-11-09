@@ -16,14 +16,14 @@ function setup(t){
  w.eval(read('stained-atelier.js').replace(/^import .*;\n/gm,''));
  t.after(()=>w.close());return {w,board,calls,render:()=>listener(),cards:[...w.document.querySelectorAll('.sg-card')]};
 }
-test('ten slots preserve all seven saved publishing identities plus sourcing and two empty slots',()=>{
- assert.deepEqual(model.glassSlots.filter(x=>!x.pending).map(x=>x.key),[...accounts.publishingAccounts.map(x=>x.key),'sourcing']);
+test('ten slots preserve all eight saved identities plus sourcing and one empty slot',()=>{
+ assert.deepEqual(new Set(model.glassSlots.filter(x=>!x.pending).map(x=>x.key)),new Set([...accounts.publishingAccounts.map(x=>x.key),'sourcing']));
  assert.equal(model.glassSlots.length,10);assert.equal(model.glassFor('tanaka').label,'固定費');assert.equal(model.glassFor('kensho').label,'懸賞');
  assert.equal(new Set(model.glassSlots.map(x=>x.key)).size,10);
 });
 test('glass clicks open existing owner routes; empty slots never open or create accounts',t=>{
  const h=setup(t);for(const c of h.cards)c.click();assert.deepEqual(h.calls,model.glassSlots.filter(s=>!s.pending).map(s=>s.key));
- assert.equal(h.cards.filter(c=>c.getAttribute('aria-disabled')==='true').length,2);
+ assert.equal(h.cards.filter(c=>c.getAttribute('aria-disabled')==='true').length,1);
 });
 test('keyboard navigation reaches all slots and does not open them until activated',t=>{
  const h=setup(t);h.cards[0].focus();h.cards[0].dispatchEvent(new h.w.KeyboardEvent('keydown',{key:'End',bubbles:true}));

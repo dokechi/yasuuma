@@ -1,6 +1,6 @@
 /* Presentation only. The existing desk owns data, selection, editing and copying. */
-import * as application from './app.js?v=20261109.1-manga';
-import {glassSlots,glassFor,adjacentSlot} from './stained-model.js?v=20261109.2-stained';
+import * as application from './app.js?v=20261109.6-everyday';
+import {glassSlots,glassFor,adjacentSlot} from './stained-model.js?v=20261109.6-everyday';
 const doc=document,board=application.getAccountBoard(),owner=application.getPaperDesk();
 const room=doc.getElementById('room');
 const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text)n.textContent=text;return n;};

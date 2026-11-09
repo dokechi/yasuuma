@@ -1,6 +1,6 @@
 /* Spatial publishing desks. No data requests, persistence, or source-record changes.
    The entry opts in with body.spatial-atelier and calls this installer. */
-import {publishingAccounts} from './accounts.js?v=20261109.1-manga';
+import {publishingAccounts} from './accounts.js?v=20261109.6-everyday';
 
 // Observed rectangles from command-castle-cutaway-v1-zones.json. The same
 // master artwork underlies the overview and these four publishing rooms.

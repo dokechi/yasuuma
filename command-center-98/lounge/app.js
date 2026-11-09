@@ -1,7 +1,7 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
 import {createMusicControls} from './music.js?v=20261030.8-integrated';
-import {createDesk} from './desk.js?v=20261109.1-manga';
-import {publishingAccounts} from './accounts.js?v=20261109.1-manga';
+import {createDesk} from './desk.js?v=20261109.6-everyday';
+import {publishingAccounts} from './accounts.js?v=20261109.6-everyday';
 import {createInteractionSound} from './interaction-sound.js?v=20261022.26-audio';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261101.1-living';
 const $ = (id) => document.getElementById(id);
