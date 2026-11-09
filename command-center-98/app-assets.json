@@ -27,7 +27,7 @@
     "./lounge-feedback.css?v=20261021.5-boot",
     "./overseas-profit-readiness.css?v=20261023.1-profit-route",
     "./storybook-presentation.css?v=20261101.9-workbook",
-    "./storybook-workspace.css?v=20261102.3-paper"
+    "./storybook-workspace.css?v=20261109.5-full-height"
   ],
   "scripts": [
     "./sourcing-atomic-save.js?v=20261011.atomic2",

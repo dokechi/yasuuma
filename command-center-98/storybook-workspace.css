@@ -190,3 +190,8 @@ body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-head
  body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header>nav:not(.workbook-native-chapters) button{flex:0 0 auto;white-space:nowrap;min-width:44px;min-height:44px;padding:7px 10px;font-size:12px}
  body.storybook-host.lounge-workspace #loungeWorkspaceHeader.workbook-native-header[data-story-art=ready] .lounge-workspace-caption{margin-top:7px;padding:4px 10px}
 }
+
+/* The stained gallery uses the entire host viewport. */
+body.storybook-host.castle-visible{--castle-host-strip:0px}
+body.storybook-host.castle-visible #requestProgressShortcut{display:none!important}
+body.storybook-host.castle-visible #ccCastleFrame{top:0!important;height:100dvh!important}

@@ -157,3 +157,14 @@ body.stained-atelier #desk{view-transition-name:sg-desk}
 }
 @media(prefers-reduced-motion:reduce){.sg-card>.sg-art,.sg-beam,.sg-card::after{transition:none}::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none}}
 body:has(#reduce-setting:checked) :is(.sg-card>.sg-art,.sg-beam,.sg-card::after){transition:none}
+
+/* Edge-to-edge gallery; horizontal gestures and keyboard navigation remain. */
+.sg-home{grid-template-rows:64px minmax(0,1fr)}
+.sg-footer{display:none}
+.sg-rail{scrollbar-width:none;padding-bottom:0}
+.sg-rail::-webkit-scrollbar{display:none}
+body.stained-atelier #room #desk{bottom:0!important}
+@media(max-width:900px){.sg-home{grid-template-rows:56px minmax(0,1fr)}}
+
+.sg-card>.sg-art{max-height:none}
+body.stained-atelier .sg-card{flex-basis:max(clamp(146px,15vw,240px),calc((100dvh - 160px)*.258))!important}
