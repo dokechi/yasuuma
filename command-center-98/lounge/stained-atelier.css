@@ -168,3 +168,26 @@ body.stained-atelier #room #desk{bottom:0!important}
 
 .sg-card>.sg-art{max-height:none}
 body.stained-atelier .sg-card{flex-basis:max(clamp(146px,15vw,240px),calc((100dvh - 160px)*.258))!important}
+
+/* Reference typography: bold Gothic headings, light Mincho reading text.
+   Load the Japanese webfont explicitly: Android has no built-in Mincho. */
+body.stained-atelier{
+ --sg-serif:'Noto Serif JP','Yu Mincho','Hiragino Mincho ProN',serif;
+ --sg-sans:'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif;
+ --sg-paper:#eeece7;
+ --sg-bg:linear-gradient(180deg,#000c 0%,#0007 25%,#0003 65%,#0009 100%),url('./assets/stained/map.png');
+ font-family:var(--sg-serif);font-weight:400;
+}
+body.stained-atelier .sg-title{font-family:var(--sg-sans)!important;font-weight:700;letter-spacing:0;text-shadow:0 2px 3px #000}
+body.stained-atelier #desk-title{font-family:var(--sg-sans)!important;font-weight:700!important;letter-spacing:0}
+body.stained-atelier :is(.sg-label,.sg-count,.manuscript-card strong,#draft-title,#draft-body,.desk-search input){font-family:var(--sg-serif)!important;font-weight:400!important;letter-spacing:.025em;text-shadow:0 1px 3px #000,0 0 5px #0008}
+body.stained-atelier #draft-title{font-size:clamp(19px,1.65vw,25px)!important;color:var(--sg-paper)}
+body.stained-atelier #draft-body{line-height:1.75!important;color:var(--sg-paper)!important}
+body.stained-atelier .cc-post-learning textarea{font-family:var(--sg-serif)!important;font-weight:400!important}
+body.stained-atelier #room{background-image:var(--sg-bg)!important}
+body.stained-atelier .sg-reader-scene{opacity:.65;filter:saturate(.72) brightness(.82)}
+body.stained-atelier #room #desk{background:rgba(0,0,0,.32)!important;box-shadow:none!important;border-color:#b9b7a685!important}
+body.stained-atelier #desk .desk-toolbar{background:#0008!important}
+body.stained-atelier #desk .manuscript-card[aria-pressed=true]{background:linear-gradient(90deg,#6876a960,#6876a920)!important}
+body.stained-atelier #desk :is(.cc-threads-images,.cc-threads-image){background:#0003!important;color:var(--sg-paper)!important;border:1px solid var(--sg-line);border-radius:0;box-shadow:none}
+body.stained-atelier #desk .cc-threads-images-status[data-error=true]{color:#ffb5a5}
