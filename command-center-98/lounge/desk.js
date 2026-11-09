@@ -1,8 +1,8 @@
-import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261106.1-kensho';
-import {createConveniences} from './qol.js?v=20261106.1-kensho';
-import {resumeView,postingReadiness} from './qol-model.js?v=20261106.1-kensho';
-import {createNotebook,safeLink} from './notebook.js?v=20261106.1-kensho';
-import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261106.1-kensho';
+import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261109.1-manga';
+import {createConveniences} from './qol.js?v=20261109.1-manga';
+import {resumeView,postingReadiness} from './qol-model.js?v=20261109.1-manga';
+import {createNotebook,safeLink} from './notebook.js?v=20261109.1-manga';
+import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261109.1-manga';
 
 export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{},onOpenRoom=()=>{},onLounge=()=>{},onWorkingChapter=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;
@@ -40,7 +40,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   const dialog=el('dialog',undefined,'legacy-account-archive'),header=el('header');header.append(el('h2','旧データの保管庫'),button('閉じる',()=>dialog.close()));dialog.append(header,el('p','過去のアカウント・投稿先未確定の保存記録です。現在のアカウントには混ぜず、閲覧用として保持しています。'));
   const records=notebook.legacySources();if(!records.length)dialog.append(el('p','この端末に保管された旧原稿はありません。'));
   for(const d of records){const entry=el('details'),summary=el('summary',d.title||'名称未確認');entry.append(summary,el('p','元の区分: '+(d.source?.account||'未確定')+' / '+(d.checkedAt||'日付未確認')),el('pre',d.body||''));dialog.append(entry);}
-  const oldCopies=notebook.copies().filter(c=>['kyun','choi','otoku','rakuten','lottery','tanaka','kensho'].includes(c.place)&&!publishingAccounts.some(a=>copiesForAccount([c],a,id=>notebook.get(id)).length));if(oldCopies.length)dialog.append(el('h3','旧・投稿先未確定のコピー履歴'));for(const c of oldCopies){const item=el('details');item.append(el('summary',c.title||'以前のコピー'),el('pre',c.text));dialog.append(item);}
+  const oldCopies=notebook.copies().filter(c=>['kyun','choi','otoku','rakuten','lottery','tanaka','kensho','manga'].includes(c.place)&&!publishingAccounts.some(a=>copiesForAccount([c],a,id=>notebook.get(id)).length));if(oldCopies.length)dialog.append(el('h3','旧・投稿先未確定のコピー履歴'));for(const c of oldCopies){const item=el('details');item.append(el('summary',c.title||'以前のコピー'),el('pre',c.text));dialog.append(item);}
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();
  }
  const conveniences=createConveniences({notebook,open:context=>{requested=context;if(context.id)selections.set(context.place,context.id);onOpenRoom(context.place);if(context.id)document.dispatchEvent(new window.CustomEvent('cc:paper-select',{detail:{id:context.id}}));},copy:(...args)=>copy(...args),native,onFeedback,onChange:emitLiving,send:(...args)=>send(...args)});
@@ -156,7 +156,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   }
   send('reading-room',{active:true});
   savePosition();rememberView();passiveEntry=passive||requested?.passive===true;initialDraftId=passiveEntry?requested?.id||(typeof resumeDraft==='string'?resumeDraft:null):null;if(externalNotes&&notebook.persistent()){notebook.sync();externalNotes=false;}place=roomId==='purple'?(requested?.place==='choi'||publishingAccounts.some(a=>!a.pending&&a.place===requested?.place)?requested.place:'otoku'):placeForRoom[roomId];active=null;const view=requested?.id&&!requested.resume?{query:'',filter:'all'}:resumeView(views.get(place)||notebook.pref('view:'+place,null));query=view.query;filter=view.filter;$('desk-query').value=query;
-  if(!passiveEntry)notebook.visit(place);$('desk-title').textContent=place==='shiire'?'仕入れの持ち場':['kyun','otoku','rakuten','lottery','tanaka','kensho'].includes(place)?placeNames[place]:'保存原稿';$('desk-kicker').textContent=place==='fp'?'SCRIPTS & CONTENT':place==='shiire'?'THE MERCHANT’S DESK':'YOUR MANUSCRIPTS';
+  if(!passiveEntry)notebook.visit(place);$('desk-title').textContent=place==='shiire'?'仕入れの持ち場':['kyun','otoku','rakuten','lottery','tanaka','kensho','manga'].includes(place)?placeNames[place]:'保存原稿';$('desk-kicker').textContent=place==='fp'?'SCRIPTS & CONTENT':place==='shiire'?'THE MERCHANT’S DESK':'YOUR MANUSCRIPTS';
   $('desk').dataset.place=place;routes();render({restore:true});
   if(pending)applyPending();
   if(requested?.native&&embedded&&(['sourcing','watches','cards'].includes(requested.native)&&place==='shiire'||['fp','tiktok'].includes(requested.native)&&place==='fp'))native(requested.native,requested.recordId,true,requested.section);else if(place==='shiire'&&embedded)native('sourcing',undefined,true);requested=null;

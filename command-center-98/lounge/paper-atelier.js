@@ -1,6 +1,6 @@
-import * as application from './app.js?v=20261106.1-kensho';
-import {publishingAccounts} from './accounts.js?v=20261106.1-kensho';
-import {mountPaperStage} from './paper-stage.js?v=20261106.1-kensho';
+import * as application from './app.js?v=20261109.1-manga';
+import {publishingAccounts} from './accounts.js?v=20261109.1-manga';
+import {mountPaperStage} from './paper-stage.js?v=20261109.1-manga';
 // Mount independently of optional illustrations or the old book animation.
 try{
  if(getComputedStyle(document.body).getPropertyValue('--paper-ready').trim()!=='1')throw Error('Paper styles unavailable');

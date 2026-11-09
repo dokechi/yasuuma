@@ -5,7 +5,8 @@ export const publishingAccounts=Object.freeze([
  {key:'rakuten',place:'rakuten',name:'楽天犬',handle:'@bonya0914',tone:'amber',taskId:'rakuten-threads-v1'},
  {key:'lottery',place:'lottery',name:'抽選日記',handle:'@chusen1101',tone:'green',artKey:'planned-4',taskId:'lottery-threads-v1'},
  {key:'tanaka',place:'tanaka',name:'田中卓',handle:'',tone:'violet',artKey:'planned-5',taskId:'tanaka-threads-v1'},
- {key:'kensho',place:'kensho',name:'懸賞小ナス',handle:'@nasbi.777',tone:'violet',artKey:'planned-6',taskId:'kensho-threads-v1'}
+ {key:'kensho',place:'kensho',name:'懸賞小ナス',handle:'@nasbi.777',tone:'violet',artKey:'planned-6',taskId:'kensho-threads-v1'},
+ {key:'manga',place:'manga',name:'漫画',handle:'',tone:'violet',artKey:'planned-5',taskId:'manga-threads-v1'}
 ]);
 export function draftsForAccount(rows,account){
  if(!account||account.pending)return [];
@@ -24,7 +25,7 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
  const underlying=document.getElementById('app');let priorInert=false;
  function isolate(active){if(!underlying)return;if(active&&!underlying.hasAttribute('inert')){priorInert=false;underlying.setAttribute('inert','');}else if(!active&&!priorInert)underlying.removeAttribute('inert');}
  priorInert=!!underlying?.hasAttribute('inert');
- const panel=el('section',undefined,'account-board');panel.setAttribute('aria-label','司令塔の8パネル');
+ const panel=el('section',undefined,'account-board');panel.setAttribute('aria-label','司令塔の9パネル');
  const sky=el('div',undefined,'account-sky');sky.setAttribute('aria-hidden','true');panel.append(sky);
  const updateTime=()=>{panel.dataset.time=timeOfDay();panel.dataset.paused=String(document.hidden);if(roomClock)roomClock.textContent=({day:'昼の航路',dusk:'夕の航路',night:'夜の航路'})[panel.dataset.time]+' / '+new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit'}).format(new Date());};updateTime();const timer=setInterval(updateTime,60000);timer.unref?.();document.addEventListener('visibilitychange',updateTime);window.addEventListener('pagehide',()=>clearInterval(timer),{once:true});
  const header=el('header',undefined,'account-board-heading'),titles=el('div');
@@ -36,14 +37,14 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
  const foyer=el('div',undefined,'room-foyer');foyer.innerHTML='<div class=magic-dial aria-hidden=true><i></i><span>✦</span></div><div><small>あなたの持ち場</small><p>原稿を整える。仕入れを見渡す。</p></div><span class=room-clock>日本時間の空と灯り</span>';
  roomClock=foyer.querySelector('.room-clock');updateTime();
  const actions=el('nav');actions.setAttribute('aria-label','投稿一覧の操作');
- const refresh=btn('↻ 原稿を更新',()=>{if(!refresh.disabled)onRefresh();}),lounge=btn('ラウンジ・管理へ',()=>{hide();onLounge();});const mode=btn('6アカウントの原稿一覧',()=>{tiles.hidden=!tiles.hidden;scroller.hidden=!tiles.hidden;mode.textContent=tiles.hidden?'← 8パネルへ':'6アカウントの原稿一覧';mode.setAttribute('aria-pressed',String(tiles.hidden));panel.dataset.view=tiles.hidden?'list':'tiles';hint.hidden=!tiles.hidden;accountJump.hidden=!tiles.hidden;});mode.className='board-primary';mode.setAttribute('aria-pressed','false');refresh.className='board-refresh';lounge.className='board-lounge';actions.append(mode,refresh,lounge);header.append(titles,actions);
+ const refresh=btn('↻ 原稿を更新',()=>{if(!refresh.disabled)onRefresh();}),lounge=btn('ラウンジ・管理へ',()=>{hide();onLounge();});const mode=btn('7アカウントの原稿一覧',()=>{tiles.hidden=!tiles.hidden;scroller.hidden=!tiles.hidden;mode.textContent=tiles.hidden?'← 9パネルへ':'7アカウントの原稿一覧';mode.setAttribute('aria-pressed',String(tiles.hidden));panel.dataset.view=tiles.hidden?'list':'tiles';hint.hidden=!tiles.hidden;accountJump.hidden=!tiles.hidden;});mode.className='board-primary';mode.setAttribute('aria-pressed','false');refresh.className='board-refresh';lounge.className='board-lounge';actions.append(mode,refresh,lounge);header.append(titles,actions);
  const status=el('p','本体の保存原稿を確認しています…','account-board-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.setAttribute('aria-atomic','true');
  const summary=el('span','','board-summary');const voyage=el('div',undefined,'board-voyage');voyage.append(summary,roomClock);foyer.append(voyage);
  const accountJump=el('nav',undefined,'account-jump');accountJump.setAttribute('aria-label','一覧のアカウントへ移動');accountJump.hidden=true;
  const footer=el('footer',undefined,'board-footer'),hint=el('span','横にスクロールして、ほかのアカウントへ','board-scroll-hint');hint.hidden=true;footer.append(hint);if(onLegacy)footer.append(btn('旧データの保管庫',onLegacy));
  const scroller=el('div',undefined,'account-columns-scroll');scroller.tabIndex=0;scroller.setAttribute('aria-label','アカウント一覧。横にスクロールできます');
  const columns=el('div',undefined,'account-columns');scroller.append(columns);scroller.hidden=true;
- const tiles=el('nav',undefined,'account-tiles');tiles.setAttribute('aria-label','6アカウント・仕入れ・予備');
+ const tiles=el('nav',undefined,'account-tiles');tiles.setAttribute('aria-label','7アカウント・仕入れ・予備');
  panel.append(header,foyer,status,accountJump,tiles,scroller,footer);host.append(panel);isolate(true);
  function render({message,loading=false,complete=false}={}){
   const focused=document.activeElement,focusAccount=focused?.closest?.('[data-account]')?.dataset.account,focusDraft=focused?.dataset?.draftId,focusTile=focused?.dataset?.destination,focusKind=focused?.closest?.('.account-jump')?'jump':focused?.classList?.contains('account-handle')?'profile':focused?.parentElement?.classList?.contains('account-column')?'open':null,tilesTop=tiles.scrollTop;
@@ -58,11 +59,11 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
    const crest=el('span',undefined,'portal-crest');crest.setAttribute('aria-hidden','true');const symbols={insurance:'M12 3 5 6v6c0 4 7 8 7 8s7-4 7-8V6Z M8 11h8 M12 7v8',otoku:'m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z M12 8v8 M8 12h8',rakuten:'M3 11 12 3l9 8 M6 9v12h12V9 M10 21v-7h4v7',lottery:'m12 2 3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z',sourcing:'M12 3v18 M4 7h16 M5 7l-3 7h6Z M19 7l-3 7h6Z M7 21h10'};crest.innerHTML='<svg viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.2 stroke-linejoin=round><path d="'+(symbols[a.key]||'M8 11V7a4 4 0 0 1 8 0v4 M6 11h12v10H6Z M12 15v3')+'"/></svg>';
    tile.append(frame,crest);
    const art=el('img');if(!spatialLayout())art.src='assets/panel-'+(a.artKey||a.key)+'.webp';art.alt='';art.loading='eager';art.onerror=()=>{art.onerror=null;art.src='assets/'+(['red','purple','orange','silver','purple','red','orange','silver'][i])+'-face.webp';};
-   const caption=el('span',undefined,'account-tile-caption');caption.append(el('small',String(i+1).padStart(2,'0')+' / '+(a.pending?'封印された扉':({insurance:'手紙の書斎',otoku:'宵色の回廊',rakuten:'陽だまりの食卓',lottery:'星巡りの観測室',tanaka:'固定費を掘る書斎',kensho:'小ナスの懸賞日記',sourcing:'商人の工房'})[a.key])),el('strong',a.name),el('span',a.handle|| (a.pending?'名前・用途は未設定':a.key==='sourcing'?'購入・在庫・売却':'投稿先未登録')));
+   const caption=el('span',undefined,'account-tile-caption');caption.append(el('small',String(i+1).padStart(2,'0')+' / '+(a.pending?'封印された扉':({insurance:'手紙の書斎',otoku:'宵色の回廊',rakuten:'陽だまりの食卓',lottery:'星巡りの観測室',tanaka:'固定費を掘る書斎',kensho:'小ナスの懸賞日記',manga:'漫画の書棚',sourcing:'商人の工房'})[a.key])),el('strong',a.name),el('span',a.handle|| (a.pending?'名前・用途は未設定':a.key==='sourcing'?'購入・在庫・売却':'投稿先未登録')));
    const count=a.pending?'未設定':a.key==='sourcing'?'管理画面へ':complete?'保存原稿 '+new Set(draftsForAccount(allRows,a).map(d=>d.source.id)).size+'本':loading?'読込中':'原稿を確認';nextDestinations.push({...a,status:count});const meta=el('span',count,'account-tile-state');caption.append(meta);
    const arrow=el('span',a.pending?'—':'↗','account-tile-arrow');arrow.setAttribute('aria-hidden','true');tile.append(art,caption,arrow);tiles.append(tile);
   }
-  status.textContent=message||(loading?'保存原稿を読み込んでいます…':complete?'6アカウントの保存原稿を読込済みです。':'保存原稿はまだ確認できていません。更新して再試行できます。');
+  status.textContent=message||(loading?'保存原稿を読み込んでいます…':complete?'7アカウントの保存原稿を読込済みです。':'保存原稿はまだ確認できていません。更新して再試行できます。');
   for(const [i,a]of publishingAccounts.entries()){
    const column=el('section',undefined,'account-column');column.dataset.account=a.key;column.dataset.tone=a.tone||'empty';
    const heading=el('header'),number=el('small',String(i+1).padStart(2,'0'),'account-number');heading.append(number,el('h2',a.name));

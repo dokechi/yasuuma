@@ -6,7 +6,8 @@ const chapters=Object.freeze([
  {key:'rakuten',name:'楽天',number:'03'}, {key:'lottery',name:'抽選',number:'04'},
  {key:'tanaka',name:'田中卓',number:'05'},
  {key:'kensho',name:'懸賞小ナス',number:'06'},
- {key:'sourcing',name:'仕入れ',number:'07'}
+ {key:'manga',name:'漫画',number:'07'},
+ {key:'sourcing',name:'仕入れ',number:'08'}
 ]);
 export function mountWorkingBook({document:doc=globalThis.document,application,board,buildArt=null,onTurn=()=>false,onCancel=()=>{},onInterrupt=onCancel}={}){
  const win=doc?.defaultView,room=doc?.getElementById('room');
@@ -17,7 +18,7 @@ export function mountWorkingBook({document:doc=globalThis.document,application,b
  const safely=(fn,...args)=>{try{return fn(...args);}catch{return false;}};
  let disposed=false,desk=null,artBuilder=buildArt,lastFocus=null,artKey=null,artIntent=0,copyTimer=null,lastOperation='',statusSnapshot=null,workClose=null;
  const header=make('header','workbook-header');header.dataset.workbookReady='true';
- const top=make('div','workbook-top'),brand=make('span','workbook-brand','司令塔'),tabs=make('nav','workbook-chapters');tabs.setAttribute('aria-label','七つの持ち場、すぐ切り替え');
+ const top=make('div','workbook-top'),brand=make('span','workbook-brand','司令塔'),tabs=make('nav','workbook-chapters');tabs.setAttribute('aria-label','八つの持ち場、すぐ切り替え');
  const buttons=new Map();
  for(const c of chapters){const b=button('workbook-chapter','',()=>open(c.key));b.dataset.workingChapter=c.key;const label=make('strong','',c.name),state=make('small','','未確認');b.append(label,state);tabs.append(b);buttons.set(c.key,{button:b,state});}
  const menu=make('details','workbook-menu'),summary=make('summary','','•••');summary.setAttribute('aria-label','司令塔の道具を開く');const menuBody=make('div','workbook-menu-body');

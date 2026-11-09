@@ -11,7 +11,7 @@
 })(typeof window === 'undefined' ? globalThis : window, function () {
   'use strict';
 
-  const MANIFEST_URL = './app-assets.json?v=20261106.1-kensho';
+  const MANIFEST_URL = './app-assets.json?v=20261109.1-manga';
 
   function escapeAttribute(value) {
     return value.replace(/[&<>"']/g, character => ({

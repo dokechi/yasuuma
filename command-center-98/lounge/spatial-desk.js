@@ -1,6 +1,6 @@
 /* Spatial publishing desks. No data requests, persistence, or source-record changes.
    The entry opts in with body.spatial-atelier and calls this installer. */
-import {publishingAccounts} from './accounts.js?v=20261106.1-kensho';
+import {publishingAccounts} from './accounts.js?v=20261109.1-manga';
 
 // Observed rectangles from command-castle-cutaway-v1-zones.json. The same
 // master artwork underlies the overview and these four publishing rooms.
@@ -9,6 +9,7 @@ const rooms = Object.freeze({
   otoku: {name: '紫の目利き書庫', rect: [.17, .06, .27, .25]},
   rakuten: {name: '琥珀の贈りもの室', rect: [.58, .34, .34, .27]},
   tanaka: {name: '田中卓の書斎', rect: [.17, .06, .27, .25]},
+  manga: {name: '漫画の書棚', rect: [.17, .06, .27, .25]},
   kensho: {name: '小ナスの懸賞日記', rect: [.17, .06, .27, .25]},
   lottery: {name: '緑青の天文室', rect: [.62, .05, .25, .27]}
 });

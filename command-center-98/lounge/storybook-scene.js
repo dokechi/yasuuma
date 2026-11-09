@@ -7,7 +7,8 @@ export const storyChapters=Object.freeze([
  {key:'lottery',short:'抽選',title:'小さな期待に、しおりを。',place:'星の編集室',number:'04'},
  {key:'tanaka',short:'田中卓',title:'調べ尽くした先に、まだ発見。',place:'田中卓の書斎',number:'05'},
  {key:'kensho',short:'懸賞小ナス',title:'何が当たるか、やってみよう。',place:'小ナスの懸賞日記',number:'06'},
- {key:'sourcing',short:'仕入れ',title:'見つける。選ぶ。次へつなぐ。',place:'旅する仕入れ帳',number:'07'}
+ {key:'manga',short:'漫画',title:'好きな一冊を、熱く語る。',place:'漫画の書棚',number:'07'},
+ {key:'sourcing',short:'仕入れ',title:'見つける。選ぶ。次へつなぐ。',place:'旅する仕入れ帳',number:'08'}
 ]);
 export function mountStorybook({document:doc=globalThis.document,board,buildArt=null,onTravel=()=>{},onCancel=()=>{}}={}){
  const win=doc.defaultView;if(!win||!board?.element||!board?.subscribe)throw Error('Storybook needs the existing account owner.');
@@ -22,7 +23,7 @@ export function mountStorybook({document:doc=globalThis.document,board,buildArt=
  utilities.append(button('story-tool','全体検索',()=>invoke('lounge-search')),button('story-tool','あとで',()=>invoke('lounge-later')),button('story-tool','設定',()=>invoke('settings-open')));cover.append(wordmark,utilities);
  const spread=make('div','story-spread'),chapter=make('section','story-chapter-page');
  const binding=make('div','story-binding');binding.setAttribute('aria-hidden','true');
- const tabs=make('nav','story-chapters');tabs.setAttribute('aria-label','七つの章を見る');const chapterButtons=new Map();
+ const tabs=make('nav','story-chapters');tabs.setAttribute('aria-label','八つの章を見る');const chapterButtons=new Map();
  for(const item of storyChapters){const b=button('story-chapter-tab','',()=>select(item.key));b.dataset.storyChapter=item.key;b.dataset.storyDestination=item.key;const n=make('small','',item.number),name=make('span','',item.short);b.append(n,name);tabs.append(b);chapterButtons.set(item.key,b);}
  const memo=make('div','story-memo'),memoLabel=make('small','','この端末の持ち場メモ'),memoText=make('p','','保存原稿を確認しています。');memo.append(memoLabel,memoText);
  const unused=make('div','story-unwritten');unused.append(make('span','','これからの頁'));

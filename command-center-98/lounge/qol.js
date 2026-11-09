@@ -1,7 +1,7 @@
 import {createHallTools} from './hall-tools.js?v=20261102.1-tanaka';
-import {placeNames} from './desk-model.js?v=20261106.1-kensho';
-import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261106.1-kensho';
-import {isLegacyPublishingDraft,postingAssets} from './notebook.js?v=20261106.1-kensho';
+import {placeNames} from './desk-model.js?v=20261109.1-manga';
+import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261109.1-manga';
+import {isLegacyPublishingDraft,postingAssets} from './notebook.js?v=20261109.1-manga';
 
 export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},onChange=()=>{},send=()=>{}}){
  const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
