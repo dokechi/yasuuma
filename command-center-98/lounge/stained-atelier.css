@@ -141,7 +141,12 @@ body.stained-atelier #desk{view-transition-name:sg-desk}
 ::view-transition-old(root){display:none}
 ::view-transition-new(root){animation:none}
 ::view-transition-old(sg-panel){display:none}
-::view-transition-new(sg-panel){animation:none;height:100%;object-fit:fill}
+/* Snapshot boxes may differ between reader and gallery. Never stretch their pixels. */
+::view-transition-old(*),::view-transition-new(*){object-fit:contain}
+::view-transition-new(sg-panel){animation:none;width:100%;height:100%;object-fit:contain}
+/* These screens already have explicit slide keyframes below. Disable the UA's
+   additional width/height morph, which distorted the return snapshot. */
+::view-transition-group(root),::view-transition-group(sg-gallery),::view-transition-group(sg-desk){animation:none}
 ::view-transition-group(sg-panel){z-index:3}
 ::view-transition-old(sg-gallery){animation:sg-slide-left 1.3s cubic-bezier(.22,.61,.36,1) both}
 ::view-transition-new(sg-desk){animation:sg-slide-in 1.3s cubic-bezier(.22,.61,.36,1) both}
