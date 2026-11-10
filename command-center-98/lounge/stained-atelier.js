@@ -1,5 +1,6 @@
 /* Presentation only. The existing desk owns data, selection, editing and copying. */
 import * as application from './app.js?v=20261109.6-everyday';
+import {createGlassArt as art} from './stained-art.js?v=20261110.3-silver-architecture';
 import {glassSlots,glassFor,adjacentSlot} from './stained-model.js?v=20261110.2-everyday-glass';
 const doc=document,board=application.getAccountBoard(),owner=application.getPaperDesk();
 const room=doc.getElementById('room');
@@ -39,19 +40,7 @@ function travel(action){
   }
 }
 let selected='insurance',queued=false;
-let serial=0;
-function art(slot){
-  const wrapper=make('span','sg-art');wrapper.setAttribute('aria-hidden','true');
-  // Standalone transparent artwork uses the same panel dimensions as the gallery.
-  if(slot.art){
-    wrapper.innerHTML=`<svg viewBox="0 0 170 660" xmlns="http://www.w3.org/2000/svg" focusable="false"><image href="${slot.art}" x="-25" y="0" width="220" height="660"/></svg>`;
-    return wrapper;
-  }
-  // Clip the approved artwork in the browser; never redraw its glass or sprite.
-  const clip='sg-clip-'+(++serial),x=slot.center-85;
-  wrapper.innerHTML=`<svg viewBox="0 0 170 660" xmlns="http://www.w3.org/2000/svg" focusable="false"><defs><clipPath id="${clip}"><path d="M85 3 L116 25 Q150 57 150 110 L150 151 L164 168 L150 184 L150 557 L125 591 L125 609 L130 621 L128 639 Q85 661 42 639 L40 621 L45 609 L45 591 L20 557 L20 184 L6 168 L20 151 L20 110 Q20 57 54 25 Z"/></clipPath></defs><image href="assets/stained/gallery-${slot.sheet}.png" x="${-x}" y="-120" width="1670" height="941" clip-path="url(#${clip})"/></svg>`;
-  return wrapper;
-}
+
 function settings(){
   // The existing board makes #app inert. Its settings dialog lives inside #app.
   const app=doc.getElementById('app');app.removeAttribute('inert');
@@ -61,7 +50,7 @@ function settings(){
 }
 function header(reader=false){
   const h=make('header','sg-header');
-  h.append(reader?button('‹ 司令塔',()=>travel(()=>doc.getElementById('back').click()),'sg-title'):make('h1','sg-title','司令塔　原稿'));
+  h.append(reader?button('‹ 司令塔',()=>travel(()=>doc.getElementById('back').click()),'sg-title'):make('h1','sg-title','司令塔　原稿の記録'));
   const nav=make('nav','sg-tools');nav.setAttribute('aria-label','司令塔の操作');
   nav.append(button('原稿を検索',()=>doc.getElementById('lounge-search').click()),button('更新',()=>doc.getElementById('desk-refresh').click()),button('設定',settings));h.append(nav);return h;
 }
@@ -89,6 +78,7 @@ for(const [index,slot]of glassSlots.entries()){
   card.dataset.key=slot.key;card.dataset.empty=String(!!slot.pending);card.setAttribute('aria-label',slot.label+(slot.pending?'、空き枠': 'の原稿を開く'));
   if(slot.pending)card.setAttribute('aria-disabled','true');
   card.append(make('span','sg-beam'),art(slot),make('span','sg-label',slot.label));
+  const pointer=make('span','sg-pointer');pointer.setAttribute('aria-hidden','true');pointer.innerHTML='<svg viewBox="0 0 38 32"><path fill="#fff" d="M2 15 L8 8 L13 7 L15 1 L18 1 L20 3 L18 9 L33 9 Q38 9 36 13 L25 16 L25 20 L22 21 L20 25 L9 25 L2 22Z"/></svg>';card.append(pointer);
   const count=make('span','sg-count',slot.pending?'空き枠':'読み込み中');card.append(count);
   card.addEventListener('pointerenter',()=>{if(matchMedia('(hover: hover)').matches)select(slot.key);});
   card.addEventListener('focus',()=>select(slot.key));
@@ -106,11 +96,15 @@ const footer=make('footer','sg-footer'),status=make('span','sg-status','原稿�
 const controls=make('div','sg-scroll-controls');
 const previous=button('‹',()=>glideTo((scrollGoal??rail.scrollLeft)-rail.clientWidth*.7));previous.setAttribute('aria-label','左へスクロール');
 const next=button('›',()=>glideTo((scrollGoal??rail.scrollLeft)+rail.clientWidth*.7));next.setAttribute('aria-label','右へスクロール');
-controls.append(previous,make('span','','左右にスワイプ'),next);footer.append(status,controls);home.append(head,rail,footer);board.element.append(home);board.element.setAttribute('aria-label','司令塔のステンドグラス');
+controls.append(previous,make('span','','左右にスワイプ'),next);footer.append(status,controls);home.append(head,rail,footer);
+const categories=make('nav','sg-categories');categories.setAttribute('aria-label','司令塔の分類');
+for(const [i,label,action]of [[0,'原稿の持ち場',()=>{cards.get(selected)?.focus();}],[1,'仕入れの記録',()=>{select('sourcing');travel(()=>board.open('sourcing'));}],[2,'表示と音の設定',settings]]){
+ const tab=button('',action,'sg-category');tab.setAttribute('aria-label',label);tab.innerHTML=`<svg viewBox="0 0 82 100" aria-hidden="true"><image href="assets/stained/journey-reference.webp" x="${-43-i*90}" y="-81" width="2048" height="1152"/></svg>`;categories.append(tab);
+}home.append(categories);board.element.append(home);board.element.setAttribute('aria-label','司令塔のステンドグラス');
 function scrollState(){previous.disabled=rail.scrollLeft<2;next.disabled=rail.scrollLeft+rail.clientWidth>=rail.scrollWidth-3;}
 rail.addEventListener('scroll',scrollState,{passive:true});window.addEventListener('resize',scrollState);
 const readerHead=header(true),scene=make('div','sg-reader-scene'),selectedArt=make('aside','sg-selected-art');
-scene.setAttribute('aria-hidden','true');for(const slot of glassSlots)scene.append(art(slot));
+scene.setAttribute('aria-hidden','true');for(const slot of glassSlots){const panel=art(slot);panel.dataset.key=slot.key;scene.append(panel);}
 room.prepend(readerHead,scene,selectedArt);
 let readerKey='';
 function paint(){
@@ -121,6 +115,7 @@ function paint(){
   const slot=glassFor(room.dataset.account);
   if(!room.hidden&&slot){
     select(slot.key);
+    for(const panel of scene.children)panel.hidden=panel.dataset.key===slot.key;
     if(readerKey!==slot.key){readerKey=slot.key;const panel=art(slot);panel.style.viewTransitionName='sg-panel';selectedArt.replaceChildren(panel,make('span','sg-label',slot.label));}
     doc.getElementById('desk-title').textContent=slot.label+'の原稿';
   }

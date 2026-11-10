@@ -1,3 +1,6 @@
-/* Decoration only; existing sourcing route, data, forms and handlers are preserved. */
-(()=>{const d=document;if(d.getElementById('nativeSourcingGlass'))return;const aside=d.createElement('aside');aside.id='nativeSourcingGlass';aside.setAttribute('aria-hidden','true');aside.inert=true;
-aside.innerHTML=`<svg viewBox="0 0 170 660" xmlns="http://www.w3.org/2000/svg" focusable="false"><defs><clipPath id="native-sourcing-clip"><path d="M85 3 L116 25 Q150 57 150 110 L150 151 L164 168 L150 184 L150 557 L125 591 L125 609 L130 621 L128 639 Q85 661 42 639 L40 621 L45 609 L45 591 L20 557 L20 184 L6 168 L20 151 L20 110 Q20 57 54 25 Z"/></clipPath></defs><image href="./lounge/assets/stained/gallery-right.png" x="-791" y="-120" width="1670" height="941" clip-path="url(#native-sourcing-clip)"/></svg><span>仕入</span>`;d.body.append(aside);})();
+/* Presentation only. Reuse the gallery's exact frame, plinth and foot plane. */
+(()=>{const d=document;if(d.getElementById('nativeSourcingGlass'))return;
+const aside=d.createElement('aside');aside.id='nativeSourcingGlass';aside.setAttribute('aria-hidden','true');aside.inert=true;d.body.append(aside);
+Promise.all([import('./lounge/stained-art.js?v=20261110.3-silver-architecture'),import('./lounge/stained-model.js?v=20261110.2-everyday-glass')]).then(([{createGlassArt},{glassFor}])=>{
+ const label=d.createElement('span');label.textContent='仕入';aside.replaceChildren(createGlassArt(glassFor('sourcing'),'./lounge/'),label);
+}).catch(()=>{aside.hidden=true;});})();

@@ -191,3 +191,69 @@ body.stained-atelier #desk .desk-toolbar{background:#0008!important}
 body.stained-atelier #desk .manuscript-card[aria-pressed=true]{background:linear-gradient(90deg,#6876a960,#6876a920)!important}
 body.stained-atelier #desk :is(.cc-threads-images,.cc-threads-image){background:#0003!important;color:var(--sg-paper)!important;border:1px solid var(--sg-line);border-radius:0;box-shadow:none}
 body.stained-atelier #desk .cc-threads-images-status[data-error=true]{color:#ffb5a5}
+
+/* Journey reference: shared silver architecture, one ground plane and restrained light. */
+body.stained-atelier{--sg-paper:#e5e4e0;--sg-line:#b8b9b260;--sg-bg:linear-gradient(180deg,#000d 0%,#0008 24%,#0005 67%,#000b 100%),url('./assets/stained/map.png')}
+.sg-home{position:relative;isolation:isolate;grid-template-rows:clamp(55px,7.1dvh,82px) minmax(0,1fr) clamp(44px,7.1dvh,82px);background-image:none}
+.sg-home:before{content:'';position:absolute;inset:0;background-image:var(--sg-bg);background-size:cover;background-position:center;filter:saturate(.5);z-index:-2}
+.sg-header{padding:0 2.3vw;border-bottom:1px solid #b8b9b250;background:linear-gradient(90deg,#030304fa,#030304c0 55%,#03030455)}
+body.stained-atelier .sg-title{font-size:clamp(20px,2.1vw,42px);color:#f4f4f4;font-weight:700;line-height:1.2}
+.sg-header .sg-tools{opacity:.75}.sg-header .sg-tool{border-color:transparent;font-family:var(--sg-serif);font-size:12px}
+.sg-rail{align-items:stretch;gap:clamp(20px,3.1vw,64px);padding:clamp(32px,7.5dvh,86px) 8vw 0;scroll-padding:8vw;isolation:isolate}
+body.stained-atelier .sg-card{flex-basis:calc((100dvh - clamp(55px,7.1dvh,82px) - clamp(44px,7.1dvh,82px) - clamp(32px,7.5dvh,86px) - 54px)*.243)!important;min-width:106px;justify-content:flex-end;gap:0;padding:0 0 16px;align-self:stretch}
+.sg-art{aspect-ratio:170/700}
+.sg-card>.sg-art{height:calc(100% - 38px);width:auto;max-width:none;max-height:none;filter:brightness(.57) saturate(.7);transition:filter 1.1s ease}
+.sg-card[data-selected=true]:not([data-empty=true])>.sg-art{filter:brightness(1.02) saturate(.88)}
+.sg-card[data-empty=true]>.sg-art{filter:brightness(.4) saturate(.45)}
+.sg-card[data-selected=true]{color:#eee}.sg-card{color:#aaa9a5}
+.sg-glass{filter:saturate(.72) brightness(.88)}
+.sg-character{image-rendering:pixelated}
+.sg-label{height:38px;line-height:38px;white-space:nowrap;font-size:clamp(17px,1.5vw,30px);letter-spacing:.035em;font-weight:400;text-shadow:0 2px 4px #000}
+.sg-count{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.sg-beam{inset:-16dvh -90% 30px;z-index:-1;filter:blur(13px);background:linear-gradient(104deg,transparent 18%,#f2edeb08 30%,#f2edeb47 44%,#f2edeb14 54%,transparent 67%);opacity:0;transition:opacity 1.1s ease}
+.sg-card::after{left:-80%;width:260%;bottom:43px;height:70px;background:radial-gradient(ellipse,#e8e7de3b 0%,#b8b9b514 36%,transparent 70%);filter:blur(10px)}
+.sg-footer{display:flex;padding:0 2.3vw;border-top:1px solid #c8c9c375;background:#030303df;font-family:var(--sg-serif);font-size:clamp(16px,1.5vw,30px);z-index:2}
+.sg-scroll-controls span{font-size:clamp(14px,1.3vw,26px)}.sg-scroll-controls .sg-tool{font-size:24px}
+.sg-status{font-size:0}.sg-status:after{content:'項目を選択してください';font-size:clamp(16px,1.5vw,30px)}
+.sg-selected-art{inset:15.2dvh auto 9dvh 7.5%;width:8.3%;justify-content:flex-end}
+.sg-selected-art>.sg-art{height:calc(100% - 38px);width:auto;max-height:none;filter:brightness(1.02) saturate(.88)}
+.sg-selected-art>.sg-label{margin-top:0}
+.sg-selected-art:before{inset:-15dvh -150% 0;background:linear-gradient(104deg,transparent 18%,#f2edeb08 30%,#f2edeb40 44%,#f2edeb14 54%,transparent 67%);filter:blur(13px)}
+#room>.sg-header{height:clamp(55px,7.1dvh,82px)}
+.sg-reader-scene{inset:15.2dvh -20vw 12dvh 26%;gap:3.1vw;opacity:.44!important;filter:brightness(.75) saturate(.65)!important}
+.sg-reader-scene>.sg-art{min-width:0;flex:0 0 auto;height:100%;width:auto;aspect-ratio:170/700}
+body.stained-atelier #room #desk{inset:18.5dvh 0 27dvh 20%!important;background:#0006!important;border:1px solid #b8b9b285!important;outline:1px solid #b8b9b240;outline-offset:-7px}
+body.stained-atelier #desk .desk-toolbar{background:#000b!important;padding:12px 18px!important}
+body.stained-atelier #desk-title{font-size:clamp(19px,1.55vw,30px)!important}
+body.stained-atelier #desk .desk-content{grid-template-columns:minmax(240px,45%) minmax(0,1fr)!important}
+body.stained-atelier #desk .manuscript-card[aria-pressed=true]{box-shadow:inset 0 1px #9599d5,inset 0 -1px #777cb6!important;background:linear-gradient(90deg,#5366a42b,#7188c969 50%,#34406420)!important}
+body.stained-atelier .manuscript-card strong{font-size:clamp(16px,1.5vw,28px)!important}
+body.stained-atelier #draft-body{font-size:clamp(17px,1.5vw,28px)!important;line-height:1.65!important}
+@media(max-width:900px){
+ .sg-rail{gap:28px;padding-left:8vw;padding-right:8vw}.sg-header{padding:0 18px}.sg-header .sg-tool{font-size:11px;padding:4px 6px}
+ body.stained-atelier .sg-card{min-width:112px}
+ .sg-selected-art{left:2%;width:12%}.sg-selected-art>.sg-label{font-size:15px}
+ body.stained-atelier #room #desk{inset:13dvh 8px 7dvh 16%!important}
+ body.stained-atelier #desk .desk-content{grid-template-columns:minmax(175px,40%) minmax(0,1fr)!important}
+ .sg-footer{padding:0 16px}.sg-status:after{font-size:16px}.sg-scroll-controls span{font-size:13px}
+}
+@media(max-width:560px){
+ .sg-title{font-size:19px!important}.sg-header{padding:0 12px}.sg-header .sg-tool{padding:4px;font-size:11px}.sg-header .sg-tool:nth-child(2){display:none}
+ .sg-rail{padding:36px 32px 0;gap:30px}.sg-card>.sg-art{height:calc(100% - 38px)}
+ .sg-selected-art{display:none}.sg-reader-scene{left:0}
+ body.stained-atelier #room #desk{inset:68px 8px 8px!important}
+ body.stained-atelier #desk .desk-content{display:flex!important}
+ .sg-footer .sg-scroll-controls span{display:none}.sg-footer{padding:0 12px}
+}
+.sg-categories{position:absolute;z-index:6;top:clamp(55px,7.1dvh,82px);left:2.2vw;display:flex;gap:2px}
+body.stained-atelier .sg-category{width:clamp(40px,4vw,82px);height:clamp(49px,4.9vw,100px);padding:0;min-height:0;border:0;background:none;box-shadow:none;border-radius:0;cursor:pointer}
+.sg-category svg{display:block;width:100%;height:100%}.sg-category:hover{filter:brightness(1.25)}
+.sg-pointer{position:absolute;left:-30px;bottom:calc(54px + (100% - 54px)*.15);width:30px;height:26px;opacity:0;pointer-events:none}
+.sg-pointer svg{display:block;width:100%;height:100%}.sg-card[data-selected=true]:not([data-empty=true]) .sg-pointer{opacity:1}
+.sg-footer .sg-scroll-controls .sg-tool{border:0;background:none;box-shadow:none}
+@media(max-width:560px){.sg-categories{display:none}.sg-pointer{left:-25px;width:25px}}
+.sg-category svg{clip-path:polygon(4% 1%,94% 1%,94% 65%,49% 96%,4% 65%)}
+.sg-pointer{mix-blend-mode:screen;filter:grayscale(1) contrast(8)}
+.sg-pointer{mix-blend-mode:normal;filter:drop-shadow(0 1px 2px #000)}
+body.stained-atelier #room{isolation:isolate;background-image:none!important;background:#080909!important}
+body.stained-atelier #room:before{content:'';position:absolute;inset:0;z-index:-1;background-image:var(--sg-bg);background-size:cover;background-position:center;filter:saturate(.5);pointer-events:none}
