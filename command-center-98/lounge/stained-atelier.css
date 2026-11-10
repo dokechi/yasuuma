@@ -276,3 +276,17 @@ body.stained-atelier #room:before{content:'';position:absolute;inset:0;z-index:-
 body:has(#reduce-setting:checked) .sg-frame{transition:none}
 
 .sg-selected-art>.sg-art{filter:brightness(1.04) saturate(.92) drop-shadow(-4px 0 6px #fff4e960)}
+
+/* Touch drag keeps the original account controls and approved lighting. */
+.sg-card{touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.sg-card svg,.sg-card img{pointer-events:none;-webkit-user-drag:none}
+.sg-ordering{scroll-snap-type:none!important}
+.sg-ordering .sg-card{cursor:grab}
+.sg-ordering .sg-label::after{content:' ↔';font-size:.75em;color:#e5d6b6}
+.sg-ordering .sg-card:not(.sg-dragging){opacity:.78}
+.sg-card.sg-dragging{z-index:30;cursor:grabbing;transition:none!important;opacity:1;will-change:transform}
+.sg-order-hint{font-size:clamp(12px,1.2vw,18px);color:#eee4cf}
+.sg-order-hint:not([hidden])~.sg-status{display:none}
+.sg-order-done[hidden],.sg-order-hint[hidden]{display:none!important}
+.sg-order-done{border:1px solid #ccc0a5!important;padding:6px 18px!important;min-height:40px}
+@media(max-width:600px){.sg-order-hint{max-width:55%;font-size:12px}.sg-scroll-controls{gap:8px}.sg-scroll-controls>span{font-size:11px}}

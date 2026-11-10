@@ -14,6 +14,7 @@ function setup(t){
  const board={element:panel,state:{destinations:[],complete:true},subscribe(fn){listener=fn;return ()=>{};},open(key){calls.push(key);}};
  w.application={getAccountBoard:()=>board,getPaperDesk:()=>({})};Object.assign(w,model);
  w.eval(read('stained-art.js').replace('export function createGlassArt','function createGlassArt'));w.art=w.createGlassArt;
+ w.eval(read('stained-order.js').replace(/export /g,''));w.installGalleryOrder= w.eval('installGalleryOrder');
  w.eval(read('stained-atelier.js').replace(/^import .*;\n/gm,''));
  t.after(()=>w.close());return {w,board,calls,render:()=>listener(),cards:[...w.document.querySelectorAll('.sg-card')]};
 }

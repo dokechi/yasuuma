@@ -1,7 +1,8 @@
 /* Presentation only. The existing desk owns data, selection, editing and copying. */
 import * as application from './app.js?v=20261109.6-everyday';
 import {createGlassArt as art} from './stained-art.js?v=20261110.3-silver-architecture';
-import {glassSlots,glassFor,adjacentSlot} from './stained-model.js?v=20261110.2-everyday-glass';
+import {glassSlots,glassFor} from './stained-model.js?v=20261110.2-everyday-glass';
+import {installGalleryOrder} from './stained-order.js?v=20261110.6-order';
 const doc=document,board=application.getAccountBoard(),owner=application.getPaperDesk();
 const room=doc.getElementById('room');
 const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text)n.textContent=text;return n;};
@@ -50,7 +51,7 @@ function settings(){
 }
 function header(reader=false){
   const h=make('header','sg-header');
-  h.append(reader?button('‹ 司令塔',()=>travel(()=>doc.getElementById('back').click()),'sg-title'):make('h1','sg-title','司令塔　原稿の記録'));
+  h.append(reader?button('‹ 司令塔',()=>travel(()=>doc.getElementById('back').click()),'sg-title'):make('h1','sg-title','司令塔'));
   const nav=make('nav','sg-tools');nav.setAttribute('aria-label','司令塔の操作');
   nav.append(button('原稿を検索',()=>doc.getElementById('lounge-search').click()),button('更新',()=>doc.getElementById('desk-refresh').click()),button('設定',settings));h.append(nav);return h;
 }
@@ -73,7 +74,7 @@ function select(key){
   selected=key;
   for(const [k,card]of cards){const yes=k===key;card.dataset.selected=String(yes);card.querySelector('.sg-art').style.viewTransitionName=yes?'sg-panel':'none';if(yes)card.setAttribute('aria-current','true');else card.removeAttribute('aria-current');}
 }
-for(const [index,slot]of glassSlots.entries()){
+for(const slot of glassSlots){
   const card=button('',()=>{if(slot.pending)return;select(slot.key);travel(()=>board.open(slot.key));},'sg-card');
   card.dataset.key=slot.key;card.dataset.empty=String(!!slot.pending);card.setAttribute('aria-label',slot.label+(slot.pending?'、空き枠': 'の原稿を開く'));
   if(slot.pending)card.setAttribute('aria-disabled','true');
@@ -84,8 +85,9 @@ for(const [index,slot]of glassSlots.entries()){
   card.addEventListener('focus',()=>select(slot.key));
   card.addEventListener('keydown',e=>{
     if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
-    e.preventDefault();const next=e.key==='Home'?0:e.key==='End'?glassSlots.length-1:adjacentSlot(index,e.key==='ArrowRight'?1:-1);
-    const target=cards.get(glassSlots[next].key);target.focus({preventScroll:true});
+    e.preventDefault();const list=[...rail.children],index=list.indexOf(card);
+    const next=e.key==='Home'?0:e.key==='End'?list.length-1:Math.max(0,Math.min(list.length-1,index+(e.key==='ArrowRight'?1:-1)));
+    const target=list[next];target.focus({preventScroll:true});
     if(reduced())target.scrollIntoView({behavior:'instant',block:'nearest',inline:'center'});
     else glideTo(rail.scrollLeft+target.getBoundingClientRect().left-rail.getBoundingClientRect().left+(target.clientWidth-rail.clientWidth)/2);
   });cards.set(slot.key,card);rail.append(card);
@@ -96,16 +98,15 @@ const footer=make('footer','sg-footer'),status=make('span','sg-status','原稿�
 const controls=make('div','sg-scroll-controls');
 const previous=button('‹',()=>glideTo((scrollGoal??rail.scrollLeft)-rail.clientWidth*.7));previous.setAttribute('aria-label','左へスクロール');
 const next=button('›',()=>glideTo((scrollGoal??rail.scrollLeft)+rail.clientWidth*.7));next.setAttribute('aria-label','右へスクロール');
-controls.append(previous,make('span','','左右にスワイプ'),next);footer.append(status,controls);home.append(head,rail,footer);
-const categories=make('nav','sg-categories');categories.setAttribute('aria-label','司令塔の分類');
-for(const [i,label,action]of [[0,'原稿の持ち場',()=>{cards.get(selected)?.focus();}],[1,'仕入れの記録',()=>{select('sourcing');travel(()=>board.open('sourcing'));}],[2,'表示と音の設定',settings]]){
- const tab=button('',action,'sg-category');tab.setAttribute('aria-label',label);tab.innerHTML=`<svg viewBox="0 0 82 100" aria-hidden="true"><image href="assets/stained/journey-reference.webp" x="${-43-i*90}" y="-81" width="2048" height="1152"/></svg>`;categories.append(tab);
-}home.append(categories);board.element.append(home);board.element.setAttribute('aria-label','司令塔のステンドグラス');
+controls.append(previous,make('span','','長押しで並べ替え'),next);footer.append(status,controls);home.append(head,rail,footer);
+board.element.append(home);board.element.setAttribute('aria-label','司令塔のステンドグラス');
 function scrollState(){previous.disabled=rail.scrollLeft<2;next.disabled=rail.scrollLeft+rail.clientWidth>=rail.scrollWidth-3;}
 rail.addEventListener('scroll',scrollState,{passive:true});window.addEventListener('resize',scrollState);
 const readerHead=header(true),scene=make('div','sg-reader-scene'),selectedArt=make('aside','sg-selected-art');
 scene.setAttribute('aria-hidden','true');for(const slot of glassSlots){const panel=art(slot);panel.dataset.key=slot.key;scene.append(panel);}
 room.prepend(readerHead,scene,selectedArt);
+const orderDone=button('完了',()=>{},'sg-tool sg-order-done'),orderHint=make('span','sg-order-hint');orderHint.setAttribute('role','status');orderHint.setAttribute('aria-live','polite');controls.prepend(orderDone);footer.prepend(orderHint);
+const reorder=installGalleryOrder({rail,done:orderDone,hint:orderHint,onChange:keys=>{for(const key of keys){const panel=[...scene.children].find(n=>n.dataset.key===key);if(panel)scene.append(panel);}scrollState();}});
 let readerKey='';
 function paint(){
   queued=false;
@@ -133,5 +134,5 @@ doc.querySelector('[data-desk-filter="pin"]').textContent='保存済み';
 doc.getElementById('desk-pin').setAttribute('aria-label','この原稿を保存済みにする');
 doc.querySelectorAll('a[href="index.html?presentation=book"]').forEach(a=>a.href='book.html');
 select(selected);paint();
-Object.defineProperty(window,'__stainedGallery',{value:{snapshot:()=>({selected,slots:glassSlots.map(s=>({key:s.key,label:s.label,pending:!!s.pending})),room:room.hidden?null:room.dataset.account,scrollLeft:rail.scrollLeft})}});
-window.addEventListener('pagehide',event=>{if(!event.persisted){off();observer.disconnect();doc.removeEventListener('cc:paper-render',schedule);window.removeEventListener('resize',scrollState);}},{once:true});
+Object.defineProperty(window,'__stainedGallery',{value:{snapshot:()=>({selected,slots:reorder.order().map(key=>{const s=glassFor(key);return {key:s.key,label:s.label,pending:!!s.pending};}),room:room.hidden?null:room.dataset.account,scrollLeft:rail.scrollLeft})}});
+window.addEventListener('pagehide',event=>{if(!event.persisted){reorder.destroy();off();observer.disconnect();doc.removeEventListener('cc:paper-render',schedule);window.removeEventListener('resize',scrollState);}},{once:true});
