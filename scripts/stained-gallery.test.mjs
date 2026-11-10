@@ -46,3 +46,8 @@ test('arrow glide is halfway at 650ms, finishes at 1300ms and touch interrupts i
  w.document.querySelector('[aria-label="右へスクロール"]').click();
  rail.dispatchEvent(new w.Event('pointerdown'));assert.equal(frame,null);assert.equal(rail.style.scrollSnapType,'');
 });
+test('visible reorder button enters edit mode and Done restores opening',t=>{
+ const h=setup(t),d=h.w.document,trigger=d.querySelector('.sg-order-trigger'),done=d.querySelector('.sg-order-done');
+ assert.equal(trigger.hidden,false);trigger.click();assert.equal(done.hidden,false);assert.equal(trigger.hidden,true);
+ h.cards[0].click();assert.deepEqual(h.calls,[]);done.click();assert.equal(trigger.hidden,false);h.cards[0].click();assert.deepEqual(h.calls,['insurance']);
+});

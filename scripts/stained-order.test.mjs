@@ -20,3 +20,13 @@ test('load order and keyboard reorder retain the same account nodes and persist'
 test('quick tap opens while swipe cancels long press and suppresses accidental opening',async t=>{const h=setup(t),a=h.rail.firstChild;h.pointer(a,'pointerdown',50);h.pointer(a,'pointerup',50);a.click();assert.equal(h.opens(),1);h.pointer(a,'pointerdown',50);h.pointer(a,'pointermove',10);h.pointer(a,'pointerup',10);a.click();await new Promise(r=>setTimeout(r,20));assert.equal(h.opens(),1);assert.equal(h.d.querySelector('#done').hidden,true);});
 test('held drag reorders and saves, completion restores normal tapping',async t=>{const h=setup(t),a=h.rail.firstChild;h.pointer(a,'pointerdown',50);await new Promise(r=>setTimeout(r,20));assert.equal(h.d.querySelector('#done').hidden,false);h.pointer(h.rail,'pointermove',270);h.pointer(h.rail,'pointerup',270);a.click();assert.equal(h.opens(),0);assert.deepEqual([...h.ctl.order()],['b','c','a']);assert.deepEqual(JSON.parse(h.w.localStorage.getItem('cc-stained-order-v1')),['b','c','a']);h.d.querySelector('#done').click();h.pointer(a,'pointerdown',250);h.pointer(a,'pointerup',250);a.click();assert.equal(h.opens(),1);});
 test('cancelled drag restores its original order',async t=>{const h=setup(t),a=h.rail.firstChild;h.pointer(a,'pointerdown',50);await new Promise(r=>setTimeout(r,20));h.pointer(h.rail,'pointermove',270);h.pointer(h.rail,'pointercancel',270);assert.deepEqual([...h.ctl.order()],['a','b','c']);assert.equal(h.w.localStorage.getItem('cc-stained-order-v1'),null);});
+test('touch implicit capture transfer does not cancel a held drag',async t=>{
+ const h=setup(t),a=h.rail.firstChild;
+ h.pointer(a,'pointerdown',50);await new Promise(r=>setTimeout(r,20));
+ // A touch pointer starts implicitly captured by the pressed card. Moving capture
+ // to the rail emits this bubbling event on the old owner before pointermove.
+ h.pointer(a,'lostpointercapture',50);
+ h.pointer(h.rail,'pointermove',270);h.pointer(h.rail,'pointerup',270);
+ assert.deepEqual([...h.ctl.order()],['b','c','a']);
+ assert.equal(h.opens(),0);
+});

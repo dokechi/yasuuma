@@ -2,7 +2,7 @@
 import * as application from './app.js?v=20261109.6-everyday';
 import {createGlassArt as art} from './stained-art.js?v=20261110.3-silver-architecture';
 import {glassSlots,glassFor} from './stained-model.js?v=20261110.2-everyday-glass';
-import {installGalleryOrder} from './stained-order.js?v=20261110.6-order';
+import {installGalleryOrder} from './stained-order.js?v=20261110.9-touch';
 const doc=document,board=application.getAccountBoard(),owner=application.getPaperDesk();
 const room=doc.getElementById('room');
 const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text)n.textContent=text;return n;};
@@ -98,7 +98,7 @@ const footer=make('footer','sg-footer'),status=make('span','sg-status','原稿�
 const controls=make('div','sg-scroll-controls');
 const previous=button('‹',()=>glideTo((scrollGoal??rail.scrollLeft)-rail.clientWidth*.7));previous.setAttribute('aria-label','左へスクロール');
 const next=button('›',()=>glideTo((scrollGoal??rail.scrollLeft)+rail.clientWidth*.7));next.setAttribute('aria-label','右へスクロール');
-controls.append(previous,make('span','','長押しで並べ替え'),next);footer.append(status,controls);home.append(head,rail,footer);
+const orderTrigger=button('並べ替え',()=>{},'sg-tool sg-order-trigger');orderTrigger.setAttribute('aria-label','ステンドグラスを並べ替え');controls.append(previous,orderTrigger,next);footer.append(status,controls);home.append(head,rail,footer);
 board.element.append(home);board.element.setAttribute('aria-label','司令塔のステンドグラス');
 function scrollState(){previous.disabled=rail.scrollLeft<2;next.disabled=rail.scrollLeft+rail.clientWidth>=rail.scrollWidth-3;}
 rail.addEventListener('scroll',scrollState,{passive:true});window.addEventListener('resize',scrollState);
@@ -106,7 +106,7 @@ const readerHead=header(true),scene=make('div','sg-reader-scene'),selectedArt=ma
 scene.setAttribute('aria-hidden','true');for(const slot of glassSlots){const panel=art(slot);panel.dataset.key=slot.key;scene.append(panel);}
 room.prepend(readerHead,scene,selectedArt);
 const orderDone=button('完了',()=>{},'sg-tool sg-order-done'),orderHint=make('span','sg-order-hint');orderHint.setAttribute('role','status');orderHint.setAttribute('aria-live','polite');controls.prepend(orderDone);footer.prepend(orderHint);
-const reorder=installGalleryOrder({rail,done:orderDone,hint:orderHint,onChange:keys=>{for(const key of keys){const panel=[...scene.children].find(n=>n.dataset.key===key);if(panel)scene.append(panel);}scrollState();}});
+const reorder=installGalleryOrder({rail,done:orderDone,hint:orderHint,trigger:orderTrigger,onChange:keys=>{for(const key of keys){const panel=[...scene.children].find(n=>n.dataset.key===key);if(panel)scene.append(panel);}scrollState();}});
 let readerKey='';
 function paint(){
   queued=false;
