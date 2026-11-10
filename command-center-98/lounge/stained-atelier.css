@@ -264,7 +264,7 @@ body.stained-atelier #room:before{content:'';position:absolute;inset:0;z-index:-
 .sg-beam:after{content:'';position:absolute;inset:0 43% 8%;background:linear-gradient(180deg,#fff9ee44,#fff6ec25 40%,#fff5ea0a 85%,transparent);filter:blur(7px)}
 .sg-card::after{left:-12%;width:124%;bottom:48px;height:38px;background:radial-gradient(ellipse,#e8e0cb52 0%,#e8dfc52e 26%,#e8dfc510 48%,transparent 72%);filter:blur(6px)}
 .sg-card>.sg-art{filter:brightness(.57) saturate(.7)}
-.sg-card[data-selected=true]:not([data-empty=true])>.sg-art{filter:brightness(1.04) saturate(.92)}
+.sg-card[data-selected=true]:not([data-empty=true])>.sg-art{filter:brightness(1.04) saturate(.92) drop-shadow(-4px 0 6px #fff4e960)}
 .sg-frame{transition:filter 1.1s ease}
 .sg-card[data-selected=true]:not([data-empty=true]) .sg-frame,
 .sg-selected-art .sg-frame{filter:grayscale(1) brightness(1.36) drop-shadow(-2px 0 2px #fff8e9b0)}
@@ -274,3 +274,5 @@ body.stained-atelier #room:before{content:'';position:absolute;inset:0;z-index:-
 .sg-selected-art:after{content:'';position:absolute;left:-12%;width:124%;bottom:40px;height:38px;background:radial-gradient(ellipse,#e8e0cb52,#e8dfc52e 26%,transparent 72%);filter:blur(6px);pointer-events:none;z-index:-1}
 @media(prefers-reduced-motion:reduce){.sg-frame{transition:none}}
 body:has(#reduce-setting:checked) .sg-frame{transition:none}
+
+.sg-selected-art>.sg-art{filter:brightness(1.04) saturate(.92) drop-shadow(-4px 0 6px #fff4e960)}

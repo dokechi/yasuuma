@@ -38,7 +38,7 @@ body.storybook-host.lounge-workspace:has(#mainWindow[data-cc-view="sourcing"]) #
 @media(max-width:560px){body.storybook-host.lounge-workspace:has(#mainWindow[data-cc-view="sourcing"]) .desktop{padding:0 8px!important}body.storybook-host.lounge-workspace:has(#mainWindow[data-cc-view="sourcing"]) #nativeSourcingGlass{display:none}body.storybook-host.lounge-workspace:has(#mainWindow[data-cc-view="sourcing"]) #loungeWorkspaceHeader nav>div{gap:5px}body.storybook-host.lounge-workspace:has(#mainWindow[data-cc-view="sourcing"]) #loungeWorkspaceHeader button{padding:7px 9px!important;font-size:12px!important}body.storybook-host.lounge-workspace:has(#mainWindow[data-cc-view="sourcing"]) #mainWindow>.window-body{padding:10px!important}body.storybook-host.lounge-workspace:has(#mainWindow[data-cc-view="sourcing"]) #loungeWorkspaceTitle{font-size:25px!important}}
 /* Same shared silver frame and contact plane as the manuscript gallery. */
 #nativeSourcingGlass>.sg-art{display:block;width:100%;height:calc(100% - 40px);aspect-ratio:170/700}
-body.storybook-host.lounge-workspace:has(#mainWindow[data-cc-view="sourcing"]) #nativeSourcingGlass svg{height:100%;max-height:none;filter:brightness(1.02) saturate(.88)}
+body.storybook-host.lounge-workspace:has(#mainWindow[data-cc-view="sourcing"]) #nativeSourcingGlass svg{height:100%;max-height:none;filter:brightness(1.04) saturate(.92) drop-shadow(-4px 0 6px #fff4e960)}
 #nativeSourcingGlass .sg-character{image-rendering:pixelated}
 body.storybook-host.lounge-workspace:has(#mainWindow[data-cc-view="sourcing"]) #nativeSourcingGlass::before{background:linear-gradient(104deg,transparent 18%,#f2edeb08 30%,#f2edeb40 44%,#f2edeb14 54%,transparent 67%)}
 
