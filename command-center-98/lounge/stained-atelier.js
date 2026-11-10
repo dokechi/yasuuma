@@ -1,6 +1,6 @@
 /* Presentation only. The existing desk owns data, selection, editing and copying. */
 import * as application from './app.js?v=20261109.6-everyday';
-import {glassSlots,glassFor,adjacentSlot} from './stained-model.js?v=20261109.6-everyday';
+import {glassSlots,glassFor,adjacentSlot} from './stained-model.js?v=20261110.2-everyday-glass';
 const doc=document,board=application.getAccountBoard(),owner=application.getPaperDesk();
 const room=doc.getElementById('room');
 const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text)n.textContent=text;return n;};
@@ -42,6 +42,11 @@ let selected='insurance',queued=false;
 let serial=0;
 function art(slot){
   const wrapper=make('span','sg-art');wrapper.setAttribute('aria-hidden','true');
+  // Standalone transparent artwork uses the same panel dimensions as the gallery.
+  if(slot.art){
+    wrapper.innerHTML=`<svg viewBox="0 0 170 660" xmlns="http://www.w3.org/2000/svg" focusable="false"><image href="${slot.art}" x="-25" y="0" width="220" height="660"/></svg>`;
+    return wrapper;
+  }
   // Clip the approved artwork in the browser; never redraw its glass or sprite.
   const clip='sg-clip-'+(++serial),x=slot.center-85;
   wrapper.innerHTML=`<svg viewBox="0 0 170 660" xmlns="http://www.w3.org/2000/svg" focusable="false"><defs><clipPath id="${clip}"><path d="M85 3 L116 25 Q150 57 150 110 L150 151 L164 168 L150 184 L150 557 L125 591 L125 609 L130 621 L128 639 Q85 661 42 639 L40 621 L45 609 L45 591 L20 557 L20 184 L6 168 L20 151 L20 110 Q20 57 54 25 Z"/></clipPath></defs><image href="assets/stained/gallery-${slot.sheet}.png" x="${-x}" y="-120" width="1670" height="941" clip-path="url(#${clip})"/></svg>`;
@@ -61,7 +66,7 @@ function header(reader=false){
   nav.append(button('原稿を検索',()=>doc.getElementById('lounge-search').click()),button('更新',()=>doc.getElementById('desk-refresh').click()),button('設定',settings));h.append(nav);return h;
 }
 const home=make('section','sg-home'),head=header(),rail=make('nav','sg-rail');
-rail.setAttribute('aria-label','8つの持ち場と2つの空き枠。左右にスクロールして選択');
+rail.setAttribute('aria-label',`${glassSlots.filter(s=>!s.pending).length}つの持ち場と${glassSlots.filter(s=>s.pending).length}つの空き枠。左右にスクロールして選択`);
 const cards=new Map();
 let scrollFrame=0,scrollGoal=null;
 function cancelScroll(){cancelAnimationFrame(scrollFrame);scrollFrame=0;scrollGoal=null;rail.style.scrollSnapType='';}
@@ -112,7 +117,7 @@ function paint(){
   queued=false;
   const state=board.state;
   for(const slot of glassSlots){if(slot.pending)continue;const count=cards.get(slot.key).querySelector('.sg-count');const destination=state.destinations.find(d=>d.key===slot.key);count.textContent=slot.key==='sourcing'?'購入・在庫・売却':destination?.status||'原稿を確認';}
-  status.textContent=state.loading?'保存原稿を読み込み中…':state.complete?'8 / 10 登録済み　·　原稿を選択してください':state.message||'更新して原稿を確認してください';
+  status.textContent=state.loading?'保存原稿を読み込み中…':state.complete?`${glassSlots.filter(s=>!s.pending).length} / ${glassSlots.length} 登録済み　·　原稿を選択してください`:state.message||'更新して原稿を確認してください';
   const slot=glassFor(room.dataset.account);
   if(!room.hidden&&slot){
     select(slot.key);

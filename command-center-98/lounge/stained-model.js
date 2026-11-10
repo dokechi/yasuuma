@@ -8,7 +8,7 @@ export const glassSlots = Object.freeze([
   {key:'kensho',label:'懸賞',sheet:'right',center:332},
   {key:'manga',label:'漫画',sheet:'right',center:606},
   {key:'sourcing',label:'仕入',sheet:'right',center:876},
-  {key:'everyday',label:'日常の言葉',sheet:'right',center:1154},
+  {key:'everyday',label:'日常の言葉',art:'assets/stained/everyday-words-v1.png'},
   {key:'reserve-2',label:'未設定',sheet:'right',center:1430,pending:true}
 ].map(Object.freeze));
 export function glassFor(key){return glassSlots.find(slot=>slot.key===key);}
