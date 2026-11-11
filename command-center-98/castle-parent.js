@@ -5,12 +5,13 @@
  const origin=w.location.origin,frame=d.createElement('iframe');frame.id='ccCastleFrame';frame.title='司令塔・今日を、ひらく。';frame.allow='clipboard-write; autoplay';frame.hidden=true;frame.setAttribute('aria-label','司令塔・今日を、ひらく。');
  const style=d.createElement('style');style.textContent='#ccCastleFrame{position:fixed;inset:0;width:100%;height:100dvh;border:0;z-index:200;background:#0e0e0d}#ccCastleFrame[hidden]{display:none!important}#ccCastleReturn{position:fixed;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:2147483000;min-height:44px;padding:10px 15px;background:#172333;color:#f5dfb4;border:1px solid #bca574;border-radius:5px}#ccCastleReturn[hidden]{display:none!important}body.castle-visible{overflow:hidden!important}';d.head.append(style);d.body.append(frame);
  const back=d.createElement('button');back.id='ccCastleReturn';back.type='button';back.textContent='← 司令塔';back.hidden=true;d.body.append(back);
- let publishingConfig=[],ready=false,modern=true,native=false,pending=null,lastPayload=null,controller=null;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}frame.src='./lounge/index.html?v=20261110.12-reference-light';let wasHome=!!w.CCHome?.active;
+ const loungeUrl='./lounge/index.html?v=20261111.1-writing-references';
+ let publishingConfig=[],ready=false,modern=true,native=false,pending=null,lastPayload=null,controller=null;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}frame.src=loungeUrl;let wasHome=!!w.CCHome?.active;
  function send(type,data={}){if(ready)frame.contentWindow.postMessage({channel:'cc-castle-v1',type,...data},origin);}
  const startupWaiters=new Set();
  function whenReady(){if(ready||!modern||native||!w.CCHome?.active)return null;return new Promise(resolve=>startupWaiters.add(resolve));}
  function sync(){const isHome=!!w.CCHome?.active;if(isHome&&!wasHome&&modern){native=false;back.hidden=true;}wasHome=isHome;const shown=ready&&modern&&!native&&!!w.CCHome?.active;const changed=frame.hidden===shown;frame.hidden=!shown;d.body.classList.toggle('castle-visible',shown);if(changed)send(shown?'resume':'pause');if(shown||!modern||native||!isHome){for(const resolve of startupWaiters)resolve();startupWaiters.clear();}}
- function show(){if(native)d.dispatchEvent(new w.CustomEvent('cc:castle-home'));if(!frame.getAttribute('src'))frame.src='./lounge/index.html?v=20261110.12-reference-light';modern=true;native=false;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}if(!w.CCHome?.active)w.CCHome?.show?.();back.hidden=true;sync();frame.focus();send('resume');if(ready)read();}
+ function show(){if(native)d.dispatchEvent(new w.CustomEvent('cc:castle-home'));if(!frame.getAttribute('src'))frame.src=loungeUrl;modern=true;native=false;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}if(!w.CCHome?.active)w.CCHome?.show?.();back.hidden=true;sync();frame.focus();send('resume');if(ready)read();}
  function nativeRoute(action,recordId,section){d.dispatchEvent(new w.CustomEvent('cc:castle-native',{detail:{action}}));native=true;send('pause',{native:action});frame.hidden=true;d.body.classList.remove('castle-visible');back.hidden=false;
   if(action==='classic'){W.openSettings();d.querySelector('dialog[open]')?.addEventListener('close',show,{once:true});}
   else if(action==='kyun'||action==='choi'||action==='otoku'||action==='rakuten'||action==='lottery'||action==='tanaka'||action==='kensho'||action==='manga'||action==='everyday'||action==='tiktok'){H.openAccount(action,{recordId});const dialog=d.querySelector('dialog[open]:last-of-type');dialog?.addEventListener('close',show,{once:true});}
@@ -51,6 +52,30 @@
   }}catch{onInvalid();}}
   for(const item of sourcing){try{if(!item?.id||H.isSuppressed(item)||w.CCSourcingArchive?.isArchivedRecord(item))continue;const p=H.payload(item),title=String(item.title||item.product_name||item.name||'仕入れ候補').slice(0,200);const fields=[['商品',title],['状態',item.sourcingVerdict||item.status],['仕入価格',p.buy??item.purchase_price??item.price],['想定売価',p.sell??item.target_price],['数量',p.quantity],['概要',item.summary],['根拠',item.reason],['確認メモ',item.verdictNote||item.memo||item.description||item.note]];add({id:'live-shiire-'+encodeURIComponent(String(item.id)),place:'shiire',title,body:fields.filter(([,v])=>v!==undefined&&v!==null&&v!=='').map(([k,v])=>k+'：'+String(v)).join('\n'),kind:'保存候補',link:H.savedProductLink({...p,ordinary_url:p.ordinary_url||item.url}).url||'',checkedAt:H.savedPriceStockCheck(p).label,source:{id:String(item.id),account:'sourcing',label:'保存候補'},createdAt:Date.parse(item.createdAt||item.created_at||item.lastSeen)||1,updatedAt:Date.parse(item.updatedAt||item.updated_at)||1});}catch{onInvalid();}}return rows;
  }
+ async function readResource(resource,signal){
+  if(typeof API!=='string'||typeof authHeaders!=='function')throw Error('保存先に接続できません');
+  const url=new URL(API);
+  for(const [key,value] of Object.entries(resource))url.searchParams.set(key,String(value));
+  const request=new AbortController(),abort=()=>request.abort();
+  signal?.addEventListener('abort',abort,{once:true});
+  if(signal?.aborted)abort();
+  const timer=setTimeout(abort,30000);
+  try{
+   const response=await w.fetch(url,{headers:authHeaders(),cache:'no-store',signal:request.signal});
+   if(response.status===401||response.status===403)throw Error('司令塔にログインし直してください。');
+   const data=await response.json();
+   if(!response.ok||!data.ok)throw Error('保存先の読取に失敗しました');
+   return data;
+  }finally{clearTimeout(timer);signal?.removeEventListener('abort',abort);}
+ }
+ async function sendWritingReferences(){
+  try{
+   const data=await readResource({resource:'task-events',taskId:'writing-references-v1',limit:1});
+   const entry=data.events?.[0];
+   const guide=entry?.eventKey==='current'&&entry.payload?.content_type==='writing_reference_guide' ? entry.payload.guide : null;
+   send('writing-references',{guide});
+  }catch(error){send('writing-references',{error:error.name==='AbortError'?'読み込みが時間切れになりました。':error.message});}
+ }
  async function read(){if(pending)return pending;pending=(async()=>{controller=new AbortController();const session=controller,itemSets={signals:[],events:[]};const {normalizeResearch,normalizePurchases}=await import('./lounge/hall-model.js?v=20261021.8-hall');publishingConfig=(await import('./lounge/accounts.js?v=20261109.6-everyday')).publishingAccounts.filter(a=>!a.pending);d.dispatchEvent(new w.CustomEvent('cc:categories-ready'));let sourcing=[],purchases=[],ledgerState='loading',ledgerTruncated=false,errors=[],remaining=3;const states={signals:'読込中',events:'読込中',sourcing:'読込中'};let pinScope='';try{if(typeof AUTH==='string'&&AUTH&&w.crypto?.subtle){const digest=await w.crypto.subtle.digest('SHA-256',new TextEncoder().encode('cc-future-session-v1:'+AUTH));pinScope=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');}}catch{};
   function publish(){let invalid=0;const rows=drafts([...itemSets.signals,...itemSets.events],sourcing,()=>invalid++),loading=remaining>0,complete=!loading&&!errors.length&&!invalid;
    const counts=[['kyun','保険'],['choi','過去原稿'],['otoku','まだ安く買えるはず'],['rakuten','楽天犬'],['lottery','抽選日記'],['tanaka','田中卓'],['kensho','懸賞小ナス'],['manga','漫画'],['everyday','日常の言葉'],['fp','FP・TikTok'],['shiire','仕入れ']].map(([key,label])=>label+' '+rows.filter(x=>x.place===key).length+'件').join('／');
@@ -61,7 +86,7 @@
    lastPayload={drafts:rows,pinScope,complete,loading,message,checkedAt:new Date().toISOString(),searchRecords,indexLoading,indexComplete,searchMessage};send('records',lastPayload);
   }
   send('status',{message:'仕入れ候補・保存原稿・履歴を読み込み中…',loading:true});
-  const get=async resource=>{if(typeof API!=='string'||typeof authHeaders!=='function')throw Error('保存先に接続できません');const url=new URL(API);for(const [k,v]of Object.entries(resource))url.searchParams.set(k,String(v));const request=new AbortController(),abort=()=>request.abort();session.signal.addEventListener('abort',abort,{once:true});if(session.signal.aborted)abort();const timer=setTimeout(abort,30000);try{const r=await w.fetch(url,{headers:authHeaders(),cache:'no-store',signal:request.signal});if(r.status===401)throw Error('認証を確認してください。既存画面から再ログインできます');const data=await r.json();if(!r.ok||!data.ok)throw Error('保存先の読取に失敗しました');return data;}finally{clearTimeout(timer);session.signal.removeEventListener('abort',abort);}};
+  const get=resource=>readResource(resource,session.signal);
   const collect=async(resource,key,state,convert=x=>x)=>{let offset=0,count=0;for(;;){const data=await get({resource,limit:100,offset});if(!Array.isArray(data[key]))throw Error('保存データの応答形式が未確認');itemSets[state].push(...data[key].map(convert));count+=data[key].length;states[state]=count+'件取得';publish();const next=data.nextOffset;if(next===null)break;if(!Number.isInteger(next)||next<=offset)throw Error('続きの読取位置が未確認');offset=next;}};
   const run=async(key,label,action,fallback=()=>{})=>{try{await action();states[key]='読込完了';}catch(e){states[key]='読取未確認';errors.push(label+'：'+e.message);fallback();}finally{remaining--;publish();}};
   const readLedger=async()=>{if(typeof LEDGER_API!=='string'||typeof authHeaders!=='function')throw Error('元帳の接続を確認してください');const url=new URL(LEDGER_API);url.searchParams.set('month',new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit'}).format(new Date()));const request=new AbortController(),abort=()=>request.abort();session.signal.addEventListener('abort',abort,{once:true});if(session.signal.aborted)abort();const timer=setTimeout(abort,30000);try{const r=await w.fetch(url,{headers:authHeaders(),cache:'no-store',signal:request.signal});if(!r.ok)throw Error('元帳の読取に失敗しました');const data=await r.json();if(!data.ok||!Array.isArray(data.purchases))throw Error('元帳の形式を確認できません');purchases=normalizePurchases(data.purchases);if(purchases.length!==data.purchases.length){ledgerState='error';return;}ledgerTruncated=data.purchasesTruncated===true;ledgerState='complete';}catch{ledgerState='error';}finally{clearTimeout(timer);session.signal.removeEventListener('abort',abort);publish();}};
@@ -76,6 +101,7 @@
   if(m.type==='ready'){ready=true;sync();if(lastPayload)send('records',lastPayload);else read();if(waitingWorker)send('host-update');}
   if(m.type==='reading-room'&&typeof m.active==='boolean')d.body.classList.toggle('castle-reading',m.active);
   if(m.type==='refresh')read();
+  if(m.type==='writing-references')sendWritingReferences();
   if(m.type==='apply-host-update'&&waitingWorker){applyingUpdate=true;waitingWorker.postMessage({type:'SKIP_WAITING'});}
   if(m.type==='native'&&['classic','kyun','choi','otoku','rakuten','lottery','tanaka','kensho','manga','everyday','tiktok','fp','sourcing','watches','cards','settings','daily','cooney','shiire'].includes(m.action))nativeRoute(m.action,typeof m.recordId==='string'&&m.recordId.length<=500?m.recordId:undefined,['purchases','research','queue'].includes(m.section)?m.section:undefined);
  });

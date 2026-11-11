@@ -98,7 +98,7 @@ body.stained-atelier dialog button{background:#282b30;color:#eee7d9;border:1px s
 }
 /* Closed phone: list above body; both retain independent scroll areas. */
 @media(max-width:560px){
- .sg-title{font-size:17px}.sg-header{padding:0 12px;gap:4px}.sg-header .sg-tool{font-size:11px;padding:4px 7px;min-width:36px}.sg-tools{gap:4px}.sg-header .sg-tool:nth-child(2){display:none}
+ .sg-title{font-size:17px}.sg-header{padding:0 12px;gap:4px}.sg-header .sg-tool{font-size:11px;padding:4px 7px;min-width:36px}.sg-tools{gap:4px}.sg-header .sg-refresh{display:none}
  .sg-rail{gap:16px;padding:12px 20px}.sg-card{flex-basis:150px!important}.sg-footer{gap:4px}.sg-scroll-controls span{display:none}.sg-status{font-size:11px}
  .sg-selected-art{display:none}.sg-reader-scene{left:0;gap:18px}
  body.stained-atelier #room #desk{inset:65px 8px 8px!important}body.stained-atelier #desk .desk-toolbar{padding:6px 9px!important;gap:4px}
@@ -243,7 +243,7 @@ body.stained-atelier #draft-body{font-size:clamp(17px,1.5vw,28px)!important;line
  .sg-footer{padding:0 16px}.sg-status:after{font-size:16px}.sg-scroll-controls span{font-size:13px}
 }
 @media(max-width:560px){
- .sg-title{font-size:19px!important}.sg-header{padding:0 12px}.sg-header .sg-tool{padding:4px;font-size:11px}.sg-header .sg-tool:nth-child(2){display:none}
+ .sg-title{font-size:19px!important}.sg-header{padding:0 12px}.sg-header .sg-tool{padding:4px;font-size:11px}
  .sg-rail{padding:36px 32px 0;gap:30px}.sg-card>.sg-art{height:calc(100% - 38px)}
  .sg-selected-art{display:none}.sg-reader-scene{left:0}
  body.stained-atelier #room #desk{inset:68px 8px 8px!important}
@@ -300,3 +300,45 @@ body.stained-atelier .account-board button.sg-card{touch-action:pinch-zoom!impor
 .sg-order-trigger[hidden]{display:none!important}
 .sg-order-trigger{font-size:14px!important;min-height:40px;padding:5px 10px!important}
 @media(max-width:600px){.sg-order-trigger{font-size:12px!important}.sg-order-done{padding:5px 12px!important}.sg-scroll-controls{gap:5px!important}}
+
+.sg-references[open]{
+ display:grid;
+ grid-template-rows:auto auto minmax(0,1fr);
+ gap:14px;
+ width:min(650px,calc(100% - 24px));
+ max-height:min(720px,calc(100dvh - 24px));
+ box-sizing:border-box;
+ overflow:hidden;
+ padding:clamp(14px,3vw,26px);
+ color:var(--sg-paper);
+ background:#141415;
+ border:1px solid #8e8b82;
+ border-radius:8px;
+ font-size:14px;
+ line-height:1.65;
+}
+.sg-references::backdrop{background:#080809c7}
+.sg-reference-heading,.sg-reference-actions{display:flex;align-items:center;gap:12px}
+.sg-reference-heading{justify-content:space-between}
+.sg-reference-heading h2{margin:0;font-size:clamp(19px,4vw,24px)}
+.sg-reference-filter{display:flex;align-items:center;gap:10px;color:var(--sg-muted)}
+.sg-reference-filter select{
+ min-width:0;
+ min-height:40px;
+ max-width:100%;
+ padding:6px 10px;
+ color:var(--sg-paper);
+ background:#242425;
+ border:1px solid #817e75;
+ font:inherit;
+}
+.sg-reference-body{grid-row:3;overflow:auto;overscroll-behavior:contain;overflow-wrap:anywhere}
+.sg-reference-body p{margin:0 0 8px}
+.sg-reference-answer{padding:12px 14px;background:#282624;border-left:2px solid #c4b897;user-select:text}
+.sg-reference-status{color:var(--sg-muted)}
+.sg-reference-status:empty{display:none}
+.sg-reference-list{list-style:none;padding:0;margin:14px 0 0}
+.sg-reference-list li{padding:12px 0;border-top:1px solid var(--sg-line)}
+.sg-reference-list h3{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0 0 4px;font-size:15px}
+.sg-reference-role{color:var(--sg-muted);font-size:12px;font-weight:400}
+.sg-reference-list a{display:inline-block;margin-right:14px;color:#efddae;text-underline-offset:3px}

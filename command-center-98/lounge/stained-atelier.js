@@ -42,6 +42,111 @@ function travel(action){
 }
 let selected='insurance',queued=false;
 
+const references=make('dialog','sg-references');
+references.id='writing-references';
+references.setAttribute('aria-labelledby','writing-references-title');
+const referenceHeading=make('header','sg-reference-heading');
+const referenceTitle=make('h2','','原稿の参考元');
+referenceTitle.id='writing-references-title';
+referenceHeading.append(referenceTitle,button('閉じる',()=>references.close()));
+const referenceFilter=make('label','sg-reference-filter','箱・資料');
+const referenceSelect=make('select');
+referenceFilter.append(referenceSelect);
+const referenceContent=make('section','sg-reference-content');
+const referenceAnswer=make('p','sg-reference-answer');
+const referenceStatus=make('p','sg-reference-status');
+referenceStatus.setAttribute('role','status');
+const copyStatus=make('span','sg-reference-status');
+copyStatus.setAttribute('role','status');
+const copyAnswer=button('回答をコピー',async()=>{
+  try{
+    await navigator.clipboard.writeText(referenceAnswer.textContent);
+    copyStatus.textContent='コピーしました。';
+  }catch{
+    const range=doc.createRange();
+    range.selectNodeContents(referenceAnswer);
+    const selection=window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    copyStatus.textContent='表示された文をコピーしてください。';
+  }
+});
+const answerActions=make('div','sg-reference-actions');
+answerActions.append(copyAnswer,copyStatus);
+const referenceList=make('ul','sg-reference-list');
+referenceContent.append(referenceAnswer,answerActions,referenceList);
+const referenceRetry=button('再読み込み',loadReferences);
+const referenceBody=make('div','sg-reference-body');
+referenceBody.append(referenceStatus,referenceRetry,referenceContent);
+references.append(referenceHeading,referenceFilter,referenceBody);
+doc.body.append(references);
+let referenceGroups=[],referenceKey='overview',referenceLoading=false;
+
+function referenceSource(source){
+  const item=make('li');
+  const name=make('h3','',source.name);
+  if(source.role)name.append(make('span','sg-reference-role',source.role));
+  item.append(name,make('p','',source.note));
+  for(const link of source.links||[]){
+    try{
+      const url=new URL(link.url);
+      if(url.protocol!=='https:'||url.username||url.password)continue;
+      const a=make('a','',link.label);
+      a.href=url.href;
+      a.target='_blank';
+      a.rel='noopener noreferrer';
+      item.append(a);
+    }catch{}
+  }
+  return item;
+}
+function renderReferences(){
+  const group=referenceGroups.find(group=>group.key===referenceSelect.value);
+  if(!group)return;
+  referenceAnswer.textContent=group.answer;
+  copyStatus.textContent='';
+  referenceList.replaceChildren(...group.sources.map(referenceSource));
+  referenceBody.scrollTop=0;
+}
+function loadReferences(){
+  if(referenceLoading)return;
+  referenceFilter.hidden=referenceContent.hidden=referenceRetry.hidden=true;
+  if(window.parent===window){
+    referenceStatus.textContent='司令塔の本体から開いてください。';
+    return;
+  }
+  referenceLoading=true;
+  referenceStatus.textContent='参考元を読み込んでいます…';
+  window.parent.postMessage({channel:'cc-castle-v1',type:'writing-references'},window.location.origin);
+}
+referenceSelect.addEventListener('change',renderReferences);
+window.addEventListener('message',event=>{
+  const data=event.data;
+  if(event.source!==window.parent||event.origin!==window.location.origin||data?.channel!=='cc-castle-v1'||data.type!=='writing-references')return;
+  referenceLoading=false;
+  if(!references.open)return;
+  if(data.error){
+    referenceStatus.textContent=data.error;
+    referenceRetry.hidden=false;
+    return;
+  }
+  referenceGroups=Array.isArray(data.guide?.groups)?data.guide.groups:[];
+  if(!referenceGroups.length){
+    referenceStatus.textContent='参考元の登録を確認できませんでした。';
+    referenceRetry.hidden=false;
+    return;
+  }
+  referenceSelect.replaceChildren(...referenceGroups.map(group=>{
+    const option=make('option','',group.label);
+    option.value=group.key;
+    return option;
+  }));
+  referenceSelect.value=referenceGroups.some(group=>group.key===referenceKey)?referenceKey:referenceGroups[0].key;
+  referenceFilter.hidden=referenceContent.hidden=false;
+  referenceStatus.textContent='';
+  renderReferences();
+});
+
 function settings(){
   // The existing board makes #app inert. Its settings dialog lives inside #app.
   const app=doc.getElementById('app');app.removeAttribute('inert');
@@ -53,7 +158,14 @@ function header(reader=false){
   const h=make('header','sg-header');
   h.append(reader?button('‹ 司令塔',()=>travel(()=>doc.getElementById('back').click()),'sg-title'):make('h1','sg-title','司令塔'));
   const nav=make('nav','sg-tools');nav.setAttribute('aria-label','司令塔の操作');
-  nav.append(button('原稿を検索',()=>doc.getElementById('lounge-search').click()),button('更新',()=>doc.getElementById('desk-refresh').click()),button('設定',settings));h.append(nav);return h;
+  const referenceButton=button('原稿の参考元',()=>{
+    referenceKey=reader?room.dataset.account:'overview';
+    references.showModal();
+    loadReferences();
+  });
+  referenceButton.setAttribute('aria-haspopup','dialog');
+  referenceButton.setAttribute('aria-controls',references.id);
+  nav.append(button('原稿を検索',()=>doc.getElementById('lounge-search').click()),button('更新',()=>doc.getElementById('desk-refresh').click(),'sg-tool sg-refresh'),referenceButton,button('設定',settings));h.append(nav);return h;
 }
 const home=make('section','sg-home'),head=header(),rail=make('nav','sg-rail');
 rail.setAttribute('aria-label',`${glassSlots.filter(s=>!s.pending).length}つの持ち場と${glassSlots.filter(s=>s.pending).length}つの空き枠。左右にスクロールして選択`);
