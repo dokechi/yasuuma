@@ -1,3 +1,4 @@
+import {isPostManuscript,manuscriptLabel} from './accounts.js?v=20261109.6-everyday';
 import {createHallTools} from './hall-tools.js?v=20261102.1-tanaka';
 import {placeNames} from './desk-model.js?v=20261109.6-everyday';
 import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261109.6-everyday';
@@ -31,17 +32,17 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
  function renderTray(){
   const rows=items(),list=$('later-list'),detail=$('later-detail');list.replaceChildren();detail.replaceChildren();$('later-empty').hidden=!!rows.length;$('later-undo').disabled=!notebook.canUndo();
   if(!rows.some(x=>x.draft.id===selectedLater))selectedLater=rows[0]?.draft.id||'';
-  for(const row of rows){const b=button('',()=>{selectedLater=row.draft.id;renderTray();});b.dataset.laterId=row.draft.id;b.setAttribute('aria-pressed',String(selectedLater===row.draft.id));b.append(el('small',placeNames[row.draft.place]),el('strong',row.draft.title),el('span',row.memo||'理由を添えて、あとで'));list.append(b);}
+  for(const row of rows){const b=button('',()=>{selectedLater=row.draft.id;renderTray();});b.dataset.laterId=row.draft.id;b.setAttribute('aria-pressed',String(selectedLater===row.draft.id));b.append(el('small',placeNames[row.draft.place]),el('strong',manuscriptLabel(row.draft)),el('span',row.memo||'理由を添えて、あとで'));list.append(b);}
   const row=rows.find(x=>x.draft.id===selectedLater);if(!row)return;const d=row.draft,live=notebook.get(d.id),label=el('label','あとで確認したいこと'),memo=el('textarea');memo.value=row.memo;memo.maxLength=500;memo.rows=3;memo.placeholder='価格を見直したい、今夜投稿する…';memo.setAttribute('aria-label','あとで確認したいこと');label.append(memo);
   memo.addEventListener('input',()=>{changeItems(rows=>{rows[d.id]={...rows[d.id],memo:memo.value.slice(0,500)};});const card=[...list.children].find(b=>b.dataset.laterId===d.id);if(card)card.lastElementChild.textContent=memo.value||'理由を添えて、あとで';});
   const summary=el('p',live?'持ち場で最新の保存内容を開けます。':'保存時点のメモです。元の項目が見つからない場合も残ります。','qol-note');
-  detail.append(el('small',placeNames[d.place]),el('h3',d.title),label,summary,el('pre',d.body.slice(0,3000),'later-preview'));
+  detail.append(el('small',placeNames[d.place]));if(!isPostManuscript(d))detail.append(el('h3',d.title));detail.append(label,summary,el('pre',d.body.slice(0,3000),'later-preview'));
   const actions=el('div',undefined,'qol-actions');actions.append(button(d.native?'この持ち場を開く':live?'この原稿を開く':'持ち場を開く',()=>{$('later-dialog').close();open({place:d.place,id:live?.id,title:d.title,native:d.native,section:d.section});}));
   actions.append(button('あとで箱から外す',()=>{if(notebook.flag('tray',d.id))notebook.toggle('tray',d.id);changeItems(rows=>delete rows[d.id]);renderTray();onFeedback('unpin');}));detail.append(actions);
  }
  function showTray(id){selectedLater=id||selectedLater;renderTray();$('later-dialog').showModal();}
  function renderPost(){
-  const d=postDraft;if(!d)return;const scroll=$('posting-dialog').scrollTop;const host=$('posting-steps');host.replaceChildren();$('posting-title').textContent=d.title;
+  const d=postDraft;if(!d)return;const scroll=$('posting-dialog').scrollTop;const host=$('posting-steps');host.replaceChildren();$('posting-title').hidden=isPostManuscript(d);$('posting-title').textContent=isPostManuscript(d)?'':d.title;
   const changed=notebook.get(d.id)&&revision(notebook.get(d.id))!==revision(d);$('posting-changed').hidden=!changed;
   const readiness=postingReadiness(d);$('posting-readiness').textContent=readiness.label;$('posting-copy-all').disabled=!!changed;
   $('posting-native').textContent=['otoku','rakuten','lottery','tanaka'].includes(d.place)?'出典・確認記録へ':'本体の投稿結果へ';

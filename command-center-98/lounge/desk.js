@@ -1,4 +1,4 @@
-import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard} from './accounts.js?v=20261109.6-everyday';
+import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard,isPostManuscript,manuscriptLabel} from './accounts.js?v=20261109.6-everyday';
 import {createConveniences} from './qol.js?v=20261109.6-everyday';
 import {resumeView,postingReadiness} from './qol-model.js?v=20261109.6-everyday';
 import {createNotebook,safeLink} from './notebook.js?v=20261109.6-everyday';
@@ -97,7 +97,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   $('desk-count').textContent=rows.length+'件の'+(place==='shiire'?'保存候補':'原稿');
   for(const group of rows){const d=group.find(x=>x.id===active?.id)||group[0],b=button('',()=>select(d.id),'manuscript-card');
    b.dataset.draftId=d.id;b.setAttribute('aria-pressed',String(group.some(x=>x.id===active?.id)));
-   b.append(el('small',(group.some(x=>notebook.flag('pin',x.id))?'★ ':'')+d.kind),el('strong',d.title),el('span',d.body.slice(0,75)));
+   b.append(el('small',(group.some(x=>notebook.flag('pin',x.id))?'★ ':'')+d.kind),el('strong',manuscriptLabel(d)),el('span',d.body.slice(0,75)));
    if(group.length>1)b.append(el('small',group.length+'種類の本文'));
    if(['kyun','choi'].includes(d.place))b.append(el('small',d.source?.account==='insurance'?'画像 '+(d.source.imageCount||0)+'枚':postingReadiness(d).label,'posting-readiness'));
    list.append(b);
@@ -123,7 +123,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   if(!active){editable(null);return;}
   const d=active,group=groups().find(g=>g.some(x=>x.id===d.id))||[d];
   if(group.length>1)for(const variant of group){const b=button(variant.kind,()=>select(variant.id));b.setAttribute('aria-pressed',String(variant.id===d.id));$('desk-variants').append(b);}
-  $('draft-kind').textContent=d.kind;$('draft-title').textContent=d.title;$('draft-body').textContent=d.body;
+  $('draft-kind').textContent=d.kind;$('draft-title').hidden=isPostManuscript(d);$('draft-title').textContent=isPostManuscript(d)?'':d.title;$('draft-body').textContent=d.body;
   $('draft-meta').textContent=[d.source?.status,d.source?.account==='insurance'?'':(['kyun','choi'].includes(d.place)?postingReadiness(d).label:''),d.checkedAt?(d.source?.account==='insurance'?'資料確認日：':'価格・在庫の保存時確認：')+d.checkedAt:''].filter(Boolean).join(' · ');
   const links=Array.isArray(d.productLinks)?d.productLinks.filter(x=>safeLink(x.url)):d.link?[{label:'保存されたリンク',url:d.link}]:[];
   if(links.length){$('draft-links').append(el('p','保存された商品リンク','draft-kind'));for(const row of links){const line=el('div',undefined,'product-link'),a=el('a',row.label+' ↗');a.href=safeLink(row.url);a.target='_blank';a.rel='noopener noreferrer';line.append(a,button('URLをコピー',()=>copy(d,'link',row.url)));$('draft-links').append(line);}if(['kyun','choi'].includes(place))$('draft-links').append(el('small','現在の価格・在庫は商品ページで確認してください。'));}

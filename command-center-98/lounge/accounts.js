@@ -9,6 +9,9 @@ export const publishingAccounts=Object.freeze([
  {key:'manga',place:'manga',name:'漫画',handle:'@kousaka_san_',tone:'violet',artKey:'planned-5',taskId:'manga-threads-v1'},
  {key:'everyday',place:'everyday',name:'日常の言葉',handle:'',tone:'amber',artKey:'planned-6',taskId:'everyday-words-v1'}
 ]);
+// Administrative titles belong to source records, never to the post itself.
+export function isPostManuscript(d){return publishingAccounts.some(a=>a.key===d?.source?.account&&a.place===d?.place)&&!String(d?.body||'').startsWith('【参考投稿');}
+export function manuscriptLabel(d){return isPostManuscript(d)?String(d.body||'').trim().split(/\r?\n/)[0].slice(0,100):d?.title||'';}
 export function draftsForAccount(rows,account){
  if(!account||account.pending)return [];
  return rows.filter(d=>d.place===account.place&&d.source?.account===account.key)
@@ -79,7 +82,7 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
     if(!groups.size)list.append(el('p',loading?'読み込み中…':complete?'このアカウントの保存原稿はまだありません。':'保存原稿の読取状況を確認してください。','account-placeholder'));
     for(const d of groups.values()){
      const card=btn('',()=>travel(a,d.id));card.className='account-draft';card.dataset.draftId=d.id;
-     card.append(el('small',d.checkedAt||'日付未確認'),el('strong',d.title),el('span',d.body.slice(0,110)),el('small',[d.posting?.reply?'本文＋返信':'本文',d.source.imageCount?'画像 '+d.source.imageCount+'枚':'',a.key==='lottery'?d.source.status:''].filter(Boolean).join(' · ')));
+     card.append(el('small',d.checkedAt||'日付未確認'),el('strong',manuscriptLabel(d)),el('span',d.body.slice(0,110)),el('small',[d.posting?.reply?'本文＋返信':'本文',d.source.imageCount?'画像 '+d.source.imageCount+'枚':'',a.key==='lottery'?d.source.status:''].filter(Boolean).join(' · ')));
      list.append(card);
     }
     column.append(list,btn('このアカウントを開く',()=>travel(a)));
