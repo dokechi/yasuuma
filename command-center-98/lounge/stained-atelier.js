@@ -165,7 +165,18 @@ function header(reader=false){
   });
   referenceButton.setAttribute('aria-haspopup','dialog');
   referenceButton.setAttribute('aria-controls',references.id);
-  nav.append(button('原稿を検索',()=>doc.getElementById('lounge-search').click()),button('更新',()=>doc.getElementById('desk-refresh').click(),'sg-tool sg-refresh'),referenceButton,button('設定',settings));h.append(nav);return h;
+  const cooney=make('a','sg-tool sg-cooney','くーにーOS');
+  cooney.href='https://cooney-os.vercel.app/';
+  cooney.target='_blank';
+  cooney.rel='noopener noreferrer';
+  cooney.title='くーにーOSを新しいタブで開く';
+  nav.append(
+    button('原稿を検索',()=>doc.getElementById('lounge-search').click()),
+    button('更新',()=>doc.getElementById('desk-refresh').click(),'sg-tool sg-refresh'),
+    referenceButton,button('設定',settings),cooney
+  );
+  h.append(nav);
+  return h;
 }
 const home=make('section','sg-home'),head=header(),rail=make('nav','sg-rail');
 rail.setAttribute('aria-label',`${glassSlots.filter(s=>!s.pending).length}つの持ち場と${glassSlots.filter(s=>s.pending).length}つの空き枠。左右にスクロールして選択`);

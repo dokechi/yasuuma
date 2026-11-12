@@ -342,3 +342,11 @@ body.stained-atelier .account-board button.sg-card{touch-action:pinch-zoom!impor
 .sg-reference-list h3{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0 0 4px;font-size:15px}
 .sg-reference-role{color:var(--sg-muted);font-size:12px;font-weight:400}
 .sg-reference-list a{display:inline-block;margin-right:14px;color:#efddae;text-underline-offset:3px}
+
+.sg-cooney{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;text-decoration:none}
+@media(max-width:560px){
+ .sg-header .sg-tools{min-width:0}
+ body.stained-atelier .sg-header .sg-tool{min-width:0;padding-inline:6px;font-size:11px;line-height:1.25}
+ .sg-header .sg-tools button{overflow-wrap:anywhere}
+ .sg-header .sg-tools > :nth-last-child(-n+2){flex-shrink:0;white-space:nowrap}
+}
