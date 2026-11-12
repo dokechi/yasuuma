@@ -1,7 +1,7 @@
-import {groupDrafts,productLinks,postingAssets} from './notebook.js?v=20261109.6-everyday';
+import {groupDrafts,productLinks,postingAssets} from './notebook.js?v=20261112.2-skun';
 
 export const placeForRoom={red:'kyun',purple:'choi',silver:'fp',orange:'shiire'};
-export const placeNames={kyun:'保険',choi:'以前の原稿',otoku:'まだ安く買えるはず',rakuten:'楽天犬',lottery:'抽選日記',tanaka:'田中卓',kensho:'懸賞小ナス',manga:'漫画',everyday:'日常の言葉',fp:'FP・TikTok',shiire:'仕入れ'};
+export const placeNames={kyun:'保険',choi:'以前の原稿',otoku:'まだ安く買えるはず',rakuten:'楽天犬',lottery:'抽選日記',tanaka:'田中卓',kensho:'懸賞小ナス',manga:'漫画',everyday:'日常の言葉',skun:'Sくん',fp:'FP・TikTok',shiire:'仕入れ'};
 export const productionURL='https://dokechi.github.io/yasuuma/command-center-98/app-v130.html';
 
 export function visibleGroups(rows,{query='',filter='all',isPinned=()=>false,isDone=()=>false}={}){

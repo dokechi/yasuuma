@@ -1,18 +1,20 @@
-import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard,isPostManuscript,manuscriptLabel} from './accounts.js?v=20261109.6-everyday';
-import {createConveniences} from './qol.js?v=20261109.6-everyday';
-import {resumeView,postingReadiness} from './qol-model.js?v=20261109.6-everyday';
-import {createNotebook,safeLink} from './notebook.js?v=20261109.6-everyday';
-import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261109.6-everyday';
+import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard,isPostManuscript,manuscriptLabel} from './accounts.js?v=20261112.2-skun';
+import {createConveniences} from './qol.js?v=20261112.2-skun';
+import {resumeView,postingReadiness} from './qol-model.js?v=20261112.2-skun';
+import {createNotebook,safeLink} from './notebook.js?v=20261112.2-skun';
+import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261112.2-skun';
 
 export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{},onOpenRoom=()=>{},onLounge=()=>{},onWorkingChapter=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const button=(text,fn,cls)=>{const n=el('button',text,cls);n.type='button';n.addEventListener('click',fn);return n;};
+ const externalLink=(text,url,cls)=>{const a=el('a',text,cls);a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;};
  let storage;try{storage=window.localStorage;}catch{}
  let storageError=false,lastRenderedOperationContext=null;
  const notebook=createNotebook({seeds:{...Object.fromEntries(publishingAccounts.filter(a=>!a.pending).map(a=>[a.place,[]])),choi:[],fp:[],shiire:[]},storage,onError:()=>{storageError=true;}});
  let place=null,active=null,query='',filter='all',pending=null,loading=false,complete=false,connected=false,autoReturn=false,nativeReturnAwaiting=null,manual=null,scrollTimer=0,externalNotes=false,nativeWork=null;
  const selections=new Map(),views=new Map();let requested=null;let returnToAccounts=false,passiveEntry=false,initialDraftId=null;
+ let skunReferences=null;
  const livingSubscribers=new Set();let livingQueued=false,livingSignature='',statusMessage='',sourceIssue='',recordsAccepted=false,summarizeLivingRooms=null;
  const livingSnapshot=()=>summarizeLivingRooms?summarizeLivingRooms({notebook,loading,complete:complete&&recordsAccepted,connected,message:sourceIssue||statusMessage,active,place,pending,externalNotes}):{rooms:[],complete:false};
  // Coalesce only synchronous UI changes, never poll or fetch. Emission follows
@@ -86,7 +88,17 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  function routes(){
   const host=$('desk-routes');host.replaceChildren();
   const account=publishingAccounts.find(a=>a.place===place);
-  if(account){host.append(button('← 司令塔へ',()=>{returnToAccounts=true;onHome();}),el('strong',account.name+(account.handle?' '+account.handle:'')));if(account.handle){const profile=el('a','投稿先を開く ↗');profile.href='https://www.threads.com/'+account.handle;profile.target='_blank';profile.rel='noopener noreferrer';host.append(profile);}else host.append(el('span','投稿先未登録'));host.append(button('出典・確認記録',()=>native(place)));}
+  if(account){
+   host.append(button('← 司令塔へ',()=>{returnToAccounts=true;onHome();}),el('strong',account.name+(account.handle?' '+account.handle:'')));
+   host.append(account.handle?externalLink('投稿先を開く ↗','https://www.threads.com/'+account.handle):el('span','投稿先未登録'));
+   if(account.key==='skun'&&skunReferences){
+    const sheet=safeLink(skunReferences.sheetUrl);
+    if(/^https:\/\/docs\.google\.com\/spreadsheets\/d\/[\w-]+\/edit$/.test(sheet))host.append(externalLink('過去投稿スプシ ↗',sheet,'desk-skun-link'));
+    const min=skunReferences.minUpvotes;
+    if(Number.isSafeInteger(min)&&min>0)host.append(el('small',`ガルちゃん採用 ＋${min}票以上`,'desk-skun-threshold'));
+   }
+   host.append(button('出典・確認記録',()=>native(place)));
+  }
   else if(place==='choi')host.append(button('過去原稿を開く',()=>native('choi')));
   else if(place==='fp')host.append(button('FP 台本・画像',()=>native('fp')),button('TikTok 投稿結果',()=>native('tiktok',active?.source?.account==='tiktok'?active.source.id:undefined)));
   else if(place==='shiire')host.append(button('購入・在庫・売却を開く',()=>native('sourcing')));
@@ -127,6 +139,12 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   $('draft-meta').textContent=[d.source?.status,d.source?.account==='insurance'?'':(['kyun','choi'].includes(d.place)?postingReadiness(d).label:''),d.checkedAt?(d.source?.account==='insurance'?'資料確認日：':'価格・在庫の保存時確認：')+d.checkedAt:''].filter(Boolean).join(' · ');
   const links=Array.isArray(d.productLinks)?d.productLinks.filter(x=>safeLink(x.url)):d.link?[{label:'保存されたリンク',url:d.link}]:[];
   if(links.length){$('draft-links').append(el('p','保存された商品リンク','draft-kind'));for(const row of links){const line=el('div',undefined,'product-link'),a=el('a',row.label+' ↗');a.href=safeLink(row.url);a.target='_blank';a.rel='noopener noreferrer';line.append(a,button('URLをコピー',()=>copy(d,'link',row.url)));$('draft-links').append(line);}if(['kyun','choi'].includes(place))$('draft-links').append(el('small','現在の価格・在庫は商品ページで確認してください。'));}
+  if(d.girlsChannel){
+   const {url,upvotes,checkedAt}=d.girlsChannel;
+   const source=externalLink(`ガルちゃん元コメント ＋${upvotes}票 ↗`,url,'desk-skun-link');
+   if(checkedAt)source.title=`票数の確認日 ${checkedAt}`;
+   $('draft-links').append(source);
+  }
   $('desk-copy').textContent=notebook.copyMark(d)?'✓ 本文をコピー済み':'本文をコピー';
   editable(d);if(learningController)$('desk-copy').textContent='最終稿をコピー';
   const pin=notebook.flag('pin',d.id);$('desk-pin').setAttribute('aria-pressed',String(pin));$('desk-pin').setAttribute('aria-label',pin?'お気に入りを解除':'お気に入りに保存');$('desk-pin').textContent=pin?'★':'☆';
@@ -156,7 +174,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   }
   send('reading-room',{active:true});
   savePosition();rememberView();passiveEntry=passive||requested?.passive===true;initialDraftId=passiveEntry?requested?.id||(typeof resumeDraft==='string'?resumeDraft:null):null;if(externalNotes&&notebook.persistent()){notebook.sync();externalNotes=false;}place=roomId==='purple'?(requested?.place==='choi'||publishingAccounts.some(a=>!a.pending&&a.place===requested?.place)?requested.place:'otoku'):placeForRoom[roomId];active=null;const view=requested?.id&&!requested.resume?{query:'',filter:'all'}:resumeView(views.get(place)||notebook.pref('view:'+place,null));query=view.query;filter=view.filter;$('desk-query').value=query;
-  if(!passiveEntry)notebook.visit(place);$('desk-title').textContent=place==='shiire'?'仕入れの持ち場':['kyun','otoku','rakuten','lottery','tanaka','kensho','manga','everyday'].includes(place)?placeNames[place]:'保存原稿';$('desk-kicker').textContent=place==='fp'?'SCRIPTS & CONTENT':place==='shiire'?'THE MERCHANT’S DESK':'YOUR MANUSCRIPTS';
+  if(!passiveEntry)notebook.visit(place);$('desk-title').textContent=place==='shiire'?'仕入れの持ち場':['kyun','otoku','rakuten','lottery','tanaka','kensho','manga','everyday','skun'].includes(place)?placeNames[place]:'保存原稿';$('desk-kicker').textContent=place==='fp'?'SCRIPTS & CONTENT':place==='shiire'?'THE MERCHANT’S DESK':'YOUR MANUSCRIPTS';
   $('desk').dataset.place=place;routes();render({restore:true});
   if(pending)applyPending();
   if(requested?.native&&embedded&&(['sourcing','watches','cards'].includes(requested.native)&&place==='shiire'||['fp','tiktok'].includes(requested.native)&&place==='fp'))native(requested.native,requested.recordId,true,requested.section);else if(place==='shiire'&&embedded)native('sourcing',undefined,true);requested=null;
@@ -166,6 +184,13 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   recordsAccepted=false;sourceIssue='';connected=true;$('desk-connect').hidden=true;
   setStatus(payload.message,payload);
   if(!Array.isArray(payload.drafts))return;
+  if(payload.skunReferences||payload.complete){
+   const next=payload.skunReferences||null;
+   if(next?.sheetUrl!==skunReferences?.sheetUrl||next?.minUpvotes!==skunReferences?.minUpvotes){
+    skunReferences=next;
+    if(place==='skun')routes();
+   }
+  }
   const rows=payload.drafts.filter(d=>(!window.CCThreadsArchive?.enabled||window.CCThreadsArchive.acceptsSource(d))&&!window.CCSourcingArchive?.isArchivedDraft(d));
   const next={...payload,drafts:rows};conveniences.status(next);
   if(place&&holdsActiveText(active,rows,next.complete)){

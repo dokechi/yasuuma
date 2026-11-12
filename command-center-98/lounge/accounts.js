@@ -7,7 +7,8 @@ export const publishingAccounts=Object.freeze([
  {key:'tanaka',place:'tanaka',name:'田中卓',handle:'',tone:'violet',artKey:'planned-5',taskId:'tanaka-threads-v1'},
  {key:'kensho',place:'kensho',name:'懸賞小ナス',handle:'@nasbi.777',tone:'violet',artKey:'planned-6',taskId:'kensho-threads-v1'},
  {key:'manga',place:'manga',name:'漫画',handle:'@kousaka_san_',tone:'violet',artKey:'planned-5',taskId:'manga-threads-v1'},
- {key:'everyday',place:'everyday',name:'日常の言葉',handle:'',tone:'amber',artKey:'planned-6',taskId:'everyday-words-v1'}
+ {key:'everyday',place:'everyday',name:'日常の言葉',handle:'',tone:'amber',artKey:'planned-6',taskId:'everyday-words-v1'},
+ {key:'skun',place:'skun',name:'Sくん',handle:'@skun.koi',tone:'rose',artKey:'planned-5',taskId:'skun-threads-v1'}
 ]);
 // Administrative titles belong to source records, never to the post itself.
 export function isPostManuscript(d){return publishingAccounts.some(a=>a.key===d?.source?.account&&a.place===d?.place)&&!String(d?.body||'').startsWith('【参考投稿');}
@@ -29,7 +30,7 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
  const underlying=document.getElementById('app');let priorInert=false;
  function isolate(active){if(!underlying)return;if(active&&!underlying.hasAttribute('inert')){priorInert=false;underlying.setAttribute('inert','');}else if(!active&&!priorInert)underlying.removeAttribute('inert');}
  priorInert=!!underlying?.hasAttribute('inert');
- const panel=el('section',undefined,'account-board');panel.setAttribute('aria-label','司令塔の10パネル');
+ const panel=el('section',undefined,'account-board');panel.setAttribute('aria-label','司令塔の持ち場');
  const sky=el('div',undefined,'account-sky');sky.setAttribute('aria-hidden','true');panel.append(sky);
  const updateTime=()=>{panel.dataset.time=timeOfDay();panel.dataset.paused=String(document.hidden);if(roomClock)roomClock.textContent=({day:'昼の航路',dusk:'夕の航路',night:'夜の航路'})[panel.dataset.time]+' / '+new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit'}).format(new Date());};updateTime();const timer=setInterval(updateTime,60000);timer.unref?.();document.addEventListener('visibilitychange',updateTime);window.addEventListener('pagehide',()=>clearInterval(timer),{once:true});
  const header=el('header',undefined,'account-board-heading'),titles=el('div');

@@ -9,7 +9,8 @@ export const glassSlots = Object.freeze([
   {key:'manga',label:'漫画',sheet:'right',center:606},
   {key:'sourcing',label:'仕入',sheet:'right',center:876},
   {key:'everyday',label:'日常の言葉',art:'assets/stained/everyday-words-v1.png'},
-  {key:'reserve-2',label:'未設定',sheet:'right',center:1430,pending:true}
+  {key:'skun',label:'Sくん',sheet:'right',center:1430,glassTint:'#aa607b',
+   sprite:{sheet:'left',center:574,key:'otoku',filter:'hue-rotate(305deg) saturate(.78)'}}
 ].map(Object.freeze));
 export function glassFor(key){return glassSlots.find(slot=>slot.key===key);}
 export function adjacentSlot(index,step){return Math.max(0,Math.min(glassSlots.length-1,index+step));}

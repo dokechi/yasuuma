@@ -1,6 +1,6 @@
-import {groupDrafts,safeLink,postingAssets} from './notebook.js?v=20261109.6-everyday';
+import {groupDrafts,safeLink,postingAssets} from './notebook.js?v=20261112.2-skun';
 
-export const roomForPlace={kyun:'red',choi:'purple',otoku:'purple',rakuten:'purple',lottery:'purple',tanaka:'purple',kensho:'purple',manga:'purple',everyday:'purple',fp:'silver',shiire:'orange'};
+export const roomForPlace={kyun:'red',choi:'purple',otoku:'purple',rakuten:'purple',lottery:'purple',tanaka:'purple',kensho:'purple',manga:'purple',everyday:'purple',skun:'purple',fp:'silver',shiire:'orange'};
 export function savedLinks(d){return (Array.isArray(d?.productLinks)?d.productLinks:d?.link?[{key:'saved',label:'保存されたリンク',url:d.link}]:[]).filter(x=>safeLink(x.url));}
 // Content, identity and variant all matter. Read times and fetch timestamps do not.
 export function revision(d){const parts=[d.place,d.id,d.source?.account,d.source?.id,d.kind,d.title,d.body,savedLinks(d)],assets=postingAssets(d.posting);if(assets.reply||assets.images.length)parts.push(assets);return JSON.stringify(parts);}

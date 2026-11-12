@@ -1,7 +1,7 @@
 /* Presentation only. The existing desk owns data, selection, editing and copying. */
-import * as application from './app.js?v=20261109.6-everyday';
-import {createGlassArt as art} from './stained-art.js?v=20261110.3-silver-architecture';
-import {glassSlots,glassFor} from './stained-model.js?v=20261110.2-everyday-glass';
+import * as application from './app.js?v=20261112.2-skun';
+import {createGlassArt as art} from './stained-art.js?v=20261112.2-skun';
+import {glassSlots,glassFor} from './stained-model.js?v=20261112.2-skun';
 import {installGalleryOrder} from './stained-order.js?v=20261110.9-touch';
 const doc=document,board=application.getAccountBoard(),owner=application.getPaperDesk();
 const room=doc.getElementById('room');
@@ -179,7 +179,7 @@ function header(reader=false){
   return h;
 }
 const home=make('section','sg-home'),head=header(),rail=make('nav','sg-rail');
-rail.setAttribute('aria-label',`${glassSlots.filter(s=>!s.pending).length}つの持ち場と${glassSlots.filter(s=>s.pending).length}つの空き枠。左右にスクロールして選択`);
+rail.setAttribute('aria-label','持ち場。左右にスクロールして選択');
 const cards=new Map();
 let scrollFrame=0,scrollGoal=null;
 function cancelScroll(){cancelAnimationFrame(scrollFrame);scrollFrame=0;scrollGoal=null;rail.style.scrollSnapType='';}

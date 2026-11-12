@@ -24,8 +24,11 @@ export function createGlassArt(slot,assetBase=""){
    // Only the existing girl; exclude her old gold plinth and the glass behind her.
    sprite=`<svg class="sg-character" x="45" y="534" width="80" height="116" viewBox="254 1718 200 325" overflow="visible"><defs><clipPath id="${id}-person"><path d="M320 1718 L381 1718 L412 1733 L427 1758 L430 1790 L452 1786 L455 1813 L447 1834 L452 1860 L445 1895 L433 1911 L438 1960 L444 1990 L404 1999 L397 2043 L346 2043 L341 2034 L306 2039 L305 2000 L270 1992 L263 1970 L270 1935 L281 1907 L263 1895 L254 1840 L276 1835 L292 1842 L300 1827 L288 1820 L286 1771 L300 1740 Z"/></clipPath></defs><image href="${source}" width="724" height="2172" clip-path="url(#${id}-person)"/></svg>`;
   }else{
-   const person=silhouettes[slot.key];
-   sprite=`<g class="sg-character" transform="translate(85 ${650-person.feet})"><defs><clipPath id="${id}-person"><path d="${person.path}"/></clipPath></defs><image href="${source}" x="${-slot.center}" y="0" width="1670" height="941" clip-path="url(#${id}-person)"/></g>`;
+   const person=silhouettes[slot.sprite?.key||slot.key];
+   const spriteSource=slot.sprite?`assets/stained/gallery-${slot.sprite.sheet}.png`:source;
+   const spriteCenter=slot.sprite?.center??slot.center;
+   const spriteFilter=slot.sprite?.filter?` style="filter:${slot.sprite.filter}"`:'';
+   sprite=`<g class="sg-character" transform="translate(85 ${650-person.feet})"><defs><clipPath id="${id}-person"><path d="${person.path}"/></clipPath></defs><image href="${spriteSource}" x="${-spriteCenter}" y="0" width="1670" height="941" clip-path="url(#${id}-person)"${spriteFilter}/></g>`;
   }
  }
  wrapper.innerHTML=`<svg viewBox="0 0 170 700" xmlns="http://www.w3.org/2000/svg" focusable="false">
@@ -36,7 +39,7 @@ export function createGlassArt(slot,assetBase=""){
  <filter id="${id}-silver" color-interpolation-filters="sRGB"><feColorMatrix type="saturate" values="0"/></filter>
  <clipPath id="${id}-base"><path d="M40 647 C38 634 55 627 85 627 C115 627 132 634 130 647 L122 682 Q85 701 48 682 Z"/></clipPath>
  </defs>
- <g class="sg-glass" clip-path="url(#${id}-glass)">${glass}</g>
+ <g class="sg-glass" clip-path="url(#${id}-glass)">${glass}${slot.glassTint?`<rect x="35" y="119" width="100" height="482" fill="${slot.glassTint}" style="mix-blend-mode:color"/>`:''}</g>
  <g class="sg-frame" mask="url(#${id}-frame)" filter="url(#${id}-silver)"><image href="${ref}" x="-140.25" y="-149.6" width="1740.8" height="979.2"/></g>
  <g class="sg-foot-tracery" fill="none" stroke="#161719" stroke-width="7"><path d="M35 575 Q47 542 85 528 Q123 542 135 575 M35 573 Q62 581 85 601 Q108 581 135 573"/><path d="M85 514 L99 528 L85 542 L71 528Z"/></g>
  <g class="sg-foot-tracery" fill="none" stroke="#b1b2b3" stroke-width="2"><path d="M35 575 Q47 542 85 528 Q123 542 135 575 M35 573 Q62 581 85 601 Q108 581 135 573"/><path d="M85 514 L99 528 L85 542 L71 528Z"/></g>

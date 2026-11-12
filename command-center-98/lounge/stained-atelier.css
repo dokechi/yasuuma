@@ -71,6 +71,9 @@ body.stained-atelier[data-reading-font=large] #draft-body{font-size:20px!importa
 body.stained-atelier :is(.draft-meta,.draft-kind,.desk-empty){color:#c5c0b6!important;font-size:12px;line-height:1.8}
 body.stained-atelier .draft-meta{padding-bottom:10px!important}
 body.stained-atelier #desk a{color:#eee0bc}
+body.stained-atelier #desk .desk-skun-link{display:inline-flex;align-items:center;min-height:32px;font-size:11px;text-underline-offset:3px}
+body.stained-atelier #desk .desk-skun-threshold{font-size:11px;color:#c5c0b6}
+body.stained-atelier #draft-links .desk-skun-link{margin-top:10px}
 body.stained-atelier #desk button{background:#16171790!important;color:#ede7d9!important;border:1px solid #b2ac9980!important;border-radius:1px!important;box-shadow:none!important;min-height:40px;font:inherit;font-size:12px;padding:6px 10px}
 body.stained-atelier #desk button[aria-pressed=true]{background:#555e9366!important;border-color:#e0d9c0!important}
 body.stained-atelier #desk button:hover{background:#b4ab8c22!important}

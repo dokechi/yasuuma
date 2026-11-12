@@ -5,7 +5,7 @@
  const origin=w.location.origin,frame=d.createElement('iframe');frame.id='ccCastleFrame';frame.title='司令塔・今日を、ひらく。';frame.allow='clipboard-write; autoplay';frame.hidden=true;frame.setAttribute('aria-label','司令塔・今日を、ひらく。');
  const style=d.createElement('style');style.textContent='#ccCastleFrame{position:fixed;inset:0;width:100%;height:100dvh;border:0;z-index:200;background:#0e0e0d}#ccCastleFrame[hidden]{display:none!important}#ccCastleReturn{position:fixed;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:2147483000;min-height:44px;padding:10px 15px;background:#172333;color:#f5dfb4;border:1px solid #bca574;border-radius:5px}#ccCastleReturn[hidden]{display:none!important}body.castle-visible{overflow:hidden!important}';d.head.append(style);d.body.append(frame);
  const back=d.createElement('button');back.id='ccCastleReturn';back.type='button';back.textContent='← 司令塔';back.hidden=true;d.body.append(back);
- const loungeUrl='./lounge/index.html?v=20261112.1-cooney';
+ const loungeUrl='./lounge/index.html?v=20261112.2-skun';
  let publishingConfig=[],ready=false,modern=true,native=false,pending=null,lastPayload=null,controller=null;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}frame.src=loungeUrl;let wasHome=!!w.CCHome?.active;
  function send(type,data={}){if(ready)frame.contentWindow.postMessage({channel:'cc-castle-v1',type,...data},origin);}
  const startupWaiters=new Set();
@@ -14,10 +14,10 @@
  function show(){if(native)d.dispatchEvent(new w.CustomEvent('cc:castle-home'));if(!frame.getAttribute('src'))frame.src=loungeUrl;modern=true;native=false;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}if(!w.CCHome?.active)w.CCHome?.show?.();back.hidden=true;sync();frame.focus();send('resume');if(ready)read();}
  function nativeRoute(action,recordId,section){d.dispatchEvent(new w.CustomEvent('cc:castle-native',{detail:{action}}));native=true;send('pause',{native:action});frame.hidden=true;d.body.classList.remove('castle-visible');back.hidden=false;
   if(action==='classic'){W.openSettings();d.querySelector('dialog[open]')?.addEventListener('close',show,{once:true});}
-  else if(action==='kyun'||action==='choi'||action==='otoku'||action==='rakuten'||action==='lottery'||action==='tanaka'||action==='kensho'||action==='manga'||action==='everyday'||action==='tiktok'){H.openAccount(action,{recordId});const dialog=d.querySelector('dialog[open]:last-of-type');dialog?.addEventListener('close',show,{once:true});}
+  else if(action==='kyun'||action==='choi'||action==='otoku'||action==='rakuten'||action==='lottery'||action==='tanaka'||action==='kensho'||action==='manga'||action==='everyday'||action==='skun'||action==='tiktok'){H.openAccount(action,{recordId});const dialog=d.querySelector('dialog[open]:last-of-type');dialog?.addEventListener('close',show,{once:true});}
   else ({fp:()=>W.openFp(),sourcing:()=>{if(typeof openSourcingSection==='function'){w.CCHome?.leave?.();return openSourcingSection(['purchases','research','queue'].includes(section)?section:'purchases');}return W.openSourcing();},watches:()=>W.openWatches(),cards:()=>W.openCards(),settings:()=>W.openSettings(),daily:()=>W.openService('daily'),cooney:()=>W.openService('cooney'),shiire:()=>W.openService('shiire')})[action]?.();
   if(['daily','cooney','shiire'].includes(action))show();
-  if(!['kyun','choi','otoku','rakuten','lottery','tanaka','kensho','manga','everyday','tiktok','classic'].includes(action))d.querySelector('dialog[open]')?.addEventListener('close',show,{once:true});
+  if(!['kyun','choi','otoku','rakuten','lottery','tanaka','kensho','manga','everyday','skun','tiktok','classic'].includes(action))d.querySelector('dialog[open]')?.addEventListener('close',show,{once:true});
  }
  function localItems(){let rows=[];try{if(typeof app!=='undefined')rows.push(...(app.items||[]));}catch{}for(const k of ['activeItems','galItems','houseItems'])rows.push(...(w.CCHome?.[k]||[]));return rows;}
  function fpReading(item){
@@ -43,7 +43,13 @@
   return pair&&typeof pair.first_post==='string'&&typeof pair.second_reply==='string'
    ?{...assets,main:pair.first_post,reply:pair.second_reply}:assets;
  }
- function drafts(items,sourcing=[],onInvalid=()=>{}){const rows=[];const add=row=>{row.title=row.title.trim()||'保存原稿';if(typeof row.body!=='string'||!row.body.trim()||row.body.length>100000){onInvalid();return;}rows.push(row);};for(const item of H.unique(items)){try{if(H.isSuppressed(item)||w.CCThreadsArchive?.isArchivedRecord(item))continue;const ip=H.payload(item);if(ip.content_type==='account_configuration')continue;const publishing=publishingConfig.find(a=>a.taskId===item.taskId&&a.key!=='insurance');if(publishing){const account=publishing.key;add({id:account+'-'+item.id,place:publishing.place,title:String(item.title),body:ip.draft,kind:'本文＋返信',link:'',checkedAt:ip.date||'',posting:{main:ip.draft,reply:ip.reply||''},source:{id:String(item.id),recordId:String(item.eventRecordId??item.id),account,label:'本文＋返信',status:ip.review_status||'確認用下書き'},createdAt:Date.parse(item.occurredAt)||1,updatedAt:Date.parse(item.occurredAt)||1});continue;}if(item.taskId==='insurance-threads-v1'){add({id:'insurance-'+item.id,place:'kyun',title:String(item.title),body:ip.draft,kind:'本文',link:'',checkedAt:ip.date||'',posting:{main:ip.draft,reply:''},source:{id:String(item.id),recordId:String(item.eventRecordId??item.id),account:'insurance',imageCount:ip.threads_images_v1?.images?.length||0,label:'本文',status:'確認用下書き'},createdAt:Date.parse(item.occurredAt)||1,updatedAt:Date.parse(item.occurredAt)||1});continue;}for(const key of ['tiktok']){if(!H.matchesAccount(item,key))continue;const p=H.payload(item),product=H.savedProductLink(p),place=key==='tiktok'?'fp':key;
+ function drafts(items,sourcing=[],onInvalid=()=>{}){const rows=[];const add=row=>{row.title=row.title.trim()||'保存原稿';if(typeof row.body!=='string'||!row.body.trim()||row.body.length>100000){onInvalid();return;}rows.push(row);};for(const item of H.unique(items)){try{if(H.isSuppressed(item)||w.CCThreadsArchive?.isArchivedRecord(item))continue;const ip=H.payload(item);if(ip.content_type==='account_configuration')continue;const publishing=publishingConfig.find(a=>a.taskId===item.taskId&&a.key!=='insurance');if(publishing){const account=publishing.key,poem=account==='skun',kind=poem?'本文':'本文＋返信';
+   add({id:account+'-'+item.id,place:publishing.place,title:String(item.title),body:ip.draft,kind,link:'',
+    checkedAt:poem?'':ip.date||'',posting:{main:ip.draft,reply:ip.reply||''},
+    ...(poem?{girlsChannel:ip.girls_channel_source}:{}),
+    source:{id:String(item.id),recordId:String(item.eventRecordId??item.id),account,label:kind,status:ip.review_status||'確認用下書き'},
+    createdAt:Date.parse(item.occurredAt)||1,updatedAt:Date.parse(item.occurredAt)||1});
+   continue;}if(item.taskId==='insurance-threads-v1'){add({id:'insurance-'+item.id,place:'kyun',title:String(item.title),body:ip.draft,kind:'本文',link:'',checkedAt:ip.date||'',posting:{main:ip.draft,reply:''},source:{id:String(item.id),recordId:String(item.eventRecordId??item.id),account:'insurance',imageCount:ip.threads_images_v1?.images?.length||0,label:'本文',status:'確認用下書き'},createdAt:Date.parse(item.occurredAt)||1,updatedAt:Date.parse(item.occurredAt)||1});continue;}for(const key of ['tiktok']){if(!H.matchesAccount(item,key))continue;const p=H.payload(item),product=H.savedProductLink(p),place=key==='tiktok'?'fp':key;
    H.savedCopies(p).filter(c=>!c.label.includes('リンク')).forEach((copy,i)=>add({id:'live-'+place+'-'+encodeURIComponent(String(item.id))+'-'+i,place,title:String(item.title||p.post_title||'保存原稿').slice(0,200),body:copy.text,kind:copy.label,link:product?.url||'',...(['kyun','choi'].includes(key)?{productLinks:H.savedProductLinks(p),posting:postingFor(p,copy)}:{}),checkedAt:H.savedPriceStockCheck(p).label,source:{id:String(item.id),account:key,label:copy.label,taskId:item.taskId||'',recordId:String(item.eventRecordId??item.id),kind:item.eventRecordId!=null?'event':'signal',copyKey:copy.learningKey||copy.label,readContract:'threads-active-v1',status:H.historyState(item,key)||'投稿状態未確認'},createdAt:Date.parse(item.occurredAt||item.createdAt)||1,updatedAt:Date.parse(item.updatedAt||item.occurredAt)||1}));
   }
   const p=H.payload(item);if((p.content_type==='fp_post_candidate'||['fp_psychology','fp_reaction'].includes(p.category))&&Array.isArray(p.draft_slides)&&p.draft_slides.length){
@@ -68,22 +74,31 @@
    return data;
   }finally{clearTimeout(timer);signal?.removeEventListener('abort',abort);}
  }
+ function writingGuide(entry){
+  return entry?.eventKey==='current'&&entry.payload?.content_type==='writing_reference_guide'?entry.payload.guide:null;
+ }
  async function sendWritingReferences(){
   try{
    const data=await readResource({resource:'task-events',taskId:'writing-references-v1',limit:1});
    const entry=data.events?.[0];
-   const guide=entry?.eventKey==='current'&&entry.payload?.content_type==='writing_reference_guide' ? entry.payload.guide : null;
+   const guide=writingGuide(entry);
    send('writing-references',{guide});
   }catch(error){send('writing-references',{error:error.name==='AbortError'?'読み込みが時間切れになりました。':error.message});}
  }
- async function read(){if(pending)return pending;pending=(async()=>{controller=new AbortController();const session=controller,itemSets={signals:[],events:[]};const {normalizeResearch,normalizePurchases}=await import('./lounge/hall-model.js?v=20261021.8-hall');publishingConfig=(await import('./lounge/accounts.js?v=20261109.6-everyday')).publishingAccounts.filter(a=>!a.pending);d.dispatchEvent(new w.CustomEvent('cc:categories-ready'));let sourcing=[],purchases=[],ledgerState='loading',ledgerTruncated=false,errors=[],remaining=3;const states={signals:'読込中',events:'読込中',sourcing:'読込中'};let pinScope='';try{if(typeof AUTH==='string'&&AUTH&&w.crypto?.subtle){const digest=await w.crypto.subtle.digest('SHA-256',new TextEncoder().encode('cc-future-session-v1:'+AUTH));pinScope=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');}}catch{};
+ async function read(){if(pending)return pending;pending=(async()=>{controller=new AbortController();const session=controller,itemSets={signals:[],events:[]};const {normalizeResearch,normalizePurchases}=await import('./lounge/hall-model.js?v=20261021.8-hall');publishingConfig=(await import('./lounge/accounts.js?v=20261112.2-skun')).publishingAccounts.filter(a=>!a.pending);d.dispatchEvent(new w.CustomEvent('cc:categories-ready'));let sourcing=[],purchases=[],ledgerState='loading',ledgerTruncated=false,errors=[],remaining=3;const states={signals:'読込中',events:'読込中',sourcing:'読込中'};let pinScope='';try{if(typeof AUTH==='string'&&AUTH&&w.crypto?.subtle){const digest=await w.crypto.subtle.digest('SHA-256',new TextEncoder().encode('cc-future-session-v1:'+AUTH));pinScope=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');}}catch{};
   function publish(){let invalid=0;const rows=drafts([...itemSets.signals,...itemSets.events],sourcing,()=>invalid++),loading=remaining>0,complete=!loading&&!errors.length&&!invalid;
-   const counts=[['kyun','保険'],['choi','過去原稿'],['otoku','まだ安く買えるはず'],['rakuten','楽天犬'],['lottery','抽選日記'],['tanaka','田中卓'],['kensho','懸賞小ナス'],['manga','漫画'],['everyday','日常の言葉'],['fp','FP・TikTok'],['shiire','仕入れ']].map(([key,label])=>label+' '+rows.filter(x=>x.place===key).length+'件').join('／');
+   const counts=[['kyun','保険'],['choi','過去原稿'],['otoku','まだ安く買えるはず'],['rakuten','楽天犬'],['lottery','抽選日記'],['tanaka','田中卓'],['kensho','懸賞小ナス'],['manga','漫画'],['everyday','日常の言葉'],['skun','Sくん'],['fp','FP・TikTok'],['shiire','仕入れ']].map(([key,label])=>label+' '+rows.filter(x=>x.place===key).length+'件').join('／');
    const progress='原稿 '+states.signals+'／履歴 '+states.events+'／仕入れ '+states.sourcing;
    const message=loading?'取得済みの情報を表示中：'+counts+'。'+progress:complete?'司令塔から読込完了（本文・台本・候補）：'+counts:'一部の読取は未確認。取得できた情報を表示し、保存済みの原稿も保持しています。 '+errors.join('／')+(invalid?'／形式未確認の原稿 '+invalid+'件':'');
    const sourcingIds=new Set(sourcing.map(x=>String(x.id)));const rawResearch=H.unique([...itemSets.signals,...itemSets.events,...sourcing]).filter(x=>{const p=H.payload(x);return !H.isSuppressed(x)&&!w.CCSourcingArchive?.isArchivedRecord(x)&&!['supplier','run_summary'].includes(p.result_kind)&&(x.domain==='sourcing'||sourcingIds.has(String(x.id))||['research','candidate'].includes(p.result_kind));}).map(x=>({...x,payload:H.payload(x),url:H.savedProductLink(H.payload(x))?.url||x.url||''}));
    const searchRecords=[...normalizeResearch(rawResearch),...purchases],indexLoading=loading||ledgerState==='loading',indexComplete=complete&&ledgerState==='complete'&&!ledgerTruncated,searchMessage='保存原稿・調査 '+(loading?'読込中':complete?'取得済み':'一部未確認')+'／仕入れ元帳 '+({loading:'読込中',complete:ledgerTruncated?'一部取得':'取得済み（今回取得分）',error:'読取未確認'})[ledgerState];
-   lastPayload={drafts:rows,pinScope,complete,loading,message,checkedAt:new Date().toISOString(),searchRecords,indexLoading,indexComplete,searchMessage};send('records',lastPayload);
+   const guide=writingGuide(itemSets.events.find(item=>item.taskId==='writing-references-v1'&&item.eventKey==='current'));
+   const skun=Array.isArray(guide?.groups)?guide.groups.find(group=>group.key==='skun'):null;
+   const skunReferences=skun?{
+    sheetUrl:skun.sources?.find(source=>source.key==='past-posts')?.links?.[0]?.url,
+    minUpvotes:skun.minUpvotes
+   }:null;
+   lastPayload={drafts:rows,skunReferences,pinScope,complete,loading,message,checkedAt:new Date().toISOString(),searchRecords,indexLoading,indexComplete,searchMessage};send('records',lastPayload);
   }
   send('status',{message:'仕入れ候補・保存原稿・履歴を読み込み中…',loading:true});
   const get=resource=>readResource(resource,session.signal);
@@ -103,7 +118,7 @@
   if(m.type==='refresh')read();
   if(m.type==='writing-references')sendWritingReferences();
   if(m.type==='apply-host-update'&&waitingWorker){applyingUpdate=true;waitingWorker.postMessage({type:'SKIP_WAITING'});}
-  if(m.type==='native'&&['classic','kyun','choi','otoku','rakuten','lottery','tanaka','kensho','manga','everyday','tiktok','fp','sourcing','watches','cards','settings','daily','cooney','shiire'].includes(m.action))nativeRoute(m.action,typeof m.recordId==='string'&&m.recordId.length<=500?m.recordId:undefined,['purchases','research','queue'].includes(m.section)?m.section:undefined);
+  if(m.type==='native'&&['classic','kyun','choi','otoku','rakuten','lottery','tanaka','kensho','manga','everyday','skun','tiktok','fp','sourcing','watches','cards','settings','daily','cooney','shiire'].includes(m.action))nativeRoute(m.action,typeof m.recordId==='string'&&m.recordId.length<=500?m.recordId:undefined,['purchases','research','queue'].includes(m.section)?m.section:undefined);
  });
  back.addEventListener('click',()=>{for(const dialog of d.querySelectorAll('dialog[open]'))dialog.close();show();});d.addEventListener('cc:home-render',sync);const observer=new MutationObserver(sync);const home=d.getElementById('ccRpgHome');if(home)observer.observe(home,{attributes:true,attributeFilter:['hidden']});
  // Retire both old home surfaces while retaining their management handlers.
