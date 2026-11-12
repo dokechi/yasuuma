@@ -136,14 +136,15 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   const d=active,group=groups().find(g=>g.some(x=>x.id===d.id))||[d];
   if(group.length>1)for(const variant of group){const b=button(variant.kind,()=>select(variant.id));b.setAttribute('aria-pressed',String(variant.id===d.id));$('desk-variants').append(b);}
   $('draft-kind').textContent=d.kind;$('draft-title').hidden=isPostManuscript(d);$('draft-title').textContent=isPostManuscript(d)?'':d.title;$('draft-body').textContent=d.body;
-  $('draft-meta').textContent=[d.source?.status,d.source?.account==='insurance'?'':(['kyun','choi'].includes(d.place)?postingReadiness(d).label:''),d.checkedAt?(d.source?.account==='insurance'?'資料確認日：':'価格・在庫の保存時確認：')+d.checkedAt:''].filter(Boolean).join(' · ');
+  const meta=$('draft-meta');
+  meta.textContent=[d.source?.status,d.source?.account==='insurance'?'':(['kyun','choi'].includes(d.place)?postingReadiness(d).label:''),d.checkedAt?(d.source?.account==='insurance'?'資料確認日：':'価格・在庫の保存時確認：')+d.checkedAt:''].filter(Boolean).join(' · ');
   const links=Array.isArray(d.productLinks)?d.productLinks.filter(x=>safeLink(x.url)):d.link?[{label:'保存されたリンク',url:d.link}]:[];
   if(links.length){$('draft-links').append(el('p','保存された商品リンク','draft-kind'));for(const row of links){const line=el('div',undefined,'product-link'),a=el('a',row.label+' ↗');a.href=safeLink(row.url);a.target='_blank';a.rel='noopener noreferrer';line.append(a,button('URLをコピー',()=>copy(d,'link',row.url)));$('draft-links').append(line);}if(['kyun','choi'].includes(place))$('draft-links').append(el('small','現在の価格・在庫は商品ページで確認してください。'));}
   if(d.girlsChannel){
    const {url,upvotes,checkedAt}=d.girlsChannel;
    const source=externalLink(`ガルちゃん元コメント ＋${upvotes}票 ↗`,url,'desk-skun-link');
    if(checkedAt)source.title=`票数の確認日 ${checkedAt}`;
-   $('draft-links').append(source);
+   meta.append(source);
   }
   $('desk-copy').textContent=notebook.copyMark(d)?'✓ 本文をコピー済み':'本文をコピー';
   editable(d);if(learningController)$('desk-copy').textContent='最終稿をコピー';
