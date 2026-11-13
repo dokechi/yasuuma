@@ -45,7 +45,8 @@ jobs:
       - name: Daily reading desk DOM integration
         run: |
           npm install --prefix "$RUNNER_TEMP/daily-dom" --ignore-scripts --no-audit --no-fund linkedom@0.18.13 playwright-core@1.62.1 jsdom@26.1.0
-          NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node --test scripts/rpg-daily-desk.test.cjs scripts/reddit-editor-races.test.cjs scripts/card-editor-races.test.cjs scripts/copy-failure-receipts.test.cjs scripts/threads-images-ui.test.cjs
+          COMMAND_CENTER_UI_MODULES="$RUNNER_TEMP/daily-dom/node_modules" NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node --test scripts/command-center-cleanup-ui.test.mjs
+          NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node --test scripts/rpg-daily-desk.test.cjs scripts/reddit-editor-races.test.cjs scripts/card-editor-races.test.cjs scripts/card-history-shape.test.cjs scripts/card-list-shape.test.cjs scripts/copy-failure-receipts.test.cjs scripts/threads-images-ui.test.cjs scripts/reader-empty-state.test.mjs
           cd command-center-98/castle
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node --test tests/*.test.cjs
           cd ../..

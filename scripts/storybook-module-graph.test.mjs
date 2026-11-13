@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const origin='https://storybook.invalid/';
-const version='20261113.1-owners';
+const version='20261113.7-read-state';
 const canonical=new Set(['app.js','desk.js','accounts.js','desk-model.js','qol.js','hall-tools.js','spatial-desk.js','living-room-model.js','arrival-passage.js','court-native-snapshot.js']);
 const filename=url=>path.join(root,new URL(url).pathname);
 function literals(source){
@@ -29,6 +29,7 @@ function graph(entry){
 function checkOwners(entry){
  const result=graph(entry),apps=[...result.modules.keys()].filter(url=>new URL(url).pathname==='/command-center-98/lounge/app.js');
  assert.deepEqual(apps,[new URL('command-center-98/lounge/app.js?v='+version,origin).href],entry+' has one exact app owner URL');
+ assert.ok(result.modules.has(new URL('command-center-98/lounge/desk.js?v='+version,origin).href),entry+' executes the updated reader empty-state owner');
  // Independent pure dependencies keep their own cache revision. What matters
  // is one exact URL per owner/identity module, never two live app instances.
  const byPath=new Map();for(const url of result.modules.keys()){const parsed=new URL(url);if(canonical.has(path.basename(parsed.pathname))){const versions=byPath.get(parsed.pathname)||new Set();versions.add(parsed.search);byPath.set(parsed.pathname,versions);}}
@@ -52,8 +53,8 @@ test('changed foreground and its retained archive import graph use the same curr
 test('unified notebook presentation invalidates changed code and keeps one canonical owner',()=>{
  const {html,modules}=checkOwners('command-center-98/lounge/book.html');
  assert.match(html,/href="book\.html\?presentation=book"/,'retained reader link stays on its owning entry');
- assert.match(html,/paper-stage\.css\?v=20261103\.3-scroll/);assert.match(html,/paper-atelier\.js\?v=20261113\.2-focus/);
- for(const [file,pin] of Object.entries({'paper-atelier.js':'20261113.2-focus','paper-stage.js':'20261113.1-focus','paper-fold.js':'20261103.2-notebook','paper-motion.js':'20261103.2-notebook','paper-images.js':'20261103.2-notebook','paper-cutouts.js':'20261103.2-notebook'})){
+ assert.match(html,/paper-stage\.css\?v=20261103\.3-scroll/);assert.match(html,/paper-atelier\.js\?v=20261113\.7-read-state/);
+ for(const [file,pin] of Object.entries({'paper-atelier.js':'20261113.7-read-state','paper-stage.js':'20261113.1-focus','paper-fold.js':'20261103.2-notebook','paper-motion.js':'20261103.2-notebook','paper-images.js':'20261103.2-notebook','paper-cutouts.js':'20261103.2-notebook'})){
   assert.ok([...modules.keys()].some(url=>url.endsWith('/'+file+'?v='+pin)),'current notebook dependency '+file);
   for(const old of ['20261102.2-paper','20261102.3-depth','20261102.4-detail','20261103.1-world'])assert.ok(![...modules.keys()].some(url=>url.endsWith('/'+file+'?v='+old)),'never execute stale presentation '+file+' '+old);
  }

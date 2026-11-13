@@ -7,7 +7,11 @@ const root=process.env.COMMAND_CENTER_UI_MODULES;
 const {JSDOM,VirtualConsole}=root?createRequire(root+'/package.json')('jsdom'):{};
 const wait=async check=>{const start=Date.now();while(!check()){if(Date.now()-start>5000)throw Error('Synthetic DOM did not settle');await new Promise(r=>setTimeout(r,10))}};
 async function setup(legacyEntry=false){
- const dir=new URL('../command-center-98/',import.meta.url),manifest=JSON.parse(await fs.readFile(new URL(legacyEntry?'tests/fixtures/app-assets.legacy.json':'app-assets.json',dir),'utf8'));
+ const dir=new URL('../command-center-98/',import.meta.url),manifest=JSON.parse(await fs.readFile(new URL('app-assets.json',dir),'utf8'));
+ // This contract tests the optional CCData fallback, not an archived bundle.
+ // Loading an old manifest with current file contents creates an impossible
+ // dependency mix (for example current sourcing modules without their model).
+ if(legacyEntry)manifest.scripts=manifest.scripts.filter(url=>!url.startsWith('./command-center-data.js'));
  let html=await fs.readFile(new URL('app.html',dir),'utf8');
  const core=await import('../supabase/functions/shared/affiliate-production.mjs');
  for(const url of manifest.styles)html=html.replace('</head>','<style>'+await fs.readFile(new URL(url.split('?')[0],dir),'utf8')+'</style></head>');
@@ -15,8 +19,10 @@ async function setup(legacyEntry=false){
  html=html.replace(/<script src="\.\/v148-daily-report-link\.js[^\"]*"><\/script>/,'<script>'+await fs.readFile(new URL('v148-daily-report-link.js',dir),'utf8')+'</script>');
  for(const url of manifest.scripts){let code=await fs.readFile(new URL(url.split('?')[0],dir),'utf8');if(url.startsWith('./affiliate-production.js'))code=code.replace(/import\('[^']+'\)/,'Promise.resolve(window.__testAffiliateCore)');const end=html.lastIndexOf('</body>');html=html.slice(0,end)+'<script>'+code.replaceAll('</script','<\\/script')+'</script>'+html.slice(end);}
  const errors=[],calls=[],opened=[],v=new VirtualConsole();v.on('jsdomError',e=>errors.push(e.message));
- const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://synthetic-command-center.invalid/',pretendToBeVisual:true,virtualConsole:v,beforeParse(w){
-  Object.assign(w,{__testAffiliateCore:core,AbortSignal,structuredClone,TextEncoder,TextDecoder,scrollTo:()=>{}});w.HTMLElement.prototype.scrollIntoView=()=>{};w.open=(...args)=>opened.push(args);
+ const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://synthetic-command-center.invalid/command-center-98/app-v130.html?v=synthetic',pretendToBeVisual:true,virtualConsole:v,beforeParse(w){
+  w.localStorage.setItem('cc_retro_token','synthetic-navigation-fixture');
+  Object.assign(w,{CCLoadedManifest:manifest,__testAffiliateCore:core,AbortSignal,structuredClone,TextEncoder,TextDecoder,scrollTo:()=>{}});w.HTMLElement.prototype.scrollIntoView=()=>{};w.open=(...args)=>opened.push(args);
+  w.matchMedia=query=>({media:query,matches:false,addEventListener(){},removeEventListener(){},addListener(){},removeListener(){}});
   w.URL.createObjectURL=()=> 'blob:synthetic';w.URL.revokeObjectURL=()=>{};
   w.fetch=async(input,options={})=>{assert.equal((options.method||'GET').toUpperCase(),'GET','Navigation must not mutate data');calls.push(String(input));return new Response(JSON.stringify({ok:true,items:[],tasks:[],events:[],purchases:[],suppliers:[],programs:[],accounts:[],jobs:[],campaigns:[],counts:{},readyCount:0,total:0,nextOffset:null,publisher_connected:false}));};
  }});
@@ -51,7 +57,7 @@ test('materials shortcut reuses the single existing secure external opener',{ski
  }finally{await new Promise(resolve=>setTimeout(resolve,30));dom.window.close()}
 });
 
-test('cached legacy entry still initializes HOME and all navigation without the new helper tag',{skip:!root},async()=>{
+test('optional data helper absence still initializes HOME and all navigation',{skip:!root},async()=>{
  const {dom,d,w,errors}=await setup(true);try{
   assert.equal(w.CCData,undefined);assert.ok(w.CCHome?.readModel);assert.equal(w.CCHome.loaded.active,true);
   assert.equal(d.querySelectorAll('.home-workspace').length,3);

@@ -55,7 +55,7 @@ body.stained-atelier #desk .desk-content{display:grid!important;grid-template-co
 body.stained-atelier .manuscript-shelf{padding:10px!important;border-right:1px solid var(--sg-line);overflow:hidden!important;min-width:0;min-height:0}
 body.stained-atelier .desk-search input{background:#0003;color:#f1eee4;border:1px solid var(--sg-line);border-radius:0;min-height:44px;font-size:14px}
 body.stained-atelier .desk-search input::placeholder{color:#c2beb4}
-body.stained-atelier .desk-filters{gap:3px}.stained-atelier .desk-filters button{font-size:11px!important;padding:4px!important;min-height:38px!important}
+body.stained-atelier .desk-filters{gap:3px}.stained-atelier .desk-filters button{font-size:11px!important;padding:4px!important;min-height:44px!important;min-width:44px;flex:1 0 auto;white-space:nowrap}
 body.stained-atelier #desk-count{color:#bcb8ae;font-size:11px;padding:8px 2px;margin:0}
 body.stained-atelier .manuscript-list{overflow:auto!important;flex:1;min-height:0}
 body.stained-atelier #desk .manuscript-card{border:0!important;border-bottom:1px solid #a49f8f38!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;padding:12px 8px!important;gap:6px;min-height:62px;margin:0;color:#ebe7dd!important}
@@ -71,15 +71,15 @@ body.stained-atelier[data-reading-font=large] #draft-body{font-size:20px!importa
 body.stained-atelier :is(.draft-meta,.draft-kind,.desk-empty){color:#c5c0b6!important;font-size:12px;line-height:1.8}
 body.stained-atelier .draft-meta{padding-bottom:10px!important}
 body.stained-atelier #desk a{color:#eee0bc}
-body.stained-atelier #desk .desk-skun-link{display:inline-flex;align-items:center;min-height:32px;font-size:11px;text-underline-offset:3px}
+body.stained-atelier #desk .desk-skun-link{display:inline-flex;align-items:center;min-height:44px;min-width:44px;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;font-size:11px;text-underline-offset:3px}
 body.stained-atelier #desk .desk-skun-threshold{font-size:11px;color:#c5c0b6}
-body.stained-atelier #draft-meta .desk-skun-link{margin-inline-start:10px;min-height:28px}
+body.stained-atelier #draft-meta .desk-skun-link{margin-inline-start:10px;max-width:calc(100% - 10px);min-height:44px}
 body.stained-atelier #desk button{background:#16171790!important;color:#ede7d9!important;border:1px solid #b2ac9980!important;border-radius:1px!important;box-shadow:none!important;min-height:40px;font:inherit;font-size:12px;padding:6px 10px}
 body.stained-atelier #desk button[aria-pressed=true]{background:#555e9366!important;border-color:#e0d9c0!important}
 body.stained-atelier #desk button:hover{background:#b4ab8c22!important}
 body.stained-atelier #desk button:disabled{opacity:.4}
 body.stained-atelier .reader-actions{padding:10px 14px!important;flex-shrink:0;gap:8px;border-top:1px solid var(--sg-line)}
-body.stained-atelier .reader-actions #desk-pin{display:none}
+body.stained-atelier #desk .reader-actions #desk-pin{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;flex:0 0 44px}
 body.stained-atelier .reader-qol{border-color:var(--sg-line)!important;background:transparent!important;padding:5px 14px!important}
 body.stained-atelier .desk-footer{flex-shrink:0;padding:7px 12px!important;flex-wrap:wrap;gap:6px}
 body.stained-atelier #desk-operation{color:#c5c9ad!important;font-size:12px!important;line-height:1.5}
@@ -107,7 +107,7 @@ body.stained-atelier dialog button{background:#282b30;color:#eee7d9;border:1px s
  body.stained-atelier #room #desk{inset:65px 8px 8px!important}body.stained-atelier #desk .desk-toolbar{padding:6px 9px!important;gap:4px}
  body.stained-atelier #desk-routes{font-size:10px;gap:4px}body.stained-atelier #desk-routes>span{display:none}
  body.stained-atelier #desk .desk-content{display:flex!important;flex-direction:column!important}
- body.stained-atelier .manuscript-shelf{flex:0 0 32%;max-height:230px;border-right:0;border-bottom:1px solid var(--sg-line);padding:7px!important;display:grid!important;grid-template-columns:1fr auto;grid-template-rows:40px 1fr;gap:5px}
+ body.stained-atelier .manuscript-shelf{flex:0 0 32%;max-height:230px;border-right:0;border-bottom:1px solid var(--sg-line);padding:7px!important;display:grid!important;grid-template-columns:1fr auto;grid-template-rows:minmax(44px,auto) 1fr;gap:5px}
  body.stained-atelier .desk-filters{margin:0;max-width:180px}.stained-atelier #desk-count{display:none}body.stained-atelier .manuscript-list{grid-column:1/-1;height:100%;overflow:auto!important}
  body.stained-atelier .manuscript-card{min-height:48px!important;padding:6px!important}.stained-atelier .manuscript-card :is(span,small){display:none}
  body.stained-atelier #desk .manuscript-reader{flex:1;min-height:0}body.stained-atelier #desk-scroll{padding:12px!important}
@@ -121,7 +121,9 @@ body.stained-atelier dialog button{background:#282b30;color:#eee7d9;border:1px s
 .sg-selected-art:before{clip-path:none;background:radial-gradient(ellipse at 50% 4%,#fff1d829,transparent 65%);filter:blur(12px)}
 body.stained-atelier #desk-connect{background:#111a!important;color:#eee2c4!important;border:1px solid var(--sg-line);border-radius:0;font:14px/1.5 system-ui!important;padding:10px;margin:8px 12px;text-align:center}
 body.stained-atelier .desk-state{width:auto;flex:1;justify-content:flex-end}
-body.stained-atelier .desk-state #desk-refresh{display:none}
+body.stained-atelier #desk .desk-state #desk-refresh{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;flex-shrink:0}
+body.stained-atelier #desk .desk-state{min-width:0;flex-wrap:wrap}
+body.stained-atelier #desk .desk-state details{min-width:0;flex:1 1 140px}
 
 body.stained-atelier #room{background-image:linear-gradient(#08090970,#080909aa),url('./assets/stained/map.png')!important}
 body.stained-atelier #desk-list{display:flex!important;flex-direction:column!important;max-height:none!important;overflow-x:hidden!important;scrollbar-width:thin;scrollbar-color:#79796b #1119}
