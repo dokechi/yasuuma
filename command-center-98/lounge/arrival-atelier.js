@@ -1,7 +1,7 @@
 /* Optional architectural courtyard. Existing owners keep all records,
    routing and paper. Nothing here reads an API or changes source records. */
-import * as spatial from './spatial-atelier.js?v=20261102.3-paper';
-import * as application from './app.js?v=20261102.2-paper';
+import * as spatial from './spatial-atelier.js?v=20261113.1-owners';
+import * as application from './app.js?v=20261113.1-owners';
 
 const rooms=[
  {key:'insurance',short:'保険',name:'手紙の書斎'},

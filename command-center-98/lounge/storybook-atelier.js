@@ -1,5 +1,5 @@
 /* One working book, one application owner. Presentation never fetches records. */
-import * as application from './app.js?v=20261109.6-everyday';
+import * as application from './app.js?v=20261113.1-owners';
 const board=application.getAccountBoard();
 let scene,desk,passage,workbench,artBuilder=null,living=null,destroyed=false;
 const actorURLs=Object.freeze(Object.fromEntries(['insurance','otoku','rakuten','lottery','sourcing'].map(key=>[key,new URL('./assets/storybook-'+key+'-actor-v1.webp',import.meta.url).href])));
@@ -34,7 +34,7 @@ try{
   try{const {mountWorkingBook}=await import('./storybook-workbench.js?v=20261109.6-everyday');workbench=mountWorkingBook({application,board,onCancel:()=>passage?.cancel(),onInterrupt:()=>passage?.interrupt(),onTurn:spec=>passage?.onTurn?.(spec)});const publish=scene.setLivingStatus.bind(scene);scene.setLivingStatus=value=>{publish(value);workbench?.setLivingStatus(value);};}catch(error){console.warn('Working-page navigation unavailable; the existing reader remains usable.',error);}
  }
  const config=Object.fromEntries(storyChapters.filter(x=>x.key!=='sourcing').map(x=>[x.key,{name:x.place,fallbackColor:'#F7F8F2',actorURL:actorURLs[x.key]}]));
- const {installSpatialDesk}=await import('./spatial-desk.js?v=20261109.6-everyday');
+ const {installSpatialDesk}=await import('./spatial-desk.js?v=20261113.1-owners');
  if(getComputedStyle(document.body).getPropertyValue('--storybook-reader-ready').trim()!=='1'||getComputedStyle(document.body).getPropertyValue('--spatial-reader-ready').trim()!=='1')throw Error('Storybook reader styles unavailable');
  desk=installSpatialDesk({openRoom:key=>workbench?workbench.open(key):scene.open(key,null,{instant:true}),roomPresentation:config,shelfDock:workbench?.shelfDock});workbench?.setDesk(desk);
  document.body.dataset.spatial='ready';

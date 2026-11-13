@@ -1,3 +1,4 @@
+// Retained book compatibility fixture; current default is covered by unified-castle-browser.cjs.
 /* Actual production host + isolated synthetic APIs. This fixture does not use
    live credentials, approve posts, or write records. Normal-motion coverage is
    deliberately separate from the existing reduced-motion spatial regression. */
@@ -44,6 +45,7 @@ const server = http.createServer((req,res) => {
   fs.readFile(file,(error,bytes) => {
     if (error) return res.writeHead(404).end();
     let content=bytes;
+    if(relative==='/command-center-98/castle-parent.js')content=bytes.toString().replace('./lounge/index.html?', './lounge/book.html?');
     if (relative==='/command-center-98/app.html') content=bytes.toString().replace('<head>',
       '<head><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script><script>'+fixtureScript+'</script>');
     if (relative==='/scripts/ui-fixtures.js') content=bytes.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');

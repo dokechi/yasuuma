@@ -30,8 +30,7 @@ const fixtureScript=`(()=>{
   __storybookRecords.requests.push({url:url.href,method});
   const json=data=>new Response(JSON.stringify(data),{status:200,headers:{'Content-Type':'application/json'}});
   if(method==='GET'&&url.searchParams.get('resource')==='task-events'&&rows.some(r=>r.taskId===url.searchParams.get('taskId')))return json({ok:true,events:rows.filter(r=>r.taskId===url.searchParams.get('taskId')),nextOffset:null});
-  if(method==='GET'&&url.searchParams.get('resource')==='threads-images'){if(${!!process.env.PAPER_IMAGES})return window.__paperTransport(input,options);return json({ok:true,id:url.searchParams.get('id'),accountKey:url.searchParams.get('accountKey'),manifest:{contract:'threads-post-images-v1',revision:0,images:[]},assets:[]});
-}
+  if(method==='GET'&&url.searchParams.get('resource')==='threads-images'){if(${!!process.env.PAPER_IMAGES})return window.__paperTransport(input,options);return json({ok:true,id:url.searchParams.get('id'),accountKey:url.searchParams.get('accountKey'),manifest:{contract:'threads-post-images-v1',revision:0,images:[]},assets:[]});}
   if(${!!process.env.PAPER_IMAGES}&&method==='PATCH'&&JSON.parse(options.body||'{}').action==='threads_images_save')return window.__paperTransport(input,options);
   return previous(input,options);
  };
@@ -46,7 +45,7 @@ const server=http.createServer((req,res)=>{
   // Explicit legacy entry; current default is tested independently.
   if(relative==='/command-center-98/castle-parent.js')content=bytes.toString().replace('./lounge/index.html?', './lounge/book.html?');
   if(relative==='/scripts/ui-fixtures.js')content=bytes.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
-  if(process.env.PAPER_EIGHT&&relative==='/command-center-98/lounge/accounts.js')content=bytes.toString().replace('...[6].map',"{key:'qa-category-a',place:'qa-a',name:'検証カテゴリA',taskId:'qa-a-threads-v1'}, {key:'qa-category-b',place:'qa-b',name:'検証カテゴリB',taskId:'qa-b-threads-v1'}, ...[6].map");
+  if(process.env.PAPER_EIGHT&&relative==='/command-center-98/lounge/accounts.js')content=bytes.toString().replace('export const publishingAccounts=Object.freeze([',"export const publishingAccounts=Object.freeze([{key:'qa-category-a',place:'qa-a',name:'検証カテゴリA',taskId:'qa-a-threads-v1'}, {key:'qa-category-b',place:'qa-b',name:'検証カテゴリB',taskId:'qa-b-threads-v1'}, ");
   res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'}).end(content);
  });
 });
@@ -81,7 +80,7 @@ const server=http.createServer((req,res)=>{
    await page.mouse.move(width/2,height*.75);for(let n=0;n<22;n++){await page.mouse.wheel(0,900);await page.waitForTimeout(35)}await page.waitForTimeout(150);
    check('native wheel reaches the bottom and continuation control',await cf.evaluate(()=>{const e=document.scrollingElement,b=document.querySelector('.paper-more')?.getBoundingClientRect();return e.scrollHeight-e.clientHeight-e.scrollTop<4&&b&&b.top>=0&&b.bottom<=innerHeight}),await documentTop());
    await page.screenshot({path:path.join(out,width+'-'+height+'-native-bottom.png')});await cf.evaluate(()=>window.scrollTo(0,0));
-   await cf.evaluate(async()=>{window.__paperOwner=await import('./app.js?v=20261102.2-paper');});
+   await cf.evaluate(async()=>{window.__paperOwner=await import('./app.js?v=20261113.1-owners');});
    const pinClear=async label=>{
     const report=await f.locator('.paper-card').evaluateAll(nodes=>{
      const collisions=[],categories=[],overlaps=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>.5&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>.5;
@@ -107,7 +106,7 @@ const server=http.createServer((req,res)=>{
    check('no initial semantic records',await cf.evaluate(()=>Object.keys(localStorage).filter(k=>/^castle-production\.v1\.(?:visited:|visit:|copy:|seen:|done:|future:)/.test(k)).length===0));
    const geometry=await cf.evaluate(()=>({width:document.documentElement.scrollWidth,client:innerWidth,tabs:[...document.querySelectorAll('.paper-tab')].map(n=>({text:n.textContent,font:parseFloat(getComputedStyle(n).fontSize),height:n.getBoundingClientRect().height})),body:parseFloat(getComputedStyle(document.querySelector('.paper-excerpt')).fontSize)}));
    check('no page horizontal overflow; readable text and tap areas',geometry.width<=geometry.client+1&&geometry.tabs.every(t=>t.font>=16&&t.height>=44)&&geometry.body>=16,geometry);
-   if(process.env.PAPER_EIGHT)check('8 categories remain accessible in the same scrollable header',geometry.tabs.length===8&&await cf.evaluate(()=>{const nav=document.querySelector('.paper-tabs');return nav.scrollWidth<=nav.clientWidth+1||getComputedStyle(nav).overflowX==='auto';}));
+   if(process.env.PAPER_EIGHT)check('12 categories remain accessible in the same scrollable header',geometry.tabs.length===12&&await cf.evaluate(()=>{const nav=document.querySelector('.paper-tabs');return nav.scrollWidth<=nav.clientWidth+1||getComputedStyle(nav).overflowX==='auto';}));
    const previewFidelity=await cf.evaluate(()=>{const rows=__paperOwner.getPaperDesk().rows('insurance');return [...document.querySelectorAll('.paper-card')].map((card,index)=>{const row=rows.find(d=>d.id===card.dataset.paperId);return {id:card.dataset.paperId,title:card.querySelector('.paper-title').textContent===row?.title,excerpt:card.querySelector('.paper-excerpt').textContent===row?.body.slice(0,index===0?240:105)};});});
    check('preview formatting preserves exact source title and excerpt textContent',previewFidelity.every(x=>x.title&&x.excerpt),previewFidelity);
    if(!process.env.PAPER_SHORT){
@@ -192,7 +191,7 @@ const server=http.createServer((req,res)=>{
     check('new category '+suffix+' copies its complete independent source',await cf.evaluate(async expected=>await navigator.clipboard.readText()===expected,expected));
     await f.locator('.paper-close').click();await cf.waitForFunction(()=>!__paperStage.snapshot().opened);
     await f.locator('.paper-search').click();await f.locator('#hall-query').fill('検証カテゴリ qa-'+suffix);await f.locator('#hall-results button').first().click();await f.locator('#hall-detail').getByRole('button',{name:'この原稿を開く',exact:true}).click();await cf.waitForFunction(()=>__paperStage.snapshot().phase==='open');
-    check('new category '+suffix+' search reopens the matching paper title and source',await cf.evaluate(expected=>{const card=document.querySelector('.paper-reader').closest('.paper-card');return document.getElementById('draft-body').textContent===expected&&card.querySelector('.paper-title').textContent===document.getElementById('draft-title').textContent;},expected));
+    check('new category '+suffix+' search reopens the matching paper title and source',await cf.evaluate(expected=>{const card=document.querySelector('.paper-reader').closest('.paper-card');return card.dataset.paperId===document.querySelector('#desk-list .manuscript-card[aria-pressed=true]').dataset.draftId&&document.getElementById('draft-body').textContent===expected&&document.getElementById('draft-title').textContent===expected.trim().split(/\r?\n/)[0].slice(0,100);},expected));
     await f.locator('.paper-close').click();await cf.waitForFunction(()=>!__paperStage.snapshot().opened);
     await f.locator('.paper-tools summary').click();await f.locator('.paper-tools-menu').getByRole('button',{name:'コピー履歴',exact:true}).click();await f.locator('#desk-history-dialog').waitFor({state:'visible'});
     const historyTexts=await f.locator('#desk-history-list pre').allTextContents();check('new category '+suffix+' history contains only its own exact copied source',historyTexts.length===1&&historyTexts[0]===expected,historyTexts);

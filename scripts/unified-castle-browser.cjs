@@ -44,6 +44,8 @@ const server=http.createServer((req,res)=>{
       const page=await context.newPage(),errors=[],blocked=[];page.on('pageerror',error=>errors.push(error.message));
       await context.route('**/*',route=>{
         const request=route.request();
+        // Deterministic local CSS response: no Google request leaves the fixture.
+        if(new URL(request.url()).hostname==='fonts.googleapis.com'&&request.method()==='GET')return route.fulfill({status:200,contentType:'text/css',body:'/* offline system font fixture */'});
         if(new URL(request.url()).origin===origin&&['GET','HEAD'].includes(request.method()))return route.continue();
         blocked.push({url:request.url(),method:request.method()});return route.abort();
       });

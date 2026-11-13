@@ -8,6 +8,7 @@ async function capture(page,file){await page.frames()[1].evaluate(()=>Promise.al
 (async()=>{
  const {publishingAccounts}=await import('../command-center-98/lounge/accounts.js');
  const activeAccountCount=publishingAccounts.filter(a=>!a.pending).length;
+ const {storyChapters}=await import('../command-center-98/lounge/storybook-scene.js');
  fs.mkdirSync(out,{recursive:true});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  const origin='http://127.0.0.1:'+server.address().port,browser=await chromium.launch({headless:true,executablePath:process.env.CC_TEST_CHROME||['/usr/bin/google-chrome','/usr/bin/chromium'].find(p=>fs.existsSync(p)),args:['--no-sandbox']});
  const measurements=[];
@@ -23,12 +24,12 @@ async function capture(page,file){await page.frames()[1].evaluate(()=>Promise.al
   });
   page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());
-  await page.route('**/qa.html',r=>r.fulfill({contentType:'text/html',body:'<style>body{margin:0}iframe{display:block;width:100vw;height:100dvh;border:0}</style><iframe src="/command-center-98/lounge/index.html"></iframe>'}));
+  await page.route('**/qa.html',r=>r.fulfill({contentType:'text/html',body:'<style>body{margin:0}iframe{display:block;width:100vw;height:100dvh;border:0}</style><iframe src="/command-center-98/lounge/book.html"></iframe>'}));
   await page.goto(origin+'/qa.html');const frame=page.frameLocator('iframe');
   await openStorybookOverview(frame);await frame.locator('[data-story-destination]').first().waitFor();
-  assert.equal(await frame.locator('[data-story-destination]').count(),publishingAccounts.length+2);
-  assert.equal(await frame.locator('[data-story-destination]:disabled').count(),2);
-  assert.equal(await frame.locator('[data-story-instant]').count(),activeAccountCount);
+  assert.equal(await frame.locator('[data-story-destination]').count(),storyChapters.length+1);
+  assert.equal(await frame.locator('[data-story-destination]:disabled').count(),1);
+  assert.equal(await frame.locator('[data-story-instant]').count(),storyChapters.length);
   const rows=['insurance','otoku','rakuten'].flatMap((account,i)=>Array.from({length:7},(_,j)=>({id:account+j,place:account==='insurance'?'kyun':account,title:['保険の確認ポイント','安く買う前のチェック','楽天のお得情報'][i]+' '+(j+1),body:account+'だけの本文。ほかのアカウントと混ぜない。',kind:'本文',checkedAt:'2026-10-30',source:{id:account+j,account},posting:{main:account+'本文',reply:account==='insurance'?'':account+'返信'},createdAt:1,updatedAt:10-j})));
   rows.push({id:'legacy',place:'kyun',title:'旧キュン原稿',body:'旧原稿は保険と混ぜない',source:{id:'old',account:'kyun'},createdAt:1,updatedAt:1});
   await page.evaluate(rows=>document.querySelector('iframe').contentWindow.postMessage({channel:'cc-castle-v1',type:'records',drafts:rows,complete:true,loading:false,message:'保存原稿を読込済み'},location.origin),rows);
@@ -55,7 +56,7 @@ async function capture(page,file){await page.frames()[1].evaluate(()=>Promise.al
    targets.push(await target.evaluate(n=>{const r=n.getBoundingClientRect(),points=[[.1,.1],[.9,.1],[.5,.5],[.1,.9],[.9,.9]];return {name:n.getAttribute('aria-label'),width:r.width,height:r.height,inside:r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight,hit:points.every(([x,y])=>{const hit=document.elementFromPoint(r.left+r.width*x,r.top+r.height*y);return hit===n||n.contains(hit);})};}));
   }
   assert.ok(targets.every(r=>r.name&&r.width>=44&&r.height>=44&&r.inside&&r.hit),JSON.stringify(targets));
-  assert.equal(await frame.locator('[data-story-destination]:visible').count(),publishingAccounts.length+2);
+  assert.equal(await frame.locator('[data-story-destination]:visible').count(),storyChapters.length+1);
   await frame.locator('.story-preparing summary').click();
   const quick=await frame.locator('[data-story-instant]').evaluateAll(nodes=>nodes.map(n=>({width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height})));
   assert.ok(quick.every(r=>r.width>=44&&r.height>=44));

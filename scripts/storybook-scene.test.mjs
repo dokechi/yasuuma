@@ -7,7 +7,7 @@ import {mountStorybook,storyChapters} from '../command-center-98/lounge/storyboo
 import {publishingAccounts} from '../command-center-98/lounge/accounts.js';
 const {JSDOM}=createRequire(import.meta.url)('jsdom');
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
-const keys=['insurance','otoku','rakuten','lottery','tanaka','sourcing'];
+const keys=['insurance','otoku','rakuten','lottery','tanaka','kensho','manga','sourcing'];
 
 function setup(t,{delayedBack=false,...options}={}) {
  const dom=new JSDOM('<!doctype html><body><button id="back">戻る</button><button id="lounge-search">検索</button><button id="lounge-later">あとで</button><button id="settings-open">設定</button><section class="account-board" data-view="tiles"><button class="board-primary">原稿一覧</button><button class="board-refresh">更新</button></section><article id="original-reader"><h2>既存の原稿</h2><p>保存された本文を変更しません。</p></article></body>',{url:'https://storybook.invalid/lounge/',pretendToBeVisual:true});
@@ -31,13 +31,13 @@ function setup(t,{delayedBack=false,...options}={}) {
  return {win,doc,host,board,scene,calls,subscribers,emit,show,mount,$:selector=>doc.querySelector(selector),unchanged(){assert.equal(doc.querySelector('#original-reader').outerHTML,before);assert.equal(JSON.stringify(destinations),records);assert.equal(calls.fetch,0);assert.equal(calls.storage,0);}};
 }
 
-test('five active chapters and three sealed slots preserve all eight canonical identities including @chusen1101',t=>{
+test('retained illustrated chapters and one sealed slot preserve their canonical identities',t=>{
  const h=setup(t);
  assert.deepEqual(storyChapters.map(chapter=>chapter.key),keys);
  const slots=[...h.doc.querySelectorAll('[data-story-destination]')];
- assert.equal(slots.length,8);assert.equal(slots.filter(button=>button.disabled).length,2);
- assert.deepEqual(slots.map(button=>button.dataset.storyDestination),[...keys,'planned-6','reserve']);
- for(const account of publishingAccounts.filter(account=>!account.pending)) {
+ assert.equal(slots.length,keys.length+1);assert.equal(slots.filter(button=>button.disabled).length,1);
+ assert.deepEqual(slots.map(button=>button.dataset.storyDestination),[...keys,'reserve']);
+ for(const account of publishingAccounts.filter(account=>!account.pending&&keys.includes(account.key))) {
   h.scene.select(account.key);
   assert.match(h.$('.story-account-identity').textContent,new RegExp(account.handle));
   assert.ok(h.$('.story-account-identity').textContent.includes(account.name));
@@ -45,7 +45,7 @@ test('five active chapters and three sealed slots preserve all eight canonical i
  }
  h.scene.select('lottery');assert.match(h.$('.story-account-identity').textContent,/@chusen1101/);
  const preparing=h.$('.story-preparing');assert.equal(preparing.open,false);preparing.querySelector('summary').click();assert.equal(preparing.open,true);
- const pending=[...preparing.querySelectorAll('[data-story-destination]')];assert.deepEqual(pending.map(node=>node.getAttribute('aria-label')),['追加アカウント6、未設定','予備、未設定']);
+ const pending=[...preparing.querySelectorAll('[data-story-destination]')];assert.deepEqual(pending.map(node=>node.getAttribute('aria-label')),['予備、未設定']);
  for(const node of pending){assert.equal(node.disabled,true);node.click();}assert.equal(h.scene.snapshot().selected,'lottery');
  preparing.querySelector('summary').click();assert.equal(preparing.open,false);
  assert.deepEqual(h.calls.routes,[]);h.unchanged();

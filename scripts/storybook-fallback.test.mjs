@@ -19,7 +19,7 @@ async function boot({missing='',sceneFailure=false,artFailure=false,brokenImage=
  return {dom,window,document,calls,actor,artCalls,presentations,close(){window.dispatchEvent(new window.Event('pagehide'));window.close();}};
 }
 test('critical bright static leaf is independent and never claims enhancement readiness',()=>{
- const html=fs.readFileSync(new URL('index.html',dir),'utf8'),critical=html.match(/<style id="storybook-critical">([\s\S]*?)<\/style>/)[1];
+ const html=fs.readFileSync(new URL('book.html',dir),'utf8'),critical=html.match(/<style id="storybook-critical">([\s\S]*?)<\/style>/)[1];
  assert.match(critical,/#F7F8F2/);assert.match(critical,/account-board:not\(\.storybook-mounted\)/);assert.match(critical,/#world,#town/);assert.doesNotMatch(critical,/--(?:storybook|spatial)-(?:ready|reader-ready|palette-ready)\s*:/);
  assert.doesNotMatch(text,/^import .*storybook-scene/m);assert.match(text,/await import\('\.\/storybook-scene/);
 });

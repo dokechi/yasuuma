@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const origin='https://storybook.invalid/';
-const version='20261102.2-paper';
+const version='20261113.1-owners';
 const canonical=new Set(['app.js','desk.js','accounts.js','desk-model.js','qol.js','hall-tools.js','spatial-desk.js','living-room-model.js','arrival-passage.js','court-native-snapshot.js']);
 const filename=url=>path.join(root,new URL(url).pathname);
 function literals(source){
@@ -35,11 +35,11 @@ function checkOwners(entry){
  for(const [pathname,versions]of byPath)assert.equal(versions.size,1,'one canonical owner/identity dependency '+pathname);
  return result;
 }
-test('default storybook has one canonical application owner and no eager archived castle/court graph',()=>{
+test('default stained gallery has one canonical application owner and no eager archived castle/court graph',()=>{
  const {html,modules}=checkOwners('command-center-98/lounge/index.html');
- assert.match(html,/storybook-atelier/,'the new experience is the actual default, not an optional toggle');
+ assert.match(html,/stained-atelier/,'the new experience is the actual default, not an optional toggle');
  const names=[...modules.keys()].map(url=>path.basename(new URL(url).pathname));
- assert.ok(names.some(name=>name.startsWith('storybook')),'default bootstraps its real storybook presentation');
+ assert.ok(names.includes('stained-atelier.js'),'default bootstraps its real stained gallery presentation');
  for(const retired of ['spatial-atelier.js','castle-scene.js','arrival-entry.js','arrival-atelier.js','arrival-renderer.js'])assert.ok(!names.includes(retired),'default must not eagerly import '+retired);
 });
 test('explicit archive uses the same canonical identity/owner graph, never the stale second app instance',()=>{
@@ -50,10 +50,11 @@ test('explicit archive uses the same canonical identity/owner graph, never the s
 test('changed foreground and its retained archive import graph use the same current cache pin',()=>{for(const file of ['command-center-98/lounge/storybook-passage.js','command-center-98/lounge/arrival-passage.js','command-center-98/lounge/castle-scene.js','command-center-98/castle-journey-host.js']){const source=fs.readFileSync(new URL('../'+file,import.meta.url),'utf8');assert.match(source,/castle-foreground\.js\?v=20261101\.9-workbook/);assert.doesNotMatch(source,/castle-foreground\.js\?v=20261101\.1-living/);}});
 
 test('unified notebook presentation invalidates changed code and keeps one canonical owner',()=>{
- const {html,modules}=checkOwners('command-center-98/lounge/index.html');
- assert.match(html,/paper-stage\.css\?v=20261103\.3-scroll/);assert.match(html,/paper-atelier\.js\?v=20261103\.2-notebook/);
- for(const file of ['paper-atelier.js','paper-stage.js','paper-fold.js','paper-motion.js','paper-images.js','paper-cutouts.js']){
-  assert.ok([...modules.keys()].some(url=>url.endsWith('/'+file+'?v=20261103.2-notebook')),'current notebook dependency '+file);
+ const {html,modules}=checkOwners('command-center-98/lounge/book.html');
+ assert.match(html,/href="book\.html\?presentation=book"/,'retained reader link stays on its owning entry');
+ assert.match(html,/paper-stage\.css\?v=20261103\.3-scroll/);assert.match(html,/paper-atelier\.js\?v=20261113\.1-owners/);
+ for(const [file,pin] of Object.entries({'paper-atelier.js':'20261113.1-owners','paper-stage.js':'20261109.6-everyday','paper-fold.js':'20261103.2-notebook','paper-motion.js':'20261103.2-notebook','paper-images.js':'20261103.2-notebook','paper-cutouts.js':'20261103.2-notebook'})){
+  assert.ok([...modules.keys()].some(url=>url.endsWith('/'+file+'?v='+pin)),'current notebook dependency '+file);
   for(const old of ['20261102.2-paper','20261102.3-depth','20261102.4-detail','20261103.1-world'])assert.ok(![...modules.keys()].some(url=>url.endsWith('/'+file+'?v='+old)),'never execute stale presentation '+file+' '+old);
  }
  assert.ok([...modules.keys()].some(url=>url.endsWith('/paper-detail-model.js?v=20261102.4-detail')),'unchanged source-formatting model retains exact revision');

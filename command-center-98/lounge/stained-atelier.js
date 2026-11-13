@@ -1,5 +1,5 @@
 /* Presentation only. The existing desk owns data, selection, editing and copying. */
-import * as application from './app.js?v=20261112.3-skun';
+import * as application from './app.js?v=20261113.1-owners';
 import {createGlassArt as art} from './stained-art.js?v=20261112.2-skun';
 import {glassSlots,glassFor} from './stained-model.js?v=20261112.2-skun';
 import {installGalleryOrder} from './stained-order.js?v=20261110.9-touch';

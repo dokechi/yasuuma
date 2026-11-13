@@ -1,5 +1,5 @@
-import * as application from './app.js?v=20261109.6-everyday';
-import {publishingAccounts} from './accounts.js?v=20261109.6-everyday';
+import * as application from './app.js?v=20261113.1-owners';
+import {publishingAccounts} from './accounts.js?v=20261112.2-skun';
 import {mountPaperStage} from './paper-stage.js?v=20261109.6-everyday';
 // Mount independently of optional illustrations or the old book animation.
 try{

@@ -1,3 +1,4 @@
+// Retained book compatibility fixture; current default is covered by unified-castle-browser.cjs.
 /* Real production host, synthetic same-origin records, no production login or
    writes. Current book routes are real; retained classic motion has separate fixtures. */
 'use strict';
@@ -29,6 +30,7 @@ const server=http.createServer((req,res)=>{
  if(!file.startsWith(root+path.sep))return res.writeHead(403).end();
  fs.readFile(file,(error,bytes)=>{
   if(error)return res.writeHead(404).end();let content=bytes;
+    if(relative==='/command-center-98/castle-parent.js')content=bytes.toString().replace('./lounge/index.html?', './lounge/book.html?');
   if(relative==='/command-center-98/app.html')content=bytes.toString().replace('<head>','<head><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script><script>'+fixtureScript+'</script>');
   if(relative==='/scripts/ui-fixtures.js')content=bytes.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
   res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'}).end(content);
