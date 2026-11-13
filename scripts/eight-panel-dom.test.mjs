@@ -1,4 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import {createRequire} from 'node:module';const require=createRequire(import.meta.url);const {parseHTML}=require('linkedom');
+import {publishingAccounts} from '../command-center-98/lounge/accounts.js';
 import {createDesk} from '../command-center-98/lounge/desk.js';
 test('eight panel entry routes four accounts without legacy leakage and preserves all sources',()=>{
  const {window,document}=parseHTML(fs.readFileSync(new URL('../command-center-98/lounge/index.html',import.meta.url),'utf8'));const disk=new Map(),storage={get length(){return disk.size},key:i=>[...disk.keys()][i],getItem:k=>disk.get(k)||null,setItem:(k,v)=>disk.set(k,v),removeItem:k=>disk.delete(k)};
@@ -6,7 +7,7 @@ test('eight panel entry routes four accounts without legacy leakage and preserve
  Object.defineProperty(document.getElementById('desk-font'),'value',{value:'standard',writable:true});
  let desk;desk=createDesk({onOpenRoom:p=>desk.enter(({kyun:'red',otoku:'purple',rakuten:'purple',lottery:'purple',shiire:'orange'})[p]),onHome:()=>desk.leave()});
  const rows=['insurance','otoku','rakuten','lottery','kyun'].map((account,i)=>({id:'draft-'+account,place:account==='insurance'?'kyun':account,title:'共通タイトル',body:account+'専用本文',source:{id:'same-id',account},createdAt:1,updatedAt:i+1}));
- desk.receive({drafts:rows,complete:true,loading:false});assert.equal(document.querySelectorAll('.account-tile').length,8);assert.equal(document.querySelectorAll('.account-tile:disabled').length,2);assert.equal(desk.notebook.all().length,5);
+ desk.receive({drafts:rows,complete:true,loading:false});assert.equal(document.querySelectorAll('.account-tile').length,publishingAccounts.length+2);assert.equal(document.querySelectorAll('.account-tile:disabled').length,1);assert.equal(desk.notebook.all().length,5);
  for(const key of ['insurance','otoku','rakuten','lottery']){document.querySelector('[data-destination='+key+']').onclick();assert.equal(document.getElementById('draft-body').textContent,key+'専用本文');assert.equal(document.querySelectorAll('#desk-list .manuscript-card').length,1);assert.equal(document.querySelector('#desk-routes strong').textContent.startsWith(key==='insurance'?'保険':key==='otoku'?'まだ安く':key==='lottery'?'抽選':'楽天犬'),true);if(key==='lottery'){assert.equal(document.querySelector('#desk-routes a').href,'https://www.threads.com/@chusen1101');assert.match(document.querySelector('#desk-routes strong').textContent,/@chusen1101/);}desk.leave();assert.equal(document.querySelector('.account-board').hidden,false);}
  assert.equal(desk.notebook.all().length,5);window.dispatchEvent(new window.Event('pagehide'));
 });

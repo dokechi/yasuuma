@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
-import {createAccountBoard} from '../command-center-98/lounge/accounts.js';
+import {createAccountBoard,publishingAccounts} from '../command-center-98/lounge/accounts.js';
 const {parseHTML}=createRequire(import.meta.url)('linkedom');
 
 function setup(){
@@ -42,7 +42,7 @@ test('board isolates covered controls and distinguishes failed, loading and comp
  const b=setup();assert.equal(b.document.getElementById('app').hasAttribute('inert'),true);
  b.board.render({loading:true,message:'保存原稿を読み込み中…'});assert.equal(b.board.element.dataset.state,'loading');assert.equal(b.document.querySelector('.board-refresh').disabled,true);
  b.board.render({loading:false,message:'保存原稿の読み込みに失敗しました。再試行できます。'});assert.equal(b.board.element.dataset.state,'attention');assert.equal(b.document.querySelector('.board-refresh').disabled,false);assert.match(b.document.querySelector('.board-refresh').textContent,/再読み込み/);
- b.board.render({complete:true});assert.equal(b.board.element.dataset.state,'ready');assert.equal(b.document.querySelector('.board-summary').textContent,'保存原稿 0本');assert.equal(b.document.querySelectorAll('.account-jump button').length,6);
+ b.board.render({complete:true});assert.equal(b.board.element.dataset.state,'ready');assert.equal(b.document.querySelector('.board-summary').textContent,'保存原稿 0本');assert.equal(b.document.querySelectorAll('.account-jump button').length,publishingAccounts.filter(a=>!a.pending).length);
  b.board.hide();assert.equal(b.document.getElementById('app').hasAttribute('inert'),false);b.board.show();assert.equal(b.document.getElementById('app').hasAttribute('inert'),true);
  b.window.dispatchEvent(new b.window.Event('pagehide'));
 });

@@ -6,6 +6,8 @@ const root=path.resolve(__dirname,'..'),out=path.join(root,'artifacts/six-accoun
 const server=http.createServer((req,res)=>{const file=path.join(root,new URL(req.url,'http://localhost').pathname);fs.readFile(file,(err,data)=>{if(err)return res.writeHead(404).end();res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/octet-stream');res.end(data);});});
 async function capture(page,file){await page.frames()[1].evaluate(()=>Promise.all(document.getAnimations().filter(a=>Number.isFinite(a.effect?.getTiming().iterations)).map(a=>a.finished.catch(()=>{}))));await page.screenshot({path:path.join(out,file)});}
 (async()=>{
+ const {publishingAccounts}=await import('../command-center-98/lounge/accounts.js');
+ const activeAccountCount=publishingAccounts.filter(a=>!a.pending).length;
  fs.mkdirSync(out,{recursive:true});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  const origin='http://127.0.0.1:'+server.address().port,browser=await chromium.launch({headless:true,executablePath:process.env.CC_TEST_CHROME||['/usr/bin/google-chrome','/usr/bin/chromium'].find(p=>fs.existsSync(p)),args:['--no-sandbox']});
  const measurements=[];
@@ -24,9 +26,9 @@ async function capture(page,file){await page.frames()[1].evaluate(()=>Promise.al
   await page.route('**/qa.html',r=>r.fulfill({contentType:'text/html',body:'<style>body{margin:0}iframe{display:block;width:100vw;height:100dvh;border:0}</style><iframe src="/command-center-98/lounge/index.html"></iframe>'}));
   await page.goto(origin+'/qa.html');const frame=page.frameLocator('iframe');
   await openStorybookOverview(frame);await frame.locator('[data-story-destination]').first().waitFor();
-  assert.equal(await frame.locator('[data-story-destination]').count(),8);
+  assert.equal(await frame.locator('[data-story-destination]').count(),publishingAccounts.length+2);
   assert.equal(await frame.locator('[data-story-destination]:disabled').count(),2);
-  assert.equal(await frame.locator('[data-story-instant]').count(),6);
+  assert.equal(await frame.locator('[data-story-instant]').count(),activeAccountCount);
   const rows=['insurance','otoku','rakuten'].flatMap((account,i)=>Array.from({length:7},(_,j)=>({id:account+j,place:account==='insurance'?'kyun':account,title:['保険の確認ポイント','安く買う前のチェック','楽天のお得情報'][i]+' '+(j+1),body:account+'だけの本文。ほかのアカウントと混ぜない。',kind:'本文',checkedAt:'2026-10-30',source:{id:account+j,account},posting:{main:account+'本文',reply:account==='insurance'?'':account+'返信'},createdAt:1,updatedAt:10-j})));
   rows.push({id:'legacy',place:'kyun',title:'旧キュン原稿',body:'旧原稿は保険と混ぜない',source:{id:'old',account:'kyun'},createdAt:1,updatedAt:1});
   await page.evaluate(rows=>document.querySelector('iframe').contentWindow.postMessage({channel:'cc-castle-v1',type:'records',drafts:rows,complete:true,loading:false,message:'保存原稿を読込済み'},location.origin),rows);
@@ -53,13 +55,13 @@ async function capture(page,file){await page.frames()[1].evaluate(()=>Promise.al
    targets.push(await target.evaluate(n=>{const r=n.getBoundingClientRect(),points=[[.1,.1],[.9,.1],[.5,.5],[.1,.9],[.9,.9]];return {name:n.getAttribute('aria-label'),width:r.width,height:r.height,inside:r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight,hit:points.every(([x,y])=>{const hit=document.elementFromPoint(r.left+r.width*x,r.top+r.height*y);return hit===n||n.contains(hit);})};}));
   }
   assert.ok(targets.every(r=>r.name&&r.width>=44&&r.height>=44&&r.inside&&r.hit),JSON.stringify(targets));
-  assert.equal(await frame.locator('[data-story-destination]:visible').count(),8);
+  assert.equal(await frame.locator('[data-story-destination]:visible').count(),publishingAccounts.length+2);
   await frame.locator('.story-preparing summary').click();
   const quick=await frame.locator('[data-story-instant]').evaluateAll(nodes=>nodes.map(n=>({width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height})));
   assert.ok(quick.every(r=>r.width>=44&&r.height>=44));
   await frame.locator('.story-list').click();
   await frame.locator('.account-column[data-account=insurance] .account-draft').first().waitFor();
-  assert.equal(await frame.locator('.account-column').count(),6);
+  assert.equal(await frame.locator('.account-column').count(),activeAccountCount);
   assert.equal(await frame.locator('[data-tone=empty] .account-draft').count(),0);
   assert.equal(await frame.locator('.account-column[data-account=insurance] .account-draft').count(),7);
   assert.equal(await frame.locator('.account-board').getByText('旧キュン原稿').count(),0);
