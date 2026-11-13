@@ -358,3 +358,14 @@ body.stained-atelier .account-board button.sg-card{touch-action:pinch-zoom!impor
 
 /* Primary manuscript actions remain comfortable touch targets on compact screens. */
 body.stained-atelier #desk :is(#desk-copy,#desk-done){min-height:44px;min-width:44px}
+
+/* v233 narrow-width fixes: toolbar stacking, status label, card title squeeze. */
+body.stained-atelier #desk .manuscript-card{max-height:none!important;height:auto!important}
+body.stained-atelier #desk .manuscript-card strong{flex-shrink:0!important}
+body.stained-atelier #desk .manuscript-card span{flex-shrink:0!important}
+@media(max-width:900px){
+ body.stained-atelier #desk .desk-toolbar{flex-direction:column!important;align-items:stretch!important}
+ body.stained-atelier #desk-routes{margin-left:0!important;flex-wrap:wrap!important}
+ body.stained-atelier #desk .desk-state{width:100%!important;flex:none!important;justify-content:flex-start!important;flex-wrap:wrap!important}
+ body.stained-atelier #desk .desk-state summary{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+}
