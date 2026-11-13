@@ -12,7 +12,7 @@ export function installGalleryOrder({rail,done,hint,trigger,onChange=()=>{},hold
   try{apply(JSON.parse(win.localStorage.getItem(orderStorageKey)));}catch{}
   const announce=text=>{hint.textContent=text;};
   const save=()=>{try{win.localStorage.setItem(orderStorageKey,JSON.stringify(order()));announce('順番を保存しました');}catch{announce('この画面では並べ替え済みです。端末への保存ができませんでした');}onChange(order());};
-  const mode=value=>{editing=value;rail.classList.toggle('sg-ordering',value);done.hidden=!value;hint.hidden=!value;if(trigger)trigger.hidden=value;for(const c of cards.values())c.setAttribute('aria-description',value?'左右にドラッグ、または左右キーで並べ替え。完了で終了':'長押しで並べ替え。Alt と左右キーでも移動できます');if(value)announce('左右に動かして並べ替え。終わったら「完了」');};
+  const mode=value=>{const previousFocus=doc.activeElement;editing=value;rail.classList.toggle('sg-ordering',value);done.hidden=!value;hint.hidden=!value;if(trigger)trigger.hidden=value;for(const c of cards.values())c.setAttribute('aria-description',value?'左右にドラッグ、または左右キーで並べ替え。完了で終了':'長押しで並べ替え。Alt と左右キーでも移動できます');if(value)announce('左右に動かして並べ替え。終わったら「完了」');if(value&&previousFocus===trigger){const selected=[...cards.values()].find(c=>c.dataset.selected==='true')||rail.firstElementChild;selected?.focus({preventScroll:true});}else if(!value&&previousFocus===done)trigger?.focus({preventScroll:true});};
   function restoreStyle(){if(gesture){gesture.card.style.transform='';gesture.card.classList.remove('sg-dragging');}win.cancelAnimationFrame(raf);raf=0;rail.style.scrollSnapType='';}
   function end(cancel=false){win.clearTimeout(timer);if(!gesture)return;const g=gesture;
     restoreStyle();if(g.drag){if(cancel)apply(g.before);else save();}if(g.drag||g.swipe)suppressUntil=Date.now()+450;
@@ -50,6 +50,9 @@ export function installGalleryOrder({rail,done,hint,trigger,onChange=()=>{},hold
   const begin=()=>mode(true);
   const click=e=>{if(editing||Date.now()<suppressUntil){e.preventDefault();e.stopImmediatePropagation();}};
   const key=e=>{const card=e.target.closest('.sg-card');if(!card)return;
+    // A deliberate key activation is not the synthetic click following a drag.
+    // Keep the pointer-release guard until Enter/Space actually targets a card.
+    if(!editing&&['Enter',' '].includes(e.key))suppressUntil=0;
     if(editing&&['Escape','Enter',' '].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();end(e.key==='Escape');mode(false);return;}
     if((editing||e.altKey)&&['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){
       e.preventDefault();e.stopImmediatePropagation();const list=[...rail.children],i=list.indexOf(card),j=e.key==='Home'?0:e.key==='End'?list.length-1:Math.max(0,Math.min(list.length-1,i+(e.key==='ArrowRight'?1:-1)));

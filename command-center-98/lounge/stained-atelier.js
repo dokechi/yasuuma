@@ -2,7 +2,7 @@
 import * as application from './app.js?v=20261113.1-owners';
 import {createGlassArt as art} from './stained-art.js?v=20261112.2-skun';
 import {glassSlots,glassFor} from './stained-model.js?v=20261112.2-skun';
-import {installGalleryOrder} from './stained-order.js?v=20261110.9-touch';
+import {installGalleryOrder} from './stained-order.js?v=20261113.4-keyboard';
 const doc=document,board=application.getAccountBoard(),owner=application.getPaperDesk();
 const room=doc.getElementById('room');
 const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text)n.textContent=text;return n;};
@@ -230,7 +230,7 @@ scene.setAttribute('aria-hidden','true');for(const slot of glassSlots){const pan
 room.prepend(readerHead,scene,selectedArt);
 const orderDone=button('完了',()=>{},'sg-tool sg-order-done'),orderHint=make('span','sg-order-hint');orderHint.setAttribute('role','status');orderHint.setAttribute('aria-live','polite');controls.prepend(orderDone);footer.prepend(orderHint);
 const reorder=installGalleryOrder({rail,done:orderDone,hint:orderHint,trigger:orderTrigger,onChange:keys=>{for(const key of keys){const panel=[...scene.children].find(n=>n.dataset.key===key);if(panel)scene.append(panel);}scrollState();}});
-let readerKey='';
+let readerKey='',lastRoomHidden=room.hidden;
 function paint(){
   queued=false;
   const state=board.state;
@@ -242,6 +242,13 @@ function paint(){
     for(const panel of scene.children)panel.hidden=panel.dataset.key===slot.key;
     if(readerKey!==slot.key){readerKey=slot.key;const panel=art(slot);panel.style.viewTransitionName='sg-panel';selectedArt.replaceChildren(panel,make('span','sg-label',slot.label));}
     doc.getElementById('desk-title').textContent=slot.label+'の原稿';
+  }
+  // Owners retain their legacy controls, but those are hidden in this view.
+  // Transfer focus only on navigation, never on background source repaints.
+  if(room.hidden!==lastRoomHidden){
+    lastRoomHidden=room.hidden;
+    const target=room.hidden?(!board.element.hidden?cards.get(selected):null):readerHead.querySelector('.sg-title');
+    target?.focus({preventScroll:true});
   }
   scrollState();
 }

@@ -6,11 +6,11 @@ const {JSDOM}=createRequire(import.meta.url)('jsdom');
 const source=readFileSync(new URL('../command-center-98/lounge/stained-order.js',import.meta.url),'utf8');
 const {normalizeOrder}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 function setup(t,saved){
- const dom=new JSDOM('<nav></nav><button id="done"></button><span id="hint"></span>',{url:'https://qa.invalid',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window,d=w.document,rail=d.querySelector('nav');
+ const dom=new JSDOM('<nav></nav><button id="trigger"></button><button id="done"></button><span id="hint"></span>',{url:'https://qa.invalid',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window,d=w.document,rail=d.querySelector('nav');
  for(const k of ['a','b','c']){const c=d.createElement('button');c.className='sg-card';c.dataset.key=k;c.innerHTML='<span class="sg-label">'+k+'</span>';rail.append(c);c.scrollIntoView=()=>{};c.getBoundingClientRect=()=>({left:[...rail.children].indexOf(c)*100,width:100});}
  rail.getBoundingClientRect=()=>({left:0,right:300});Object.defineProperties(rail,{clientWidth:{value:300},scrollWidth:{value:300}});
  if(saved)w.localStorage.setItem('cc-stained-order-v1',JSON.stringify(saved));
- w.eval(source.replace(/export /g,''));const ctl=w.installGalleryOrder({rail,done:d.querySelector('#done'),hint:d.querySelector('#hint'),holdMs:10});
+ w.eval(source.replace(/export /g,''));const ctl=w.installGalleryOrder({rail,done:d.querySelector('#done'),hint:d.querySelector('#hint'),trigger:d.querySelector('#trigger'),holdMs:10});
  let opens=0;rail.addEventListener('click',()=>opens++);
  const pointer=(target,type,x)=>{const e=new w.Event(type,{bubbles:true,cancelable:true});Object.assign(e,{pointerId:1,clientX:x,clientY:20,button:0,isPrimary:true});target.dispatchEvent(e);};
  t.after(()=>{ctl.destroy();w.close();});return {w,d,rail,ctl,pointer,opens:()=>opens};
@@ -29,4 +29,25 @@ test('touch implicit capture transfer does not cancel a held drag',async t=>{
  h.pointer(h.rail,'pointermove',270);h.pointer(h.rail,'pointerup',270);
  assert.deepEqual([...h.ctl.order()],['b','c','a']);
  assert.equal(h.opens(),0);
+});
+
+test('keyboard reorder mode transfers focus off the controls it hides',t=>{
+ const h=setup(t),trigger=h.d.querySelector('#trigger'),done=h.d.querySelector('#done'),b=h.rail.children[1];
+ b.dataset.selected='true';trigger.focus();trigger.click();
+ assert.equal(h.d.activeElement,b);
+ b.dispatchEvent(new h.w.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));
+ assert.deepEqual([...h.ctl.order()],['a','c','b']);
+ done.focus();done.click();assert.equal(h.d.activeElement,trigger);
+});
+
+test('deliberate keyboard activation works immediately after pointer reorder finishes',t=>{
+ for(const key of ['Enter',' ']){
+  const h=setup(t),a=h.rail.firstChild;h.ctl.begin();
+  h.pointer(a,'pointerdown',50);h.pointer(a,'pointerup',50);
+  h.d.querySelector('#done').click();
+  a.click();assert.equal(h.opens(),0,'pointer release ghost click stays suppressed');
+  a.focus();a.dispatchEvent(new h.w.KeyboardEvent('keydown',{key,bubbles:true,cancelable:true}));
+  // Native buttons synthesize click from Enter/Space; jsdom requires explicit dispatch.
+  a.click();assert.equal(h.opens(),1,'a deliberate keyboard activation is not a drag ghost click');
+ }
 });

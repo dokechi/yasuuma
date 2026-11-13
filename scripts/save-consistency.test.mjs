@@ -60,7 +60,7 @@ test('real PostgreSQL rejects stale/ABA updates, preserves failures, and dedupli
 
 test('actual card editor retains input on 409/428 and copy retries retain the same intent',async()=>{
   const source=await readFile(new URL('../command-center-98/v160-card-publishing.js',import.meta.url),'utf8');
-  const elements=new Map(), make=id=>({id,value:'',textContent:'',children:[],classList:{add(){},remove(){},toggle(){}},setAttribute(){},appendChild(child){this.children.push(child);if(child.id)elements.set(child.id,child)},remove(){elements.delete(this.id)}});
+  const elements=new Map(), make=id=>({querySelectorAll:()=>[],id,value:'',textContent:'',children:[],classList:{add(){},remove(){},toggle(){}},setAttribute(){},appendChild(child){this.children.push(child);if(child.id)elements.set(child.id,child)},remove(){elements.delete(this.id)}});
   for(const id of ['xEditor','xForm','xAdd','xeId','xeProduct','xeDraft','xeThreadsDraft','xeChars','xeThreadsChars','xClose','xeCancel','xeCopyX','xeCopyThreads'])elements.set(id,make(id));
   // Execute the real editor block, without the unrelated card renderer.
   const block=source.slice(source.indexOf('  const modal=by('),source.lastIndexOf('})();'));
