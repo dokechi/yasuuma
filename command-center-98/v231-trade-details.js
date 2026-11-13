@@ -9,7 +9,7 @@
 })(typeof window==='undefined'?globalThis:window,function(M,A){
  'use strict';
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const numeric=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
+ const numeric=v=>v!==null&&v!==undefined&&typeof v!=='boolean'&&!(typeof v==='string'&&!v.trim())&&Number.isFinite(Number(v));
  const money=v=>!numeric(v)?'—':(v<0?'−¥':'¥')+Math.abs(Number(v)).toLocaleString('ja-JP',{maximumFractionDigits:2});
  const day=v=>v&&Number.isFinite(Date.parse(v))?new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(v)):'日付未確認';
  const orderKey=p=>JSON.stringify([p.supplier_key,p.order_id||p.source_message_id||p.id]);
@@ -48,11 +48,12 @@
  function groups(rows){const orders=new Map();for(const p of rows){const key=orderKey(p);if(!orders.has(key))orders.set(key,{first:p,items:[]});orders.get(key).items.push(p);}return [...orders.values()].sort((a,b)=>(Date.parse(b.first.ordered_at)||0)-(Date.parse(a.first.ordered_at)||0)||Number(b.first.id)-Number(a.first.id));}
  function orderHtml(g,profits){const p=g.first,url=typeof p.source_url==='string'&&/^https:\/\//.test(p.source_url)?p.source_url:null;return '<section class="purchase-order"><div class="purchase-order-head"><span><b>'+esc(p.supplier_name||p.supplier_key)+'</b>　注文 '+esc(p.order_id||'—')+'</span></div><div class="purchase-table-wrap" tabindex="0" aria-label="購入商品の儲け"><table class="purchase-table purchase-profit-table"><thead><tr><th scope="col">商品</th><th scope="col">型番</th><th scope="col">サイズ／色</th><th scope="col">仕入数</th><th scope="col">仕入単価</th><th scope="col">儲け</th><th scope="col">残数</th></tr></thead><tbody>'+g.items.map(p=>row(p,profits.get(String(p.id)))).join('')+'</tbody></table></div>'+(url?'<div class="purchase-source"><a href="'+esc(url)+'" target="_blank" rel="noopener">'+(/^https:\/\/mail\.google\.com\//.test(url)?'Gmail元メールを開く':'注文の記録を開く')+'</a></div>':'')+'</section>';}
  function html(state){
+  if(state.purchasesAvailable===false||!Array.isArray(state.purchases)||(state.salesMonth&&state.purchaseMonth&&state.salesMonth!==state.purchaseMonth))return '<div class="purchase-profit-ledger"><p class="empty" role="alert">購入記録を取得できませんでした。表示を更新して再試行してください。記録が0件という意味ではありません。</p></div>';
   const purchases=state.purchases||[],rows=purchases.filter(p=>p.status==='purchased'),profits=new Map((state.purchaseProfit||[]).map(r=>[String(r.purchase_id),r])),days=new Map();
   for(const g of groups(rows)){const key=day(g.first.ordered_at);if(!days.has(key))days.set(key,[]);days.get(key).push(g);}
   let content='';for(const [date,orders]of days){const t=orderTotals(orders.flatMap(g=>g.items));content+='<section class="purchase-day"><div class="purchase-day-head"><b>'+esc(date)+'</b><span>仕入れ計 <strong>'+money(t.total)+(t.unknown?' ＋ 金額確認中':'')+'</strong> · '+t.orders+'注文</span></div>'+orders.map(g=>orderHtml(g,profits)).join('')+'</section>';}
   const pending=purchases.filter(p=>p.status==='unknown');
-  return '<div class="purchase-profit-ledger">'+summary(state)+A.html(state)+(content||'<p class="empty">この期間の購入記録はありません。</p>')+(pending.length?'<details class="purchase-pending"><summary>予約・未納／要確認</summary>'+groups(pending).map(g=>orderHtml(g,new Map())).join('')+'</details>':'')+'</div>';
+  return '<div class="purchase-profit-ledger">'+(state.salesTruncated?'<p role="status" class="empty">販売明細は一部のみ取得されています。利益・残数の集計は確認できません。</p>':'')+summary(state)+A.html(state)+(content||'<p class="empty">この期間の購入記録はありません。</p>')+(pending.length?'<details class="purchase-pending"><summary>予約・未納／要確認</summary>'+groups(pending).map(g=>orderHtml(g,new Map())).join('')+'</details>':'')+'</div>';
  }
  function render(){if(typeof sourcingApp==='undefined'||sourcingApp.sub!=='purchases')return;const host=document.getElementById('sourcingBody');if(!host||host.querySelector('.purchase-profit-ledger'))return;const tabs=host.querySelector('.ledger-month-tabs');if(tabs)tabs.remove();host.innerHTML=html(sourcingApp);if(tabs)host.prepend(tabs);}
  return {html,row,money,render,summary,purchaseSummary,orderTotals,totals};

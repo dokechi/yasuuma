@@ -1,5 +1,5 @@
 {
-  "shell": "./app.html?v=20261022.25-profit-actions",
+  "shell": "./app.html?v=20261113.1-ledger-availability",
   "styles": [
     "./v140-reddit.css?v=175",
     "./v141-reddit-mobile.css?v=175",
@@ -90,7 +90,7 @@
     "./v230-request-progress.js?v=20261019.shortcut1",
     "./ledger-profit-model.js?v=20261022.21-purchase-profit",
     "./purchase-profit-actions.js?v=20261022.25-profit-actions",
-    "./v231-trade-details.js?v=20261022.25-profit-actions",
+    "./v231-trade-details.js?v=20261113.1-ledger-availability",
     "./fp-finished-images.js?v=20261008.4-state",
     "./threads-archive.js?v=20261018.41-archive",
     "./sourcing-archive.js?v=20261018.43-empty",
