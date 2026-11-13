@@ -91,8 +91,10 @@ const server=http.createServer((req,res)=>{
       const girlsChannelRoom=lounge.locator('#room[data-account=girls-channel]');
       await girlsChannelRoom.waitFor();
       await girlsChannelRoom.getByRole('heading',{name:'ガルちゃんの原稿'}).waitFor();
-      await girlsChannelRoom.getByText(girlsChannelBody,{exact:true}).waitFor();
-      await girlsChannelRoom.getByText('未投稿・下書き',{exact:false}).first().waitFor();
+      const girlsChannelManuscript=girlsChannelRoom.locator('#draft-body');
+      await girlsChannelManuscript.waitFor();
+      assert.equal(await girlsChannelManuscript.textContent(),girlsChannelBody);
+      assert.match(await girlsChannelRoom.locator('#draft-meta').textContent(),/未投稿・下書き/);
       assert.equal(await girlsChannelRoom.getByRole('link',{name:'ガルちゃん元コメント ＋512票 ↗'}).getAttribute('href'),girlsChannelComment);
       assert.equal(await girlsChannelRoom.getByRole('link',{name:'保存されたリンク ↗'}).getAttribute('href'),girlsChannelProduct);
       await girlsChannelRoom.locator('#draft-links summary').click();
