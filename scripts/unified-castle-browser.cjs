@@ -79,6 +79,12 @@ const server=http.createServer((req,res)=>{
       assert.equal(await lounge.locator('#draft-body').evaluate(n=>parseFloat(getComputedStyle(n).fontSize)>=16),true);
       assert.equal(await lounge.locator('html').evaluate(n=>n.scrollWidth<=innerWidth+1),true);
       for(const filter of await lounge.locator('[data-desk-filter]').all())assert.equal(await filter.evaluate(n=>{const r=n.getBoundingClientRect();return n.checkVisibility()&&r.width>=44&&r.height>=44;}),true,'all manuscript filters are at least 44px');
+      const filterGeometry=await lounge.locator('.desk-filters').evaluate(nav=>{
+        const nr=nav.getBoundingClientRect(),shelf=nav.closest('.manuscript-shelf').getBoundingClientRect(),search=nav.parentNode.querySelector('.desk-search').getBoundingClientRect();
+        return {nav:{left:nr.left,right:nr.right},shelf:{left:shelf.left,right:shelf.right},search:{left:search.left,right:search.right},buttons:[...nav.children].map(n=>{const r=n.getBoundingClientRect(),range=document.createRange();range.selectNodeContents(n);const text=range.getBoundingClientRect(),style=getComputedStyle(n);return {label:n.textContent,width:r.width,height:r.height,scroll:n.scrollWidth,client:n.clientWidth,left:r.left,right:r.right,textLeft:text.left,textRight:text.right,paddingLeft:parseFloat(style.paddingLeft),paddingRight:parseFloat(style.paddingRight)};})};
+      });
+      assert.ok(filterGeometry.buttons.every(b=>b.scroll<=b.client&&b.textLeft>=b.left+b.paddingLeft-1&&b.textRight<=b.right-b.paddingRight+1&&b.left>=filterGeometry.shelf.left&&b.right<=filterGeometry.shelf.right),JSON.stringify(filterGeometry));
+      if(width<=560)assert.ok(filterGeometry.search.right<=filterGeometry.nav.left+1,JSON.stringify(filterGeometry));
       // Isolated link geometry samples use the exact S-kun production classes in
       // both owner locations, without adding external requests or source records.
       await lounge.locator('#desk').evaluate(d=>{

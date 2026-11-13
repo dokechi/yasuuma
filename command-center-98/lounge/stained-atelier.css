@@ -55,7 +55,7 @@ body.stained-atelier #desk .desk-content{display:grid!important;grid-template-co
 body.stained-atelier .manuscript-shelf{padding:10px!important;border-right:1px solid var(--sg-line);overflow:hidden!important;min-width:0;min-height:0}
 body.stained-atelier .desk-search input{background:#0003;color:#f1eee4;border:1px solid var(--sg-line);border-radius:0;min-height:44px;font-size:14px}
 body.stained-atelier .desk-search input::placeholder{color:#c2beb4}
-body.stained-atelier .desk-filters{gap:3px}.stained-atelier .desk-filters button{font-size:11px!important;padding:4px!important;min-height:44px!important;min-width:44px}
+body.stained-atelier .desk-filters{gap:3px}.stained-atelier .desk-filters button{font-size:11px!important;padding:4px!important;min-height:44px!important;min-width:44px;flex:1 0 auto;white-space:nowrap}
 body.stained-atelier #desk-count{color:#bcb8ae;font-size:11px;padding:8px 2px;margin:0}
 body.stained-atelier .manuscript-list{overflow:auto!important;flex:1;min-height:0}
 body.stained-atelier #desk .manuscript-card{border:0!important;border-bottom:1px solid #a49f8f38!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;padding:12px 8px!important;gap:6px;min-height:62px;margin:0;color:#ebe7dd!important}

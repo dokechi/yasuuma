@@ -234,6 +234,7 @@ let readerKey='',lastRoomHidden=room.hidden;
 function paint(){
   queued=false;
   const state=board.state;
+  for(const refresh of doc.querySelectorAll('.sg-refresh')){refresh.disabled=!!state.loading;refresh.textContent=state.loading?'更新中…':'更新';}
   for(const slot of glassSlots){if(slot.pending)continue;const count=cards.get(slot.key).querySelector('.sg-count');const destination=state.destinations.find(d=>d.key===slot.key);count.textContent=slot.key==='sourcing'?'購入・在庫・売却':destination?.status||'原稿を確認';}
   status.textContent=state.loading?'保存原稿を読み込み中…':state.complete?`${glassSlots.filter(s=>!s.pending).length} / ${glassSlots.length} 登録済み　·　原稿を選択してください`:state.message||'更新して原稿を確認してください';
   const slot=glassFor(room.dataset.account);

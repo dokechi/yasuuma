@@ -99,3 +99,17 @@ test('reader filters and both S-kun link locations keep 44px targets with bounde
  assert.match(css,/#draft-meta \.desk-skun-link\{[^}]*max-width:calc\(100% - 10px\);min-height:44px/);
  assert.match(css,/grid-template-rows:minmax\(44px,auto\) 1fr/);
 });
+
+test('all visible refresh shortcuts communicate loading and re-enable after a failed read',async t=>{
+ const h=setup(t),d=h.w.document,buttons=[...d.querySelectorAll('.sg-refresh')];
+ assert.equal(buttons.length,2);
+ let refreshCalls=0;d.getElementById('desk-refresh').onclick=()=>refreshCalls++;
+ h.board.state={destinations:[],loading:true,complete:false};h.render();await Promise.resolve();
+ for(const b of buttons){assert.equal(b.disabled,true);assert.equal(b.textContent,'更新中…');b.click();}
+ assert.equal(refreshCalls,0);
+ h.board.state={destinations:[],loading:false,complete:false,message:'読取失敗'};h.render();await Promise.resolve();
+ for(const b of buttons){assert.equal(b.disabled,false);assert.equal(b.textContent,'更新');b.click();}
+ assert.equal(refreshCalls,2);
+});
+
+test('filter labels size intrinsically instead of squeezing all three to equal widths',()=>{assert.match(read('stained-atelier.css'),/\.desk-filters button\{[^}]*flex:1 0 auto;white-space:nowrap/);});

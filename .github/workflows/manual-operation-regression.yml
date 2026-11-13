@@ -45,6 +45,7 @@ jobs:
       - name: Daily reading desk DOM integration
         run: |
           npm install --prefix "$RUNNER_TEMP/daily-dom" --ignore-scripts --no-audit --no-fund linkedom@0.18.13 playwright-core@1.62.1 jsdom@26.1.0
+          COMMAND_CENTER_UI_MODULES="$RUNNER_TEMP/daily-dom/node_modules" NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node --test scripts/command-center-cleanup-ui.test.mjs
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node --test scripts/rpg-daily-desk.test.cjs scripts/reddit-editor-races.test.cjs scripts/card-editor-races.test.cjs scripts/card-history-shape.test.cjs scripts/card-list-shape.test.cjs scripts/copy-failure-receipts.test.cjs scripts/threads-images-ui.test.cjs scripts/reader-empty-state.test.mjs
           cd command-center-98/castle
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node --test tests/*.test.cjs
@@ -81,7 +82,7 @@ jobs:
           node scripts/manual-operation-hub-safety.test.cjs
           node scripts/rpg-account-pages.test.cjs
           node scripts/threads-manual-ui.test.cjs
-          NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/threads-images-ui.test.cjs scripts/reader-empty-state.test.mjs
+          NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/threads-images-ui.test.cjs
           node --test scripts/threads-product-links.test.cjs
           node --test scripts/request-progress-login-hash.test.cjs
           node --test scripts/threads-manual-api.test.mjs scripts/threads-images-api.test.mjs scripts/castle-signals.test.mjs scripts/threads-archive.test.mjs scripts/sourcing-archive.test.mjs
