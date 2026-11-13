@@ -195,10 +195,8 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   // decoded or its finite entrance transitions have painted. Final screenshots
   // await the actual embedded lounge; delayed/loading-gate captures do not.
   const loungeReady=async()=>{
-   // Cold/warm/login startup now exposes a real, closed manuscript stage.
-   // The retained FP reader is an explicit supplementary resume destination.
-   await waitFor(`(()=>{const f=document.getElementById('ccCastleFrame'),d=f?.contentDocument,room=d?.getElementById('room'),paper=d?.querySelector('.paper-card'),fp=room?.dataset.account==='fp';return !!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')&&f&&!f.hidden&&d?.body?.classList.contains('paper-popup')&&d.querySelector('.paper-header')?.checkVisibility()&&d.querySelectorAll('[data-paper-chapter]').length===6&&d.querySelector('.account-board[data-state="ready"]')?.hidden&&room&&!room.hidden&&(fp?d.getElementById('draft-body')?.checkVisibility():paper?.querySelector('.paper-title')?.checkVisibility()&&paper.querySelector('.paper-excerpt')?.checkVisibility()&&!d.querySelector('.paper-reader'))})()`);
-   await evaluate(`(async()=>{const c=document.getElementById('ccCastleFrame').contentWindow,d=c.document;await d.fonts.ready;await Promise.all(d.getAnimations().filter(a=>a.effect?.target?.closest?.('.paper-stage')&&Number.isFinite(a.effect.getTiming().iterations)).map(a=>a.finished.catch(()=>{})));await new Promise(resolve=>c.requestAnimationFrame(()=>c.requestAnimationFrame(resolve)));})()`);
+   await waitFor(`(()=>{const f=document.getElementById('ccCastleFrame'),d=f?.contentDocument;return !!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')&&f&&!f.hidden&&d?.body?.classList.contains('stained-atelier')&&d.querySelectorAll('.sg-card').length===10&&d.querySelector('.account-board[data-state="ready"]')&&((!d.querySelector('.account-board').hidden&&d.querySelector('.sg-rail')?.checkVisibility())||(!d.getElementById('room').hidden&&d.getElementById('draft-body')?.checkVisibility()))})()`);
+   await evaluate(`(async()=>{const c=document.getElementById('ccCastleFrame').contentWindow;await c.document.fonts.ready;await new Promise(resolve=>c.requestAnimationFrame(()=>c.requestAnimationFrame(resolve)));})()`);
   };
   // Physical CDP clicks for the new visible workbench menu. Legacy component
   // fixtures below keep their own original controls; no route-owner shortcut.
@@ -206,18 +204,10 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
    const point=await evaluate(`(()=>{const f=document.getElementById('ccCastleFrame'),d=f.contentDocument,n=[...d.querySelectorAll(${JSON.stringify(selector)})].find(n=>${text===undefined?'true':`n.textContent===${JSON.stringify(text)}`});if(!n?.checkVisibility())throw Error('Visible lounge control missing: '+${JSON.stringify(selector)});n.scrollIntoView({block:'nearest',inline:'nearest'});const r=n.getBoundingClientRect(),outer=f.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,hit=d.elementFromPoint(x,y);if(r.width<=0||r.height<=0||!(hit===n||n.contains(hit)))throw Error('Lounge control is obscured: '+${JSON.stringify(selector)});return{x:outer.left+x,y:outer.top+y};})()`);
    await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});
   };
-  const loungeMenu=async name=>{
-   if(await evaluate(`document.getElementById('ccCastleFrame').contentDocument?.body?.classList.contains('paper-popup')`)){
-    if(!await evaluate(`document.getElementById('ccCastleFrame').contentDocument.querySelector('.paper-tools').open`))await loungeClick('.paper-tools>summary');
-    await loungeClick('.paper-tools-menu button','設定');await loungeClick('#settings a','以前の原稿表示を開く');
-    await waitFor(`(()=>{const d=document.getElementById('ccCastleFrame').contentDocument;return d?.body?.dataset.workbookReady==='true'&&!d.body.classList.contains('paper-popup')})()`);
-   }
-   await waitFor(`document.getElementById('ccCastleFrame').contentDocument?.body?.dataset.workbookReady==='true'`);
-   if(await evaluate(`!!document.getElementById('ccCastleFrame').contentDocument.querySelector('.spatial-work[open]')`))await loungeClick('.spatial-work-body #desk-read');
-   if(!await evaluate(`document.getElementById('ccCastleFrame').contentDocument.querySelector('.workbook-menu').open`))await loungeClick('.workbook-menu>summary');
-   await loungeClick('.workbook-menu button',name);
+  const loungeOverview=async()=>{
+   if(await evaluate(`!document.getElementById('ccCastleFrame').contentDocument.getElementById('room').hidden`))await loungeClick('#room .sg-title');
+   await waitFor(`document.getElementById('ccCastleFrame').contentDocument.querySelector('.account-board').hidden===false`);
   };
-  const loungeOverview=async()=>{await loungeMenu('本の全景');await waitFor(`document.getElementById('ccCastleFrame').contentDocument.querySelector('.account-board').hidden===false`);};
   const capture=async(name,extra)=>{await sleep(120);await evaluate('window.scrollTo(0,0)');const checks=await evaluate(geometry);if(extra)checks.push({name:'expected route content',pass:!!await evaluate(extra)});const png=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(output,name+'.png'),Buffer.from(png.data,'base64'));results.push({name,checks});console.log(name+': '+checks.filter(x=>x.pass).length+'/'+checks.length)};
   const key=async(value,modifiers=0)=>{const code=value==='Tab'?9:value==='Enter'?13:27;await send('Input.dispatchKeyEvent',{type:value==='Enter'?'keyDown':'rawKeyDown',key:value,code:value,windowsVirtualKeyCode:code,nativeVirtualKeyCode:code,modifiers,...(value==='Enter'?{text:'\r',unmodifiedText:'\r'}:{})});await send('Input.dispatchKeyEvent',{type:'keyUp',key:value,code:value,windowsVirtualKeyCode:code,nativeVirtualKeyCode:code,modifiers});};
   const keyboardFocus=async selector=>{
@@ -455,33 +445,22 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   await send('Network.setBypassServiceWorker',{bypass:true});
   await send('Page.navigate',{url:origin+'/command-center-98/app-v130.html'});
   const L=`document.getElementById('ccCastleFrame').contentWindow`;
-  await waitFor(`!!window.CCCastle&&!document.getElementById('ccCastleFrame').hidden&&${L}.document.querySelector('.account-board[data-state="ready"]')&&${L}.document.querySelector('.storybook[data-ready="true"]')&&${L}.document.querySelector('[data-story-instant]')`);
+  await waitFor(`!!window.CCCastle&&!document.getElementById('ccCastleFrame').hidden&&${L}.document.querySelector('.account-board[data-state="ready"]')&&${L}.document.querySelector('.sg-rail')&&${L}.document.querySelector('.sg-card')`);
   await loungeOverview();
   for(const [width,height] of [[360,800],[834,900]]){
    await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
-   await capture(width+'x'+height+'-lounge-home',`(()=>{const c=${L},f=document.getElementById('ccCastleFrame');return !f.hidden&&f.clientWidth===innerWidth&&c.location.pathname.endsWith('/lounge/index.html')&&c.document.querySelectorAll('[data-story-destination]').length===8&&c.document.querySelectorAll('[data-story-destination]:disabled').length===2&&[...c.document.querySelectorAll('[data-story-destination]')].filter(n=>n.checkVisibility()).length===6&&c.document.documentElement.scrollWidth<=c.innerWidth+1})()`);
-   await evaluate(`window.__storySelectionBefore=${L}.document.querySelector('.storybook').dataset.storyRoom;${L}.document.querySelector('.story-preparing>summary').click()`);
-   await waitFor(`${L}.document.querySelector('.story-preparing').open===true`);
-   await evaluate(`[...${L}.document.querySelectorAll('.story-preparing [data-story-destination]')].forEach(n=>n.click())`);
-   await capture(width+'x'+height+'-storybook-preparing',`(()=>{const d=${L}.document,nodes=[...d.querySelectorAll('.story-preparing [data-story-destination]')];return nodes.length===2&&JSON.stringify(nodes.map(n=>n.getAttribute('aria-label')))===JSON.stringify(['追加アカウント6、未設定','予備、未設定'])&&nodes.every(n=>n.disabled&&n.checkVisibility()&&n.getBoundingClientRect().height>=44)&&d.querySelectorAll('[data-story-destination]').length===8&&d.querySelector('.storybook').dataset.storyRoom===window.__storySelectionBefore&&!d.querySelector('.account-board').hidden&&d.getElementById('room').hidden})()`);
-   await evaluate(`${L}.document.querySelector('.story-preparing>summary').click()`);await waitFor(`${L}.document.querySelector('.story-preparing').open===false`);
-   for(const chapter of ['insurance','otoku','rakuten','lottery','sourcing']){
-    await evaluate(`${L}.document.querySelector('[data-story-chapter="${chapter}"]').click()`);
-    await waitFor(`!!${L}.document.querySelector('.story-art-host .story-paper-art[data-story-room="${chapter}"] .story-actor-image')`);
-    await evaluate(`${L}.document.querySelector('.story-art-host .story-actor-image').decode()`);
-    await capture(width+'x'+height+'-storybook-chapter-'+chapter,`(()=>{const d=${L}.document,art=d.querySelector('.story-art-host .story-paper-art'),image=art.querySelector('.story-actor-image'),handle=({insurance:'@sucker0508',otoku:'@thats_a_steal0601',rakuten:'@bonya0914',lottery:'@chusen1101'})['${chapter}'];return art.dataset.storyRoom==='${chapter}'&&art.querySelectorAll('svg').length>0&&image.complete&&image.naturalWidth>0&&image.src.endsWith('/storybook-${chapter}-actor-v1.webp')&&(!handle||d.querySelector('.story-account-identity').textContent.includes(handle))&&!d.querySelector('.account-board').hidden&&d.getElementById('room').hidden})()`);
-   }
+   await capture(width+'x'+height+'-lounge-home',`(()=>{const c=${L},f=document.getElementById('ccCastleFrame'),cards=[...c.document.querySelectorAll('.sg-card')];return !f.hidden&&f.clientWidth===innerWidth&&c.location.pathname.endsWith('/lounge/index.html')&&cards.length===10&&new Set(cards.map(n=>n.dataset.key)).size===10&&cards.every(n=>!n.disabled&&n.querySelector('svg'))&&c.document.documentElement.scrollWidth<=c.innerWidth+1})()`);
+   await loungeClick('.sg-order-trigger');await loungeClick('.sg-card[data-key="insurance"]');
+   await capture(width+'x'+height+'-stained-reorder-does-not-open',`${L}.document.getElementById('room').hidden&&${L}.document.querySelector('.sg-order-done').checkVisibility()`);
+   await loungeClick('.sg-order-done');
    for(const account of ['insurance','otoku','rakuten','lottery']){
-    await evaluate(`${L}.document.querySelector('[data-story-instant="${account}"]').click()`);
+    await evaluate(`${L}.document.querySelector('.sg-card[data-key="${account}"]').click()`);
     await waitFor(`${L}.document.getElementById('room').hidden===false&&${L}.document.getElementById('draft-body').textContent.startsWith('${account}')`);
-    await waitFor(`${L}.document.getElementById('room').dataset.storyScene==='ready'`);
-    await evaluate(`${L}.document.querySelector('.spatial-desk-actor').decode()`);
-    await capture(width+'x'+height+'-lounge-room-'+account,`(()=>{const c=${L},d=c.document,body=d.getElementById('draft-body'),expected=window.__rpgQA.currentDrafts.find(x=>x.taskId==='${account}-threads-v1').payload.draft;return d.getElementById('room').dataset.account==='${account}'&&d.querySelector('.spatial-account-identity > h3 + p').textContent===({insurance:'@sucker0508',otoku:'@thats_a_steal0601',rakuten:'@bonya0914',lottery:'@chusen1101'})['${account}']&&body.textContent===expected&&d.querySelector('.spatial-desk-actor').complete&&d.querySelector('.spatial-desk-actor').naturalWidth>0&&d.querySelector('.spatial-desk-actor').src.includes('storybook-${account}-actor')&&!!d.querySelector('.spatial-illustration-stage .spatial-study-scene .story-paper-art[data-story-room="${account}"]')&&d.getElementById('desk-scroll').clientHeight>=180&&c.document.documentElement.scrollWidth<=c.innerWidth+1&&parseFloat(c.getComputedStyle(body).fontSize)>=16&&body.getBoundingClientRect().top<c.innerHeight-80&&['desk-copy','desk-done'].every(id=>{const r=d.getElementById(id).getBoundingClientRect();return r.height>=44&&r.width>=44&&r.top>=0&&r.bottom<=c.innerHeight})})()`);
+    await capture(width+'x'+height+'-lounge-room-'+account,`(()=>{const c=${L},d=c.document,body=d.getElementById('draft-body'),expected=window.__rpgQA.currentDrafts.find(x=>x.taskId==='${account}-threads-v1').payload.draft;return d.getElementById('room').dataset.account==='${account}'&&body.textContent===expected&&d.querySelectorAll('#desk').length===1&&d.getElementById('desk-scroll').clientHeight>0&&d.documentElement.scrollWidth<=c.innerWidth+1&&parseFloat(c.getComputedStyle(body).fontSize)>=16&&['desk-copy','desk-done'].every(id=>{const r=d.getElementById(id).getBoundingClientRect();return r.height>=44&&r.width>=44})})()`);
     await evaluate(`(()=>{const c=${L};Object.defineProperty(c.navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__loungeCopied=text}}});c.document.getElementById('desk-copy').click()})()`);
     await waitFor(`window.__loungeCopied===window.__rpgQA.currentDrafts.find(x=>x.taskId==='${account}-threads-v1').payload.draft`);
     await capture(width+'x'+height+'-lounge-copy-'+account,`window.__loungeCopied===${L}.document.getElementById('draft-body').textContent&&window.__rpgQA.writes.length===0&&window.__rpgQA.threads.simulatedWrites.length===0`);
     if(account==='insurance'){
-     await loungeMenu('作業・読取状況');
      await evaluate(`[...${L}.document.querySelectorAll('#desk-routes button')].find(n=>n.textContent==='出典・確認記録').click()`);
      await waitFor(`!!document.querySelector('.manual-operation-review[open] article>pre')`);
      await capture(width+'x'+height+'-lounge-native-insurance',`document.getElementById('ccCastleFrame').hidden&&document.querySelector('.manual-operation-review[open] h2').textContent==='保険｜@sucker0508'&&document.querySelector('.manual-operation-review[open] article>pre').textContent===window.__rpgQA.currentDrafts[0].payload.draft&&document.querySelectorAll('.daily-tools,.daily-card-tools').length===0`);
@@ -490,11 +469,11 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
     }
     await loungeOverview();
     await waitFor(`${L}.document.querySelector('.account-board').hidden===false`);
-    await capture(width+'x'+height+'-lounge-return-'+account,`${L}.document.activeElement===${L}.document.querySelector('[data-story-instant="${account}"]')`);
+    await capture(width+'x'+height+'-lounge-return-'+account,`${L}.document.getElementById('room').hidden&&${L}.document.querySelector('.sg-card[data-key="${account}"]').dataset.selected==='true'`);
    }
   }
   // Resizing never swaps the selected manuscript. Pinning remains a local note.
-  await evaluate(`${L}.document.querySelector('[data-story-instant="insurance"]').click()`);
+  await evaluate(`${L}.document.querySelector('.sg-card[data-key="insurance"]').click()`);
   await waitFor(`${L}.document.getElementById('room').hidden===false`);
   await evaluate(`${L}.document.getElementById('desk-pin').click();${L}.document.getElementById('desk-scroll').scrollTop=150;window.__loungeTitle=${L}.document.getElementById('draft-title').textContent;window.__loungeText=${L}.document.getElementById('draft-body').textContent;window.__loungeScroll=${L}.document.getElementById('desk-scroll').scrollTop`);
   await capture('lounge-reading-has-real-scroll',`window.__loungeScroll>0`);
@@ -507,20 +486,15 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   await waitFor(`${L}.document.getElementById('desk-status').textContent.includes('読込完了')`);
   await loungeOverview();
   await waitFor(`${L}.document.querySelector('.account-board').hidden===false`);
-  await evaluate(`${L}.document.querySelector('[data-story-instant="sourcing"]').click()`);
+  await evaluate(`${L}.document.querySelector('.sg-card[data-key="sourcing"]').click()`);
   await waitFor(`!app.busy&&app.view==='sourcing'&&document.getElementById('ccCastleFrame').hidden`);
   await waitFor(`!!document.querySelector('.story-workspace-art .story-paper-art[data-story-room=sourcing] .story-actor-image')`);
   await evaluate(`document.querySelector('.story-workspace-art .story-actor-image').decode()`);
   await capture('lounge-sourcing-chapter-identity',`(()=>{const art=document.querySelector('.story-workspace-art .story-paper-art[data-story-room=sourcing]'),image=art.querySelector('.story-actor-image');return art.getAttribute('aria-hidden')==='true'&&art.querySelectorAll('svg').length>0&&image.complete&&image.naturalWidth>0&&image.src.endsWith('/storybook-sourcing-actor-v1.webp')})()`);
   await capture('lounge-native-sourcing',`sourcingApp.sub==='purchases'&&!document.getElementById('loungeWorkspaceHeader').hidden&&document.querySelector('[data-lounge-home]').getBoundingClientRect().height>=44`);
   await evaluate(`document.querySelector('[data-lounge-home]').click()`);await waitFor(`!document.getElementById('ccCastleFrame').hidden&&${L}.document.querySelector('.account-board').hidden===false`);
-  // Supplementary FP still enters the existing saved-reader controller first,
-  // through its visible storybook settings entry, before handing off to native.
-  await evaluate(`[...${L}.document.querySelectorAll('.story-tool')].find(n=>n.textContent==='設定').click()`);
-  await waitFor(`${L}.document.getElementById('settings').open===true`);
-  await evaluate(`${L}.document.getElementById('storybook-fp').click()`);
-  await waitFor(`${L}.document.getElementById('room').hidden===false&&${L}.document.getElementById('desk-routes').textContent.includes('FP 台本・画像')`);
-  await evaluate(`[...${L}.document.querySelectorAll('#desk-routes button')].find(n=>n.textContent==='FP 台本・画像').click()`);
+  // FP is a supported native route, not a glass-gallery category or removed book settings link.
+  await evaluate(`CCRpgWorkspaces.openFp()`);
   await waitFor(`!app.busy&&app.view==='fp'&&document.getElementById('ccCastleFrame').hidden`);
   await capture('lounge-native-fp',`!!document.querySelector('[data-fp-open]')&&!document.getElementById('ccCastleReturn').hidden`);
   await evaluate(`document.getElementById('ccCastleReturn').click()`);await waitFor(`!document.getElementById('ccCastleFrame').hidden`);

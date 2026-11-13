@@ -115,15 +115,15 @@ const server=http.createServer((req,res)=>{
   await lounge.locator('[data-story-instant=sourcing]').click();await page.locator('body.lounge-workspace #loungeWorkspaceHeader:not([hidden])').waitFor();
   assert.equal(await page.locator('#ccCastleFrame').isVisible(),false);assert.equal(await page.locator('#mainWindow').getAttribute('data-cc-view'),'sourcing');
   await page.waitForFunction(()=>document.querySelector('#sourcingHub'));await page.evaluate(()=>document.fonts.ready);
-  // Native and chapter share the original layered SVG scene, not a new bitmap
-  // wallpaper. The phone work page deliberately hides this decoration so the
-  // real ledger starts in the first fold; its attached source must still decode.
+  // The retained chapter SVG remains attached and decodable, but the current
+  // stained sourcing workspace deliberately suppresses this legacy decoration
+  // on every viewport. It must not compete with the native ledger.
   const nativeArt=page.locator('.story-workspace-art .story-paper-art[data-story-room=sourcing]');await nativeArt.waitFor({state:'attached'});
   const nativeActor=nativeArt.locator('.story-actor-image');await nativeActor.waitFor({state:'attached'});await nativeActor.evaluate(image=>image.decode());
   assert.equal(await nativeArt.getAttribute('aria-hidden'),'true');assert.ok(await nativeArt.locator('svg').count());
   assert.match(await nativeActor.getAttribute('src'),/storybook-sourcing-actor-v1\.webp/);assert.equal(await nativeActor.evaluate(image=>image.complete&&image.naturalWidth>0),true);
-  assert.equal(await nativeArt.isVisible(),width>600,'native illustration is visible on Fold/desktop and intentionally hidden on phones');
-  assert.equal(await nativeActor.isVisible(),width>600,'actor follows the native illustration visibility contract');
+  assert.equal(await nativeArt.isVisible(),false,'stained sourcing suppresses the retained notebook illustration on every viewport');
+  assert.equal(await nativeActor.isVisible(),false,'retained actor is hidden with its native illustration');
   // The existing native route opens purchases, not the candidate/hold tab.
   // Measure its exact seeded purchase record without forcing a different view.
   await page.locator('#sourcingBody .purchase-product > b').filter({hasText:/^検証用購入商品$/}).waitFor();
@@ -135,7 +135,7 @@ const server=http.createServer((req,res)=>{
    return {stageVisible:!!stage?.checkVisibility(),decorative:stage?.inert&&stage?.getAttribute('aria-hidden')==='true',selectedTabs:selected.map(n=>n.dataset.sourcingSub),tab:{key:tab?.dataset.sourcingSub,rect:rect?.toJSON(),hit:hit===tab||!!tab?.contains(hit)},information,viewport:innerHeight,scrollY};
   });
   assert.equal(initialWork.decorative,true,'the native illustration remains inert and out of the accessibility tree');
-  assert.equal(initialWork.stageVisible,width>600);
+  assert.equal(initialWork.stageVisible,false,'retained native decoration never covers the sourcing workspace');
   assert.deepEqual(initialWork.selectedTabs,['purchases'],'instant entry keeps the canonical selected native purchase ledger');
   assert.ok(initialWork.tab.key&&initialWork.tab.rect?.width>=44&&initialWork.tab.rect.height>=44,'real native sourcing tab remains a 44px action: '+JSON.stringify(initialWork));
   if(width<=600)assert.ok(initialWork.scrollY===0&&initialWork.tab.rect.top>=0&&initialWork.tab.rect.bottom<=initialWork.viewport&&initialWork.tab.rect.left>=0&&initialWork.tab.rect.right<=width&&initialWork.tab.hit&&initialWork.information.some(n=>n.rect.height>0&&n.rect.top>=0&&n.rect.bottom<=initialWork.viewport&&n.rect.left>=0&&n.rect.right<=width),'phone instant entry must expose the full unobstructed purchase tab and exact record-derived 1-order/2-unit summary before scrolling: '+JSON.stringify(initialWork));

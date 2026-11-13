@@ -12,3 +12,12 @@ test('nine publishing boxes including the Sくん account and its own saved draf
 test('account identity and place must both match; titles and legacy rooms never assign accounts',()=>{for(const a of publishingAccounts.slice(0,3))assert.deepEqual(draftsForAccount(rows,a).map(d=>d.body),[a.key]);for(const a of publishingAccounts.slice(3))assert.deepEqual(draftsForAccount(rows,a),[]);assert.deepEqual(draftsForAccount([{...rows[0],place:'rakuten'}],publishingAccounts[0]),[]);assert.equal(rows.length,5);});
 import {timeOfDay} from '../command-center-98/lounge/accounts.js';
 test('JST day dusk night boundaries independent of machine timezone',()=>{for(const [iso,expected] of [['2026-10-30T20:59:00Z','night'],['2026-10-30T21:00:00Z','day'],['2026-10-30T06:59:00Z','day'],['2026-10-30T07:00:00Z','dusk'],['2026-10-30T09:59:00Z','dusk'],['2026-10-30T10:00:00Z','night']])assert.equal(timeOfDay(new Date(iso)),expected);});
+
+import {readFileSync} from 'node:fs';
+test('account list layout grows horizontally instead of wrapping new identities into a second row',()=>{
+ const css=readFileSync(new URL('../command-center-98/lounge/accounts.css',import.meta.url),'utf8');
+ assert.match(css,/grid-auto-flow:column/);
+ assert.match(css,/grid-auto-columns:minmax\(250px,1fr\)/);
+ assert.match(css,/grid-auto-columns:minmax\(270px,1fr\)/);
+ assert.doesNotMatch(css,/grid-template-columns:repeat\(6/);
+});

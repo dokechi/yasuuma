@@ -94,7 +94,9 @@ rows[8].posting={main:rows[8].body,reply:'条件と出典の補足です。保�
   assert.equal(await frame.locator('#room-title').textContent(),'楽天犬');
   assert.equal(await frame.locator('#desk-operation').textContent(),'','copy confirmation never follows a different account/draft');
   await returnToBoard();assert.equal(await cf.evaluate(()=>document.activeElement?.dataset.draftId),'rakuten0');
-  assert.ok(await frame.locator('.account-column[data-account=rakuten] .account-draft strong').first().evaluate(n=>{const a=n.getBoundingClientRect(),b=n.closest('.account-drafts').getBoundingClientRect();return a.top>=b.top&&a.top<b.bottom;}),'return exposes selected manuscript title');
+  const returned=await cf.evaluate(()=>{const n=document.querySelector('.account-column[data-account=rakuten] .account-draft strong'),a=n.getBoundingClientRect(),b=n.closest('.account-drafts').getBoundingClientRect();return {title:a.toJSON(),list:b.toJSON(),columnTops:[...document.querySelectorAll('.account-column')].map(c=>c.getBoundingClientRect().top)};});
+  assert.ok(returned.columnTops.every(top=>Math.abs(top-returned.columnTops[0])<1),'all account columns stay on one horizontal row: '+JSON.stringify(returned));
+  assert.ok(returned.title.top>=returned.list.top&&returned.title.top<returned.list.bottom,'return exposes selected manuscript title: '+JSON.stringify(returned));
   await screenshot('list');
   await frame.locator('.account-column[data-account=insurance] .account-drafts').evaluate(n=>n.scrollTop=100);
   const previousScroll=await frame.locator('.account-column[data-account=insurance] .account-drafts').evaluate(n=>n.scrollTop);
