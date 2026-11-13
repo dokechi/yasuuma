@@ -2,7 +2,10 @@
 // Retained classic-castle visuals are exercised by their direct-entry fixtures.
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium}=require('playwright-core');
+const {createHash}=require('node:crypto');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'artifacts/unified-castle');
+const staleLoungeEntry='/command-center-98/lounge/index.html?v=20261112.3-skun';
+const currentLoungeQuery='?v=20261113.'+createHash('sha256').update(fs.readFileSync(path.join(root,'command-center-98/lounge/index.html'))).digest('hex').slice(0,16)+'-entry';
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg'};
 const insuranceBody='合成データの保険原稿です。保障内容と条件を確認してから判断します。\n\nコピーは投稿ではありません。保存済みの文章をそのまま読みます。';
 const fixtureScript=`(()=>{
@@ -24,6 +27,10 @@ const fixtureScript=`(()=>{
 })();`;
 const server=http.createServer((req,res)=>{
   if(!['GET','HEAD'].includes(req.method))return res.writeHead(405).end();
+  // Deterministic stale-cache response at the old production URL. Playwright
+  // routing disables native HTTP caching, so this models stale bytes by URL.
+  // It intentionally contains no executable owner: reaching it is the regression.
+  if(req.url===staleLoungeEntry)return res.writeHead(200,{'Content-Type':'text/html','Cache-Control':'public, max-age=31536000'}).end('<!doctype html><html data-stale-lounge-entry><body>以前の司令塔 HTML</body></html>');
   const relative=new URL(req.url,'http://localhost').pathname,file=path.resolve(root,'.'+relative);
   if(!file.startsWith(root+path.sep))return res.writeHead(403).end();
   fs.readFile(file,(error,bytes)=>{
@@ -49,11 +56,16 @@ const server=http.createServer((req,res)=>{
         if(new URL(request.url()).origin===origin&&['GET','HEAD'].includes(request.method()))return route.continue();
         blocked.push({url:request.url(),method:request.method()});return route.abort();
       });
+      await page.goto(origin+staleLoungeEntry);
+      assert.equal(await page.locator('html[data-stale-lounge-entry]').count(),1);
       await page.goto(origin+'/command-center-98/app-v130.html');
       await page.waitForFunction(()=>window.CCCastle?.unified&&!document.querySelector('#ccCastleFrame').hidden);
       const lounge=page.frameLocator('#ccCastleFrame');
+      assert.equal(new URL(await page.locator('#ccCastleFrame').getAttribute('src'),page.url()).search,currentLoungeQuery,'ordinary entry bypasses the previously cached child HTML');
       assert.equal(new URL(await page.locator('#ccCastleFrame').getAttribute('src'),page.url()).pathname,'/command-center-98/lounge/index.html');
       await lounge.locator('.account-board[data-state=ready]').waitFor();
+      assert.equal(await lounge.locator('html[data-stale-lounge-entry]').count(),0);
+      assert.equal(new URL(await page.locator('#ccCastleFrame').getAttribute('src'),page.url()).search,currentLoungeQuery);
       await lounge.locator('body.stained-atelier .sg-rail').waitFor();
       const cards=lounge.locator('.sg-card');
       assert.equal(await cards.count(),10);
@@ -131,6 +143,8 @@ const server=http.createServer((req,res)=>{
       assert.deepEqual(audit.requests.filter(r=>!['GET','HEAD'].includes(r.method)),audit.initializations);assert.equal(audit.sourceUnchanged,true);
       await page.reload();await page.waitForFunction(()=>window.CCCastle?.unified&&!document.querySelector('#ccCastleFrame').hidden);
       await lounge.locator('.account-board[data-state=ready]').waitFor();
+      assert.equal(await lounge.locator('html[data-stale-lounge-entry]').count(),0);
+      assert.equal(new URL(await page.locator('#ccCastleFrame').getAttribute('src'),page.url()).search,currentLoungeQuery);
       await lounge.locator('.sg-card[data-key=insurance]').click();
       await lounge.locator('#draft-body').waitFor();
       assert.equal(await lounge.locator('#draft-body').textContent(),insuranceBody);

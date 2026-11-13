@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -59,4 +60,14 @@ test('unified notebook presentation invalidates changed code and keeps one canon
   for(const old of ['20261102.2-paper','20261102.3-depth','20261102.4-detail','20261103.1-world'])assert.ok(![...modules.keys()].some(url=>url.endsWith('/'+file+'?v='+old)),'never execute stale presentation '+file+' '+old);
  }
  assert.ok([...modules.keys()].some(url=>url.endsWith('/paper-detail-model.js?v=20261102.4-detail')),'unchanged source-formatting model retains exact revision');
+});
+
+
+test('normal entry cache keys cover the exact child HTML and parent script bytes',()=>{
+ const digest=file=>createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex').slice(0,16);
+ const parent=fs.readFileSync(path.join(root,'command-center-98/castle-parent.js'),'utf8');
+ const entry=parent.match(/const loungeUrl='([^']+)'/)[1];
+ assert.equal(new URL(entry,'https://qa.invalid/command-center-98/').search,'?v=20261113.'+digest('command-center-98/lounge/index.html')+'-entry','changing child entry bytes requires a fresh normal iframe URL');
+ const assets=JSON.parse(fs.readFileSync(path.join(root,'command-center-98/app-assets.json'),'utf8'));
+ assert.ok(assets.scripts.includes('./castle-parent.js?v=20261113.'+digest('command-center-98/castle-parent.js')+'-parent'),'changing parent bytes requires a fresh manifest URL');
 });
