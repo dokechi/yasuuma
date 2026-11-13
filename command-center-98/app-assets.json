@@ -28,7 +28,8 @@
     "./overseas-profit-readiness.css?v=20261023.1-profit-route",
     "./storybook-presentation.css?v=20261101.9-workbook",
     "./storybook-workspace.css?v=20261109.5-full-height",
-    "./stained-sourcing.css?v=20261113.2-layout"
+    "./stained-sourcing.css?v=20261113.2-layout",
+    "./v232-heading-narrow-fix.css?v=20261113.1"
   ],
   "scripts": [
     "./sourcing-atomic-save.js?v=20261011.atomic2",

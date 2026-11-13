@@ -1,0 +1,27 @@
+/* v232 heading narrow fix (2026-11-13)
+   At narrow widths the workspace heading's 3-column grid squeezed the
+   action buttons and the save-state summary until they overlapped or
+   were clipped mid-text. Stack the heading into one column instead. */
+@media (max-width: 1100px) {
+  body.cc-rpg-theme .rpg-workspace-heading .cc-heading {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+  body.cc-rpg-theme .rpg-workspace-heading .cc-heading > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+  body.cc-rpg-theme .rpg-workspace-heading .cc-heading .push-button {
+    white-space: normal;
+    max-width: 100%;
+  }
+  body.cc-rpg-theme .rpg-workspace-heading #ccRefreshSlot {
+    justify-self: start;
+    align-self: center;
+  }
+  body.cc-rpg-theme .rpg-workspace-heading details > summary {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+}
