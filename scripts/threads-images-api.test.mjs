@@ -122,3 +122,21 @@ test('image endpoint source uses ASCII-safe identity and label literals for depl
   assert.match(source,/^[\x00-\x7f]*$/); // Japanese runtime strings are Unicode escapes, not altered labels.
  }
 });
+
+test('confirmed kensho and manga SNS identities read and save only within exact fixed scope',async()=>{
+ for(const [account,task,name,handle] of [['kensho','kensho-threads-v1','懸賞小ナス','@nasbi.777'],['manga','manga-threads-v1','漫画','@kousaka_san_']]){
+  const s=fixture();s.rows[0]={...s.rows[0],task_id:task,payload:{account:name,handle,draft:'Synthetic untouched'}};
+  assert.equal(good(await get(s,1,account)).accountKey,account);assert.equal(s.writes.length,0);
+  good(await patch(s,request({accountKey:account})));assert.equal(s.assets[0].payload.account_key,account);assert.equal(s.rows[0].payload.draft,'Synthetic untouched');
+  for(const payload of [{account:'other',handle},{account:name,handle:'@other'},{account:name},{handle}]){
+   s.rows[0].payload=payload;assert.equal((await get(s,1,account)).status,404);
+   assert.equal((await patch(s,request({accountKey:account}))).status,404);assert.equal(s.writes.length,1);
+  }
+ }
+});
+test('non-SNS manga and everyday records remain outside image endpoint scope',async()=>{
+ for(const [account,task,name,handle] of [['manga','manga-threads-v1','漫画','@kousaka_san_'],['everyday','everyday-words-v1','日常の言葉','']]){
+  const s=fixture();s.rows[0]={...s.rows[0],task_id:task,domain:'deal',payload:{account:name,handle}};
+  assert.equal((await get(s,1,account)).status,404);assert.equal((await patch(s,request({accountKey:account}))).status,404);assert.equal(s.writes.length,0);assert.equal(s.assets.length,0);
+ }
+});
