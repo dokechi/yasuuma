@@ -138,7 +138,14 @@ const server=http.createServer((req,res)=>{
   assert.equal(initialWork.stageVisible,false,'retained native decoration never covers the sourcing workspace');
   assert.deepEqual(initialWork.selectedTabs,['purchases'],'instant entry keeps the canonical selected native purchase ledger');
   assert.ok(initialWork.tab.key&&initialWork.tab.rect?.width>=44&&initialWork.tab.rect.height>=44,'real native sourcing tab remains a 44px action: '+JSON.stringify(initialWork));
-  if(width<=600)assert.ok(initialWork.scrollY===0&&initialWork.tab.rect.top>=0&&initialWork.tab.rect.bottom<=initialWork.viewport&&initialWork.tab.rect.left>=0&&initialWork.tab.rect.right<=width&&initialWork.tab.hit&&initialWork.information.some(n=>n.rect.height>0&&n.rect.top>=0&&n.rect.bottom<=initialWork.viewport&&n.rect.left>=0&&n.rect.right<=width),'phone instant entry must expose the full unobstructed purchase tab and exact record-derived 1-order/2-unit summary before scrolling: '+JSON.stringify(initialWork));
+  if(width<=600){
+   assert.ok(initialWork.scrollY===0&&initialWork.tab.rect.top>=0&&initialWork.tab.rect.bottom<=initialWork.viewport&&initialWork.tab.rect.left>=0&&initialWork.tab.rect.right<=width&&initialWork.tab.hit,'phone entry exposes the full unobstructed 44px purchase tab: '+JSON.stringify(initialWork));
+   const summary=page.locator('#ledgerProfitSummary .purchase-paid-line > span').filter({hasText:/^1注文 · 2点$/});
+   await summary.scrollIntoViewIfNeeded();
+   const reachableSummary=await summary.evaluate(n=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return{text:n.textContent.trim(),visible:n.checkVisibility(),inside:r.width>0&&r.height>0&&r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth,uncovered:hit===n||n.contains(hit)};});
+   assert.deepEqual(reachableSummary,{text:'1注文 · 2点',visible:true,inside:true,uncovered:true},'exact record-derived summary remains reachable with ordinary scrolling');
+   await page.evaluate(()=>{scrollTo(0,0);return new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
+  }
   const geometry=await page.locator('#loungeWorkspaceHeader').evaluate(n=>({overflow:document.documentElement.scrollWidth>innerWidth,buttons:[...n.querySelectorAll('button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height,left:b.getBoundingClientRect().left,right:b.getBoundingClientRect().right})),background:getComputedStyle(document.body).backgroundImage,sceneCount:document.querySelectorAll('.story-workspace-art .story-paper-art[data-story-room=sourcing]').length,actor:document.querySelector('.story-workspace-art .story-actor-image')?.src}));
   assert.equal(geometry.overflow,false);
   // All configured chapters remain accessible. Primary and auxiliary controls may
