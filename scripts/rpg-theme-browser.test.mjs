@@ -200,7 +200,11 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   };
   // Physical CDP clicks for the new visible workbench menu. Legacy component
   // fixtures below keep their own original controls; no route-owner shortcut.
+  const settleLounge=async()=>{
+   await evaluate(`(async()=>{const d=document.getElementById('ccCastleFrame')?.contentDocument;if(!d)return;await Promise.all(d.getAnimations().filter(a=>Number.isFinite(a.effect?.getTiming().iterations)).map(a=>a.finished.catch(()=>{})));await new Promise(r=>d.defaultView.requestAnimationFrame(()=>d.defaultView.requestAnimationFrame(r)));})()`);
+  };
   const loungeClick=async(selector,text)=>{
+   await settleLounge();
    const point=await evaluate(`(()=>{const f=document.getElementById('ccCastleFrame'),d=f.contentDocument,n=[...d.querySelectorAll(${JSON.stringify(selector)})].find(n=>${text===undefined?'true':`n.textContent===${JSON.stringify(text)}`});if(!n?.checkVisibility())throw Error('Visible lounge control missing: '+${JSON.stringify(selector)});n.scrollIntoView({block:'nearest',inline:'nearest'});const r=n.getBoundingClientRect(),outer=f.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,hit=d.elementFromPoint(x,y);if(r.width<=0||r.height<=0||!(hit===n||n.contains(hit)))throw Error('Lounge control is obscured: '+${JSON.stringify(selector)});return{x:outer.left+x,y:outer.top+y};})()`);
    await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});
   };
@@ -208,7 +212,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
    if(await evaluate(`!document.getElementById('ccCastleFrame').contentDocument.getElementById('room').hidden`))await loungeClick('#room .sg-title');
    await waitFor(`document.getElementById('ccCastleFrame').contentDocument.querySelector('.account-board').hidden===false`);
   };
-  const capture=async(name,extra)=>{await sleep(120);await evaluate('window.scrollTo(0,0)');const checks=await evaluate(geometry);if(extra)checks.push({name:'expected route content',pass:!!await evaluate(extra)});const png=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(output,name+'.png'),Buffer.from(png.data,'base64'));results.push({name,checks});console.log(name+': '+checks.filter(x=>x.pass).length+'/'+checks.length)};
+  const capture=async(name,extra)=>{await settleLounge();await sleep(120);await evaluate('window.scrollTo(0,0)');const checks=await evaluate(geometry);if(extra)checks.push({name:'expected route content',pass:!!await evaluate(extra)});const png=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(output,name+'.png'),Buffer.from(png.data,'base64'));results.push({name,checks});console.log(name+': '+checks.filter(x=>x.pass).length+'/'+checks.length);for(const check of checks.filter(x=>!x.pass))console.log('FAILED CHECK '+JSON.stringify({route:name,...check}))};
   const key=async(value,modifiers=0)=>{const code=value==='Tab'?9:value==='Enter'?13:27;await send('Input.dispatchKeyEvent',{type:value==='Enter'?'keyDown':'rawKeyDown',key:value,code:value,windowsVirtualKeyCode:code,nativeVirtualKeyCode:code,modifiers,...(value==='Enter'?{text:'\r',unmodifiedText:'\r'}:{})});await send('Input.dispatchKeyEvent',{type:'keyUp',key:value,code:value,windowsVirtualKeyCode:code,nativeVirtualKeyCode:code,modifiers});};
   const keyboardFocus=async selector=>{
    if(await evaluate(`document.activeElement?.matches(${JSON.stringify(selector)})`))await key('Tab',8);

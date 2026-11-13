@@ -9,7 +9,7 @@
 })(typeof window==='undefined'?globalThis:window,function(M,A){
  'use strict';
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const numeric=v=>v!==null&&v!==undefined&&typeof v!=='boolean'&&!(typeof v==='string'&&!v.trim())&&Number.isFinite(Number(v));
+ const numeric=v=>(typeof v==='number'||typeof v==='string')&&!(typeof v==='string'&&!v.trim())&&Number.isFinite(Number(v));
  const money=v=>!numeric(v)?'—':(v<0?'−¥':'¥')+Math.abs(Number(v)).toLocaleString('ja-JP',{maximumFractionDigits:2});
  const day=v=>v&&Number.isFinite(Date.parse(v))?new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(v)):'日付未確認';
  const orderKey=p=>JSON.stringify([p.supplier_key,p.order_id||p.source_message_id||p.id]);

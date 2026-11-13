@@ -79,3 +79,6 @@ body.storybook-host.lounge-workspace:has(#mainWindow[data-cc-view="sourcing"]) #
 body.storybook-host.lounge-workspace:has(#mainWindow[data-cc-view="sourcing"]) #nativeSourcingGlass svg{filter:brightness(1) saturate(.9) drop-shadow(-5px 0 8px #e8e2df60)}
 #nativeSourcingGlass .sg-frame{filter:grayscale(1) brightness(1.06) drop-shadow(-2px 0 3px #f1ece34d)}
 #nativeSourcingGlass .sg-glass{filter:saturate(.85) brightness(1.1)}
+/* Profit checks keep their own warning/pass/fail palette. Do not recolor their
+   text with the gallery's light-on-dark paragraph rule over a light warning. */
+body.storybook-host.lounge-workspace:has(#mainWindow[data-cc-view="sourcing"]) #mainWindow .sourcing-profit-check :is(b,span,p,summary){color:inherit!important}

@@ -58,6 +58,15 @@ test('tools departure captures visible workbench and object reliefs, never hidde
  const bench=doc.querySelector('.living-workbench');bench.getBoundingClientRect=()=>({left:40,top:160,width:300,height:400});bench.scrollTop=80;
  const snapshot=captureCastleForeground(doc),copy=snapshot.querySelector('[data-journey-part=paper]');assert.match(copy.textContent,/原稿棚/);assert.ok(copy.querySelector('i'));assert.equal(copy.textContent.includes('Private hidden draft'),false);assert.equal(copy.dataset.journeyScrollTop,'80');assert.equal(paper.style.visibility,'hidden');assert.equal(bench.isConnected,true);
 });
+test('tools departure preserves grid content alignment instead of moving centered objects to the top',t=>{
+ const {doc}=setup(t);doc.querySelector('.spatial-desk-actor').remove();
+ const room=doc.createElement('main');room.id='room';room.dataset.livingView='tools';doc.body.append(room);
+ const bench=doc.createElement('section');bench.className='living-workbench';bench.style.cssText='display:flex;flex-direction:column;width:360px;height:700px';bench.getBoundingClientRect=()=>({left:12,top:147,width:360,height:700});room.append(bench);
+ const grid=doc.createElement('div');grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;align-content:center;flex:1 0 auto;height:450px';bench.append(grid);
+ for(let i=0;i<4;i++){const button=doc.createElement('button');button.textContent='Object '+i;grid.append(button);}
+ const before=bench.outerHTML;
+ for(const strict of [false,true]){doc.defaultView.performance.now=()=>0;const snapshot=captureCastleForeground(doc,{strict});const copy=snapshot.querySelector('[data-journey-part=paper] > div');assert.equal(copy.style.alignContent,'center');assert.equal(copy.style.display,'grid');assert.equal(copy.children.length,4);assert.equal(bench.outerHTML,before);}
+});
 test('departure retains asymmetric material borders and independent child transforms without double-transforming the root',t=>{
  const {doc,paper}=setup(t);paper.style.cssText='rotate:3deg;translate:2px 4px;scale:1.1';
  const relief=doc.createElement('span');relief.style.cssText='border:6px solid rgb(40,30,20);border-top:9px solid rgb(120,90,50);border-bottom:9px solid rgb(100,70,40);rotate:-2deg;translate:1px 2px;scale:0.98';paper.append(relief);

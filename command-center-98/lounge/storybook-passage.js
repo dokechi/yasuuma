@@ -1,7 +1,7 @@
 /* A short-lived paper presentation around the existing account/reader owners.
    No routing, manuscript writes, live DOM moves, media, or saved preferences. */
 import {createStorybookJourney} from './storybook-journey.js?v=20261101.9-workbook';
-import {captureCastleForeground} from './castle-foreground.js?v=20261101.9-workbook';
+import {captureCastleForeground} from './castle-foreground.js?v=20261113.2-layout';
 
 export const storybookPassageDuration=pace=>pace==='quick'?380:pace==='slow'?850:620;
 const installations=new WeakMap(),publishingRooms=new Set(['insurance','otoku','rakuten','lottery']);

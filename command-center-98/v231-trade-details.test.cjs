@@ -8,7 +8,7 @@ const fixtures=[
  {id:1,product_name:'合成購入A',quantity:1,status:'purchased',supplier_key:'shop',order_id:'synthetic-1',ordered_at:'2026-10-01T00:00:00Z',order_total_yen:1500,unit_price_yen:1500},
  {id:2,product_name:'<img src=x onerror=alert(1)>',quantity:1,status:'unknown',supplier_key:'shop',order_id:'synthetic-2',ordered_at:'2026-10-02T00:00:00Z'}
 ];
-test('zero and losses are known; missing, boolean and malformed amounts stay unknown',()=>{assert.equal(details.money(0),'¥0');assert.equal(details.money(-1),'−¥1');for(const v of [null,undefined,'',false,true,'  ','oops'])assert.equal(details.money(v),'—')});
+test('zero and losses are known; missing, boolean and malformed amounts stay unknown',()=>{assert.equal(details.money(0),'¥0');assert.equal(details.money(-1),'−¥1');for(const v of [null,undefined,'',false,true,'  ','oops',[],[1],{},NaN,Infinity])assert.equal(details.money(v),'—')});
 test('purchase table uses current profit contract and escapes source text',()=>{
  const html=details.html({purchases:fixtures,purchaseProfit:[],salesMonth:'2026-10',purchaseMonth:'2026-10'});
  for(const text of ['仕入れ計','¥1,500','儲け','予約・未納／要確認','合成購入A'])assert.ok(html.includes(text),text);

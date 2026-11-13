@@ -55,6 +55,6 @@ decorateRoom();
 Object.defineProperty(window,'__storybook',{configurable:true,value:Object.freeze({snapshot:()=>Object.freeze({...scene?.snapshot(),workbench:workbench?.snapshot()||null,journey:passage?.snapshot?.()||null})})});
 // Optional page motion is installed after the working book and tools are ready.
 // Its failure cannot stop a route, a copy, or the initial first-readable frame.
-try{const {installStorybookPassage}=await import('./storybook-passage.js?v=20261101.9-workbook');if(scene&&desk)passage=await installStorybookPassage({document,scene,board,spatialDesk:desk,buildArt:makeArt});}catch(error){console.warn('Page motion unavailable; pages open immediately.',error);}
+try{const {installStorybookPassage}=await import('./storybook-passage.js?v=20261113.2-layout');if(scene&&desk)passage=await installStorybookPassage({document,scene,board,spatialDesk:desk,buildArt:makeArt});}catch(error){console.warn('Page motion unavailable; pages open immediately.',error);}
 window.addEventListener('pagehide',()=>{destroyed=true;passage?.destroy();observer.disconnect();window.removeEventListener('resize',decorateRoom);desk?.destroy();workbench?.destroy();},{once:true});
 
