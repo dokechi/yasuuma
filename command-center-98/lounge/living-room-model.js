@@ -1,9 +1,9 @@
 /* Read-only presentation of records already available to this browser.
    No requests, timers, writes, inferred inventory, or claims of remote posting. */
-import {publishingAccounts,draftsForAccount} from './accounts.js?v=20261112.2-skun';
-import {groupDrafts,dayInJapan} from './notebook.js?v=20261112.2-skun';
-import {seenRevision,currentPosted} from './qol-model.js?v=20261112.2-skun';
-import {holdsActiveText} from './desk-model.js?v=20261112.2-skun';
+import {publishingAccounts,draftsForAccount} from './accounts.js?v=20261113.10-girls-channel';
+import {groupDrafts,dayInJapan} from './notebook.js?v=20261113.10-girls-channel';
+import {seenRevision,currentPosted} from './qol-model.js?v=20261113.10-girls-channel';
+import {holdsActiveText} from './desk-model.js?v=20261113.10-girls-channel';
 
 const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const validTime = value => Number.isFinite(value) && value > 0 && Number.isFinite(new Date(value).getTime());

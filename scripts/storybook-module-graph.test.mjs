@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const origin='https://storybook.invalid/';
-const version='20261113.7-read-state';
+const version='20261113.10-girls-channel';
 const canonical=new Set(['app.js','desk.js','accounts.js','desk-model.js','qol.js','hall-tools.js','spatial-desk.js','living-room-model.js','arrival-passage.js','court-native-snapshot.js']);
 const filename=url=>path.join(root,new URL(url).pathname);
 function literals(source){
@@ -54,8 +54,8 @@ test('changed foreground and its retained archive import graph use the same curr
 test('unified notebook presentation invalidates changed code and keeps one canonical owner',()=>{
  const {html,modules}=checkOwners('command-center-98/lounge/book.html');
  assert.match(html,/href="book\.html\?presentation=book"/,'retained reader link stays on its owning entry');
- assert.match(html,/paper-stage\.css\?v=20261103\.3-scroll/);assert.match(html,/paper-atelier\.js\?v=20261113\.7-read-state/);
- for(const [file,pin] of Object.entries({'paper-atelier.js':'20261113.7-read-state','paper-stage.js':'20261113.1-focus','paper-fold.js':'20261103.2-notebook','paper-motion.js':'20261103.2-notebook','paper-images.js':'20261103.2-notebook','paper-cutouts.js':'20261103.2-notebook'})){
+ assert.match(html,/paper-stage\.css\?v=20261103\.3-scroll/);assert.match(html,/paper-atelier\.js\?v=20261113\.10-girls-channel/);
+ for(const [file,pin] of Object.entries({'paper-atelier.js':'20261113.10-girls-channel','paper-stage.js':'20261113.10-girls-channel','paper-fold.js':'20261103.2-notebook','paper-motion.js':'20261103.2-notebook','paper-images.js':'20261103.2-notebook','paper-cutouts.js':'20261103.2-notebook'})){
   assert.ok([...modules.keys()].some(url=>url.endsWith('/'+file+'?v='+pin)),'current notebook dependency '+file);
   for(const old of ['20261102.2-paper','20261102.3-depth','20261102.4-detail','20261103.1-world'])assert.ok(![...modules.keys()].some(url=>url.endsWith('/'+file+'?v='+old)),'never execute stale presentation '+file+' '+old);
  }

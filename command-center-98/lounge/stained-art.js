@@ -1,6 +1,16 @@
 let serial=0;
 // Glass, silver architecture, plinth and character are independent layers.
-// All ten stations share one frame and one plinth from the user-supplied reference.
+// The stations share one frame and one plinth from the user-supplied reference.
+const conversationGlass=`<g stroke-linejoin="round">
+ <path d="M85 120 L135 238 L85 340 L35 238Z" fill="#9f8abc" opacity=".25"/>
+ <path d="M35 298 L85 384 L135 298 L135 480 L85 575 L35 480Z" fill="#454f6e" opacity=".36"/>
+ <path d="M85 151 L101 178 L85 203 L69 178Z M85 459 L104 489 L85 519 L66 489Z" fill="#b9a579" stroke="#26222e" stroke-width="4"/>
+ <path d="M61 235 Q62 222 74 222 H111 Q126 222 126 237 V290 Q126 304 111 304 H102 L105 327 L81 304 H74 Q61 304 61 290Z" fill="#8782ad" stroke="#24212a" stroke-width="7"/>
+ <path d="M61 235 Q62 222 74 222 H111 Q126 222 126 237 V290 Q126 304 111 304 H102 L105 327 L81 304 H74 Q61 304 61 290Z" fill="none" stroke="#c4b9cc" stroke-width="2"/>
+ <path d="M46 313 Q46 298 61 298 H95 Q109 298 109 312 V363 Q109 377 95 377 H75 L52 400 L57 377 Q46 375 46 363Z" fill="#c3a685" stroke="#24212a" stroke-width="7"/>
+ <path d="M46 313 Q46 298 61 298 H95 Q109 298 109 312 V363 Q109 377 95 377 H75 L52 400 L57 377 Q46 375 46 363Z" fill="none" stroke="#e0ceb1" stroke-width="2"/>
+ <path d="M78 248 H109 M78 272 H109 M61 325 H94 M61 350 H94" fill="none" stroke="#514453" stroke-width="3"/>
+ </g>`;
 const silhouettes={
  insurance:{feet:757,path:'M-14 662 L10 662 L19 669 L22 689 L31 701 L30 721 L39 746 L29 751 L18 751 L17 757 L5 757 L0 750 L-4 758 L-19 758 L-21 751 L-32 752 L-33 737 L-28 710 L-20 699 L-20 677 Z'},
  otoku:{feet:758,path:'M-10 662 L9 663 L18 675 L17 694 L25 700 L27 713 L39 737 L34 748 L22 750 L20 758 L5 758 L1 751 L-5 758 L-20 758 L-23 748 L-31 748 L-34 726 L-32 710 L-22 704 L-19 688 L-19 673 Z'},
@@ -39,7 +49,7 @@ export function createGlassArt(slot,assetBase=""){
  <filter id="${id}-silver" color-interpolation-filters="sRGB"><feColorMatrix type="saturate" values="0"/></filter>
  <clipPath id="${id}-base"><path d="M40 647 C38 634 55 627 85 627 C115 627 132 634 130 647 L122 682 Q85 701 48 682 Z"/></clipPath>
  </defs>
- <g class="sg-glass" clip-path="url(#${id}-glass)">${glass}${slot.glassTint?`<rect x="35" y="119" width="100" height="482" fill="${slot.glassTint}" style="mix-blend-mode:color"/>`:''}</g>
+ <g class="sg-glass" clip-path="url(#${id}-glass)">${glass}${slot.glassTint?`<rect x="35" y="119" width="100" height="482" fill="${slot.glassTint}" style="mix-blend-mode:color"/>`:''}${slot.motif==='conversation'?conversationGlass:''}</g>
  <g class="sg-frame" mask="url(#${id}-frame)" filter="url(#${id}-silver)"><image href="${ref}" x="-140.25" y="-149.6" width="1740.8" height="979.2"/></g>
  <g class="sg-foot-tracery" fill="none" stroke="#161719" stroke-width="7"><path d="M35 575 Q47 542 85 528 Q123 542 135 575 M35 573 Q62 581 85 601 Q108 581 135 573"/><path d="M85 514 L99 528 L85 542 L71 528Z"/></g>
  <g class="sg-foot-tracery" fill="none" stroke="#b1b2b3" stroke-width="2"><path d="M35 575 Q47 542 85 528 Q123 542 135 575 M35 573 Q62 581 85 601 Q108 581 135 573"/><path d="M85 514 L99 528 L85 542 L71 528Z"/></g>

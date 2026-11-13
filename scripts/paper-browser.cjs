@@ -80,7 +80,7 @@ const server=http.createServer((req,res)=>{
    await page.mouse.move(width/2,height*.75);for(let n=0;n<22;n++){await page.mouse.wheel(0,900);await page.waitForTimeout(35)}await page.waitForTimeout(150);
    check('native wheel reaches the bottom and continuation control',await cf.evaluate(()=>{const e=document.scrollingElement,b=document.querySelector('.paper-more')?.getBoundingClientRect();return e.scrollHeight-e.clientHeight-e.scrollTop<4&&b&&b.top>=0&&b.bottom<=innerHeight}),await documentTop());
    await page.screenshot({path:path.join(out,width+'-'+height+'-native-bottom.png')});await cf.evaluate(()=>window.scrollTo(0,0));
-   await cf.evaluate(async()=>{window.__paperOwner=await import('./app.js?v=20261113.7-read-state');});
+   await cf.evaluate(async()=>{window.__paperOwner=await import('./app.js?v=20261113.10-girls-channel');});
    const pinClear=async label=>{
     const report=await f.locator('.paper-card').evaluateAll(nodes=>{
      const collisions=[],categories=[],overlaps=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>.5&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>.5;
@@ -106,7 +106,7 @@ const server=http.createServer((req,res)=>{
    check('no initial semantic records',await cf.evaluate(()=>Object.keys(localStorage).filter(k=>/^castle-production\.v1\.(?:visited:|visit:|copy:|seen:|done:|future:)/.test(k)).length===0));
    const geometry=await cf.evaluate(()=>({width:document.documentElement.scrollWidth,client:innerWidth,tabs:[...document.querySelectorAll('.paper-tab')].map(n=>({text:n.textContent,font:parseFloat(getComputedStyle(n).fontSize),height:n.getBoundingClientRect().height})),body:parseFloat(getComputedStyle(document.querySelector('.paper-excerpt')).fontSize)}));
    check('no page horizontal overflow; readable text and tap areas',geometry.width<=geometry.client+1&&geometry.tabs.every(t=>t.font>=16&&t.height>=44)&&geometry.body>=16,geometry);
-   if(process.env.PAPER_EIGHT)check('12 categories remain accessible in the same scrollable header',geometry.tabs.length===12&&await cf.evaluate(()=>{const nav=document.querySelector('.paper-tabs');return nav.scrollWidth<=nav.clientWidth+1||getComputedStyle(nav).overflowX==='auto';}));
+   if(process.env.PAPER_EIGHT)check('13 categories remain accessible in the same scrollable header',geometry.tabs.length===13&&geometry.tabs.some(t=>t.text.includes('ガルちゃん'))&&await cf.evaluate(()=>{const nav=document.querySelector('.paper-tabs');return nav.scrollWidth<=nav.clientWidth+1||getComputedStyle(nav).overflowX==='auto';}));
    const previewFidelity=await cf.evaluate(()=>{const rows=__paperOwner.getPaperDesk().rows('insurance');return [...document.querySelectorAll('.paper-card')].map((card,index)=>{const row=rows.find(d=>d.id===card.dataset.paperId);return {id:card.dataset.paperId,title:card.querySelector('.paper-title').textContent===row?.title,excerpt:card.querySelector('.paper-excerpt').textContent===row?.body.slice(0,index===0?240:105)};});});
    check('preview formatting preserves exact source title and excerpt textContent',previewFidelity.every(x=>x.title&&x.excerpt),previewFidelity);
    if(!process.env.PAPER_SHORT){

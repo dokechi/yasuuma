@@ -8,9 +8,15 @@ const staleLoungeEntry='/command-center-98/lounge/index.html?v=20261112.3-skun';
 const currentLoungeQuery='?v=20261113.'+createHash('sha256').update(fs.readFileSync(path.join(root,'command-center-98/lounge/index.html'))).digest('hex').slice(0,16)+'-entry';
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg'};
 const insuranceBody='合成データの保険原稿です。保障内容と条件を確認してから判断します。\n\nコピーは投稿ではありません。保存済みの文章をそのまま読みます。';
+const girlsChannelBody='家事の場面をひとつ拾った検証用の原稿です。';
+const girlsChannelComment='https://girlschannel.net/comment/12345/6/';
+const girlsChannelProduct='https://example.com/fixture-product';
+const girlsChannelOriginal='https://example.com/fixture-original';
 const fixtureScript=`(()=>{
   const row={id:901,taskId:'insurance-threads-v1',eventKey:'unified-insurance',title:'保険を見直す前の確認',occurredAt:'2026-10-30T08:00:00Z',domain:'money',payload:{draft:${JSON.stringify(insuranceBody)},date:'2026-10-30',review_status:'確認用下書き',sources_note:'検証専用の出典記録'}};
-  __rpgQA.threads.events.push(row);
+  const girlsChannel={id:902,taskId:'girls-channel-threads-v1',eventKey:'unified-girls-channel',title:'家事の原稿',occurredAt:'2026-11-13T06:00:00Z',domain:'sns',payload:{content_type:'threads_draft',draft:${JSON.stringify(girlsChannelBody)},review_status:'未投稿・下書き',publication_status:'unpublished',ordinary_url:${JSON.stringify(girlsChannelProduct)},girls_channel_source:{url:${JSON.stringify(girlsChannelComment)},upvotes:512,checkedAt:'2026-11-13'},sources:[{url:${JSON.stringify(girlsChannelOriginal)},title:'検証用の元投稿'}]}};
+  const guide={id:903,taskId:'writing-references-v1',eventKey:'current',domain:'reference',payload:{content_type:'writing_reference_guide',guide:{groups:[{key:'overview',label:'共通',answer:'検証用の共通方針',sources:[]},{key:'girls-channel',label:'ガルちゃん',answer:'元投稿で反応が出た場面から書く。',sources:[{name:'元投稿',note:'検証用の出典',links:[{url:${JSON.stringify(girlsChannelOriginal)},label:'元投稿を開く'}]}]}]}}};
+  __rpgQA.threads.events.push(row,girlsChannel,guide);
   window.__unifiedQA={original:JSON.stringify(row),requests:[],external:[]};
   window.open=(...args)=>{__unifiedQA.external.push(args);return null;};
   const previous=window.fetch;
@@ -20,7 +26,10 @@ const fixtureScript=`(()=>{
     let body;try{body=JSON.parse(options.body||'null');}catch{}
     __unifiedQA.requests.push({url:url.href,method,...(body?{action:body.action,entityType:body.entityType,count:body.items?.length}:{})});
     const json=data=>new Response(JSON.stringify(data),{status:200,headers:{'Content-Type':'application/json'}});
-    if(method==='GET'&&url.searchParams.get('resource')==='task-events'&&url.searchParams.get('taskId')==='insurance-threads-v1')return json({ok:true,events:[row],total:1,nextOffset:null});
+    if(method==='GET'&&url.searchParams.get('resource')==='task-events'){
+      const taskId=url.searchParams.get('taskId'),record=[row,girlsChannel,guide].find(event=>event.taskId===taskId);
+      if(record)return json({ok:true,events:[record],total:1,nextOffset:null});
+    }
     if(method==='GET'&&url.searchParams.get('resource')==='threads-images')return json({ok:true,id:url.searchParams.get('id'),accountKey:url.searchParams.get('accountKey'),manifest:{contract:'threads-post-images-v1',revision:0,images:[]},assets:[]});
     return previous(input,options);
   };
@@ -68,13 +77,37 @@ const server=http.createServer((req,res)=>{
       assert.equal(new URL(await page.locator('#ccCastleFrame').getAttribute('src'),page.url()).search,currentLoungeQuery);
       await lounge.locator('body.stained-atelier .sg-rail').waitFor();
       const cards=lounge.locator('.sg-card');
-      assert.equal(await cards.count(),10);
+      assert.equal(await cards.count(),11);
       assert.equal(await cards.locator(':scope[aria-disabled=true]').count(),0);
-      assert.equal(await cards.evaluateAll(nodes=>new Set(nodes.map(n=>n.dataset.key)).size),10);
+      assert.equal(await cards.evaluateAll(nodes=>new Set(nodes.map(n=>n.dataset.key)).size),11);
       // Keyboard movement selects a glass without entering a manuscript.
       await cards.first().focus();await page.keyboard.press('End');
       assert.equal(await cards.last().evaluate(n=>n===document.activeElement),true);
       assert.equal(await lounge.locator('#room').evaluate(n=>n.hidden),true);
+      const girlsChannelCard=cards.last();
+      assert.equal(await girlsChannelCard.getAttribute('data-key'),'girls-channel');
+      if(width===390)await page.screenshot({path:path.join(out,'girls-channel-gallery.png')});
+      await girlsChannelCard.click();
+      const girlsChannelRoom=lounge.locator('#room[data-account=girls-channel]');
+      await girlsChannelRoom.waitFor();
+      await girlsChannelRoom.getByRole('heading',{name:'ガルちゃんの原稿'}).waitFor();
+      const girlsChannelManuscript=girlsChannelRoom.locator('#draft-body');
+      await girlsChannelManuscript.waitFor();
+      assert.equal(await girlsChannelManuscript.textContent(),girlsChannelBody);
+      assert.match(await girlsChannelRoom.locator('#draft-meta').textContent(),/未投稿・下書き/);
+      assert.equal(await girlsChannelRoom.getByRole('link',{name:'ガルちゃん元コメント ＋512票 ↗'}).getAttribute('href'),girlsChannelComment);
+      assert.equal(await girlsChannelRoom.getByRole('link',{name:'保存されたリンク ↗'}).getAttribute('href'),girlsChannelProduct);
+      await girlsChannelRoom.locator('#draft-links summary').click();
+      assert.equal(await girlsChannelRoom.getByRole('link',{name:'検証用の元投稿 ↗'}).getAttribute('href'),girlsChannelOriginal);
+      await girlsChannelRoom.getByRole('button',{name:'原稿の参考元',exact:true}).click();
+      const references=lounge.locator('#writing-references[open]');
+      await references.getByText('元投稿で反応が出た場面から書く。',{exact:true}).waitFor();
+      assert.equal(await references.locator('select').inputValue(),'girls-channel');
+      assert.equal(await references.getByRole('link',{name:'元投稿を開く'}).getAttribute('href'),girlsChannelOriginal);
+      await references.getByRole('button',{name:'閉じる',exact:true}).click();
+      await girlsChannelRoom.locator('.sg-title').click();
+      await lounge.locator('.sg-rail').waitFor();
+      assert.equal(await girlsChannelCard.evaluate(n=>n===document.activeElement),true);
       await page.keyboard.press('Home');
       assert.equal(await cards.first().evaluate(n=>n===document.activeElement),true);
       await lounge.locator('.sg-order-trigger').click();
@@ -151,7 +184,7 @@ const server=http.createServer((req,res)=>{
       assert.deepEqual(errors,[]);assert.deepEqual(blocked,[]);
       assert.equal(await page.evaluate(()=>__rpgQA.writes.length),0);
       await page.screenshot({path:path.join(out,width+'.png')});
-      results.push({width,height,currentHost:'lounge/index.html',presentation:'stained-glass',insuranceFixture:true,tenOwnerRoutes:true,keyboardNavigation:true,reorderIsolation:true,copy:true,settingsReturn:true,reload:true,sourceUnchanged:true,errors,writes:0,syntheticInitializations:audit.initializations});
+      results.push({width,height,currentHost:'lounge/index.html',presentation:'stained-glass',insuranceFixture:true,girlsChannelFixture:true,elevenOwnerRoutes:true,keyboardNavigation:true,reorderIsolation:true,copy:true,settingsReturn:true,reload:true,sourceUnchanged:true,errors,writes:0,syntheticInitializations:audit.initializations});
       await context.close();
     }
     fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(results,null,2));console.log(JSON.stringify(results,null,2));
