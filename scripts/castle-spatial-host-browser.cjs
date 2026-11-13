@@ -151,7 +151,8 @@ const server=http.createServer((req,res)=>{
   // All configured chapters remain accessible. Primary and auxiliary controls may
   // occupy their deliberate horizontal strip, but each focused real action
   // must become fully visible/hit-testable without scrolling the document.
-  const primary=page.locator('#loungeWorkspaceHeader [data-working-chapter]');assert.equal(await primary.count(),10);
+  const primary=page.locator('#loungeWorkspaceHeader [data-working-chapter]');assert.equal(await primary.count(),11);
+  assert.equal(await primary.filter({hasText:'ガルちゃん'}).getAttribute('data-working-chapter'),'girls-channel');
   assert.ok(await primary.evaluateAll(nodes=>nodes.every(n=>{const r=n.getBoundingClientRect();return r.width>=44&&r.height>=44;})));
   const headerScroll=await page.evaluate(()=>({x:scrollX,y:scrollY})),reachable=[];
   for(const action of await page.locator('#loungeWorkspaceHeader button').all()){
