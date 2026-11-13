@@ -201,7 +201,17 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   // Physical CDP clicks for the new visible workbench menu. Legacy component
   // fixtures below keep their own original controls; no route-owner shortcut.
   const settleLounge=async()=>{
-   await evaluate(`(async()=>{const d=document.getElementById('ccCastleFrame')?.contentDocument;if(!d)return;await Promise.all(d.getAnimations().filter(a=>Number.isFinite(a.effect?.getTiming().iterations)).map(a=>a.finished.catch(()=>{})));await new Promise(r=>d.defaultView.requestAnimationFrame(()=>d.defaultView.requestAnimationFrame(r)));})()`);
+   await evaluate(`(async()=>{
+    const f=document.getElementById('ccCastleFrame'),visible=()=>!!f&&!f.hidden&&f.checkVisibility()&&f.getBoundingClientRect().width>0&&f.getBoundingClientRect().height>0;
+    if(!visible())return;
+    const d=f.contentDocument;if(!d)return;
+    const moving=d.getAnimations().filter(a=>(a.playState==='running'||a.pending)&&Number.isFinite(a.effect?.getTiming().iterations));
+    await Promise.all(moving.map(a=>a.finished.catch(()=>{})));
+    if(!visible())return;
+    // Parent frames keep advancing when a native route hides the child. Paused
+    // artwork is not an active transition and its finished promise never resolves.
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+   })()`);
   };
   const loungeClick=async(selector,text)=>{
    await settleLounge();
