@@ -131,3 +131,9 @@ body.cc-rpg-theme .rpg-workspace-heading #ccRefreshSlot .push-button{background:
  body.cc-rpg-theme dialog.rpg-account-page .rpg-account-status{margin:8px 0;padding-block:10px}
  body.cc-rpg-theme dialog.rpg-account-page .rpg-account-coverage-details{margin-bottom:8px}
 }
+
+/* Secondary settings links stay reachable without competing with progress/history. */
+.rpg-workspace-dialog .rpg-settings-fold{margin:20px 0;border-block:1px solid currentColor;padding:8px 0}
+.rpg-workspace-dialog .rpg-settings-fold>summary{cursor:pointer;min-height:44px;box-sizing:border-box;padding:12px 4px;font-weight:700}
+.rpg-workspace-dialog .rpg-settings-fold>summary:focus-visible{outline:3px solid currentColor;outline-offset:2px}
+.rpg-workspace-dialog .rpg-settings-fold .rpg-workspace-links{margin:12px 0}

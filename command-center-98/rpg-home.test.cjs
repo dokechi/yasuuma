@@ -163,7 +163,7 @@ test('HOME keeps approved dresses while detail pages use a distinct cached swimw
   assert.ok(references.length>0,file);
   assert.ok(references.every(v=>v==='v=20261012.5-detail-swimwear'),file);
   assert.ok(!css.includes('world.png'),file+' must not fall back to HOME dresses');
-  const version=file==='rpg-account-pages.css'?'20261019.links1':'20261013.9-detail';
+  const version=file==='rpg-account-pages.css'?'20261019.links1':'20261113.1-settings';
   assert.ok(manifest.styles.includes('./'+file+'?v='+version),file);
  }
  const png=fs.readFileSync(path.join(__dirname,'assets/rpg-home/world.png'));

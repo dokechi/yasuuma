@@ -53,6 +53,7 @@ jobs:
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-workflow-browser.cjs
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/threads-product-links-browser.cjs
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/request-progress-shortcut-browser.cjs
+          NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/settings-menu-browser.cjs
           NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node --test scripts/castle-record-route.test.cjs
           CC_UX_MODE=operations NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-ux-browser.cjs
           CC_UX_MODE=map NODE_PATH="$RUNNER_TEMP/daily-dom/node_modules" node scripts/castle-ux-browser.cjs

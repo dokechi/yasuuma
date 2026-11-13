@@ -74,10 +74,13 @@
   },true);
   function beginDialog(title){if(dialog)close();opener=d.activeElement;const current=make('dialog');current.className='rpg-workspace-dialog';const heading=make('h2',title);heading.id='rpgWorkspaceDialogTitle';current.setAttribute('aria-labelledby',heading.id);current.append(heading,button('閉じる',()=>current.close()));d.body.append(current);dialog=current;current.addEventListener('close',()=>{current.remove();if(dialog===current)dialog=null;opener?.focus?.();});current.showModal();return current;}
   function group(host,title,buttons){const section=make('section'),heading=make('h3',title),grid=make('div');grid.className='rpg-workspace-links';section.append(heading,grid);for(const [label,fn] of buttons)grid.append(button(label,fn));host.append(section);}
-  function openSettings(){const host=beginDialog('設定・補助');host.append(make('p','仕入れに関係する情報・履歴は、日常の画面から引き続き開けます。'));
-   group(host,'仕入れと制作',[['仕入れ一覧',openSourcing],['海外時計・海外差の調査',openWatches],['カード',openCards],['紹介用原稿・旧ねこ',()=>openView('binbo-neko')],['投稿制作',()=>openView('affiliate')],['既存FP原稿',()=>activate('#fpDraftViewBtn')]]);
-   group(host,'別サービス',[['作業日報',()=>openService('daily')],['クーニー',()=>openService('cooney')],['仕入れ命',()=>openService('shiire')]]);
-   group(host,'情報・保管庫',[['すべての情報（日常）',()=>{if(typeof app!=='undefined')app.domain='all';openView('active');}],['保存結果・調査履歴',()=>{if(typeof app!=='undefined')app.domain='all';openView('events');}],['家・上場の保管庫',openArchive],['依頼の進捗・定期監視',()=>activate('#menuTasks')],['ログアウト',()=>activate('#fileLogout')]]);
+  function foldedGroup(host,title,buttons,note){const details=make('details'),summary=make('summary',title);details.className='rpg-settings-fold';details.append(summary);if(note)details.append(make('p',note));const grid=make('div');grid.className='rpg-workspace-links';for(const [label,fn] of buttons)grid.append(button(label,fn));details.append(grid);host.append(details);}
+  function openSettings(){const host=beginDialog('設定・補助');host.append(make('p','日常の入口は司令塔に。ここでは進捗・履歴と、保管している原稿を確認できます。'));
+   group(host,'進捗・履歴',[['依頼の進捗・定期監視',()=>activate('#menuTasks')],['保存結果・調査履歴',()=>{if(typeof app!=='undefined')app.domain='all';openView('events');}]]);
+   foldedGroup(host,'過去の原稿・企画を開く',[['紹介用原稿・旧ねこ',()=>openView('binbo-neko')],['既存FP原稿',openFp],['家・上場の保管庫',openArchive]],'原稿・履歴は残しています。入口の整理による削除や自動処理の変更はありません。');
+   group(host,'継続確認用',[['投稿制作',()=>openView('affiliate')],['作業日報',()=>openService('daily')]]);
+   foldedGroup(host,'その他の入口',[['仕入れ一覧',openSourcing],['海外時計・海外差の調査',openWatches],['カード',openCards],['クーニー',()=>openService('cooney')],['仕入れ命',()=>openService('shiire')],['すべての情報（日常）',()=>{if(typeof app!=='undefined')app.domain='all';openView('active');}]],'司令塔から開く入口も、ここから引き続き利用できます。');
+   group(host,'アカウント',[['ログアウト',()=>activate('#fileLogout')]]);
   }
   function records(){let current=[];try{current=app.items||[];}catch(_){}return M.unique([...(H.raw?.active?.items||[]),...(H.activeItems||[]),...(H.houseItems||[]),...current]);}
   function openArchive(){const host=beginDialog('家・上場原稿の保管庫');host.append(make('p','明示的な分類・タスクIDで家・上場原稿と分かる記録だけを、日常表示から分離しています。削除や保存状態の変更はしません。仕入れと分類未確認の情報は日常に残します。'));

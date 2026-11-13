@@ -131,3 +131,23 @@ test('only portrait desks reserve title padding and minimum height',()=>{
  }
  assert.match(css,/\.rpg-workspace-heading \.cc-heading>div\{grid-column:1\/-1;min-width:0\}/);
 });
+
+test('settings prioritizes progress and history and retains every old destination exactly once',()=>{
+ const {root}=mount();root.CCRpgWorkspaces.openSettings();
+ const dialog=root.document.body.children.at(-1),walk=x=>[x,...x.children.flatMap(walk)];
+ const all=walk(dialog),labels=all.filter(x=>x.tagName==='BUTTON').map(x=>x.textContent);
+ assert.deepEqual(labels,['閉じる','依頼の進捗・定期監視','保存結果・調査履歴','紹介用原稿・旧ねこ','既存FP原稿','家・上場の保管庫','投稿制作','作業日報','仕入れ一覧','海外時計・海外差の調査','カード','クーニー','仕入れ命','すべての情報（日常）','ログアウト']);
+ assert.equal(new Set(labels).size,labels.length);
+ const folds=all.filter(x=>x.tagName==='DETAILS');
+ assert.deepEqual(folds.map(x=>x.children[0].textContent),['過去の原稿・企画を開く','その他の入口']);
+ assert.ok(folds.every(x=>!x.open));
+ assert.ok(!folds.some(x=>walk(x).some(y=>['投稿制作','作業日報','ログアウト'].includes(y.textContent))));
+});
+
+test('reorganized settings still opens production, original FP and external daily destinations',()=>{
+ const {root,calls}=mount(),walk=x=>[x,...x.children.flatMap(walk)];
+ for(const label of ['投稿制作','既存FP原稿','作業日報']){
+  root.CCRpgWorkspaces.openSettings();walk(root.document.body.children.at(-1)).find(x=>x.tagName==='BUTTON'&&x.textContent===label).click();
+ }
+ assert.deepEqual(calls,['H.leave','affiliate','#fpDraftViewBtn','#menuDaily']);
+});
