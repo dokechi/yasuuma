@@ -50,6 +50,9 @@ export function installGalleryOrder({rail,done,hint,trigger,onChange=()=>{},hold
   const begin=()=>mode(true);
   const click=e=>{if(editing||Date.now()<suppressUntil){e.preventDefault();e.stopImmediatePropagation();}};
   const key=e=>{const card=e.target.closest('.sg-card');if(!card)return;
+    // A deliberate key activation is not the synthetic click following a drag.
+    // Keep the pointer-release guard until Enter/Space actually targets a card.
+    if(!editing&&['Enter',' '].includes(e.key))suppressUntil=0;
     if(editing&&['Escape','Enter',' '].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();end(e.key==='Escape');mode(false);return;}
     if((editing||e.altKey)&&['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){
       e.preventDefault();e.stopImmediatePropagation();const list=[...rail.children],i=list.indexOf(card),j=e.key==='Home'?0:e.key==='End'?list.length-1:Math.max(0,Math.min(list.length-1,i+(e.key==='ArrowRight'?1:-1)));

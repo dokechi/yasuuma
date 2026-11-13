@@ -52,8 +52,8 @@ test('changed foreground and its retained archive import graph use the same curr
 test('unified notebook presentation invalidates changed code and keeps one canonical owner',()=>{
  const {html,modules}=checkOwners('command-center-98/lounge/book.html');
  assert.match(html,/href="book\.html\?presentation=book"/,'retained reader link stays on its owning entry');
- assert.match(html,/paper-stage\.css\?v=20261103\.3-scroll/);assert.match(html,/paper-atelier\.js\?v=20261113\.1-owners/);
- for(const [file,pin] of Object.entries({'paper-atelier.js':'20261113.1-owners','paper-stage.js':'20261109.6-everyday','paper-fold.js':'20261103.2-notebook','paper-motion.js':'20261103.2-notebook','paper-images.js':'20261103.2-notebook','paper-cutouts.js':'20261103.2-notebook'})){
+ assert.match(html,/paper-stage\.css\?v=20261103\.3-scroll/);assert.match(html,/paper-atelier\.js\?v=20261113\.2-focus/);
+ for(const [file,pin] of Object.entries({'paper-atelier.js':'20261113.2-focus','paper-stage.js':'20261113.1-focus','paper-fold.js':'20261103.2-notebook','paper-motion.js':'20261103.2-notebook','paper-images.js':'20261103.2-notebook','paper-cutouts.js':'20261103.2-notebook'})){
   assert.ok([...modules.keys()].some(url=>url.endsWith('/'+file+'?v='+pin)),'current notebook dependency '+file);
   for(const old of ['20261102.2-paper','20261102.3-depth','20261102.4-detail','20261103.1-world'])assert.ok(![...modules.keys()].some(url=>url.endsWith('/'+file+'?v='+old)),'never execute stale presentation '+file+' '+old);
  }

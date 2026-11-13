@@ -39,3 +39,15 @@ test('keyboard reorder mode transfers focus off the controls it hides',t=>{
  assert.deepEqual([...h.ctl.order()],['a','c','b']);
  done.focus();done.click();assert.equal(h.d.activeElement,trigger);
 });
+
+test('deliberate keyboard activation works immediately after pointer reorder finishes',t=>{
+ for(const key of ['Enter',' ']){
+  const h=setup(t),a=h.rail.firstChild;h.ctl.begin();
+  h.pointer(a,'pointerdown',50);h.pointer(a,'pointerup',50);
+  h.d.querySelector('#done').click();
+  a.click();assert.equal(h.opens(),0,'pointer release ghost click stays suppressed');
+  a.focus();a.dispatchEvent(new h.w.KeyboardEvent('keydown',{key,bubbles:true,cancelable:true}));
+  // Native buttons synthesize click from Enter/Space; jsdom requires explicit dispatch.
+  a.click();assert.equal(h.opens(),1,'a deliberate keyboard activation is not a drag ghost click');
+ }
+});

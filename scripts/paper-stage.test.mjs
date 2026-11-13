@@ -34,3 +34,17 @@ test('future marks isolate exact session, category and manuscript; favorites/rea
  reload.setFutureScope('a'.repeat(64));reload.replaceSources([{...a,place:'tanaka',source:{id:'upstream',account:'tanaka'}}]);assert.equal(reload.futureFlag('same'),false);
  reload.replaceSources([{...a,source:{id:'different',account:'insurance'}}]);assert.equal(reload.futureFlag('same'),false);reload.setFutureScope('');assert.equal(reload.futureFlag('same'),false);
 });
+
+test('delayed opening completion never steals settings or returned menu focus',async t=>{
+ const s=setup(t);await tick();
+ const card=s.$('.paper-card'),opener=card.querySelector('.paper-open');let finish;
+ card.__fold.to=(_value,options)=>{finish=options.done;};
+ const dialog=s.d.createElement('dialog'),control=s.d.createElement('button');control.textContent='設定を閉じる';dialog.append(control);s.d.body.append(dialog);
+ opener.focus();opener.click();dialog.setAttribute('open','');control.focus();finish();
+ assert.equal(s.d.activeElement,control);assert.equal(s.stage.snapshot().phase,'open');
+ s.stage.close({immediate:true});dialog.removeAttribute('open');
+ opener.focus();opener.click();s.$('.paper-tools summary').focus();finish();
+ assert.equal(s.d.activeElement,s.$('.paper-tools summary'));assert.equal(s.stage.snapshot().phase,'open');
+ s.stage.close({immediate:true});opener.focus();opener.click();finish();
+ assert.equal(s.d.activeElement,s.$('#desk-scroll'),'uninterrupted opening still focuses its reader');
+});

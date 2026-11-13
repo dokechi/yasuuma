@@ -2,7 +2,7 @@
 import * as application from './app.js?v=20261113.1-owners';
 import {createGlassArt as art} from './stained-art.js?v=20261112.2-skun';
 import {glassSlots,glassFor} from './stained-model.js?v=20261112.2-skun';
-import {installGalleryOrder} from './stained-order.js?v=20261113.2-focus';
+import {installGalleryOrder} from './stained-order.js?v=20261113.4-keyboard';
 const doc=document,board=application.getAccountBoard(),owner=application.getPaperDesk();
 const room=doc.getElementById('room');
 const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text)n.textContent=text;return n;};
