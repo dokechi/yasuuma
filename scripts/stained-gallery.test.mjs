@@ -18,24 +18,31 @@ function setup(t){
  w.eval(read('stained-atelier.js').replace(/^import .*;\n/gm,''));
  t.after(()=>w.close());return {w,board,calls,render:()=>listener(),cards:[...w.document.querySelectorAll('.sg-card')]};
 }
-test('ten slots match all nine saved identities plus sourcing',()=>{
+test('eleven slots match all ten saved identities plus sourcing',()=>{
  assert.deepEqual(new Set(model.glassSlots.filter(x=>!x.pending).map(x=>x.key)),new Set([...accounts.publishingAccounts.map(x=>x.key),'sourcing']));
- assert.equal(model.glassSlots.length,10);assert.equal(model.glassFor('tanaka').label,'固定費');assert.equal(model.glassFor('kensho').label,'懸賞');
+ assert.equal(model.glassSlots.length,11);assert.equal(model.glassFor('tanaka').label,'固定費');assert.equal(model.glassFor('kensho').label,'懸賞');
  assert.equal(model.glassFor('skun').label,'Sくん');
  assert.equal(model.glassSlots.filter(slot=>slot.pending).length,0);
- assert.equal(new Set(model.glassSlots.map(x=>x.key)).size,10);
+ assert.equal(model.glassSlots.at(-1),model.glassFor('girls-channel'));
+ assert.equal(new Set(model.glassSlots.map(x=>x.key)).size,11);
 });
-test('glass clicks open the corresponding owner routes, including Sくん',t=>{
+test('glass clicks open the corresponding owner routes, including the new ガルちゃん station',t=>{
  const h=setup(t);for(const c of h.cards)c.click();assert.deepEqual(h.calls,model.glassSlots.filter(s=>!s.pending).map(s=>s.key));
  const skun=h.cards.find(c=>c.dataset.key==='skun');
  assert.equal(skun.getAttribute('aria-label'),'Sくんの原稿を開く');
  assert.ok(skun.querySelector('.sg-character'));
  assert.equal(skun.querySelector('.sg-plinth').getAttribute('data-foot-plane'),'650');
+ const girlsChannel=h.cards.at(-1);
+ assert.equal(girlsChannel.getAttribute('aria-label'),'ガルちゃんの原稿を開く');
+ assert.ok(girlsChannel.querySelector('.sg-character'));
+ assert.equal(girlsChannel.querySelector('.sg-frame image').getAttribute('href'),skun.querySelector('.sg-frame image').getAttribute('href'));
+ assert.equal(girlsChannel.querySelector('.sg-plinth').getAttribute('data-foot-plane'),'650');
 });
 test('keyboard navigation reaches all slots and does not open them until activated',t=>{
  const h=setup(t);h.cards[0].focus();h.cards[0].dispatchEvent(new h.w.KeyboardEvent('keydown',{key:'End',bubbles:true}));
- assert.equal(h.w.document.activeElement,h.cards[9]);assert.equal(h.cards[9].dataset.scrolled,'true');assert.deepEqual(h.calls,[]);
- h.cards[9].dispatchEvent(new h.w.KeyboardEvent('keydown',{key:'Home',bubbles:true}));assert.equal(h.w.document.activeElement,h.cards[0]);
+ const last=h.cards.at(-1);
+ assert.equal(h.w.document.activeElement,last);assert.equal(last.dataset.scrolled,'true');assert.deepEqual(h.calls,[]);
+ last.dispatchEvent(new h.w.KeyboardEvent('keydown',{key:'Home',bubbles:true}));assert.equal(h.w.document.activeElement,h.cards[0]);
 });
 test('source status updates retain the same glass controls and manuscript editor DOM',async t=>{
  const h=setup(t),body=h.w.document.getElementById('draft-body');h.board.state={destinations:[{key:'insurance',status:'保存原稿 3本'}],complete:true};h.render();await Promise.resolve();
@@ -71,7 +78,7 @@ test('reader and gallery transitions move keyboard focus to visible presentation
 
 test('reader account switches expose the current heading without a stale accessible label',async t=>{
  const h=setup(t),d=h.w.document,room=d.getElementById('room'),heading=d.getElementById('desk-title');
- for(const key of ['skun','insurance','otoku','rakuten','kensho','insurance']){
+ for(const key of ['skun','girls-channel','insurance','otoku','rakuten','kensho','insurance']){
   room.hidden=true;h.board.element.hidden=false;h.render();await Promise.resolve();
   room.dataset.account=key;room.hidden=false;h.board.element.hidden=true;h.render();await Promise.resolve();
   const expected=model.glassFor(key).label+'の原稿';

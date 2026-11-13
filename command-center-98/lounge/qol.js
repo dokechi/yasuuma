@@ -1,8 +1,8 @@
-import {isPostManuscript,manuscriptLabel} from './accounts.js?v=20261112.2-skun';
-import {createHallTools} from './hall-tools.js?v=20261113.1-owners';
-import {placeNames} from './desk-model.js?v=20261112.2-skun';
-import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261112.2-skun';
-import {isLegacyPublishingDraft,postingAssets} from './notebook.js?v=20261112.2-skun';
+import {isPostManuscript,manuscriptLabel} from './accounts.js?v=20261113.10-girls-channel';
+import {createHallTools} from './hall-tools.js?v=20261113.10-girls-channel';
+import {placeNames} from './desk-model.js?v=20261113.10-girls-channel';
+import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261113.10-girls-channel';
+import {isLegacyPublishingDraft,postingAssets} from './notebook.js?v=20261113.10-girls-channel';
 
 export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},onChange=()=>{},send=()=>{}}){
  const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
@@ -45,8 +45,8 @@ export function createConveniences({notebook,open,copy,native,onFeedback=()=>{},
   const d=postDraft;if(!d)return;const scroll=$('posting-dialog').scrollTop;const host=$('posting-steps');host.replaceChildren();$('posting-title').hidden=isPostManuscript(d);$('posting-title').textContent=isPostManuscript(d)?'':d.title;
   const changed=notebook.get(d.id)&&revision(notebook.get(d.id))!==revision(d);$('posting-changed').hidden=!changed;
   const readiness=postingReadiness(d);$('posting-readiness').textContent=readiness.label;$('posting-copy-all').disabled=!!changed;
-  $('posting-native').textContent=['otoku','rakuten','lottery','tanaka','skun'].includes(d.place)?'出典・確認記録へ':'本体の投稿結果へ';
-  $('posting-dialog').querySelector('p.qol-note:last-child').textContent=['otoku','rakuten','lottery','tanaka'].includes(d.place)?'完了はこの端末のメモです。コピーだけでは投稿済みになりません。':'完了はこの端末のメモです。本体の投稿結果は「本体の投稿結果へ」で記録できます。コピーだけでは投稿済みになりません。';
+  $('posting-native').textContent=['otoku','rakuten','lottery','tanaka','skun','girls-channel'].includes(d.place)?'出典・確認記録へ':'本体の投稿結果へ';
+  $('posting-dialog').querySelector('p.qol-note:last-child').textContent=['otoku','rakuten','lottery','tanaka','girls-channel'].includes(d.place)?'完了はこの端末のメモです。コピーだけでは投稿済みになりません。':'完了はこの端末のメモです。本体の投稿結果は「本体の投稿結果へ」で記録できます。コピーだけでは投稿済みになりません。';
   const steps=postingSteps(d,notebook.copies());for(const [i,step]of steps.entries()){const row=el('div',undefined,'posting-step');row.append(el('span',step.copied?'✓':String(i+1),'step-number'),el('strong',step.label),button(step.copied?'もう一度コピー':'コピー',()=>copy(d,step.kind,step.text)));row.append(el(step.kind==='link'?'small':'pre',step.text));host.append(row);}
   if(!savedLinks(d).length&&!/https:\/\//.test(d.posting?.reply||''))host.append(el('p','この原稿には保存された商品リンクがありません。','qol-note'));
   if(readiness.commercial&&!readiness.affiliate)host.append(el('p','収益リンクは未設定です。通常の商品URLは投稿用リンクへ置き換えません。','qol-note'));

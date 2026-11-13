@@ -1,5 +1,5 @@
-import {isLegacyPublishingDraft} from './notebook.js?v=20261102.1-tanaka';
-import {currentPosted} from './qol-model.js?v=20261102.1-tanaka';
+import {isLegacyPublishingDraft} from './notebook.js?v=20261113.10-girls-channel';
+import {currentPosted} from './qol-model.js?v=20261113.10-girls-channel';
 const places=['kyun','choi','otoku','rakuten','lottery','tanaka','fp','shiire'];
 const dayFormatter=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'});
 export function japanDay(time){return dayFormatter.format(new Date(time));}

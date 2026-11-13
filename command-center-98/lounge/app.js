@@ -1,7 +1,7 @@
 import {createEntrySound} from './entry-sound.js?v=20261021.3-audio';
 import {createMusicControls} from './music.js?v=20261030.8-integrated';
-import {createDesk} from './desk.js?v=20261113.7-read-state';
-import {publishingAccounts} from './accounts.js?v=20261112.2-skun';
+import {createDesk} from './desk.js?v=20261113.10-girls-channel';
+import {publishingAccounts} from './accounts.js?v=20261113.10-girls-channel';
 import {createInteractionSound} from './interaction-sound.js?v=20261022.26-audio';
 import {createInteractionFeedback} from './interaction-feedback.js?v=20261101.1-living';
 const $ = (id) => document.getElementById(id);
@@ -196,7 +196,7 @@ if(!workingPresentation&&history.state?.shireitoRoom)history.replaceState(null,'
 let worldLoading=null;
 function initializeWorld(){if(worldLoading)return worldLoading;worldLoading=(async()=>{
 try{
- const {createHybridWorld}=await import('./hybrid-world.js?v=20261102.1-tanaka');
+ const {createHybridWorld}=await import('./hybrid-world.js?v=20261113.10-girls-channel');
  world=await createHybridWorld({app,host:$('world'),rooms,labels,getPhase:()=>phase,getSettings:()=>settings,getWorkMarks:()=>desk?.workMarks()||[],onEnter:id=>{accountContext=null;enterRoom(id);}});
  $('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');
 }catch(error){console.error('司令塔の描画を開始できませんでした',error);app.classList.add('fallback-town');$('loading').classList.add('loaded');$('loading').setAttribute('aria-hidden','true');$('town-hint').textContent='看板を選んで、部屋へ'}

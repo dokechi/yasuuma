@@ -1,8 +1,8 @@
-import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard,isPostManuscript,manuscriptLabel} from './accounts.js?v=20261112.2-skun';
-import {createConveniences} from './qol.js?v=20261113.1-owners';
-import {resumeView,postingReadiness} from './qol-model.js?v=20261112.2-skun';
-import {createNotebook,safeLink} from './notebook.js?v=20261112.2-skun';
-import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261112.2-skun';
+import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard,isPostManuscript,manuscriptLabel} from './accounts.js?v=20261113.10-girls-channel';
+import {createConveniences} from './qol.js?v=20261113.10-girls-channel';
+import {resumeView,postingReadiness} from './qol-model.js?v=20261113.10-girls-channel';
+import {createNotebook,safeLink} from './notebook.js?v=20261113.10-girls-channel';
+import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261113.10-girls-channel';
 
 export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{},onOpenRoom=()=>{},onLounge=()=>{},onWorkingChapter=()=>{}}){
  const $=id=>document.getElementById(id),embedded=window.parent!==window,origin=location.origin;
@@ -148,6 +148,17 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
    if(checkedAt)source.title=`票数の確認日 ${checkedAt}`;
    meta.append(source);
   }
+  if(d.references&&(d.references.note||d.references.links.length)){
+   const details=el('details');
+   details.append(el('summary','出典・確認記録'));
+   if(d.references.note)details.append(el('div',d.references.note,'draft-body'));
+   for(const ref of d.references.links){
+    const line=el('p');
+    line.append(externalLink(ref.label+' ↗',ref.url,'desk-skun-link'));
+    details.append(line);
+   }
+   $('draft-links').append(details);
+  }
   $('desk-copy').textContent=notebook.copyMark(d)?'✓ 本文をコピー済み':'本文をコピー';
   editable(d);if(learningController)$('desk-copy').textContent='最終稿をコピー';
   const pin=notebook.flag('pin',d.id);$('desk-pin').setAttribute('aria-pressed',String(pin));$('desk-pin').setAttribute('aria-label',pin?'お気に入りを解除':'お気に入りに保存');$('desk-pin').textContent=pin?'★':'☆';
@@ -177,7 +188,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   }
   send('reading-room',{active:true});
   savePosition();rememberView();passiveEntry=passive||requested?.passive===true;initialDraftId=passiveEntry?requested?.id||(typeof resumeDraft==='string'?resumeDraft:null):null;if(externalNotes&&notebook.persistent()){notebook.sync();externalNotes=false;}place=roomId==='purple'?(requested?.place==='choi'||publishingAccounts.some(a=>!a.pending&&a.place===requested?.place)?requested.place:'otoku'):placeForRoom[roomId];active=null;const view=requested?.id&&!requested.resume?{query:'',filter:'all'}:resumeView(views.get(place)||notebook.pref('view:'+place,null));query=view.query;filter=view.filter;$('desk-query').value=query;
-  if(!passiveEntry)notebook.visit(place);$('desk-title').textContent=place==='shiire'?'仕入れの持ち場':['kyun','otoku','rakuten','lottery','tanaka','kensho','manga','everyday','skun'].includes(place)?placeNames[place]:'保存原稿';$('desk-kicker').textContent=place==='fp'?'SCRIPTS & CONTENT':place==='shiire'?'THE MERCHANT’S DESK':'YOUR MANUSCRIPTS';
+  if(!passiveEntry)notebook.visit(place);$('desk-title').textContent=place==='shiire'?'仕入れの持ち場':publishingAccounts.some(a=>a.place===place)?placeNames[place]:'保存原稿';$('desk-kicker').textContent=place==='fp'?'SCRIPTS & CONTENT':place==='shiire'?'THE MERCHANT’S DESK':'YOUR MANUSCRIPTS';
   $('desk').dataset.place=place;routes();render({restore:true});
   if(pending)applyPending();
   if(requested?.native&&embedded&&(['sourcing','watches','cards'].includes(requested.native)&&place==='shiire'||['fp','tiktok'].includes(requested.native)&&place==='fp'))native(requested.native,requested.recordId,true,requested.section);else if(place==='shiire'&&embedded)native('sourcing',undefined,true);requested=null;

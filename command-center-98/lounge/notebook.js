@@ -1,7 +1,7 @@
 // Portable, browser-local records. No credentials and no production writes.
 export const NOTEBOOK_PREFIX='castle-production.v1.';
 // Old room names are not publishing identities. Keep unmatched saved text in history.
-export function isLegacyPublishingDraft(d){const expected={kyun:'insurance',otoku:'otoku',rakuten:'rakuten',lottery:'lottery',tanaka:'tanaka',kensho:'kensho',manga:'manga',everyday:'everyday',skun:'skun'};return d?.place==='choi'||Object.hasOwn(expected,d?.place)&&d?.source?.account!==expected[d.place];}
+export function isLegacyPublishingDraft(d){const expected={kyun:'insurance',otoku:'otoku',rakuten:'rakuten',lottery:'lottery',tanaka:'tanaka',kensho:'kensho',manga:'manga',everyday:'everyday',skun:'skun','girls-channel':'girls-channel'};return d?.place==='choi'||Object.hasOwn(expected,d?.place)&&d?.source?.account!==expected[d.place];}
 // Presentation only: explicit source identity, never titles or guessed URLs.
 export function groupDrafts(rows){
  const groups=new Map();
@@ -38,8 +38,17 @@ export function createNotebook({seeds={},storage,now=()=>Date.now(),onError=()=>
   if(d.title.length>200||d.body.length>100000)throw Error('見出しは200文字、本文は10万文字以内です');
   const time=value=>Number.isFinite(new Date(Number(value)).getTime())&&Number(value)>0?Number(value):now();
   const link=safeLink(d.link);if(d.link&&!link)throw Error('リンクは http または https のURLにしてください');
-  const comment=d.place==='skun'?girlsChannelComment(d.girlsChannel):null;
+  const comment=['skun','girls-channel'].includes(d.place)?girlsChannelComment(d.girlsChannel):null;
   const links={...(Array.isArray(d.productLinks)?{productLinks:productLinks(d.productLinks)}:{}),...(d.posting?{posting:postingAssets(d.posting)}:{}),...(comment?{girlsChannel:comment}:{})};
+  if(d.place==='girls-channel'&&d.references&&typeof d.references==='object'){
+   const refs=Array.isArray(d.references.links)?d.references.links.slice(0,15):[];
+   links.references={note:String(d.references.note||'').slice(0,10000),links:refs.flatMap(ref=>{
+    const url=safeLink(ref?.url);
+    if(!url)return [];
+    const parsed=new URL(url);
+    return parsed.protocol==='https:'&&!parsed.username&&!parsed.password?[{url,label:String(ref?.label||'出典').slice(0,100)}]:[];
+   })};
+  }
   return {id:generated?id():String(d.id||id()).slice(0,500),place:d.place,title:d.title.trim(),body:d.body,link,...links,kind:String(d.kind||'原稿').slice(0,30),sample:Boolean(d.sample),createdAt:time(d.createdAt),updatedAt:time(d.updatedAt),checkedAt:String(d.checkedAt||'').slice(0,80),...(d.source&&typeof d.source==='object'?{source:{id:String(d.source.id),account:String(d.source.account),imageCount:Number.isSafeInteger(d.source.imageCount)?d.source.imageCount:0,label:String(d.source.label),status:String(d.source.status||''),taskId:String(d.source.taskId||'').slice(0,300),recordId:String(d.source.recordId||'').slice(0,500),readContract:String(d.source.readContract||'').slice(0,50),...(d.source.kind?{kind:String(d.source.kind)}:{}),...(d.source.copyKey?{copyKey:String(d.source.copyKey).slice(0,80)}:{})}}:{})};
  }
  const samples=Object.entries(seeds).flatMap(([place,rows])=>rows.map((d,i)=>normalize({...d,place,id:`sample-${place}-${i}`,sample:true,createdAt:1,updatedAt:1})));

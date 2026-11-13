@@ -8,7 +8,8 @@ export const publishingAccounts=Object.freeze([
  {key:'kensho',place:'kensho',name:'懸賞小ナス',handle:'@nasbi.777',tone:'violet',artKey:'planned-6',taskId:'kensho-threads-v1'},
  {key:'manga',place:'manga',name:'漫画',handle:'@kousaka_san_',tone:'violet',artKey:'planned-5',taskId:'manga-threads-v1'},
  {key:'everyday',place:'everyday',name:'日常の言葉',handle:'',tone:'amber',artKey:'planned-6',taskId:'everyday-words-v1'},
- {key:'skun',place:'skun',name:'Sくん',handle:'@skun.koi',tone:'rose',artKey:'planned-5',taskId:'skun-threads-v1'}
+ {key:'skun',place:'skun',name:'Sくん',handle:'@skun.koi',tone:'rose',artKey:'planned-5',taskId:'skun-threads-v1'},
+ {key:'girls-channel',place:'girls-channel',name:'ガルちゃん',handle:'',tone:'violet',artKey:'planned-5',taskId:'girls-channel-threads-v1'}
 ]);
 // Administrative titles belong to source records, never to the post itself.
 export function isPostManuscript(d){return publishingAccounts.some(a=>a.key===d?.source?.account&&a.place===d?.place)&&!String(d?.body||'').startsWith('【参考投稿');}
@@ -64,7 +65,7 @@ export function createAccountBoard({host,rows,open,onLounge,onRefresh,onLegacy})
    const crest=el('span',undefined,'portal-crest');crest.setAttribute('aria-hidden','true');const symbols={insurance:'M12 3 5 6v6c0 4 7 8 7 8s7-4 7-8V6Z M8 11h8 M12 7v8',otoku:'m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z M12 8v8 M8 12h8',rakuten:'M3 11 12 3l9 8 M6 9v12h12V9 M10 21v-7h4v7',lottery:'m12 2 3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z',sourcing:'M12 3v18 M4 7h16 M5 7l-3 7h6Z M19 7l-3 7h6Z M7 21h10'};crest.innerHTML='<svg viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=1.2 stroke-linejoin=round><path d="'+(symbols[a.key]||'M8 11V7a4 4 0 0 1 8 0v4 M6 11h12v10H6Z M12 15v3')+'"/></svg>';
    tile.append(frame,crest);
    const art=el('img');if(!spatialLayout())art.src='assets/panel-'+(a.artKey||a.key)+'.webp';art.alt='';art.loading='eager';art.onerror=()=>{art.onerror=null;art.src='assets/'+(['red','purple','orange','silver','purple','red','orange','silver'][i])+'-face.webp';};
-   const caption=el('span',undefined,'account-tile-caption');caption.append(el('small',String(i+1).padStart(2,'0')+' / '+(a.pending?'封印された扉':({insurance:'手紙の書斎',otoku:'宵色の回廊',rakuten:'陽だまりの食卓',lottery:'星巡りの観測室',tanaka:'固定費を掘る書斎',kensho:'小ナスの懸賞日記',manga:'漫画の書棚',everyday:'暮らしの言葉',sourcing:'商人の工房'})[a.key])),el('strong',a.name),el('span',a.handle|| (a.pending?'名前・用途は未設定':a.key==='sourcing'?'購入・在庫・売却':'投稿先未登録')));
+   const caption=el('span',undefined,'account-tile-caption');caption.append(el('small',String(i+1).padStart(2,'0')+' / '+(a.pending?'封印された扉':({insurance:'手紙の書斎',otoku:'宵色の回廊',rakuten:'陽だまりの食卓',lottery:'星巡りの観測室',tanaka:'固定費を掘る書斎',kensho:'小ナスの懸賞日記',manga:'漫画の書棚',everyday:'暮らしの言葉','girls-channel':'家事の工夫',sourcing:'商人の工房'})[a.key])),el('strong',a.name),el('span',a.handle|| (a.pending?'名前・用途は未設定':a.key==='sourcing'?'購入・在庫・売却':'投稿先未登録')));
    const count=a.pending?'未設定':a.key==='sourcing'?'管理画面へ':complete?'保存原稿 '+new Set(draftsForAccount(allRows,a).map(d=>d.source.id)).size+'本':loading?'読込中':'原稿を確認';nextDestinations.push({...a,status:count});const meta=el('span',count,'account-tile-state');caption.append(meta);
    const arrow=el('span',a.pending?'—':'↗','account-tile-arrow');arrow.setAttribute('aria-hidden','true');tile.append(art,caption,arrow);tiles.append(tile);
   }

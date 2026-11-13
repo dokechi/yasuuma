@@ -1,8 +1,8 @@
 /* A light, explicit doorway into the optional 3D presentation. The established
    spatial owner is shared; no renderer, vendor or model is imported on startup. */
-import * as spatial from './spatial-atelier.js?v=20261113.7-read-state';
+import * as spatial from './spatial-atelier.js?v=20261113.10-girls-channel';
 
-export function installArrivalEntry(owner=spatial,loadCourt=()=>import('./arrival-atelier.js?v=20261113.7-read-state')) {
+export function installArrivalEntry(owner=spatial,loadCourt=()=>import('./arrival-atelier.js?v=20261113.10-girls-channel')) {
  const presentation=owner.getSpatialPresentation?.(),panel=presentation?.board?.element;
  const doc=panel?.ownerDocument,win=doc?.defaultView,footer=panel?.querySelector('.board-footer');
  if(!presentation?.scene||!doc||!win||!footer)return null;

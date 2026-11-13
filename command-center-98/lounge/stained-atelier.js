@@ -1,7 +1,7 @@
 /* Presentation only. The existing desk owns data, selection, editing and copying. */
-import * as application from './app.js?v=20261113.7-read-state';
-import {createGlassArt as art} from './stained-art.js?v=20261112.2-skun';
-import {glassSlots,glassFor} from './stained-model.js?v=20261112.2-skun';
+import * as application from './app.js?v=20261113.10-girls-channel';
+import {createGlassArt as art} from './stained-art.js?v=20261113.10-girls-channel';
+import {glassSlots,glassFor} from './stained-model.js?v=20261113.10-girls-channel';
 import {installGalleryOrder} from './stained-order.js?v=20261113.4-keyboard';
 const doc=document,board=application.getAccountBoard(),owner=application.getPaperDesk();
 const room=doc.getElementById('room');

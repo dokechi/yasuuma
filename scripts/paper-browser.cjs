@@ -80,7 +80,7 @@ const server=http.createServer((req,res)=>{
    await page.mouse.move(width/2,height*.75);for(let n=0;n<22;n++){await page.mouse.wheel(0,900);await page.waitForTimeout(35)}await page.waitForTimeout(150);
    check('native wheel reaches the bottom and continuation control',await cf.evaluate(()=>{const e=document.scrollingElement,b=document.querySelector('.paper-more')?.getBoundingClientRect();return e.scrollHeight-e.clientHeight-e.scrollTop<4&&b&&b.top>=0&&b.bottom<=innerHeight}),await documentTop());
    await page.screenshot({path:path.join(out,width+'-'+height+'-native-bottom.png')});await cf.evaluate(()=>window.scrollTo(0,0));
-   await cf.evaluate(async()=>{window.__paperOwner=await import('./app.js?v=20261113.7-read-state');});
+   await cf.evaluate(async()=>{window.__paperOwner=await import('./app.js?v=20261113.10-girls-channel');});
    const pinClear=async label=>{
     const report=await f.locator('.paper-card').evaluateAll(nodes=>{
      const collisions=[],categories=[],overlaps=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>.5&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>.5;

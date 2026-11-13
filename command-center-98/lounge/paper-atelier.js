@@ -1,6 +1,6 @@
-import * as application from './app.js?v=20261113.7-read-state';
-import {publishingAccounts} from './accounts.js?v=20261112.2-skun';
-import {mountPaperStage} from './paper-stage.js?v=20261113.1-focus';
+import * as application from './app.js?v=20261113.10-girls-channel';
+import {publishingAccounts} from './accounts.js?v=20261113.10-girls-channel';
+import {mountPaperStage} from './paper-stage.js?v=20261113.10-girls-channel';
 // Mount independently of optional illustrations or the old book animation.
 try{
  if(getComputedStyle(document.body).getPropertyValue('--paper-ready').trim()!=='1')throw Error('Paper styles unavailable');
