@@ -151,7 +151,7 @@ test('read action preserves its existing callback/focus then closes the covering
   assert.equal(b.calls.read, 2); assert.equal(b.$('.spatial-work').open, false); b.unchanged();
 });
 
-test('picker shows canonical full identity and five destinations; only a different destination calls the supplied route once', async t => {
+test('picker shows canonical full identity and all authored destinations; only a different destination calls the supplied route once', async t => {
   const b = setup(t), api = b.install();
   for (const key of accounts) {
     await b.enter(key); const account = publishingAccounts.find(value => value.key === key);
@@ -159,7 +159,7 @@ test('picker shows canonical full identity and five destinations; only a differe
     assert.equal(b.$('#spatial-room-dialog').open, true); assert.equal(b.$('.spatial-account-identity h3').textContent, account.name);
     assert.equal(b.$('.spatial-account-identity p').textContent, account.handle);
     assert.match(b.$('.spatial-room-name').getAttribute('aria-label'), new RegExp(account.handle));
-    assert.deepEqual([...b.doc.querySelectorAll('.spatial-destination')].map(node => node.dataset.destination), [...accounts, 'tanaka', 'sourcing']);
+    assert.deepEqual([...b.doc.querySelectorAll('.spatial-destination')].map(node => node.dataset.destination), [...accounts, 'tanaka', 'kensho', 'manga', 'sourcing']);
     b.$('.spatial-destination[aria-current=page]').click();
     assert.equal(b.$('#spatial-room-dialog').open, false); assert.equal(b.doc.activeElement, b.$('.spatial-room-name'));
   }
