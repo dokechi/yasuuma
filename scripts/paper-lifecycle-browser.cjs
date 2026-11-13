@@ -1,5 +1,6 @@
-/* New DEFAULT storybook in the real production host. Synthetic data only.
-   No iframe URL substitution, production login, remote request or source write. */
+// Legacy book.html presentation only. Current default is covered by unified-castle-browser.cjs.
+/* Retained book presentation in the real production host. Synthetic data only.
+   Explicit legacy iframe entry; no production login, remote request or source write. */
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium}=require('playwright-core');
@@ -38,6 +39,8 @@ const server=http.createServer((req,res)=>{
  fs.readFile(file,(error,bytes)=>{
   if(error)return res.writeHead(404).end();let content=bytes;
   if(relative==='/command-center-98/app.html')content=bytes.toString().replace('<head>','<head><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script><script>'+(emptyFixture?fixtureScript.replace('const rows='+JSON.stringify(rows)+';__rpgQA.threads.events.push(...rows);','const rows=[];__rpgQA.threads.events=[];'):fixtureScript)+'</script>');
+  // Explicit legacy entry; never masquerade book markup as the production default.
+  if(relative==='/command-center-98/castle-parent.js')content=bytes.toString().replace('./lounge/index.html?', './lounge/book.html?');
   if(relative==='/scripts/ui-fixtures.js')content=bytes.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
   if(relative==='/scripts/rpg-theme-fixtures.js')content=bytes.toString().replace('isolated-rpg-fixture',authFixture);
   if(process.env.PAPER_EIGHT&&relative==='/command-center-98/lounge/accounts.js')content=bytes.toString().replace('...[6].map',"{key:'qa-category-a',place:'qa-a',name:'検証カテゴリA',taskId:'qa-a-threads-v1'}, {key:'qa-category-b',place:'qa-b',name:'検証カテゴリB',taskId:'qa-b-threads-v1'}, ...[6].map");
@@ -55,7 +58,7 @@ const server=http.createServer((req,res)=>{
   // real local HTTP responses, with all API traffic still fixture-intercepted.
   if(mode!=='cache')await context.route('**/*',route=>{const r=route.request(),u=new URL(r.url());if(mode==='css'&&u.pathname.endsWith('/paper-stage.css')||mode==='fold-module'&&u.pathname.endsWith('/paper-motion.js')||mode==='module'&&u.pathname.endsWith('/paper-atelier.js'))return route.abort();return u.origin===origin&&['GET','HEAD'].includes(r.method())?route.continue():route.abort();});
   if(mode==='cache'){await page.goto(origin+'/cache-seed.html');const seed=async()=>page.evaluate(async()=>{for(const file of ['storybook-atelier.js?v=20261102.1-tanaka','spatial-atelier.js?v=20261101.9-workbook','arrival-atelier.js?v=20261101.9-workbook','arrival-entry.js?v=20261101.9-workbook','paper-atelier.js?v=20261102.2-paper','paper-stage.js?v=20261102.2-paper','paper-stage.css?v=20261102.2-paper','paper-atelier.js?v=20261102.3-depth','paper-stage.js?v=20261102.3-depth','paper-stage.css?v=20261102.3-depth','paper-atelier.js?v=20261102.4-detail','paper-stage.js?v=20261102.4-detail','paper-stage.css?v=20261102.4-detail'])await(await fetch('/command-center-98/lounge/'+file)).text();});await seed();const fetched=oldCacheHits;await seed();assert.equal(oldCacheHits,fetched,'second bootstrap read must use actual HTTP cache');assert.equal(fetched,13,'four old bootstraps, three baseline paper assets and three prior production depth assets are genuinely cached before navigation');paperRequests.length=0;}
-  await page.goto(origin+'/command-center-98/app-v130.html');await page.waitForFunction(()=>window.CCCastle?.unified);const f=page.frameLocator('#ccCastleFrame');await f.locator('body').waitFor({state:'attached'});const cf=page.frames().find(f=>new URL(f.url()).pathname.endsWith('/lounge/index.html'));await cf.waitForFunction(()=>__paperProbe.records?.complete===true);
+  await page.goto(origin+'/command-center-98/app-v130.html');await page.waitForFunction(()=>window.CCCastle?.unified);const f=page.frameLocator('#ccCastleFrame');await f.locator('body').waitFor({state:'attached'});const cf=page.frames().find(f=>new URL(f.url()).pathname.endsWith('/lounge/book.html'));await cf.waitForFunction(()=>__paperProbe.records?.complete===true);
   return {context,page,f,cf,appRequests,paperRequests};
  }
  const check=(name,ok,detail)=>{results.push({name,pass:!!ok,...(detail===undefined?{}:{detail})});assert.ok(ok,name);};
@@ -96,7 +99,7 @@ const server=http.createServer((req,res)=>{
   // Assert persistence only after that real receipt and its live enabled control,
   // never by sleeping, retrying the expected aria value, or exposing the scope.
   const settledFutureScope=async()=>{
-   const frame=page.frames().find(frame=>new URL(frame.url()).pathname.endsWith('/lounge/index.html'));
+   const frame=page.frames().find(frame=>new URL(frame.url()).pathname.endsWith('/lounge/book.html'));
    const observe=()=>frame.evaluate(()=>{const pin=document.querySelector('.paper-pin'),records=window.__paperProbe.records;return {complete:records?.complete===true,scopeReady:typeof records?.pinScope==='string'&&/^[a-f0-9]{64}$/.test(records.pinScope),pinEnabled:!!pin&&!pin.disabled,pressed:pin?.getAttribute('aria-pressed')??null};});
    const before=await observe();
    if(!before.complete||!before.scopeReady||!before.pinEnabled)try{await frame.waitForFunction(()=>{const pin=document.querySelector('.paper-pin'),records=window.__paperProbe.records;return records?.complete===true&&typeof records.pinScope==='string'&&/^[a-f0-9]{64}$/.test(records.pinScope)&&!!pin&&!pin.disabled;});}catch(error){const after=await observe().catch(()=>({frameUnavailable:true}));throw new Error('Authenticated future scope readiness did not settle: '+JSON.stringify({before,after}),{cause:error});}

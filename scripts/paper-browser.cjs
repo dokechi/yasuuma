@@ -1,3 +1,4 @@
+// Legacy book.html presentation only; current default: unified-castle-browser.cjs.
 /* New DEFAULT storybook in the real production host. Synthetic data only.
    No iframe URL substitution, production login, remote request or source write. */
 'use strict';
@@ -29,7 +30,8 @@ const fixtureScript=`(()=>{
   __storybookRecords.requests.push({url:url.href,method});
   const json=data=>new Response(JSON.stringify(data),{status:200,headers:{'Content-Type':'application/json'}});
   if(method==='GET'&&url.searchParams.get('resource')==='task-events'&&rows.some(r=>r.taskId===url.searchParams.get('taskId')))return json({ok:true,events:rows.filter(r=>r.taskId===url.searchParams.get('taskId')),nextOffset:null});
-  if(method==='GET'&&url.searchParams.get('resource')==='threads-images'){if(${!!process.env.PAPER_IMAGES})return window.__paperTransport(input,options);return json({ok:true,id:url.searchParams.get('id'),accountKey:url.searchParams.get('accountKey'),manifest:{contract:'threads-post-images-v1',revision:0,images:[]},assets:[]});}
+  if(method==='GET'&&url.searchParams.get('resource')==='threads-images'){if(${!!process.env.PAPER_IMAGES})return window.__paperTransport(input,options);return json({ok:true,id:url.searchParams.get('id'),accountKey:url.searchParams.get('accountKey'),manifest:{contract:'threads-post-images-v1',revision:0,images:[]},assets:[]});
+}
   if(${!!process.env.PAPER_IMAGES}&&method==='PATCH'&&JSON.parse(options.body||'{}').action==='threads_images_save')return window.__paperTransport(input,options);
   return previous(input,options);
  };
@@ -41,6 +43,8 @@ const server=http.createServer((req,res)=>{
  fs.readFile(file,(error,bytes)=>{
   if(error)return res.writeHead(404).end();let content=bytes;
   if(relative==='/command-center-98/app.html')content=bytes.toString().replace('<head>','<head><script>window.__paperTransport ||= window.fetch.bind(window)</script><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script><script>'+fixtureScript+'</script>');
+  // Explicit legacy entry; current default is tested independently.
+  if(relative==='/command-center-98/castle-parent.js')content=bytes.toString().replace('./lounge/index.html?', './lounge/book.html?');
   if(relative==='/scripts/ui-fixtures.js')content=bytes.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
   if(process.env.PAPER_EIGHT&&relative==='/command-center-98/lounge/accounts.js')content=bytes.toString().replace('...[6].map',"{key:'qa-category-a',place:'qa-a',name:'検証カテゴリA',taskId:'qa-a-threads-v1'}, {key:'qa-category-b',place:'qa-b',name:'検証カテゴリB',taskId:'qa-b-threads-v1'}, ...[6].map");
   res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'}).end(content);
@@ -64,7 +68,7 @@ const server=http.createServer((req,res)=>{
    await page.goto(origin+'/command-center-98/app-v130.html');
    await page.waitForFunction(()=>window.CCCastle?.unified);
    const f=page.frameLocator('#ccCastleFrame');await f.locator('.paper-card').first().waitFor();
-   const cf=page.frames().find(f=>new URL(f.url()).pathname.endsWith('/lounge/index.html'));
+   const cf=page.frames().find(f=>new URL(f.url()).pathname.endsWith('/lounge/book.html'));
    await cf.waitForFunction(()=>document.querySelectorAll('.paper-card').length===20&&document.querySelector('.paper-state').textContent.includes('件'));
    // Native input must work: programmatic scrollIntoView also moves overflow:hidden roots.
    const documentTop=()=>cf.evaluate(()=>document.scrollingElement.scrollTop);
@@ -214,7 +218,7 @@ const server=http.createServer((req,res)=>{
     await editor.locator('.cc-threads-save').click();await cf.waitForFunction(()=>document.querySelector('.paper-image-dialog[open] .cc-threads-images-status').textContent.includes('保存しました'));const attempts=imageService.calls.filter(x=>x.method==='PATCH');check('retry reuses one mutation identity and saves exactly once',attempts.length===2&&attempts[0].mutationId===attempts[1].mutationId&&imageService.writes.length===1,attempts);
     await editor.locator('header>button').click();await editor.waitFor({state:'hidden'});await cf.waitForFunction(id=>{const n=[...document.querySelectorAll('.paper-card')].find(n=>n.dataset.paperId===id)?.querySelector('.paper-image');return n&&!n.hidden&&n.complete&&n.naturalWidth>0},d);check('saved theme image appears on its exact manuscript',await card.locator('.paper-image').getAttribute('src')===themePng);
     await page.screenshot({path:path.join(out,width+'-'+height+'-image-saved.png')});const model=imageService.rows.find(x=>x.id===956);check('image persistence changes only the image manifest, not source text or posted state',model.payload.draft===rows.find(x=>x.id===956).payload.draft&&!model.payload.posted&&model.payload.threads_images_v1.revision===1&&imageService.rows.find(x=>x.id===955).payload.threads_images_v1===undefined);
-    await page.reload();await page.waitForFunction(()=>window.CCCastle?.unified);await f.locator('.paper-card').first().waitFor();const reloaded=page.frames().find(f=>new URL(f.url()).pathname.endsWith('/lounge/index.html'));await reloaded.waitForFunction(id=>{const card=[...document.querySelectorAll('.paper-card')].find(n=>n.dataset.paperId===id);card?.scrollIntoView({block:'center'});const n=card?.querySelector('.paper-image');return n&&!n.hidden&&n.complete&&n.naturalWidth>0},d);check('reload reads the persisted image from the authenticated API without replaying the write',await f.locator('.paper-card[data-paper-id="'+d+'"] .paper-image').getAttribute('src')===themePng&&imageService.writes.length===1&&imageService.calls.every(x=>x.authorized));
+    await page.reload();await page.waitForFunction(()=>window.CCCastle?.unified);await f.locator('.paper-card').first().waitFor();const reloaded=page.frames().find(f=>new URL(f.url()).pathname.endsWith('/lounge/book.html'));await reloaded.waitForFunction(id=>{const card=[...document.querySelectorAll('.paper-card')].find(n=>n.dataset.paperId===id);card?.scrollIntoView({block:'center'});const n=card?.querySelector('.paper-image');return n&&!n.hidden&&n.complete&&n.naturalWidth>0},d);check('reload reads the persisted image from the authenticated API without replaying the write',await f.locator('.paper-card[data-paper-id="'+d+'"] .paper-image').getAttribute('src')===themePng&&imageService.writes.length===1&&imageService.calls.every(x=>x.authorized));
    }
 
    check('real source records unchanged and zero source writes',await page.evaluate(original=>JSON.stringify(__rpgQA.threads.events)===original&&__rpgQA.writes.length===0&&__rpgQA.threads.simulatedWrites.length===0,original));
