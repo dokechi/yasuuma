@@ -19,12 +19,16 @@
   const session=editorSession,id=get('reId'),candidate=R.payload(),err=document.getElementById('redditEditorError');
   if(!candidate.productName.trim()){err.textContent='商品名は必須です。';return null}
   err.textContent='';busy(true);setStatus('候補を保存中...',true);
+  // setStatus replaces its DOM children on every operation. Retain this exact
+  // spinner node, not its text, so a newer identical save owns its own status.
+  const statusHost=document.getElementById('statusText'),statusNode=statusHost?.firstChild;
+  const settleStatus=text=>{if(statusNode&&document.getElementById('statusText')===statusHost&&statusHost.firstChild===statusNode)setStatus(text)};
   try{
    const d=await R.request(R.api,{method:id?'PATCH':'POST',headers:R.headers(),body:JSON.stringify(id?{action:'save',id,candidate}:{action:'create',candidate})});
-   R.update(d.item);
+   R.update(d.item);settleStatus('準備完了');
    if(session!==editorSession)return null;
-   set('reId',d.item.id);R.state.selected=d.item.id;if(close)R.closeEditor();toast('保存しました','good');setStatus('準備完了');return d.item;
-  }catch(e){if(session===editorSession){err.textContent=e.message||String(e);setStatus('保存エラー')}return null}
+   set('reId',d.item.id);R.state.selected=d.item.id;if(close)R.closeEditor();toast('保存しました','good');return d.item;
+  }catch(e){settleStatus('保存エラー');if(session===editorSession){err.textContent=e.message||String(e)}return null}
   finally{if(session===editorSession)busy(false)}
  };
  R.generateEditor=async()=>{
