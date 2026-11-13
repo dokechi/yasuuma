@@ -353,3 +353,6 @@ body.stained-atelier .account-board button.sg-card{touch-action:pinch-zoom!impor
  .sg-header .sg-tools button{overflow-wrap:anywhere}
  .sg-header .sg-tools > :nth-last-child(-n+2){flex-shrink:0;white-space:nowrap}
 }
+
+/* Primary manuscript actions remain comfortable touch targets on compact screens. */
+body.stained-atelier #desk :is(#desk-copy,#desk-done){min-height:44px;min-width:44px}

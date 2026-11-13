@@ -175,7 +175,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
    // A navigation can cancel an intercepted request before CDP continues it.
    // Record only that exact transport race separately; runtime exceptions and
    // all other protocol failures still fail, and blocked requests remain blocked.
-   if(m.method==='Fetch.requestPaused'){const p=m.params,u=new URL(p.request.url),allowed=u.origin===origin&&['GET','HEAD'].includes(p.request.method);if(!allowed)blocked.push({url:p.request.url,method:p.request.method});send(allowed?'Fetch.continueRequest':'Fetch.failRequest',allowed?{requestId:p.requestId}:{requestId:p.requestId,errorReason:'BlockedByClient'}).catch(e=>{if(e.message==='Invalid InterceptionId.')cancelledInterceptions.push({requestId:p.requestId,url:p.request.url,reason:e.message});else errors.push(e.message)})}
+   if(m.method==='Fetch.requestPaused'){const p=m.params,u=new URL(p.request.url);if(u.origin==='https://fonts.googleapis.com'&&u.pathname==='/css2'&&p.request.method==='GET'){send('Fetch.fulfillRequest',{requestId:p.requestId,responseCode:200,responseHeaders:[{name:'Content-Type',value:'text/css'}],body:Buffer.from('/* Local font fixture: browser uses installed Noto fonts; no external transfer. */').toString('base64')}).catch(e=>errors.push(e.message));return;}const allowed=u.origin===origin&&['GET','HEAD'].includes(p.request.method);if(!allowed)blocked.push({url:p.request.url,method:p.request.method});send(allowed?'Fetch.continueRequest':'Fetch.failRequest',allowed?{requestId:p.requestId}:{requestId:p.requestId,errorReason:'BlockedByClient'}).catch(e=>{if(e.message==='Invalid InterceptionId.')cancelledInterceptions.push({requestId:p.requestId,url:p.request.url,reason:e.message});else errors.push(e.message)})}
    if(m.method==='Runtime.exceptionThrown')errors.push(m.params.exceptionDetails.exception?.description||m.params.exceptionDetails.text);
   };
   await send('Page.enable');await send('Runtime.enable');await send('Network.enable');await send('Network.setBypassServiceWorker',{bypass:true});await send('Fetch.enable',{patterns:[{urlPattern:'http*',requestStage:'Request'}]});
@@ -510,8 +510,10 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   // FP is a supported native route, not a glass-gallery category or removed book settings link.
   await evaluate(`CCRpgWorkspaces.openFp()`);
   await waitFor(`!app.busy&&app.view==='fp'&&document.getElementById('ccCastleFrame').hidden`);
-  await capture('lounge-native-fp',`!!document.querySelector('[data-fp-open]')&&!document.getElementById('ccCastleReturn').hidden`);
-  await evaluate(`document.getElementById('ccCastleReturn').click()`);await waitFor(`!document.getElementById('ccCastleFrame').hidden`);
+  await capture('lounge-native-fp',`!!document.querySelector('[data-fp-open]')&&document.querySelector('#ccDestination [data-home-action="home"]').checkVisibility()`);
+  const fpBack=await evaluate(`(()=>{const n=document.querySelector('#ccDestination [data-home-action="home"]');n.scrollIntoView({block:'nearest'});const r=n.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2,hit=document.elementFromPoint(x,y);if(!n.checkVisibility()||r.width<44||r.height<44||!(hit===n||n.contains(hit)))throw Error('Visible FP return is obscured or too small');return{x,y};})()`);
+  await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...fpBack});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...fpBack});
+  await waitFor(`!document.getElementById('ccCastleFrame').hidden`);await loungeReady();
 
   // Retained classic reader COMPONENT fixture, not the current production host.
   // Current lounge/native-host integration is tested by unified-castle-browser.cjs.
