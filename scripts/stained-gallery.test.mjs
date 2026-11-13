@@ -56,3 +56,27 @@ test('visible reorder button enters edit mode and Done restores opening',t=>{
  assert.equal(trigger.hidden,false);trigger.click();assert.equal(done.hidden,false);assert.equal(trigger.hidden,true);
  h.cards[0].click();assert.deepEqual(h.calls,[]);done.click();assert.equal(trigger.hidden,false);h.cards[0].click();assert.deepEqual(h.calls,['insurance']);
 });
+
+test('reader and gallery transitions move keyboard focus to visible presentation controls only',async t=>{
+ const h=setup(t),d=h.w.document,room=d.getElementById('room');
+ h.cards[2].focus();room.dataset.account=h.cards[2].dataset.key;h.board.element.hidden=true;room.hidden=false;
+ // The original owner focuses #back, which this presentation intentionally hides.
+ d.getElementById('back').focus();h.render();await Promise.resolve();
+ assert.equal(d.activeElement,room.querySelector('.sg-title'));
+ const query=d.getElementById('desk-query');query.focus();h.render();await Promise.resolve();
+ assert.equal(d.activeElement,query,'source repaint must not steal focus from an editor/search field');
+ h.board.element.hidden=false;room.hidden=true;h.render();await Promise.resolve();
+ assert.equal(d.activeElement,h.cards[2]);
+});
+
+test('reader account switches expose the current heading without a stale accessible label',async t=>{
+ const h=setup(t),d=h.w.document,room=d.getElementById('room'),heading=d.getElementById('desk-title');
+ for(const key of ['skun','insurance','otoku','rakuten','kensho','insurance']){
+  room.hidden=true;h.board.element.hidden=false;h.render();await Promise.resolve();
+  room.dataset.account=key;room.hidden=false;h.board.element.hidden=true;h.render();await Promise.resolve();
+  const expected=model.glassFor(key).label+'の原稿';
+  assert.equal(heading.textContent,expected);
+  assert.equal(heading.getAttribute('aria-label'),null,'heading derives its accessible name from its current text');
+  assert.equal(heading.getAttribute('aria-labelledby'),null,'no external label overrides current heading text');
+ }
+});

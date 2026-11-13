@@ -51,7 +51,7 @@ async function asset(d, key, row, account) {
 function visible(value) { const {receipts,history,...result} = value; return result; }
 function legacy(row) {
   const p = row.payload, raw = Array.isArray(p.post_images) ? p.post_images : Array.isArray(p.image_urls) ? p.image_urls : Array.isArray(p.finished_images?.pages) ? p.finished_images.pages : [];
-  return raw.slice(0,LIMIT).map((x,i) => ({url:imageUrl(typeof x === 'string' ? x : x?.url || x?.image_url || x?.src),label:String(x?.label || (i+1)+'枚目').slice(0,100)})).filter(x => x.url);
+  return raw.slice(0,LIMIT).map((x,i) => ({url:imageUrl(typeof x === 'string' ? x : x?.url || x?.image_url || x?.src),label:String(x?.label || (i+1)+'\u679a\u76ee').slice(0,100)})).filter(x => x.url);
 }
 async function project(d,row,account,{preview=false}={}) {
   const saved = manifest(row), images = row.payload.threads_images_v1 ? saved.images : legacy(row), assets = [];
@@ -91,7 +91,7 @@ export async function threadsImagesPatch(req,body,d) {
     for (const input of body.images) {
       if (!object(input) || Object.keys(input).some(k => !['assetKey','url','dataUrl','label','name'].includes(k)) || ['assetKey','url','dataUrl'].filter(k => typeof input[k] === 'string' && input[k]).length !== 1) fail('threads_invalid_image');
       if ((input.label != null && typeof input.label !== 'string') || (input.name != null && typeof input.name !== 'string')) fail('threads_invalid_image');
-      const label = String(input.label || input.name || '投稿画像').slice(0,100), name = String(input.name || '').replace(/[^\p{L}\p{N}._ -]/gu,'_').slice(0,150);
+      const label = String(input.label || input.name || '\u6295\u7a3f\u753b\u50cf').slice(0,100), name = String(input.name || '').replace(/[^\p{L}\p{N}._ -]/gu,'_').slice(0,150);
       if (input.dataUrl) { const parsed = imageBytes(input.dataUrl); total += parsed.size; inputs.push({label,name,...parsed,assetKey:'threads:' + row.id + ':' + await d.sha256(parsed.dataUrl)}); }
       else if (input.assetKey) { const saved = await asset(d,input.assetKey,row,account); total += saved.payload.size || 0; inputs.push({assetKey:input.assetKey,label,name}); }
       else { const url = imageUrl(input.url); if (!url) fail('threads_invalid_image_url'); inputs.push({url,label,name}); }
@@ -103,7 +103,7 @@ export async function threadsImagesPatch(req,body,d) {
       const {dataUrl,mime,size,...entry} = input; images.push(entry);
       if (!dataUrl) continue;
       const payload = {result_kind:'threads_post_image',owner_event_id:row.id,account_key:account,data_url:dataUrl,mime_type:mime,size};
-      const {error} = await d.admin.from(TABLE).upsert({task_id:ASSET_TASK,event_key:input.assetKey,domain:'sns',priority:'A',score:80,title:row.title + '｜投稿画像',summary:'Threads下書きの添付画像',payload},{onConflict:'task_id,event_key',ignoreDuplicates:true});
+      const {error} = await d.admin.from(TABLE).upsert({task_id:ASSET_TASK,event_key:input.assetKey,domain:'sns',priority:'A',score:80,title:row.title + '\uff5c\u6295\u7a3f\u753b\u50cf',summary:'Threads\u4e0b\u66f8\u304d\u306e\u6dfb\u4ed8\u753b\u50cf',payload},{onConflict:'task_id,event_key',ignoreDuplicates:true});
       if (error) throw error;
       const stored = await asset(d,input.assetKey,row,account); if (stored.payload.data_url !== dataUrl) fail('threads_image_conflict',409);
     }

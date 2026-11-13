@@ -1,0 +1,14 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+function harness(fetch,token='synthetic-session',hash='#requests'){
+ const nodes=new Map(),removed=[],redirects=[],store=new Map(token?[['cc_retro_token',token]]:[]);
+ const node=id=>{if(!nodes.has(id))nodes.set(id,{id,textContent:'',disabled:false,classList:{add(){},remove(){}},setAttribute(){},focus(){},addEventListener(type,fn){this[type]=fn},append(n){nodes.set(n.id,n)},remove(){nodes.delete(id)}});return nodes.get(id)};
+ for(const id of ['title','loadingPane','loginPane','loginError','code','msg','loginForm','loginBtn'])node(id);
+ const ctx={console,AbortController,setTimeout,clearTimeout,fetch,location:{hash,replace:u=>redirects.push(u)},localStorage:{getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v),removeItem:k=>{removed.push(k);store.delete(k)}},document:{getElementById:id=>nodes.get(id)||null,createElement:()=>({textContent:'',setAttribute(){},addEventListener(type,fn){this[type]=fn},remove(){}})}};
+ const html=fs.readFileSync(__dirname+'/index.html','utf8'),source=html.match(/<script>\s*const AUTH_API[\s\S]*?<\/script>/)[0].replace(/^<script>|<\/script>$/g,'').replace(/boot\(\);\s*$/,'');
+ vm.createContext(ctx);vm.runInContext(source,ctx);return {ctx,store,nodes,removed,redirects};
+}
+test('missing session displays login without network',async()=>{const h=harness(()=>assert.fail('network'),null);await h.ctx.boot();assert.equal(h.redirects.length,0);assert.equal(h.nodes.get('title').textContent,'ログイン')});
+test('only explicit expired authentication clears stored session',async()=>{const h=harness(async()=>({ok:false,status:401}));await h.ctx.boot();assert.equal(h.store.has('cc_retro_token'),false);assert.equal(h.nodes.get('title').textContent,'ログイン')});
+for(const [name,fetch]of [['server failure',async()=>({ok:false,status:503})],['network failure',async()=>{throw Error('offline')}]] )test(name+' preserves session and offers retry without false login expiry',async()=>{const h=harness(fetch);await h.ctx.boot();assert.equal(h.store.get('cc_retro_token'),'synthetic-session');assert.equal(h.removed.length,0);assert.equal(h.redirects.length,0);assert.equal(h.nodes.get('bootRetry')?.textContent,'再試行');});
+test('retry recovers and preserves the requested internal destination',async()=>{let failed=true;const h=harness(async()=>({ok:!failed,status:failed?503:200}));await h.ctx.boot();failed=false;await h.ctx.boot();assert.deepEqual(h.redirects,['app-v130.html?v=20261022.10-entry#requests']);assert.equal(h.store.get('cc_retro_token'),'synthetic-session')});
+test('successful session does not forward arbitrary fragments',async()=>{const h=harness(async()=>({ok:true,status:200}),'synthetic-session','#untrusted');await h.ctx.boot();assert.deepEqual(h.redirects,['app-v130.html?v=20261022.10-entry'])});

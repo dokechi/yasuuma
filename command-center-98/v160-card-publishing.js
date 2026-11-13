@@ -182,7 +182,7 @@
   X.clip=async(text,message,button)=>{
     if(!text)return false;
     bump(button);
-    try{await navigator.clipboard.writeText(text)}catch{const area=document.createElement('textarea');area.value=text;document.body.appendChild(area);area.select();document.execCommand('copy');area.remove()}
+    try{await navigator.clipboard.writeText(text)}catch{const area=document.createElement('textarea');area.value=text;document.body.appendChild(area);let copied=false;try{area.select();copied=document.execCommand('copy')===true}catch(_){}finally{area.remove()}if(!copied){toast('コピーできませんでした。表示本文を選択してコピーしてください。','bad');return false}}
     toast(message,'good');return true;
   };
   X.copy=async(id,platform,button,textOverride)=>{
@@ -239,24 +239,27 @@
     by('xeChars').textContent=xCount+' / 280（X換算）';by('xeThreadsChars').textContent=threadsCount+' / 500';
     by('xeChars').classList.toggle('over',xCount>280);by('xeThreadsChars').classList.toggle('over',threadsCount>500);
   };
+  let editorSession=0,editorBusy=false;
+  const setEditorBusy=value=>{editorBusy=value;modal.querySelectorAll('input,select,textarea,button[type="submit"]').forEach(n=>n.disabled=value);modal.setAttribute('aria-busy',String(value));};
   X.openEditor=item=>{
+    editorSession++;setEditorBusy(false);
     X.editorDates={applicationDeadline:item?.applicationDeadline||null,officialCheckedAt:item?.officialCheckedAt||null,valueHookCheckedAt:item?.valueHookCheckedAt||null};
     X.editorVersion=item?.updatedAt||null;by('xeConflict')?.remove();set('xeId',item?.id);set('xeProduct',item?.productName);set('xeOrganizer',item?.organizer);set('xePriority',item?.priority||'B');set('xeScore',item?.score||0);set('xeFranchise',item?.franchise||'other');set('xeCategory',item?.category||'card_lottery');set('xeDeadline',local(item?.applicationDeadline));set('xeRegion',item?.targetRegion);set('xeConditions',item?.conditions);set('xeApply',item?.applicationUrl);set('xeOfficial',item?.officialUrl);set('xeVerified',String(!!item?.officialVerified));set('xeOfficialChecked',local(item?.officialCheckedAt));set('xeOfficialNote',item?.officialCheckNote);set('xeDiscoverySource',item?.discoverySource);set('xeDiscovery',item?.discoveryUrl);set('xeValueHook',item?.valueHook);set('xeValueKind',item?.valueHookKind);set('xeValueChecked',local(item?.valueHookCheckedAt));set('xeValueSource',item?.valueHookSourceUrl);set('xeAffiliateStatus',item?.affiliateStatus||'check');set('xeAffiliate',item?.affiliateUrl);set('xeDraft',item?.xDraft);set('xeThreadsDraft',item?.threadsDraft);set('xeEditReason','');set('xeNote',item?.userNote);X.chars();modal.classList.add('open');
   };
   by('xAdd').onclick=()=>X.openEditor(null);
-  X.close=()=>modal.classList.remove('open');
+  X.close=()=>{editorSession++;setEditorBusy(false);modal.classList.remove('open')};
   by('xeDraft').oninput=X.chars;by('xeThreadsDraft').oninput=X.chars;by('xClose').onclick=X.close;by('xeCancel').onclick=X.close;
   by('xeCopyX').onclick=()=>X.copy(value('xeId'),'x',by('xeCopyX'),value('xeDraft'));
   by('xeCopyThreads').onclick=()=>X.copy(value('xeId'),'threads',by('xeCopyThreads'),value('xeThreadsDraft'));
   X.editorCandidate=()=>({productName:value('xeProduct'),organizer:value('xeOrganizer'),priority:value('xePriority'),score:value('xeScore'),franchise:value('xeFranchise'),category:value('xeCategory'),applicationDeadline:X.jstIso(value('xeDeadline'),X.editorDates?.applicationDeadline),targetRegion:value('xeRegion'),conditions:value('xeConditions'),applicationUrl:value('xeApply'),officialUrl:value('xeOfficial'),officialVerified:value('xeVerified')==='true',officialCheckedAt:X.jstIso(value('xeOfficialChecked'),X.editorDates?.officialCheckedAt),officialCheckNote:value('xeOfficialNote'),discoverySource:value('xeDiscoverySource'),discoveryUrl:value('xeDiscovery'),valueHook:value('xeValueHook'),valueHookKind:value('xeValueKind'),valueHookCheckedAt:X.jstIso(value('xeValueChecked'),X.editorDates?.valueHookCheckedAt),valueHookSourceUrl:value('xeValueSource'),affiliateStatus:value('xeAffiliateStatus'),affiliateUrl:value('xeAffiliate'),xDraft:value('xeDraft'),threadsDraft:value('xeThreadsDraft'),userNote:value('xeNote')});
   by('xForm').onsubmit=async event=>{
-    event.preventDefault();
-    const id=value('xeId');
-    const candidate=X.editorCandidate();
+    event.preventDefault();if(editorBusy)return;
+    const session=editorSession,id=value('xeId');
+    const candidate=X.editorCandidate();setEditorBusy(true);
     try{
       const data=id?await X.request({method:'PATCH',headers:X.headers(),body:JSON.stringify({action:'save',id,candidate,editReason:value('xeEditReason'),expectedUpdatedAt:X.editorVersion})}):await X.request({method:'POST',headers:X.headers(),body:JSON.stringify({candidate})});
-      X.update(data.item);X.close();toast(data.reviewWarning?'保存しました（修正履歴のみ記録エラー）':'保存しました',data.reviewWarning?'bad':'good');
-    }catch(error){toast(error.message||'保存できませんでした','bad');
+      X.update(data.item);if(session!==editorSession)return;X.close();toast(data.reviewWarning?'保存しました（修正履歴のみ記録エラー）':'保存しました',data.reviewWarning?'bad':'good');
+    }catch(error){if(session!==editorSession)return;toast(error.message||'保存できませんでした','bad');
       if(error.status===409||error.status===428){
         let note=by('xeConflict');
         if(!note){note=document.createElement('div');note.id='xeConflict';note.setAttribute('role','alert');by('xForm').appendChild(note)}
@@ -264,6 +267,6 @@
         const copy=document.createElement('button');copy.type='button';copy.className='push-button';copy.textContent='入力控えをコピー';copy.onclick=()=>X.clip(JSON.stringify({candidate:X.editorCandidate(),editReason:value('xeEditReason')},null,2),'入力控えをコピーしました',copy);note.appendChild(copy);
         const refresh=document.createElement('button');refresh.type='button';refresh.className='push-button';refresh.textContent='一覧の最新情報を確認（入力を保持）';refresh.onclick=()=>X.load();note.appendChild(refresh);
       }
-    }
+    }finally{if(session===editorSession)setEditorBusy(false)}
   };
 })();

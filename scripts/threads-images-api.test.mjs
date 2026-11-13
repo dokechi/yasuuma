@@ -92,3 +92,33 @@ test('publishing image scope rejects wrong category, non-publishing rows and non
 test('preview reads only first attachment while preserving full saved order and never writing',async()=>{
  const s=fixture();good(await patch(s,request({images:[{dataUrl:png,label:'first'},{url:'https://example.invalid/second.png',label:'second'}]})));const before=JSON.stringify(s.writes),result=await threadsImagesGet(new Request('https://example.invalid/?resource=threads-images&id=1&accountKey=choi&preview=1'),s.d);good(result);assert.equal(result.body.assets.length,1);assert.equal(result.body.manifest.images.length,2);assert.equal(result.body.assets[0].dataUrl,png);assert.equal(JSON.stringify(s.writes),before);
 });
+
+test('fixed insurance and S account GET resolves exact identities read-only and rejects impersonation',async()=>{
+ for(const [account,task,name,handle] of [['insurance','insurance-threads-v1','保険','@sucker0508'],['skun','skun-threads-v1','Sくん','@skun.koi']]){
+  const s=fixture();s.rows[0]={...s.rows[0],task_id:task,payload:{account:name,handle,post_images:['https://example.test/finished.png']}};
+  const before=JSON.stringify(s.rows),result=good(await get(s,1,account));
+  assert.equal(result.accountKey,account);assert.equal(result.assets[0].url,'https://example.test/finished.png');assert.equal(result.assets[0].label,'1枚目');
+  assert.equal(JSON.stringify(s.rows),before);assert.equal(s.writes.length,0);assert.equal(s.assets.length,0);
+  assert.equal((await get(s,1,'wrong-account')).status,409);
+  for(const payload of [{account:'other',handle},{account:name,handle:'@other'},{account:name},{handle}]){
+   s.rows[0].payload=payload;assert.equal((await get(s,1,account)).status,404);assert.equal(s.writes.length,0);
+  }
+ }
+});
+test('image scope never accepts object prototype keys as publishing task identities',async()=>{
+ for(const task_id of ['constructor','toString','__proto__']){
+  const s=fixture();s.rows[0]={...s.rows[0],task_id};assert.equal((await get(s,1,'skun')).status,404);
+ }
+});
+test('S account uploads remain bound to its exact identity and immutable owner',async()=>{
+ const s=fixture();s.rows[0]={...s.rows[0],task_id:'skun-threads-v1',payload:{account:'Sくん',handle:'@skun.koi',draft:'Synthetic original'}};
+ const result=good(await patch(s,request({accountKey:'skun'})));assert.equal(result.assets[0].dataUrl,png);assert.equal(s.assets[0].payload.account_key,'skun');assert.equal(s.rows[0].payload.draft,'Synthetic original');
+ s.rows[0].payload.handle='@other';assert.equal((await patch(s,request({accountKey:'skun',expectedRevision:1,mutationId:'second-fixture-0001'}))).status,404);assert.equal(s.writes.length,1);
+});
+test('image endpoint source uses ASCII-safe identity and label literals for deployment transport',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ for(const name of ['publishing-image-scope.mjs','threads-images-api.mjs']){
+  const source=await readFile(new URL('../supabase/functions/command-center-retro-api/'+name,import.meta.url),'utf8');
+  assert.match(source,/^[\x00-\x7f]*$/); // Japanese runtime strings are Unicode escapes, not altered labels.
+ }
+});

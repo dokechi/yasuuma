@@ -70,11 +70,12 @@ const server=http.createServer((req,res)=>{
       await lounge.locator('.sg-card[data-key=insurance]').click();
       assert.equal(await lounge.locator('#room').evaluate(n=>n.hidden),true);
       await lounge.locator('.sg-order-done').click();
-      await lounge.locator('.sg-card[data-key=insurance]').click();
+      await lounge.locator('.sg-card[data-key=insurance]').focus();await page.keyboard.press('Enter');
       await lounge.locator('#room[data-account=insurance]').waitFor();
       await lounge.locator('#draft-body').waitFor();
       assert.equal(await lounge.locator('#draft-body').textContent(),insuranceBody);
       assert.equal(await lounge.locator('#desk').count(),1);
+      assert.equal(await lounge.locator('#room .sg-title').evaluate(n=>n===document.activeElement&&n.checkVisibility()),true,'keyboard entry must focus the visible reader return control');
       assert.equal(await lounge.locator('#draft-body').evaluate(n=>parseFloat(getComputedStyle(n).fontSize)>=16),true);
       assert.equal(await lounge.locator('html').evaluate(n=>n.scrollWidth<=innerWidth+1),true);
       await lounge.locator('#desk-copy').click();
@@ -87,6 +88,7 @@ const server=http.createServer((req,res)=>{
       await lounge.locator('#room .sg-title').click();
       await lounge.locator('.sg-rail').waitFor();
       assert.equal(await lounge.locator('#room').evaluate(n=>n.hidden),true);
+      assert.equal(await lounge.locator('.sg-card[data-key=insurance]').evaluate(n=>n===document.activeElement&&n.checkVisibility()),true,'return must restore focus to the visible account glass');
       assert.equal(await page.locator('#commandHome').isVisible(),false);
       const audit=await page.evaluate(()=>({writes:__rpgQA.writes,syntheticWrites:__rpgQA.threads.simulatedWrites,initializations:__rpgQA.simulatedInitializations,requests:__unifiedQA.requests,sourceUnchanged:JSON.stringify(__rpgQA.threads.events.find(x=>x.id===901))===__unifiedQA.original}));
       assert.deepEqual(audit.writes,[]);assert.deepEqual(audit.syntheticWrites,[]);// The pre-existing host renderers have explicit synthetic `ensure` calls,
