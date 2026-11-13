@@ -50,11 +50,13 @@ test('unfinished FP editorial choices do not hide saved pages or mutate approval
  assert.equal(rows.length,1);assert.match(rows[0].body,/保存された表示全文/);assert.match(rows[0].body,/二枚目の本文/);assert.match(rows[0].body,/保存された問い/);assert.match(rows[0].body,/表示本文は未確定/);assert.match(rows[0].body,/保存された入口案/);assert.doesNotMatch(rows[0].body,/旧本文/);assert.match(rows[0].source.status,/未確定/);assert.equal(JSON.stringify(item),before);
  delete b.window.__fpContentPipeline;assert.equal(b.window.CCCastle.drafts([item]).length,1);
 });
-test('host opens the current lounge with a cache version matching its manifest asset',()=>{
+test('host opens the exact released lounge and parent bytes through versioned cache keys',()=>{
  const b=boot(),src=b.document.getElementById('ccCastleFrame').getAttribute('src'),url=new URL(src,'https://example.com/command-center-98/');
  assert.equal(url.pathname,'/command-center-98/lounge/index.html');assert.ok(url.searchParams.get('v'));
  const manifest=JSON.parse(fs.readFileSync(path.resolve(__dirname,'../../app-assets.json'),'utf8'));
- assert.equal(url.searchParams.get('v'),new URL(manifest.scripts.find(x=>x.startsWith('./castle-parent.js?')),'https://example.com/').searchParams.get('v'));
+ const hash=file=>require('node:crypto').createHash('sha256').update(fs.readFileSync(path.resolve(__dirname,'../../'+file))).digest('hex').slice(0,16);
+ assert.equal(url.searchParams.get('v'),'20261113.'+hash('lounge/index.html')+'-entry');
+ assert.equal(new URL(manifest.scripts.find(x=>x.startsWith('./castle-parent.js?')),'https://example.com/').searchParams.get('v'),'20261113.'+hash('castle-parent.js')+'-parent');
  const shell=fs.readFileSync(path.resolve(__dirname,'../../lounge/index.html'),'utf8');assert.match(shell,/<script type="module" src="app\.js\?v=/);
 });
 test('host paginates all events, performs GET only, and marks interrupted reads incomplete',async()=>{
