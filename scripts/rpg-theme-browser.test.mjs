@@ -195,7 +195,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   // decoded or its finite entrance transitions have painted. Final screenshots
   // await the actual embedded lounge; delayed/loading-gate captures do not.
   const loungeReady=async()=>{
-   await waitFor(`(()=>{const f=document.getElementById('ccCastleFrame'),d=f?.contentDocument;return !!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')&&f&&!f.hidden&&d?.body?.classList.contains('stained-atelier')&&d.querySelectorAll('.sg-card').length===10&&d.querySelector('.account-board[data-state="ready"]')&&((!d.querySelector('.account-board').hidden&&d.querySelector('.sg-rail')?.checkVisibility())||(!d.getElementById('room').hidden&&d.getElementById('draft-body')?.checkVisibility()))})()`);
+   await waitFor(`(()=>{const f=document.getElementById('ccCastleFrame'),d=f?.contentDocument;return !!window.CCRpgWorkspaces&&!document.getElementById('ccStartupStyle')&&f&&!f.hidden&&d?.body?.classList.contains('stained-atelier')&&d.querySelectorAll('.sg-card').length===11&&d.querySelector('.account-board[data-state="ready"]')&&((!d.querySelector('.account-board').hidden&&d.querySelector('.sg-rail')?.checkVisibility())||(!d.getElementById('room').hidden&&d.getElementById('draft-body')?.checkVisibility()))})()`);
    await evaluate(`(async()=>{const c=document.getElementById('ccCastleFrame').contentWindow;await c.document.fonts.ready;await new Promise(resolve=>c.requestAnimationFrame(()=>c.requestAnimationFrame(resolve)));})()`);
   };
   // Physical CDP clicks for the new visible workbench menu. Legacy component
@@ -463,7 +463,7 @@ test('RPG theme all real app routes and dialogs, mobile and desktop',{timeout:90
   await loungeOverview();
   for(const [width,height] of [[360,800],[834,900]]){
    await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
-   await capture(width+'x'+height+'-lounge-home',`(()=>{const c=${L},f=document.getElementById('ccCastleFrame'),cards=[...c.document.querySelectorAll('.sg-card')];return !f.hidden&&f.clientWidth===innerWidth&&c.location.pathname.endsWith('/lounge/index.html')&&cards.length===10&&new Set(cards.map(n=>n.dataset.key)).size===10&&cards.every(n=>!n.disabled&&n.querySelector('svg'))&&c.document.documentElement.scrollWidth<=c.innerWidth+1})()`);
+   await capture(width+'x'+height+'-lounge-home',`(()=>{const c=${L},f=document.getElementById('ccCastleFrame'),cards=[...c.document.querySelectorAll('.sg-card')];return !f.hidden&&f.clientWidth===innerWidth&&c.location.pathname.endsWith('/lounge/index.html')&&cards.length===11&&new Set(cards.map(n=>n.dataset.key)).size===11&&cards.some(n=>n.dataset.key==='girls-channel')&&cards.every(n=>!n.disabled&&n.querySelector('svg'))&&c.document.documentElement.scrollWidth<=c.innerWidth+1})()`);
    await loungeClick('.sg-order-trigger');await loungeClick('.sg-card[data-key="insurance"]');
    await capture(width+'x'+height+'-stained-reorder-does-not-open',`${L}.document.getElementById('room').hidden&&${L}.document.querySelector('.sg-order-done').checkVisibility()`);
    await loungeClick('.sg-order-done');
