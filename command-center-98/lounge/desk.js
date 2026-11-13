@@ -78,6 +78,7 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
   $('desk-status').textContent=message||'';
   $('desk-status-label').textContent=busy?'保存原稿を読み込み中…':complete?'保存原稿を読込済み':connected?'保存原稿の状態':'本体との接続';
   $('desk-refresh').disabled=busy;
+  if(place&&!active)$('desk-empty').textContent=emptyText();
   board.render({message,loading:busy,complete});
   if(/失敗|未確認|できません|エラー/.test(message||''))$('desk-status').closest('details').open=true;
  }
@@ -119,10 +120,11 @@ export function createDesk({onHome,onPause,onResume,onSettings,onFeedback=()=>{}
  }
  function emptyText(){
   if(!embedded&&!connected)return '本体から開くと、保存原稿と仕入れ管理につながります。';
-  if(query||filter!=='all')return 'この条件に合う原稿はありません。';
-  if(loading)return '保存先から原稿を読み込んでいます。先に本体の機能を開くこともできます。';
+  if(loading)return '保存先から原稿を読み込んでいます。読込完了までお待ちください。';
+  if(sourceIssue||!complete||!recordsAccepted)return (query||filter!=='all'?'取得済みの範囲では、この条件に合う原稿は表示されていません。':'取得済みの範囲では、この持ち場の原稿は表示されていません。')+'読取が完了していないため、原稿なしとは確定できません。「更新」で再試行できます。';
+  if(query||filter!=='all')return '読取済みの原稿に、この条件に合うものはありません。';
   if(place==='shiire')return '購入・在庫・売却は、上のボタンから管理できます。';
-  return complete?'この持ち場に表示できる保存原稿はありません。上のボタンから本体も確認できます。':'保存原稿の読取状況を確認してください。「更新」で再試行できます。';
+  return '読取が完了しました。この持ち場に表示できる保存原稿はありません。上のボタンから本体も確認できます。';
  }
  function renderReader({restore=false}={}){
   emitLiving();

@@ -1,6 +1,6 @@
 /* The established application boots independently. Spatial presentation is an
    optional enhancement: a failed asset/module never strands saved manuscripts. */
-import * as application from './app.js?v=20261113.1-owners';
+import * as application from './app.js?v=20261113.7-read-state';
 const board=application.getAccountBoard();let scene,desk;
 try{
  const styles=getComputedStyle(document.body);

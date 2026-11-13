@@ -53,7 +53,8 @@
       const response=await fetch(X.api+'?history='+encodeURIComponent(id),{cache:'no-store',headers:authHeaders()});
       if(response.status===401){authExpired();throw new Error('認証期限切れ')}
       const data=await response.json();if(!response.ok||!data.ok)throw new Error(data.error||('HTTP '+response.status));
-      const events=(data.history||[]).filter(event=>event.platform===platform);
+      if(!Array.isArray(data.history))throw new Error('履歴の取得結果を確認できませんでした');
+      const events=data.history.filter(event=>event.platform===platform);
       const item=X.state.items.find(value=>value.id===id);
       const total=X.copyMeta(item,platform).count||events.length;
       panel.innerHTML=events.length?events.map((event,index)=>{
@@ -61,7 +62,7 @@
         return'<details class="x-copy-entry"><summary><b>'+h(nth)+'回目</b><span>'+h(X.copyDate(event.createdAt))+'</span><span>'+h(stageLabels[event.relativeStage]||'通常')+'</span></summary><pre>'+h(event.textSnapshot||'')+'</pre></details>';
       }).join(''):'<div class="x-copy-empty">履歴はありません。</div>';
       panel.dataset.loaded='true';panel.hidden=false;button.textContent='履歴を閉じる';button.setAttribute('aria-expanded','true');
-    }catch(error){toast(error.message||'履歴を読み込めませんでした','bad');button.textContent='履歴を見る'}
+    }catch(error){panel.textContent='履歴は未確認です。再読込してください。';panel.hidden=false;button.setAttribute('aria-expanded','true');toast(error.message||'履歴を読み込めませんでした','bad');button.textContent='履歴を再読込'}
     finally{button.disabled=false}
   };
   X.eventId=()=>crypto.randomUUID?crypto.randomUUID():'10000000-1000-4000-8000-100000000000'.replace(/[018]/g,char=>(Number(char)^crypto.getRandomValues(new Uint8Array(1))[0]&15>>Number(char)/4).toString(16));
@@ -155,7 +156,7 @@
   };
   const loadWithWorkflow=X.load;
   X.load=async()=>{
-    await loadWithWorkflow();
+    if(await loadWithWorkflow()===false)return;
     if(!X.state.items.some(item=>viewStatus(item)===X.state.tab)){
       X.state.tab=['candidate','draft','approved','inbox','expired','posted','rejected'].find(key=>X.state.items.some(item=>viewStatus(item)===key))||'candidate';
       X.render();

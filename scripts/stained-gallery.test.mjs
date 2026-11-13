@@ -80,3 +80,22 @@ test('reader account switches expose the current heading without a stale accessi
   assert.equal(heading.getAttribute('aria-labelledby'),null,'no external label overrides current heading text');
  }
 });
+
+test('stained reader retains favorite meaning and leaves pin state labels to its owner',t=>{
+ const h=setup(t),d=h.w.document,pin=d.getElementById('desk-pin');
+ assert.equal(d.querySelector('[data-desk-filter="pin"]').textContent,'お気に入り');
+ pin.setAttribute('aria-pressed','true');pin.setAttribute('aria-label','お気に入りを解除');h.render();
+ assert.equal(pin.getAttribute('aria-pressed'),'true');assert.equal(pin.getAttribute('aria-label'),'お気に入りを解除');
+ const css=read('stained-atelier.css');
+ assert.match(css,/#desk-pin\{display:inline-flex[^}]*min-width:44px;min-height:44px/);
+ assert.match(css,/#desk-refresh\{display:inline-flex[^}]*min-width:44px;min-height:44px/);
+ assert.doesNotMatch(css,/#desk-pin\{display:none/);assert.doesNotMatch(css,/#desk-refresh\{display:none/);
+});
+
+test('reader filters and both S-kun link locations keep 44px targets with bounded widths',()=>{
+ const css=read('stained-atelier.css');
+ assert.match(css,/\.desk-filters button\{[^}]*min-height:44px!important;min-width:44px/);
+ assert.match(css,/#desk \.desk-skun-link\{[^}]*min-height:44px;min-width:44px;max-width:100%/);
+ assert.match(css,/#draft-meta \.desk-skun-link\{[^}]*max-width:calc\(100% - 10px\);min-height:44px/);
+ assert.match(css,/grid-template-rows:minmax\(44px,auto\) 1fr/);
+});

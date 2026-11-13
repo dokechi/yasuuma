@@ -1,5 +1,5 @@
 /* Presentation only. The existing desk owns data, selection, editing and copying. */
-import * as application from './app.js?v=20261113.1-owners';
+import * as application from './app.js?v=20261113.7-read-state';
 import {createGlassArt as art} from './stained-art.js?v=20261112.2-skun';
 import {glassSlots,glassFor} from './stained-model.js?v=20261112.2-skun';
 import {installGalleryOrder} from './stained-order.js?v=20261113.4-keyboard';
@@ -260,8 +260,8 @@ doc.addEventListener('cc:paper-render',schedule);
 // Retain manuscript editor and its existing server-backed 「バズった」 action.
 // Keep old read-completion semantics explicit instead of relabelling them as posting.
 doc.getElementById('desk-done').textContent='読了にする';
-doc.querySelector('[data-desk-filter="pin"]').textContent='保存済み';
-doc.getElementById('desk-pin').setAttribute('aria-label','この原稿を保存済みにする');
+doc.querySelector('[data-desk-filter="pin"]').textContent='お気に入り';
+// Pin state and action labels remain owned by desk.js; do not relabel saved drafts.
 doc.querySelectorAll('a[href="index.html?presentation=book"]').forEach(a=>a.href='book.html');
 select(selected);paint();
 Object.defineProperty(window,'__stainedGallery',{value:{snapshot:()=>({selected,slots:reorder.order().map(key=>{const s=glassFor(key);return {key:s.key,label:s.label,pending:!!s.pending};}),room:room.hidden?null:room.dataset.account,scrollLeft:rail.scrollLeft})}});

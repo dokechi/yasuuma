@@ -78,6 +78,32 @@ const server=http.createServer((req,res)=>{
       assert.equal(await lounge.locator('#room .sg-title').evaluate(n=>n===document.activeElement&&n.checkVisibility()),true,'keyboard entry must focus the visible reader return control');
       assert.equal(await lounge.locator('#draft-body').evaluate(n=>parseFloat(getComputedStyle(n).fontSize)>=16),true);
       assert.equal(await lounge.locator('html').evaluate(n=>n.scrollWidth<=innerWidth+1),true);
+      for(const filter of await lounge.locator('[data-desk-filter]').all())assert.equal(await filter.evaluate(n=>{const r=n.getBoundingClientRect();return n.checkVisibility()&&r.width>=44&&r.height>=44;}),true,'all manuscript filters are at least 44px');
+      // Isolated link geometry samples use the exact S-kun production classes in
+      // both owner locations, without adding external requests or source records.
+      await lounge.locator('#desk').evaluate(d=>{
+        for(const id of ['desk-routes','draft-meta']){const a=document.createElement('a');a.className='desk-skun-link';a.dataset.targetSizeFixture='true';a.href='#';a.textContent=id==='desk-routes'?'過去投稿スプシ ↗':'ガルちゃん元コメント ＋12345票 ↗';d.querySelector('#'+id).append(a);}
+      });
+      for(const link of await lounge.locator('[data-target-size-fixture]').all())assert.equal(await link.evaluate(n=>{const r=n.getBoundingClientRect();return n.checkVisibility()&&r.width>=44&&r.height>=44&&r.left>=0&&r.right<=innerWidth+1;}),true,'S-kun route and reference link samples fit and are at least 44px');
+      assert.equal(await lounge.locator('html').evaluate(n=>n.scrollWidth<=innerWidth+1),true,'reference links do not overflow narrow readers');
+      await lounge.locator('[data-target-size-fixture]').evaluateAll(nodes=>nodes.forEach(n=>n.remove()));
+      // Reader-owned favorite data must remain operable, not just filterable.
+      const pin=lounge.locator('#desk-pin'),refresh=lounge.locator('#desk-refresh');
+      for(const control of [pin,refresh])assert.equal(await control.evaluate(n=>{const r=n.getBoundingClientRect();return n.checkVisibility()&&r.width>=44&&r.height>=44;}),true,'reader action is visible and at least 44px');
+      assert.equal(await lounge.locator('[data-desk-filter=pin]').textContent(),'お気に入り');
+      assert.equal(await pin.getAttribute('aria-pressed'),'false');
+      assert.equal(await pin.getAttribute('aria-label'),'お気に入りに保存');
+      await pin.click();assert.equal(await pin.getAttribute('aria-pressed'),'true');
+      assert.equal(await pin.getAttribute('aria-label'),'お気に入りを解除');
+      await lounge.locator('[data-desk-filter=pin]').click();
+      assert.equal(await lounge.locator('#draft-body').textContent(),insuranceBody);
+      await lounge.locator('[data-desk-filter=all]').click();await pin.click();
+      assert.equal(await pin.getAttribute('aria-pressed'),'false');
+      // Direct refresh remains available even when the narrow header hides its shortcut.
+      await refresh.click();await refresh.waitFor({state:'visible'});
+      await page.waitForFunction(()=>{const d=document.querySelector('#ccCastleFrame')?.contentDocument;return d&&!d.querySelector('#desk-refresh').disabled;});
+      assert.equal(await lounge.locator('#draft-body').textContent(),insuranceBody);
+      assert.equal(await lounge.locator('html').evaluate(n=>n.scrollWidth<=innerWidth+1),true,'favorite and refresh controls do not overflow narrow readers');
       await lounge.locator('#desk-copy').click();
       await lounge.locator('#desk-operation').getByText('本文をコピーしました。',{exact:true}).waitFor();
       assert.equal((await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n'),insuranceBody);
