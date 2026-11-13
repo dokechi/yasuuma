@@ -1,3 +1,4 @@
+// Retained book compatibility fixture; current default is covered by unified-castle-browser.cjs.
 // Real production loader and current DEFAULT storybook, with synthetic API responses.
 // Retained classic-castle visuals are exercised by their direct-entry fixtures.
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
@@ -36,6 +37,7 @@ const server=http.createServer((req,res)=>{
   if(!file.startsWith(root+path.sep))return res.writeHead(403).end();
   fs.readFile(file,(error,bytes)=>{
     if(error)return res.writeHead(404).end();let content=bytes;
+    if(relative==='/command-center-98/castle-parent.js')content=bytes.toString().replace('./lounge/index.html?', './lounge/book.html?');
     if(relative==='/command-center-98/app.html')content=bytes.toString().replace('<head>','<head><script>localStorage.setItem("cc-castle-mode","classic");</script><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script><script>'+fixtureScript+'</script>');
     if(relative==='/scripts/ui-fixtures.js')content=bytes.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
     res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'}).end(content);
@@ -62,15 +64,16 @@ const server=http.createServer((req,res)=>{
   }
   await lounge.locator('[data-story-chapter=insurance]').click();await lounge.locator('.story-art-host .story-actor-image').evaluate(image=>image.decode());
   await page.frames().find(f=>f.url().includes('/lounge/')).evaluate(async()=>{await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
-  assert.equal(await lounge.locator('[data-story-destination]').count(),8,'all eight original destinations remain represented');assert.equal(await lounge.locator('[data-story-destination]:visible').count(),6,'the main book shows the five active chapters');
+  assert.equal(await lounge.locator('[data-story-destination]').count(),9,'all retained illustrated destinations remain represented');assert.equal(await lounge.locator('[data-story-destination]:visible').count(),8,'the main book shows its active illustrated chapters');
   const preparing=lounge.locator('.story-preparing');assert.equal(await preparing.evaluate(node=>node.open),false);await preparing.locator('summary').click();
-  const pending=await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(node=>({name:node.getAttribute('aria-label'),disabled:node.disabled,height:node.getBoundingClientRect().height})));assert.deepEqual(pending.map(node=>node.name),['追加アカウント6、未設定','予備、未設定']);assert.ok(pending.every(node=>node.disabled&&node.height>=44));
+  const pending=await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.map(node=>({name:node.getAttribute('aria-label'),disabled:node.disabled,height:node.getBoundingClientRect().height})));assert.deepEqual(pending.map(node=>node.name),['予備、未設定']);assert.ok(pending.every(node=>node.disabled&&node.height>=44));
   const selectedBefore=await lounge.locator('.storybook').getAttribute('data-story-room');await preparing.locator('[data-story-destination]').evaluateAll(nodes=>nodes.forEach(node=>node.click()));
   assert.equal(await lounge.locator('.storybook').getAttribute('data-story-room'),selectedBefore);assert.equal(await lounge.locator('.account-board').evaluate(node=>node.hidden),false);assert.equal(await lounge.locator('#room').evaluate(node=>node.hidden),true);
-  await preparing.locator('summary').click();assert.equal(await lounge.locator('[data-story-destination]:visible').count(),6);
+  await preparing.locator('summary').click();assert.equal(await lounge.locator('[data-story-destination]:visible').count(),8);
   await page.screenshot({path:path.join(out,`${width}-${height}-host-home.png`)});
-  const frameRect=await page.locator('#ccCastleFrame').boundingBox(),barRect=await page.locator('#requestProgressShortcut').boundingBox();
-  assert.ok(frameRect.y>=barRect.y+barRect.height);assert.ok(Math.abs(frameRect.y-52)<=1,'the actual host reserves its 52px request rail');assert.ok((await page.locator('#requestProgressOpen').boundingBox()).height>=44);
+  const frameRect=await page.locator('#ccCastleFrame').boundingBox();
+  assert.equal(await page.locator('#requestProgressShortcut').isHidden(),true,'gallery host hides the former request rail');
+  assert.ok(Math.abs(frameRect.y)<=1&&Math.abs(frameRect.height-height)<=1,'the gallery host reserves the full viewport without an empty rail');
   const publishingResults=[];
   for(const key of publishing){
    await lounge.locator('[data-story-instant='+key+']').click();
@@ -112,15 +115,15 @@ const server=http.createServer((req,res)=>{
   await lounge.locator('[data-story-instant=sourcing]').click();await page.locator('body.lounge-workspace #loungeWorkspaceHeader:not([hidden])').waitFor();
   assert.equal(await page.locator('#ccCastleFrame').isVisible(),false);assert.equal(await page.locator('#mainWindow').getAttribute('data-cc-view'),'sourcing');
   await page.waitForFunction(()=>document.querySelector('#sourcingHub'));await page.evaluate(()=>document.fonts.ready);
-  // Native and chapter share the original layered SVG scene, not a new bitmap
-  // wallpaper. The phone work page deliberately hides this decoration so the
-  // real ledger starts in the first fold; its attached source must still decode.
+  // The retained chapter SVG remains attached and decodable, but the current
+  // stained sourcing workspace deliberately suppresses this legacy decoration
+  // on every viewport. It must not compete with the native ledger.
   const nativeArt=page.locator('.story-workspace-art .story-paper-art[data-story-room=sourcing]');await nativeArt.waitFor({state:'attached'});
   const nativeActor=nativeArt.locator('.story-actor-image');await nativeActor.waitFor({state:'attached'});await nativeActor.evaluate(image=>image.decode());
   assert.equal(await nativeArt.getAttribute('aria-hidden'),'true');assert.ok(await nativeArt.locator('svg').count());
   assert.match(await nativeActor.getAttribute('src'),/storybook-sourcing-actor-v1\.webp/);assert.equal(await nativeActor.evaluate(image=>image.complete&&image.naturalWidth>0),true);
-  assert.equal(await nativeArt.isVisible(),width>600,'native illustration is visible on Fold/desktop and intentionally hidden on phones');
-  assert.equal(await nativeActor.isVisible(),width>600,'actor follows the native illustration visibility contract');
+  assert.equal(await nativeArt.isVisible(),false,'stained sourcing suppresses the retained notebook illustration on every viewport');
+  assert.equal(await nativeActor.isVisible(),false,'retained actor is hidden with its native illustration');
   // The existing native route opens purchases, not the candidate/hold tab.
   // Measure its exact seeded purchase record without forcing a different view.
   await page.locator('#sourcingBody .purchase-product > b').filter({hasText:/^検証用購入商品$/}).waitFor();
@@ -132,16 +135,23 @@ const server=http.createServer((req,res)=>{
    return {stageVisible:!!stage?.checkVisibility(),decorative:stage?.inert&&stage?.getAttribute('aria-hidden')==='true',selectedTabs:selected.map(n=>n.dataset.sourcingSub),tab:{key:tab?.dataset.sourcingSub,rect:rect?.toJSON(),hit:hit===tab||!!tab?.contains(hit)},information,viewport:innerHeight,scrollY};
   });
   assert.equal(initialWork.decorative,true,'the native illustration remains inert and out of the accessibility tree');
-  assert.equal(initialWork.stageVisible,width>600);
+  assert.equal(initialWork.stageVisible,false,'retained native decoration never covers the sourcing workspace');
   assert.deepEqual(initialWork.selectedTabs,['purchases'],'instant entry keeps the canonical selected native purchase ledger');
   assert.ok(initialWork.tab.key&&initialWork.tab.rect?.width>=44&&initialWork.tab.rect.height>=44,'real native sourcing tab remains a 44px action: '+JSON.stringify(initialWork));
-  if(width<=600)assert.ok(initialWork.scrollY===0&&initialWork.tab.rect.top>=0&&initialWork.tab.rect.bottom<=initialWork.viewport&&initialWork.tab.rect.left>=0&&initialWork.tab.rect.right<=width&&initialWork.tab.hit&&initialWork.information.some(n=>n.rect.height>0&&n.rect.top>=0&&n.rect.bottom<=initialWork.viewport&&n.rect.left>=0&&n.rect.right<=width),'phone instant entry must expose the full unobstructed purchase tab and exact record-derived 1-order/2-unit summary before scrolling: '+JSON.stringify(initialWork));
+  if(width<=600){
+   assert.ok(initialWork.scrollY===0&&initialWork.tab.rect.top>=0&&initialWork.tab.rect.bottom<=initialWork.viewport&&initialWork.tab.rect.left>=0&&initialWork.tab.rect.right<=width&&initialWork.tab.hit,'phone entry exposes the full unobstructed 44px purchase tab: '+JSON.stringify(initialWork));
+   const summary=page.locator('#ledgerProfitSummary .purchase-paid-line > span').filter({hasText:/^1注文 · 2点$/});
+   await summary.scrollIntoViewIfNeeded();
+   const reachableSummary=await summary.evaluate(n=>{const r=n.getBoundingClientRect(),hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return{text:n.textContent.trim(),visible:n.checkVisibility(),inside:r.width>0&&r.height>0&&r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth,uncovered:hit===n||n.contains(hit)};});
+   assert.deepEqual(reachableSummary,{text:'1注文 · 2点',visible:true,inside:true,uncovered:true},'exact record-derived summary remains reachable with ordinary scrolling');
+   await page.evaluate(()=>{scrollTo(0,0);return new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
+  }
   const geometry=await page.locator('#loungeWorkspaceHeader').evaluate(n=>({overflow:document.documentElement.scrollWidth>innerWidth,buttons:[...n.querySelectorAll('button')].map(b=>({text:b.textContent,height:b.getBoundingClientRect().height,left:b.getBoundingClientRect().left,right:b.getBoundingClientRect().right})),background:getComputedStyle(document.body).backgroundImage,sceneCount:document.querySelectorAll('.story-workspace-art .story-paper-art[data-story-room=sourcing]').length,actor:document.querySelector('.story-workspace-art .story-actor-image')?.src}));
   assert.equal(geometry.overflow,false);
   // All configured chapters remain accessible. Primary and auxiliary controls may
   // occupy their deliberate horizontal strip, but each focused real action
   // must become fully visible/hit-testable without scrolling the document.
-  const primary=page.locator('#loungeWorkspaceHeader [data-working-chapter]');assert.equal(await primary.count(),6);
+  const primary=page.locator('#loungeWorkspaceHeader [data-working-chapter]');assert.equal(await primary.count(),10);
   assert.ok(await primary.evaluateAll(nodes=>nodes.every(n=>{const r=n.getBoundingClientRect();return r.width>=44&&r.height>=44;})));
   const headerScroll=await page.evaluate(()=>({x:scrollX,y:scrollY})),reachable=[];
   for(const action of await page.locator('#loungeWorkspaceHeader button').all()){

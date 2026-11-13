@@ -17,11 +17,11 @@ async function openStorybookArchive(page,origin,{check}={}){
   await page.waitForFunction(()=>window.CCCastle?.unified&&!document.getElementById('ccCastleFrame').hidden);
   const f=page.frameLocator('#ccCastleFrame');
   await openStorybookOverview(f);await f.locator('.storybook[data-ready=true]').waitFor({state:'visible'});
-  const frame=page.frames().find(value=>new URL(value.url()).pathname==='/command-center-98/lounge/index.html');
-  verify('compatibility entry begins at the actual default storybook index',!!frame&&!new URL(frame.url()).searchParams.has('experience'),frame?.url());
+  const frame=page.frames().find(value=>new URL(value.url()).pathname==='/command-center-98/lounge/book.html');
+  verify('compatibility entry begins at the explicit retained storybook entry',!!frame&&!new URL(frame.url()).searchParams.has('experience'),frame?.url());
   await frame.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   const noCourt=await frame.evaluate(()=>!window.__arrivalCourt&&!document.querySelector('.arrival-court'));
-  verify('new default loads no archived 3D entry, renderer, model or vendor before explicit archive selection',noCourt&&requests.length===0,[...requests]);
+  verify('retained book loads no archived 3D entry, renderer, model or vendor before explicit archive selection',noCourt&&requests.length===0,[...requests]);
   element=await page.locator('#ccCastleFrame').elementHandle();
   const settings=f.locator('.story-utilities').getByRole('button',{name:'設定',exact:true});
   verify('archive is reached from a visible real settings control',await settings.isVisible());
@@ -29,7 +29,7 @@ async function openStorybookArchive(page,origin,{check}={}){
   const link=f.locator('#settings').getByRole('link',{name:'以前の城の表示を開く',exact:true});
   const href=await link.getAttribute('href'),destination=href&&new URL(href,frame.url());
   verify('visible archive link names the same-origin retained display',await link.isVisible()&&destination?.origin===origin&&destination.pathname==='/command-center-98/lounge/archive.html',destination?.href);
-  verify('opening default settings still does not prepare archived 3D graphics',requests.length===0&&await frame.evaluate(()=>!window.__arrivalCourt&&!document.querySelector('.arrival-court')),[...requests]);
+  verify('opening book settings still does not prepare archived 3D graphics',requests.length===0&&await frame.evaluate(()=>!window.__arrivalCourt&&!document.querySelector('.arrival-court')),[...requests]);
   // Stop the default-only observer immediately before the explicit user action.
   // The archived page may now legitimately prepare its own tiny optional entry.
   page.off('request',observe);

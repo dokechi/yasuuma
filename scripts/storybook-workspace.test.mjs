@@ -44,7 +44,7 @@ test('explicit archive and removal of storybook-host never adjust native strips 
 
 test('working native chapter bookmarks preserve sourcing no-op and send strict chapter intent before resume',async()=>{
  const e=env(),frame=e.d.createElement('iframe');frame.id='ccCastleFrame';e.d.body.append(frame);frame.contentDocument.body.className='storybook-atelier storybook-workbench';const calls=[];frame.contentWindow.postMessage=(message,origin)=>calls.push({message,origin});e.w.CCCastle={categories:()=>publishingAccounts.filter(a=>!a.pending).map(a=>({key:a.key,label:a.name})),show:()=>calls.push({show:true})};e.run();e.show();await tick();
- const tabs=[...e.header.querySelectorAll('.workbook-native-chapters button')];assert.deepEqual(tabs.map(b=>b.dataset.workingChapter),['insurance','otoku','rakuten','lottery','tanaka','sourcing']);tabs[5].click();assert.deepEqual(calls,[]);tabs[3].click();assert.deepEqual(calls,[{message:{channel:'cc-castle-v1',type:'working-chapter',key:'lottery'},origin:'https://example.test'},{show:true}]);assert.equal(e.d.querySelector('input').value,'unchanged');
+ const tabs=[...e.header.querySelectorAll('.workbook-native-chapters button')];assert.deepEqual(tabs.map(b=>b.dataset.workingChapter),[...publishingAccounts.filter(a=>!a.pending).map(a=>a.key),'sourcing']);tabs.find(b=>b.dataset.workingChapter==='sourcing').click();assert.deepEqual(calls,[]);tabs[3].click();assert.deepEqual(calls,[{message:{channel:'cc-castle-v1',type:'working-chapter',key:'lottery'},origin:'https://example.test'},{show:true}]);assert.equal(e.d.querySelector('input').value,'unchanged');
  e.w.dispatchEvent(new e.w.Event('pagehide'));assert.equal(e.header.querySelector('.workbook-native-chapters'),null);e.close();
 });
 

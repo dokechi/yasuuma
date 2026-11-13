@@ -1,3 +1,4 @@
+// Retained book compatibility fixture; current default is covered by unified-castle-browser.cjs.
 /* Actual production host + isolated synthetic APIs. This fixture does not use
    live credentials, approve posts, or write records. Normal-motion coverage is
    deliberately separate from the existing reduced-motion spatial regression. */
@@ -44,6 +45,7 @@ const server = http.createServer((req,res) => {
   fs.readFile(file,(error,bytes) => {
     if (error) return res.writeHead(404).end();
     let content=bytes;
+    if(relative==='/command-center-98/castle-parent.js')content=bytes.toString().replace('./lounge/index.html?', './lounge/book.html?');
     if (relative==='/command-center-98/app.html') content=bytes.toString().replace('<head>',
       '<head><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script><script>'+fixtureScript+'</script>');
     if (relative==='/scripts/ui-fixtures.js') content=bytes.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
@@ -185,8 +187,8 @@ function installProbe() {
       const initialAudio=await cf.evaluate(()=>({contexts:__immersiveQA.contexts,starts:__immersiveQA.audio.length}));
       check('sound is explicitly off with no startup audio',await f.locator('.castle-sound-toggle').getAttribute('aria-pressed')==='false'&&initialAudio.contexts===0&&initialAudio.starts===0,initialAudio);
       check('eight destinations and five immediate routes remain',await f.locator('.castle-room-hotspot').count()===8&&await f.locator('.castle-room-hotspot:disabled').count()===3&&await f.locator('.castle-quick-open').count()===5);
-      const rail=await page.locator('#requestProgressShortcut').boundingBox(),frame=await page.locator('#ccCastleFrame').boundingBox();
-      check('parent request rail never overlaps the room',frame.y>=rail.y+rail.height&&await page.locator('#requestProgressOpen').evaluate(n=>n.getBoundingClientRect().height)>=44,{frame,rail});
+      const frame=await page.locator('#ccCastleFrame').boundingBox();
+      check('full viewport room has no obsolete request rail overlay',await page.locator('#requestProgressShortcut').isHidden()&&Math.abs(frame.y)<=1&&Math.abs(frame.height-height)<=1,{frame});
       await screenshot('home');
       const foreignCount=await page.evaluate(()=>__immersiveQA.journeys.length);
       await page.evaluate(()=>window.postMessage({channel:'cc-castle-v1',type:'journey',spec:{room:'insurance',direction:'in',origin:{left:0,top:0,width:300,height:300,stageLeft:0,stageTop:0,scale:1}}},location.origin));

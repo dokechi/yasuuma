@@ -1,5 +1,5 @@
 import {isPostManuscript,manuscriptLabel} from './accounts.js?v=20261112.2-skun';
-import {createHallTools} from './hall-tools.js?v=20261102.1-tanaka';
+import {createHallTools} from './hall-tools.js?v=20261113.1-owners';
 import {placeNames} from './desk-model.js?v=20261112.2-skun';
 import {roomForPlace,revision,seenRevision,unreadGroups,postingSteps,postingReadiness,postingText,currentPosted,savedLinks} from './qol-model.js?v=20261112.2-skun';
 import {isLegacyPublishingDraft,postingAssets} from './notebook.js?v=20261112.2-skun';

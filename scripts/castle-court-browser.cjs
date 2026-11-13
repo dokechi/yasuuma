@@ -1,3 +1,4 @@
+// Optional retained court fixture; current default is covered separately.
 /* Owned synthetic CI only. No production credentials, posts, or remote traffic.
  * Real app-v130 -> default storybook -> visible Settings/archive -> explicit lazy court entry.
  * Only synthetic records are injected; the host/iframe route is not substituted.
@@ -39,6 +40,7 @@ const server=http.createServer((req,res)=>{
  if(!file.startsWith(root+path.sep))return res.writeHead(403).end();
  fs.readFile(file,(error,bytes)=>{
   if(error)return res.writeHead(404).end();let content=bytes;
+  if(relative==='/command-center-98/castle-parent.js')content=bytes.toString().replace('./lounge/index.html?', './lounge/book.html?');
   if(relative==='/command-center-98/app.html')content=bytes.toString().replace('<head>','<head><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script><script>'+fixtureScript+'</script>');
   if(relative==='/scripts/ui-fixtures.js')content=bytes.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
   res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store'}).end(content);
@@ -175,8 +177,8 @@ async function normalCase(browser,origin,width,height){
   check(result,'canvas contains visibly varied rendered geometry, not a blank surface',statistics.colors>=24&&statistics.deviation>=8&&statistics.opaqueFraction>.8,statistics);
   await capture(ctx,'arrival');
   await overviewContrast(ctx);await targetsUncovered(ctx,'overview');
-  const host=await page.locator('#ccCastleFrame').boundingBox(),rail=await page.locator('#requestProgressShortcut').boundingBox();
-  check(result,'actual host reserves its request rail',host.y>=rail.y+rail.height-.5,{host,rail});
+  const host=await page.locator('#ccCastleFrame').boundingBox();
+  check(result,'actual gallery host uses the full viewport without the retired request rail',await page.locator('#requestProgressShortcut').isHidden()&&Math.abs(host.y)<=.5&&Math.abs(host.height-height)<=.5,{host});
   const controls=await f.locator('[data-court-room], [data-court-open]').evaluateAll(nodes=>nodes.filter(node=>!node.disabled&&node.getBoundingClientRect().width>0).map(node=>{const r=node.getBoundingClientRect();return {key:node.dataset.courtRoom||node.dataset.courtOpen,width:r.width,height:r.height,left:r.left,right:r.right,top:r.top,bottom:r.bottom,viewport:[innerWidth,innerHeight]};}));
   check(result,'visible court destinations have usable bounded touch targets',controls.length>=5&&controls.every(control=>control.width>=44&&control.height>=44&&control.left>=-.5&&control.right<=control.viewport[0]+.5&&control.top>=-.5&&control.bottom<=control.viewport[1]+.5),controls);
   const alignment=await frame.evaluate(()=>{const state=window.__arrivalCourt.snapshot();return state.projection.map(point=>{const button=document.querySelector('[data-court-room="'+point.key+'"]'),r=button.getBoundingClientRect(),court=document.querySelector('.arrival-court').getBoundingClientRect();return {key:point.key,visible:!button.hidden,delta:Math.max(Math.abs(r.left+r.width/2-court.left-point.x),Math.abs(r.top+r.height/2-court.top-point.y))};});});

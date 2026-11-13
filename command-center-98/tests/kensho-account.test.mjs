@@ -7,10 +7,11 @@ import {createNotebook} from '../lounge/notebook.js';
 import {roomForPlace,postingSteps,postingReadiness} from '../lounge/qol-model.js';
 import {placeNames,nativeForDraft} from '../lounge/desk-model.js';
 
-test('Kensho has its own sixth slot, supplied handle and storage task',()=>{
+test('Kensho retains its own unique slot, supplied handle and storage task as accounts grow',()=>{
  const a=publishingAccounts.find(a=>a.key==='kensho');
  assert.deepEqual([a.name,a.handle,a.place,a.taskId],['懸賞小ナス','@nasbi.777','kensho','kensho-threads-v1']);
- assert.equal(publishingAccounts.filter(a=>!a.pending).length,6);
+ assert.equal(publishingAccounts.filter(a=>a.key==='kensho').length,1);
+ assert.equal(a.pending===true,false);
  assert.equal(publishingAccounts.some(a=>a.key==='planned-6'),false);
  assert.equal(publishingAccounts.find(a=>a.key==='lottery').taskId,'lottery-threads-v1');
  assert.equal(placeNames.kensho,'懸賞小ナス');

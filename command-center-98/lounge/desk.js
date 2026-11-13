@@ -1,5 +1,5 @@
 import {publishingAccounts,draftsForAccount,copiesForAccount,createAccountBoard,isPostManuscript,manuscriptLabel} from './accounts.js?v=20261112.2-skun';
-import {createConveniences} from './qol.js?v=20261112.2-skun';
+import {createConveniences} from './qol.js?v=20261113.1-owners';
 import {resumeView,postingReadiness} from './qol-model.js?v=20261112.2-skun';
 import {createNotebook,safeLink} from './notebook.js?v=20261112.2-skun';
 import {placeForRoom,placeNames,productionURL,visibleGroups,holdsActiveText,nativeForDraft,trustedMessage} from './desk-model.js?v=20261112.2-skun';

@@ -1,5 +1,5 @@
 {
-  "shell": "./app.html?v=20261022.25-profit-actions",
+  "shell": "./app.html?v=20261113.1-ledger-availability",
   "styles": [
     "./v140-reddit.css?v=175",
     "./v141-reddit-mobile.css?v=175",
@@ -28,7 +28,7 @@
     "./overseas-profit-readiness.css?v=20261023.1-profit-route",
     "./storybook-presentation.css?v=20261101.9-workbook",
     "./storybook-workspace.css?v=20261109.5-full-height",
-    "./stained-sourcing.css?v=20261110.12-reference-light"
+    "./stained-sourcing.css?v=20261113.2-layout"
   ],
   "scripts": [
     "./sourcing-atomic-save.js?v=20261011.atomic2",
@@ -90,7 +90,7 @@
     "./v230-request-progress.js?v=20261019.shortcut1",
     "./ledger-profit-model.js?v=20261022.21-purchase-profit",
     "./purchase-profit-actions.js?v=20261022.25-profit-actions",
-    "./v231-trade-details.js?v=20261022.25-profit-actions",
+    "./v231-trade-details.js?v=20261113.2-ledger-availability",
     "./fp-finished-images.js?v=20261008.4-state",
     "./threads-archive.js?v=20261018.41-archive",
     "./sourcing-archive.js?v=20261018.43-empty",
@@ -102,7 +102,7 @@
     "./rpg-daily-store.js?v=20261015.1",
     "./rpg-daily-desk.js?v=20261017.33-unified",
     "./castle-parent.js?v=20261112.3-skun",
-    "./castle-journey-host.js?v=20261101.9-workbook",
+    "./castle-journey-host.js?v=20261113.2-layout",
     "./lounge-workspace.js?v=20261021.8-hall",
     "./storybook-workspace-art.js?v=20261102.3-paper",
     "./stained-sourcing.js?v=20261110.12-reference-light"

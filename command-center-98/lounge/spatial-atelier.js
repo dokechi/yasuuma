@@ -1,11 +1,11 @@
 /* The established application boots independently. Spatial presentation is an
    optional enhancement: a failed asset/module never strands saved manuscripts. */
-import * as application from './app.js?v=20261102.2-paper';
+import * as application from './app.js?v=20261113.1-owners';
 const board=application.getAccountBoard();let scene,desk;
 try{
  const styles=getComputedStyle(document.body);
  if(styles.getPropertyValue('--spatial-castle-ready').trim()!=='1'||styles.getPropertyValue('--spatial-reader-ready').trim()!=='1')throw new Error('Spatial styles unavailable');
- const [{mountCastleScene},{installSpatialDesk}]=await Promise.all([import('./castle-scene.js?v=20261101.9-workbook'),import('./spatial-desk.js?v=20261101.9-workbook')]);
+ const [{mountCastleScene},{installSpatialDesk}]=await Promise.all([import('./castle-scene.js?v=20261113.2-layout'),import('./spatial-desk.js?v=20261113.1-owners')]);
  scene=mountCastleScene({accountBoard:board,castleImage:'assets/castle-silhouette-v1.webp',skyImage:'assets/castle-sky-v1.webp'});
  const roomScenes=Object.fromEntries(['insurance','otoku','rakuten','lottery'].map(key=>[key,{url:`./assets/castle-interior-${key}-v1.webp`,position:'center'}]));
  desk=installSpatialDesk({openRoom:key=>scene.open(key),roomScenes});

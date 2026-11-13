@@ -1,9 +1,10 @@
+// Retained book compatibility UI, not the current stained default.
 /* Deterministic UI QA only: local fixture records, no production API or writes. */
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium}=require('playwright-core');
 const {openStorybookOverview,openReaderWork,toggleLivingTools}=require('./storybook-workbench-entry.cjs');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'artifacts/enterprise-atelier');
-const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http://localhost').pathname;if(pathname==='/fixture.html')return res.writeHead(200,{'Content-Type':'text/html'}).end('<style>body{margin:0}iframe{width:100vw;height:100dvh;border:0;display:block}</style><iframe src="/command-center-98/lounge/index.html"></iframe>');const file=path.join(root,pathname);if(!file.startsWith(root+path.sep))return res.writeHead(403).end();fs.readFile(file,(err,data)=>err?res.writeHead(404).end():res.writeHead(200,{'Content-Type':file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/octet-stream'}).end(data));});
+const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http://localhost').pathname;if(pathname==='/fixture.html')return res.writeHead(200,{'Content-Type':'text/html'}).end('<style>body{margin:0}iframe{width:100vw;height:100dvh;border:0;display:block}</style><iframe src="/command-center-98/lounge/book.html"></iframe>');const file=path.join(root,pathname);if(!file.startsWith(root+path.sep))return res.writeHead(403).end();fs.readFile(file,(err,data)=>err?res.writeHead(404).end():res.writeHead(200,{'Content-Type':file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/octet-stream'}).end(data));});
 const rows=['insurance','otoku','rakuten','lottery'].flatMap((account,i)=>Array.from({length:8},(_,j)=>({id:account+j,place:account==='insurance'?'kyun':account,title:['保険を見直す前に、確認したいこと','少しでも安く買うための選び方','暮らしに合う楽天のお得情報','参加前に確かめたい抽選の条件'][i]+' '+(j+1),body:('保存された本文です。アカウントを取り違えず、内容を確認してからコピーできます。\n\n').repeat(8),kind:'投稿本文',checkedAt:'2026-10-30',source:{id:account+j,account},posting:{main:account+'本文'},createdAt:1,updatedAt:10-j})));
 rows.push({...rows[8],id:'otoku-variant',kind:'B案',body:'別案の本文も、そのまま保持します。'});
 rows[8].posting={main:rows[8].body,reply:'条件と出典の補足です。保存した返信も個別にコピーできます。'};
@@ -32,9 +33,9 @@ rows[8].posting={main:rows[8].body,reply:'条件と出典の補足です。保�
   await frame.locator('.story-art-host img').evaluateAll(nodes=>Promise.all(nodes.map(n=>n.decode())));
   await cf.evaluate(()=>document.fonts.ready);await screenshot('home');
   assert.equal(await frame.locator('#app').getAttribute('inert'),'');
-  assert.equal(await frame.locator('[data-story-destination]:disabled').count(),2);
-  assert.equal(await frame.locator('[data-story-destination]').count(),8);
-  assert.equal(await frame.locator('[data-story-instant]').count(),6);
+  assert.equal(await frame.locator('[data-story-destination]:disabled').count(),1);
+  assert.equal(await frame.locator('[data-story-destination]').count(),9);
+  assert.equal(await frame.locator('[data-story-instant]').count(),8);
   const layout=await cf.evaluate(()=>({viewport:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth,
    buttons:[...document.querySelectorAll('.story-utilities button,[data-story-instant],[data-story-chapter]')].filter(n=>n.checkVisibility()).map(n=>({label:n.textContent,height:n.getBoundingClientRect().height,width:n.getBoundingClientRect().width,font:parseFloat(getComputedStyle(n).fontSize)})),
    labels:[...document.querySelectorAll('.story-folio,.story-account-identity,.story-memo')].filter(n=>n.checkVisibility()).map(n=>({text:n.textContent,font:parseFloat(getComputedStyle(n).fontSize)}))}));
@@ -54,7 +55,7 @@ rows[8].posting={main:rows[8].body,reply:'条件と出典の補足です。保�
    }));
   }
   assert.ok(bounds.every(r=>r.name&&r.width>=44&&r.height>=44&&r.inside&&r.hit),JSON.stringify(bounds));
-  assert.equal(await frame.locator('[data-story-destination]:visible').count(),8);
+  assert.equal(await frame.locator('[data-story-destination]:visible').count(),9);
   await frame.locator('.story-preparing summary').click();
   const layers=await cf.evaluate(()=>{
    const box=selector=>document.querySelector(selector).getBoundingClientRect();
@@ -93,7 +94,9 @@ rows[8].posting={main:rows[8].body,reply:'条件と出典の補足です。保�
   assert.equal(await frame.locator('#room-title').textContent(),'楽天犬');
   assert.equal(await frame.locator('#desk-operation').textContent(),'','copy confirmation never follows a different account/draft');
   await returnToBoard();assert.equal(await cf.evaluate(()=>document.activeElement?.dataset.draftId),'rakuten0');
-  assert.ok(await frame.locator('.account-column[data-account=rakuten] .account-draft strong').first().evaluate(n=>{const a=n.getBoundingClientRect(),b=n.closest('.account-drafts').getBoundingClientRect();return a.top>=b.top&&a.top<b.bottom;}),'return exposes selected manuscript title');
+  const returned=await cf.evaluate(()=>{const n=document.querySelector('.account-column[data-account=rakuten] .account-draft strong'),a=n.getBoundingClientRect(),b=n.closest('.account-drafts').getBoundingClientRect();return {title:a.toJSON(),list:b.toJSON(),columnTops:[...document.querySelectorAll('.account-column')].map(c=>c.getBoundingClientRect().top)};});
+  assert.ok(returned.columnTops.every(top=>Math.abs(top-returned.columnTops[0])<1),'all account columns stay on one horizontal row: '+JSON.stringify(returned));
+  assert.ok(returned.title.top>=returned.list.top&&returned.title.top<returned.list.bottom,'return exposes selected manuscript title: '+JSON.stringify(returned));
   await screenshot('list');
   await frame.locator('.account-column[data-account=insurance] .account-drafts').evaluate(n=>n.scrollTop=100);
   const previousScroll=await frame.locator('.account-column[data-account=insurance] .account-drafts').evaluate(n=>n.scrollTop);
