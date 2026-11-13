@@ -5,7 +5,7 @@ import {publishingImageAccount} from './publishing-image-scope.mjs';
 function threadsAccount(row) { return publishingImageAccount(row)||legacyAccount(row); }
 async function readEvent(d,id) {
  if(/^[1-9]\d{0,14}$/.test(String(id))){
-  const {data,error}=await d.admin.from('command_center_task_events').select('*').eq('id',Number(id)).eq('domain','sns').maybeSingle();
+  const {data,error}=await d.admin.from('command_center_task_events').select('*').eq('id',Number(id)).maybeSingle();
   if(error)throw error;
   if(data){threadsAccount(data);return data;}
  }

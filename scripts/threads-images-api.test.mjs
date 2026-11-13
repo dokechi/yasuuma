@@ -134,9 +134,52 @@ test('confirmed kensho and manga SNS identities read and save only within exact 
   }
  }
 });
-test('non-SNS manga and everyday records remain outside image endpoint scope',async()=>{
+test('non-publishing domains remain outside image endpoint scope',async()=>{
  for(const [account,task,name,handle] of [['manga','manga-threads-v1','漫画','@kousaka_san_'],['everyday','everyday-words-v1','日常の言葉','']]){
-  const s=fixture();s.rows[0]={...s.rows[0],task_id:task,domain:'deal',payload:{account:name,handle}};
+  const s=fixture();s.rows[0]={...s.rows[0],task_id:task,domain:'money',payload:{account:name,handle}};
   assert.equal((await get(s,1,account)).status,404);assert.equal((await patch(s,request({accountKey:account}))).status,404);assert.equal(s.writes.length,0);assert.equal(s.assets.length,0);
  }
+});
+test('exact deal publishing records return empty images honestly and save with source-bound CAS',async()=>{
+ const {saveThreadsPayload,THREADS_PAYLOAD_UPDATE_SQL}=await import('../supabase/functions/command-center-retro-api/threads-payload-store.mjs');
+ for(const [account,task,name,handle] of [['manga','manga-threads-v1','漫画','@kousaka_san_'],['everyday','everyday-words-v1','日常の言葉','']]){
+  const s=fixture();s.rows[0]={...s.rows[0],task_id:task,domain:'deal',payload:{account:name,handle,draft:'Unchanged original'}};
+  const empty=good(await get(s,1,account));assert.deepEqual(empty.assets,[]);assert.deepEqual(empty.manifest.images,[]);assert.equal(s.writes.length,0);
+  let calls=0,reclassify=false,edit=false;
+  s.d.saveThreadsPayload=(row,payload)=>saveThreadsPayload(async(sql,args)=>{
+   calls++;assert.equal(sql,THREADS_PAYLOAD_UPDATE_SQL);assert.match(sql,/event.domain = \$6::text/);assert.equal(args[5],'deal');
+   const current=s.rows[0];if(reclassify)current.domain='money';if(edit)current.payload.draft='Changed elsewhere';
+   if(current.id!==args[1]||current.task_id!==args[2]||current.event_key!==args[3]||current.domain!==args[5]||!isDeepStrictEqual(current.payload,JSON.parse(args[4])))return [];
+   current.payload=JSON.parse(args[0]);s.writes.push(structuredClone(current));return [{row:structuredClone(current)}];
+  },row,payload);
+  good(await patch(s,request({accountKey:account})));assert.equal(calls,1);assert.equal(s.rows[0].domain,'deal');assert.equal(s.rows[0].payload.draft,'Unchanged original');assert.equal(s.assets[0].payload.account_key,account);
+  edit=true;assert.equal((await patch(s,request({accountKey:account,expectedRevision:1,mutationId:'stale-deal-0001',images:[]}))).status,409);assert.equal(s.writes.length,1);assert.equal(s.rows[0].payload.draft,'Changed elsewhere');edit=false;
+  reclassify=true;assert.equal((await patch(s,request({accountKey:account,expectedRevision:1,mutationId:'reclassify-0001',images:[]}))).status,404);assert.equal(s.writes.length,1);
+  for(const invalid of [{account:name},{account:name,handle:null},{account:'other',handle},{account:name,handle:'@other'}]){
+   s.rows[0].domain='deal';s.rows[0].payload=invalid;const before=calls;
+   assert.equal((await get(s,1,account)).status,404);assert.equal((await patch(s,request({accountKey:account}))).status,404);assert.equal(calls,before);
+  }
+ }
+});
+test('storage cannot accept unrelated deal records or move SNS-only tasks into deal',async()=>{
+ const {saveThreadsPayload}=await import('../supabase/functions/command-center-retro-api/threads-payload-store.mjs');
+ for(const task_id of ['threads-library-import-v1','insurance-threads-v1','unknown','constructor']){
+  const r={...row(1),domain:'deal',task_id,payload:{account:'保険',handle:'@sucker0508'}};
+  await assert.rejects(saveThreadsPayload(()=>{throw Error('query must not run');},r,r.payload),/threads_invalid_storage_scope/);
+ }
+});
+test('isolated PostgreSQL enforces exact deal domain and JSONB compare-and-swap', {skip:!process.env.PGLITE_MODULE&&'PGLITE_MODULE required'},async()=>{
+ const {pathToFileURL}=await import('node:url');const {PGlite}=await import(pathToFileURL(process.env.PGLITE_MODULE).href);
+ const {saveThreadsPayload}=await import('../supabase/functions/command-center-retro-api/threads-payload-store.mjs');const pg=new PGlite();
+ try{
+  await pg.exec('create table command_center_task_events(id bigint primary key,task_id text,event_key text,domain text,payload jsonb)');
+  const r={id:1,task_id:'everyday-words-v1',event_key:'synthetic',domain:'deal',payload:{account:'日常の言葉',handle:'',draft:'Original'}};
+  await pg.query('insert into command_center_task_events values($1,$2,$3,$4,$5)',[r.id,r.task_id,r.event_key,r.domain,JSON.stringify(r.payload)]);
+  const query=async(sql,args)=>(await pg.query(sql,args)).rows,next={...r.payload,threads_images_v1:{revision:1,images:[]}};
+  const saved=await saveThreadsPayload(query,r,next);assert.deepEqual(saved.payload,next);assert.equal(saved.domain,'deal');
+  assert.equal(await saveThreadsPayload(query,r,{...r.payload,draft:'stale'}),null);
+  await pg.exec("update command_center_task_events set domain='money' where id=1");
+  assert.equal(await saveThreadsPayload(query,saved,{...next,draft:'must not change'}),null);
+  const actual=(await pg.query('select domain,payload from command_center_task_events')).rows[0];assert.equal(actual.domain,'money');assert.deepEqual(actual.payload,next);
+ }finally{await pg.close();}
 });
