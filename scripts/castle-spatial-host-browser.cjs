@@ -71,8 +71,9 @@ const server=http.createServer((req,res)=>{
   assert.equal(await lounge.locator('.storybook').getAttribute('data-story-room'),selectedBefore);assert.equal(await lounge.locator('.account-board').evaluate(node=>node.hidden),false);assert.equal(await lounge.locator('#room').evaluate(node=>node.hidden),true);
   await preparing.locator('summary').click();assert.equal(await lounge.locator('[data-story-destination]:visible').count(),8);
   await page.screenshot({path:path.join(out,`${width}-${height}-host-home.png`)});
-  const frameRect=await page.locator('#ccCastleFrame').boundingBox(),barRect=await page.locator('#requestProgressShortcut').boundingBox();
-  assert.ok(frameRect.y>=barRect.y+barRect.height);assert.ok(Math.abs(frameRect.y-52)<=1,'the actual host reserves its 52px request rail');assert.ok((await page.locator('#requestProgressOpen').boundingBox()).height>=44);
+  const frameRect=await page.locator('#ccCastleFrame').boundingBox();
+  assert.equal(await page.locator('#requestProgressShortcut').isHidden(),true,'gallery host hides the former request rail');
+  assert.ok(Math.abs(frameRect.y)<=1&&Math.abs(frameRect.height-height)<=1,'the gallery host reserves the full viewport without an empty rail');
   const publishingResults=[];
   for(const key of publishing){
    await lounge.locator('[data-story-instant='+key+']').click();

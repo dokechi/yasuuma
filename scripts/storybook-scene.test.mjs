@@ -139,3 +139,10 @@ test('art failure is decorative only and fallback artwork cannot detach an exist
  const art=h.scene.makeScene(other.window.document,'lottery');assert.equal(art.ownerDocument,other.window.document);assert.equal(art.dataset.storyRoom,'lottery');assert.equal(art.getAttribute('aria-hidden'),'true');
  assert.equal(h.scene.open('insurance'),true);assert.deepEqual(h.calls.routes,['insurance']);h.unchanged();
 });
+
+test('retained mobile chapter targets scroll instead of shrinking below 44 pixels',()=>{
+ const css=createRequire(import.meta.url)('node:fs').readFileSync(new URL('../command-center-98/lounge/storybook-home.css',import.meta.url),'utf8');
+ assert.match(css,/\.story-chapters\{[^}]*overflow-x:auto/);
+ assert.match(css,/\.storybook \.story-chapter-tab\{flex:0 0 auto;min-width:44px\}/);
+ assert.match(css,/\.storybook \.story-instant\{flex:0 0 auto;min-width:44px\}/);
+});

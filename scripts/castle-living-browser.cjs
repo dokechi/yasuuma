@@ -105,7 +105,7 @@ function probe(){
   await f.locator('#living-record-dialog [data-living-draft]').click();await f.locator('#room:not([data-living-view])').waitFor();
   check('favorite selection returns to the original manuscript without changing source',(await currentIdentity()).draft.id===before.draft.id&&(await currentIdentity()).body===before.body);
   await showTools();await f.locator('[data-object=shelf]').click();await f.locator('#spatial-shelf-dialog[open]').waitFor();
-  await f.locator('#desk-query').fill('保存原稿 二');await f.locator('#desk-list .manuscript-card').filter({hasText:'保存原稿 二'}).waitFor();
+  await f.locator('#desk-query').fill('保存原稿 二');await f.locator('#desk-list .manuscript-card').filter({hasText:'insurance 二つ目の合成原稿です。'}).waitFor();
   check('bookshelf retains the existing live search',await f.locator('#desk-list .manuscript-card').count()===1);
   await screenshot('shelf-search');
   await f.locator('#spatial-shelf-dialog .spatial-shelf-heading button').click();
@@ -117,7 +117,7 @@ function probe(){
   // Clear the preserved search through its own control, then choose the first
   // saved draft again. No adapter writes or direct notebook mutation are used.
   await showTools();await f.locator('[data-object=shelf]').click();await f.locator('#desk-query').fill('');
-  await f.locator('#desk-list .manuscript-card').filter({hasText:'保存原稿 一'}).click();await f.locator('#room:not([data-living-view])').waitFor();
+  await f.locator('#desk-list .manuscript-card[data-draft-id="'+before.draft.id+'"]').click();await f.locator('#room:not([data-living-view])').waitFor();
   await f.locator('#desk-copy').click();await f.locator('#desk-operation').getByText('本文をコピーしました。',{exact:true}).waitFor();
   check('copy still contains only the active original text',(await page.evaluate(()=>navigator.clipboard.readText())).replace(/\r\n/g,'\n')===before.body);
   await showTools();await f.locator('.living-copy-history').click();await f.locator('#desk-history-dialog[open]').waitFor();

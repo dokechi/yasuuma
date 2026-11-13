@@ -130,7 +130,7 @@ function drawerContrast() {
       const switchRoom = async (from, to) => {
         await f.locator('.spatial-room-name').click();
         await f.locator('#spatial-room-dialog[open]').waitFor();
-        assert.equal(await f.locator('.spatial-destination').count(), 6);
+        assert.equal(await f.locator('.spatial-destination').count(), 8);
         assert.equal(await f.locator('.spatial-account-identity h3').textContent(), from.name);
         assert.equal(await f.locator('.spatial-account-identity p').first().textContent(), from.handle);
         assert.equal(await f.locator(`.spatial-destination[data-destination=${from.key}]`).getAttribute('aria-current'), 'page');
@@ -166,7 +166,8 @@ function drawerContrast() {
         if (index) await switchRoom(accounts[index - 1], account);
         const asset = await waitRoom(account.key);
         assert.equal(await f.locator('#draft-body').textContent(), draft(account.key).body);
-        assert.equal(await f.locator('#draft-title').textContent(), draft(account.key).title);
+        assert.equal(await f.locator('#draft-title').textContent(), '');
+        assert.equal(await f.locator('#draft-title').isHidden(), true, 'administrative titles are not post text');
         assert.equal(await f.locator('#desk-operation').textContent(), '', 'A previous account copy must not look like a current-draft copy.');
         const reading = await readGeometry();
         await screenshot(account.key === 'insurance' ? 'study' : `${account.key}-study`);
@@ -203,7 +204,8 @@ function drawerContrast() {
           await screenshot('shelf');
           await f.locator('#desk-list .manuscript-card').click();
           await f.locator('#spatial-shelf-dialog').waitFor({state: 'hidden'});
-          assert.equal(await f.locator('#draft-title').textContent(), draft('insurance', 1).title);
+          assert.equal(await f.locator('#draft-title').textContent(), '');
+          assert.equal(await f.locator('#draft-body').textContent(), draft('insurance', 1).body);
           assert.equal(await f.locator('#desk-operation').textContent(), '');
           // Escape restores focus to the disclosure without triggering room back.
           await f.locator('.spatial-room-name').click(); await page.keyboard.press('Escape');

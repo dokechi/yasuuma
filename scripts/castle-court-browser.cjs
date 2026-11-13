@@ -1,3 +1,4 @@
+// Optional retained court fixture; current default is covered separately.
 /* Owned synthetic CI only. No production credentials, posts, or remote traffic.
  * Real app-v130 -> default storybook -> visible Settings/archive -> explicit lazy court entry.
  * Only synthetic records are injected; the host/iframe route is not substituted.
@@ -39,6 +40,7 @@ const server=http.createServer((req,res)=>{
  if(!file.startsWith(root+path.sep))return res.writeHead(403).end();
  fs.readFile(file,(error,bytes)=>{
   if(error)return res.writeHead(404).end();let content=bytes;
+  if(relative==='/command-center-98/castle-parent.js')content=bytes.toString().replace('./lounge/index.html?', './lounge/book.html?');
   if(relative==='/command-center-98/app.html')content=bytes.toString().replace('<head>','<head><script src="/scripts/ui-fixtures.js"></script><script src="/scripts/rpg-theme-fixtures.js"></script><script>'+fixtureScript+'</script>');
   if(relative==='/scripts/ui-fixtures.js')content=bytes.toString().replace(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\n  \}\);/,'');
   res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store'}).end(content);
