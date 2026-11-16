@@ -11,6 +11,15 @@ export function createResolvedBox(){
  .resolved-content details{border-top:1px solid #d5c9b5;padding:14px 0}.resolved-content summary{cursor:pointer;font-weight:650}.resolved-content details p{padding-left:12px;border-left:3px solid #a68c5f}
  .resolved-table-wrap{overflow-x:auto;margin:12px 0 24px}.resolved-content table{border-collapse:collapse;min-width:100%;font-size:14px;white-space:nowrap}.resolved-content th,.resolved-content td{text-align:left;padding:9px 12px;border:1px solid #d5c9b5}.resolved-content th{background:#eae2d3}.resolved-content tr:nth-child(even){background:#f1ecdf}
  .resolved-note{font-size:13px;color:#675f51}.resolved-status{padding:0 20px}.resolved-content a{color:#275e65}.resolved-links{display:flex;gap:10px;flex-wrap:wrap}
+ body.stained-atelier dialog.resolved-box{color:#f2ead7!important;background:#17191c!important}
+ body.stained-atelier .resolved-box header{color:#f2ead7!important;background:#17191c!important}
+ body.stained-atelier .resolved-box :is(h2,h3,summary,th,td){color:#f2ead7!important}
+ body.stained-atelier .resolved-box button{color:#f2ead7!important;background:#29352f!important}
+ body.stained-atelier .resolved-tabs [aria-selected=true]{background:#3c6251!important}
+ body.stained-atelier .resolved-note{color:#ccc6b8!important}
+ body.stained-atelier .resolved-content th{background:#29352f!important}
+ body.stained-atelier .resolved-content tr:nth-child(even){background:#202522!important}
+ body.stained-atelier .resolved-content a{color:#9ed1c5!important}
  @media(max-width:600px){.resolved-box{width:calc(100vw - 16px);max-height:94dvh}.resolved-content{padding:0 14px 20px}.resolved-box header,.resolved-tabs{padding:10px 14px}.resolved-content h3{font-size:18px}}
  `;d.head.append(style);
  const header=el('header'),title=el('h2','解決');title.id='resolved-box-title';

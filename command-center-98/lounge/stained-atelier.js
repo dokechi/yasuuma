@@ -3,7 +3,7 @@ import * as application from './app.js?v=20261113.10-girls-channel';
 import {createGlassArt as art} from './stained-art.js?v=20261113.10-girls-channel';
 import {glassSlots,glassFor} from './stained-model.js?v=20261116.1-resolved';
 import {installGalleryOrder} from './stained-order.js?v=20261113.4-keyboard';
-import {createResolvedBox} from './resolved-box.js?v=20261116.1';
+import {createResolvedBox} from './resolved-box.js?v=20261116.2';
 const resolvedBox=createResolvedBox();
 const doc=document,board=application.getAccountBoard(),owner=application.getPaperDesk();
 const room=doc.getElementById('room');
