@@ -1,8 +1,10 @@
 /* Presentation only. The existing desk owns data, selection, editing and copying. */
 import * as application from './app.js?v=20261113.10-girls-channel';
 import {createGlassArt as art} from './stained-art.js?v=20261113.10-girls-channel';
-import {glassSlots,glassFor} from './stained-model.js?v=20261113.10-girls-channel';
+import {glassSlots,glassFor} from './stained-model.js?v=20261116.1-resolved';
 import {installGalleryOrder} from './stained-order.js?v=20261113.4-keyboard';
+import {createResolvedBox} from './resolved-box.js?v=20261116.1';
+const resolvedBox=createResolvedBox();
 const doc=document,board=application.getAccountBoard(),owner=application.getPaperDesk();
 const room=doc.getElementById('room');
 const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text)n.textContent=text;return n;};
@@ -198,8 +200,8 @@ function select(key){
   for(const [k,card]of cards){const yes=k===key;card.dataset.selected=String(yes);card.querySelector('.sg-art').style.viewTransitionName=yes?'sg-panel':'none';if(yes)card.setAttribute('aria-current','true');else card.removeAttribute('aria-current');}
 }
 for(const slot of glassSlots){
-  const card=button('',()=>{if(slot.pending)return;select(slot.key);travel(()=>board.open(slot.key));},'sg-card');
-  card.dataset.key=slot.key;card.dataset.empty=String(!!slot.pending);card.setAttribute('aria-label',slot.label+(slot.pending?'、空き枠': 'の原稿を開く'));
+  const card=button('',()=>{if(slot.pending)return;select(slot.key);if(slot.key==='resolved'){resolvedBox.open();return;}travel(()=>board.open(slot.key));},'sg-card');
+  card.dataset.key=slot.key;card.dataset.empty=String(!!slot.pending);card.setAttribute('aria-label',slot.key==='resolved'?'解決の箱を開く':slot.label+(slot.pending?'、空き枠': 'の原稿を開く'));
   if(slot.pending)card.setAttribute('aria-disabled','true');
   card.append(make('span','sg-beam'),art(slot),make('span','sg-label',slot.label));
   const pointer=make('span','sg-pointer');pointer.setAttribute('aria-hidden','true');pointer.innerHTML='<svg viewBox="0 0 38 32"><path fill="#fff" d="M2 15 L8 8 L13 7 L15 1 L18 1 L20 3 L18 9 L33 9 Q38 9 36 13 L25 16 L25 20 L22 21 L20 25 L9 25 L2 22Z"/></svg>';card.append(pointer);
@@ -235,7 +237,7 @@ function paint(){
   queued=false;
   const state=board.state;
   for(const refresh of doc.querySelectorAll('.sg-refresh')){refresh.disabled=!!state.loading;refresh.textContent=state.loading?'更新中…':'更新';}
-  for(const slot of glassSlots){if(slot.pending)continue;const count=cards.get(slot.key).querySelector('.sg-count');const destination=state.destinations.find(d=>d.key===slot.key);count.textContent=slot.key==='sourcing'?'購入・在庫・売却':destination?.status||'原稿を確認';}
+  for(const slot of glassSlots){if(slot.pending)continue;const count=cards.get(slot.key).querySelector('.sg-count');const destination=state.destinations.find(d=>d.key===slot.key);count.textContent=slot.key==='resolved'?'疑問と結果':slot.key==='sourcing'?'購入・在庫・売却':destination?.status||'原稿を確認';}
   status.textContent=state.loading?'保存原稿を読み込み中…':state.complete?`${glassSlots.filter(s=>!s.pending).length} / ${glassSlots.length} 登録済み　·　原稿を選択してください`:state.message||'更新して原稿を確認してください';
   const slot=glassFor(room.dataset.account);
   if(!room.hidden&&slot){

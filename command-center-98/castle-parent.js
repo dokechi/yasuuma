@@ -5,7 +5,7 @@
  const origin=w.location.origin,frame=d.createElement('iframe');frame.id='ccCastleFrame';frame.title='司令塔・今日を、ひらく。';frame.allow='clipboard-write; autoplay';frame.hidden=true;frame.setAttribute('aria-label','司令塔・今日を、ひらく。');
  const style=d.createElement('style');style.textContent='#ccCastleFrame{position:fixed;inset:0;width:100%;height:100dvh;border:0;z-index:200;background:#0e0e0d}#ccCastleFrame[hidden]{display:none!important}#ccCastleReturn{position:fixed;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:2147483000;min-height:44px;padding:10px 15px;background:#172333;color:#f5dfb4;border:1px solid #bca574;border-radius:5px}#ccCastleReturn[hidden]{display:none!important}body.castle-visible{overflow:hidden!important}';d.head.append(style);d.body.append(frame);
  const back=d.createElement('button');back.id='ccCastleReturn';back.type='button';back.textContent='← 司令塔';back.hidden=true;d.body.append(back);
- const loungeUrl='./lounge/index.html?v=20261113.42d8b4e5b3db0f91-entry';
+ const loungeUrl='./lounge/index.html?v=20261116.1-resolved';
  let publishingConfig=[],ready=false,modern=true,native=false,pending=null,lastPayload=null,controller=null;try{w.localStorage.setItem('cc-castle-mode','castle');}catch{}frame.src=loungeUrl;let wasHome=!!w.CCHome?.active;
  function send(type,data={}){if(ready)frame.contentWindow.postMessage({channel:'cc-castle-v1',type,...data},origin);}
  const startupWaiters=new Set();
@@ -86,6 +86,13 @@
    send('writing-references',{guide});
   }catch(error){send('writing-references',{error:error.name==='AbortError'?'読み込みが時間切れになりました。':error.message});}
  }
+ async function sendResolvedKnowledge(){
+  try{
+   const data=await readResource({resource:'task-events',taskId:'resolved-knowledge-v1',limit:1});
+   const entry=data.events?.find(e=>e.eventKey==='current'&&e.payload?.content_type==='resolved_knowledge');
+   send('resolved-knowledge',{guide:entry?.payload?.guide||null});
+  }catch(error){send('resolved-knowledge',{error:error.name==='AbortError'?'読み込みが時間切れになりました。':error.message});}
+ }
  async function read(){if(pending)return pending;pending=(async()=>{controller=new AbortController();const session=controller,itemSets={signals:[],events:[]};const {normalizeResearch,normalizePurchases}=await import('./lounge/hall-model.js?v=20261021.8-hall');publishingConfig=(await import('./lounge/accounts.js?v=20261113.10-girls-channel')).publishingAccounts.filter(a=>!a.pending);d.dispatchEvent(new w.CustomEvent('cc:categories-ready'));let sourcing=[],purchases=[],ledgerState='loading',ledgerTruncated=false,errors=[],remaining=3;const states={signals:'読込中',events:'読込中',sourcing:'読込中'};let pinScope='';try{if(typeof AUTH==='string'&&AUTH&&w.crypto?.subtle){const digest=await w.crypto.subtle.digest('SHA-256',new TextEncoder().encode('cc-future-session-v1:'+AUTH));pinScope=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');}}catch{};
   function publish(){let invalid=0;const rows=drafts([...itemSets.signals,...itemSets.events],sourcing,()=>invalid++),loading=remaining>0,complete=!loading&&!errors.length&&!invalid;
    const counts=[['kyun','保険'],['choi','過去原稿'],['otoku','まだ安く買えるはず'],['rakuten','楽天犬'],['lottery','抽選日記'],['tanaka','田中卓'],['kensho','懸賞小ナス'],['manga','漫画'],['everyday','日常の言葉'],['skun','Sくん'],['girls-channel','ガルちゃん'],['fp','FP・TikTok'],['shiire','仕入れ']].map(([key,label])=>label+' '+rows.filter(x=>x.place===key).length+'件').join('／');
@@ -118,6 +125,7 @@
   if(m.type==='reading-room'&&typeof m.active==='boolean')d.body.classList.toggle('castle-reading',m.active);
   if(m.type==='refresh')read();
   if(m.type==='writing-references')sendWritingReferences();
+  if(m.type==='resolved-knowledge')sendResolvedKnowledge();
   if(m.type==='apply-host-update'&&waitingWorker){applyingUpdate=true;waitingWorker.postMessage({type:'SKIP_WAITING'});}
   if(m.type==='native'&&['classic','kyun','choi','otoku','rakuten','lottery','tanaka','kensho','manga','everyday','skun','girls-channel','tiktok','fp','sourcing','watches','cards','settings','daily','cooney','shiire'].includes(m.action))nativeRoute(m.action,typeof m.recordId==='string'&&m.recordId.length<=500?m.recordId:undefined,['purchases','research','queue'].includes(m.section)?m.section:undefined);
  });

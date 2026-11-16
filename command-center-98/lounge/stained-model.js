@@ -11,6 +11,7 @@ export const glassSlots = Object.freeze([
   {key:'everyday',label:'日常の言葉',art:'assets/stained/everyday-words-v1.png'},
   {key:'skun',label:'Sくん',sheet:'right',center:1430,glassTint:'#aa607b',
    sprite:{sheet:'left',center:574,key:'otoku',filter:'hue-rotate(305deg) saturate(.78)'}},
+  {key:'resolved',label:'解決',sheet:'left',center:308,glassTint:'#71908a',sprite:{sheet:'left',center:308,key:'insurance',filter:'hue-rotate(65deg) saturate(.7)'}},
   {key:'girls-channel',label:'ガルちゃん',sheet:'right',center:1154,glassTint:'#78699c',motif:'conversation',
    sprite:{sheet:'right',center:606,key:'manga',filter:'hue-rotate(44deg) saturate(.84)'}}
 ].map(Object.freeze));
