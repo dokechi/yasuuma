@@ -47,3 +47,12 @@ test('full DOM purchase loading, refresh, month switch and failure never present
   assert.deepEqual(s.errors,[]);
  }finally{await new Promise(r=>setTimeout(r,30));s.dom.window.close()}
 });
+test('cancelled and returned histories remain visible but cannot contribute stock, cost or forecast totals',()=>{
+ const closed=['cancelled','returned'].map((status,i)=>({...fixtures[0],id:90+i,order_id:'closed-'+i,status,quantity:30,remaining_quantity:30,unit_price_yen:9000,order_total_yen:270000}));
+ const before=JSON.stringify(closed),profits=closed.map(p=>({purchase_id:p.id,remaining_quantity:30,remaining_priced_quantity:30,remaining_profit_yen:999999,sold_priced_quantity:0,sold_unpriced_quantity:0,sold_estimated_quantity:0,remaining_unpriced_quantity:0}));
+ const state={purchases:[fixtures[0],...closed],purchaseProfit:profits},html=details.html(state);
+ assert.match(html,/取消・返品の記録/);assert.match(html,/原注文の単価（履歴）/);
+ assert.equal((html.match(/在庫対象外/g)||[]).length,2);assert.match(html,/仕入れ計 <b>¥1,500/);assert.doesNotMatch(html,/999,999|270,000/);
+ assert.match(details.row(closed[0],profits[0]),/purchase-remaining">0/);
+ assert.equal(JSON.stringify(closed),before);
+});
