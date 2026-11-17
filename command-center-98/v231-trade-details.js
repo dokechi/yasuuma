@@ -34,6 +34,8 @@
   return '<details class="purchase-profit-detail"><summary>内訳</summary>'+(sales.length?'<ul>'+list+'</ul>':'')+(r.reference_note?'<p>残りの見込み：'+esc(r.reference_note)+'</p>':'')+(parts.length?'<ul>'+parts.map(c=>'<li>'+esc(c.component_name||c.component_key)+'：残 '+c.remaining_quantity+'点'+(numeric(c.remaining_profit_yen)?' · 残り見込み '+money(c.remaining_profit_yen):'')+'</li>').join('')+'</ul>':'')+'</details>';
  }
  function row(p,r){
+  const excluded=['cancelled','returned'].includes(p.status);
+  if(excluded)r=null;
   const unit=r?.unit_cost_yen??null,original=M.known(p.unit_price_yen),remaining=r&&numeric(r.remaining_profit_yen)&&r.remaining_priced_quantity>0;
   let profit='<span class="purchase-profit-empty">計算を確認中</span>';
   if(r){
@@ -41,9 +43,10 @@
    const forecast=remaining?'<div class="purchase-profit-amount forecast'+(r.remaining_profit_yen<0?' negative':'')+'"><small>残り見込み</small><b>'+money(r.remaining_profit_yen)+'</b>'+(r.remaining_unpriced_quantity?'<span>査定あり '+r.remaining_priced_quantity+'点分</span>':'')+'</div>':r.sold_quantity&&(r.remaining_quantity||r.remaining_loose_quantity)?'<small class="purchase-profit-empty">残りは査定待ち</small>':'';
    profit=sold||forecast?sold+forecast+profitDetail(r):'<span class="purchase-profit-empty">査定待ち</span>';
   }
-  const rem=!r?'—':esc(r.remaining_quantity)+(r.bundle?'袋分':'')+(r.remaining_loose_quantity?'<small>＋ バラ'+r.remaining_loose_quantity+'点</small>':'');
-  const cost=unit!==null?'<b>'+money(unit)+'</b><small>仕入送料込み</small>':'<b>'+money(M.known(p.allocated_net_unit_yen))+'</b><small>商品支払額・送料等確認中</small>';
-  return '<tr id="'+esc(A.rowId(p.id))+'" tabindex="-1" data-purchase-id="'+esc(p.id)+'"><td class="purchase-product"><b>'+esc(p.product_name)+'</b></td><td>'+esc(p.sku||'—')+'</td><td>'+esc(p.variant||'—')+'</td><td class="num">'+esc(p.quantity)+'</td><td class="num purchase-unit-cost">'+cost+(original!==null&&(unit===null||Math.abs(original-unit)>.01)?'<small>注文時 '+money(original)+'</small>':'')+'</td><td class="purchase-profit-cell">'+profit+'</td><td class="num purchase-remaining">'+rem+'<small>目安</small></td></tr>';
+  if(excluded)profit='<span class="purchase-profit-empty">'+(p.status==='cancelled'?'取消':'返品')+'・集計対象外</span>';
+  const rem=excluded?'0':!r?'—':esc(r.remaining_quantity)+(r.bundle?'袋分':'')+(r.remaining_loose_quantity?'<small>＋ バラ'+r.remaining_loose_quantity+'点</small>':'');
+  const cost=excluded?'<b>'+money(original)+'</b><small>原注文の単価（履歴）</small>':unit!==null?'<b>'+money(unit)+'</b><small>仕入送料込み</small>':'<b>'+money(M.known(p.allocated_net_unit_yen))+'</b><small>商品支払額・送料等確認中</small>';
+  return '<tr id="'+esc(A.rowId(p.id))+'" tabindex="-1" data-purchase-id="'+esc(p.id)+'"><td class="purchase-product"><b>'+esc(p.product_name)+'</b></td><td>'+esc(p.sku||'—')+'</td><td>'+esc(p.variant||'—')+'</td><td class="num">'+esc(p.quantity)+'</td><td class="num purchase-unit-cost">'+cost+(!excluded&&original!==null&&(unit===null||Math.abs(original-unit)>.01)?'<small>注文時 '+money(original)+'</small>':'')+'</td><td class="purchase-profit-cell">'+profit+'</td><td class="num purchase-remaining">'+rem+'<small>'+(excluded?'在庫対象外':'目安')+'</small></td></tr>';
  }
  function groups(rows){const orders=new Map();for(const p of rows){const key=orderKey(p);if(!orders.has(key))orders.set(key,{first:p,items:[]});orders.get(key).items.push(p);}return [...orders.values()].sort((a,b)=>(Date.parse(b.first.ordered_at)||0)-(Date.parse(a.first.ordered_at)||0)||Number(b.first.id)-Number(a.first.id));}
  function orderHtml(g,profits){const p=g.first,url=typeof p.source_url==='string'&&/^https:\/\//.test(p.source_url)?p.source_url:null;return '<section class="purchase-order"><div class="purchase-order-head"><span><b>'+esc(p.supplier_name||p.supplier_key)+'</b>　注文 '+esc(p.order_id||'—')+'</span></div><div class="purchase-table-wrap" tabindex="0" aria-label="購入商品の儲け"><table class="purchase-table purchase-profit-table"><thead><tr><th scope="col">商品</th><th scope="col">型番</th><th scope="col">サイズ／色</th><th scope="col">仕入数</th><th scope="col">仕入単価</th><th scope="col">儲け</th><th scope="col">残数</th></tr></thead><tbody>'+g.items.map(p=>row(p,profits.get(String(p.id)))).join('')+'</tbody></table></div>'+(url?'<div class="purchase-source"><a href="'+esc(url)+'" target="_blank" rel="noopener">'+(/^https:\/\/mail\.google\.com\//.test(url)?'Gmail元メールを開く':'注文の記録を開く')+'</a></div>':'')+'</section>';}
@@ -52,8 +55,8 @@
   const purchases=state.purchases||[],rows=purchases.filter(p=>p.status==='purchased'),profits=new Map((state.purchaseProfit||[]).map(r=>[String(r.purchase_id),r])),days=new Map();
   for(const g of groups(rows)){const key=day(g.first.ordered_at);if(!days.has(key))days.set(key,[]);days.get(key).push(g);}
   let content='';for(const [date,orders]of days){const t=orderTotals(orders.flatMap(g=>g.items));content+='<section class="purchase-day"><div class="purchase-day-head"><b>'+esc(date)+'</b><span>仕入れ計 <strong>'+money(t.total)+(t.unknown?' ＋ 金額確認中':'')+'</strong> · '+t.orders+'注文</span></div>'+orders.map(g=>orderHtml(g,profits)).join('')+'</section>';}
-  const pending=purchases.filter(p=>p.status==='unknown');
-  return '<div class="purchase-profit-ledger">'+(state.salesTruncated?'<p role="status" class="empty">販売明細は一部のみ取得されています。利益・残数の集計は確認できません。</p>':'')+summary(state)+A.html(state)+(content||'<p class="empty">この期間の購入記録はありません。</p>')+(pending.length?'<details class="purchase-pending"><summary>予約・未納／要確認</summary>'+groups(pending).map(g=>orderHtml(g,new Map())).join('')+'</details>':'')+'</div>';
+  const pending=purchases.filter(p=>p.status==='unknown'),excluded=purchases.filter(p=>['cancelled','returned'].includes(p.status));
+  return '<div class="purchase-profit-ledger">'+(state.salesTruncated?'<p role="status" class="empty">販売明細は一部のみ取得されています。利益・残数の集計は確認できません。</p>':'')+summary(state)+A.html(state)+(content||'<p class="empty">この期間の購入記録はありません。</p>')+(pending.length?'<details class="purchase-pending"><summary>予約・未納／要確認</summary>'+groups(pending).map(g=>orderHtml(g,new Map())).join('')+'</details>':'')+(excluded.length?'<details class="purchase-excluded"><summary>取消・返品の記録（集計対象外）</summary><p>数量・単価は原注文の履歴です。在庫・仕入れ計・見込みには加算しません。返金の完了を示すものではありません。</p>'+groups(excluded).map(g=>orderHtml(g,new Map())).join('')+'</details>':'')+'</div>';
  }
  function render(){if(typeof sourcingApp==='undefined'||sourcingApp.sub!=='purchases')return;const host=document.getElementById('sourcingBody');if(!host||host.querySelector('.purchase-profit-ledger'))return;const tabs=host.querySelector('.ledger-month-tabs');if(tabs)tabs.remove();host.innerHTML=html(sourcingApp);if(tabs)host.prepend(tabs);}
  return {html,row,money,render,summary,purchaseSummary,orderTotals,totals};
