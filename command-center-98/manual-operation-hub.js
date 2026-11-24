@@ -240,6 +240,7 @@
  const box=e('dialog',undefined,'manual-operation-review');box.append(e('h2',girlsChannel?'ガルちゃん':skun?'Sくん｜@skun.koi':everyday?'日常の言葉｜根拠付きの参考投稿':manga?'漫画｜@kousaka_san_':kensho?'懸賞小ナス｜@nasbi.777':tanaka?'田中卓｜投稿先未登録':lottery?'抽選日記｜@chusen1101':rakuten?'楽天犬｜@bonya0914':savings?'まだ安く買えるはず｜@thats_a_steal0601':'保険｜@sucker0508'));
  const imageControllers=[];const close=e('button','閉じる');close.onclick=()=>{imageControllers.forEach(c=>c?.destroy());box.close();box.remove();};box.append(close);
  if(!tanaka&&!manga&&!everyday&&!girlsChannel){const archive=e('a',savings?'Threadsアカウントを開く':'過去原稿を開く');archive.href=skun?'https://www.threads.com/@skun.koi':manga?'https://www.threads.com/@kousaka_san_':kensho?'https://www.threads.com/@nasbi.777':lottery?'https://www.threads.com/@chusen1101':rakuten?'https://www.threads.com/@bonya0914':savings?'https://www.threads.com/@thats_a_steal0601':'https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit';archive.target='_blank';archive.rel='noopener';box.append(archive);}else box.append(e('p','Threadsアカウントは後から設定します。'));
+ api.renderEditorialGuide(doc,box,key);
  const status=e('p','原稿を読み込んでいます…');box.append(status);doc.body.append(box);box.showModal();
  try{
  const u=new URL('https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-retro-api');u.searchParams.set('resource','task-events');u.searchParams.set('taskId',girlsChannel?'girls-channel-threads-v1':skun?'skun-threads-v1':everyday?'everyday-words-v1':manga?'manga-threads-v1':kensho?'kensho-threads-v1':tanaka?'tanaka-threads-v1':lottery?'lottery-threads-v1':rakuten?'rakuten-threads-v1':savings?'otoku-threads-v1':'insurance-threads-v1');u.searchParams.set('limit','100');
@@ -271,6 +272,24 @@
  };
  const style=e('style');style.textContent='.manual-operation-hub{margin:12px 0;padding:14px;background:#fff;color:#16324f;border:3px double #0f756d}.manual-operation-hub h2{margin-top:0}.manual-operation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.manual-operation-grid article{padding:12px;border:1px solid #16324f;display:grid;gap:8px}.manual-operation-grid h3,.manual-operation-grid p{margin:0}.manual-operation-grid small{display:block}.manual-operation-review{width:min(880px,90vw);max-height:90vh;overflow:auto;background:#fff;color:#16324f;border:3px solid #0f756d}.manual-operation-review::backdrop{background:rgba(0,0,0,.55)}.manual-operation-review article{border-top:2px solid #0f756d;padding:12px 0}.manual-operation-review pre{white-space:pre-wrap;line-height:1.7}@media(max-width:650px){.manual-operation-grid{grid-template-columns:1fr}}';doc.head.append(style);
 })(typeof window==='undefined'?null:window,function(){
+ const editorialGuides=Object.freeze({
+  insurance:['書類のどこを見るか','出来事から始め、既契約の確認欄と担当者に聞く一問を示す。給付を保証しない。'],
+  tanaka:['先に確認｜家族とお金','家族の一場面から、使う時期と困る点を一つ拾う。比較表は条件を並べ、どちらが得かを決めつけない。'],
+  otoku:['同条件で、支払額を比較','型番・数量・状態・保証・送料・納期をそろえる。ポイントは別。比較できない日は穴埋めしない。'],
+  rakuten:['先に確認｜かごの判断','かごの中身、追加支払額、送料、後日付くポイントを分け、何を入れるか・抜くかを示す。'],
+  lottery:['申し込む前に、条件を確認','応募資格、郵送受取、総額、結果確認日を確認し、当たっても買うか判断する。'],
+  kensho:['応募の先まで、事実でつなぐ','未応募・応募済み・落選・当選は区別し、確認できた事実だけを書く。'],
+  manga:['一場面を読み返す理由','何巻・何話のどこかを示し、別の見方を一つ。結末や原画をそのまま出さない。'],
+  'girls-channel':['連載｜家事の一手を減らす','面倒な瞬間、家にある物で減らせるか、必要なら道具の順。独立した投稿先は追加しない。'],
+  everyday:['共通素材｜日常の言葉','場面・行動・台詞を各媒体の読者に合わせる。参考投稿を本人の出来事として書かない。']
+ });
+ function renderEditorialGuide(doc,container,key){
+  if(!Object.hasOwn(editorialGuides,key))return false;
+  const [title,description]=editorialGuides[key],details=doc.createElement('details'),summary=doc.createElement('summary'),body=doc.createElement('p');
+  summary.textContent='編集方針｜'+title;body.textContent=description;
+  details.append(summary,body);container.append(details);return true;
+ }
+
  const metricLabels=[['views','閲覧数'],['likes','いいね'],['replies','返信'],['reposts','再投稿'],['quotes','引用'],['clicks','クリック']];
  function threadsUrl(value,kind){
   if(typeof value!=='string'||value.length>300)return null;
@@ -470,6 +489,6 @@
   const link=p.purchase_link||p.purchase_url;if(typeof link==='string'&&/^https:\/\//.test(link))result.push({label:'保存購入リンク',text:link});
   return result;
  }
- return {accounts,payload,matchesAccount,unique,savedCopies,savedPostingAssets,isSuppressed,historyState,savedSources,savedProductLink,savedProductLinks,savedMercariComparisons,mercariComparisonSummary,savedPriceStockCheck,metricLabels,threadsUrl,manualResult,metricNumber,isoFromLocal,localDateTime,displayTime,originalCopies};
+ return {renderEditorialGuide,accounts,payload,matchesAccount,unique,savedCopies,savedPostingAssets,isSuppressed,historyState,savedSources,savedProductLink,savedProductLinks,savedMercariComparisons,mercariComparisonSummary,savedPriceStockCheck,metricLabels,threadsUrl,manualResult,metricNumber,isoFromLocal,localDateTime,displayTime,originalCopies};
 });
 
