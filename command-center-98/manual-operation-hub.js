@@ -241,11 +241,14 @@
  const imageControllers=[];const close=e('button','閉じる');close.onclick=()=>{imageControllers.forEach(c=>c?.destroy());box.close();box.remove();};box.append(close);
  if(!tanaka&&!manga&&!everyday&&!girlsChannel){const archive=e('a',savings?'Threadsアカウントを開く':'過去原稿を開く');archive.href=skun?'https://www.threads.com/@skun.koi':manga?'https://www.threads.com/@kousaka_san_':kensho?'https://www.threads.com/@nasbi.777':lottery?'https://www.threads.com/@chusen1101':rakuten?'https://www.threads.com/@bonya0914':savings?'https://www.threads.com/@thats_a_steal0601':'https://docs.google.com/spreadsheets/d/1jLsJqgZrWi6e4s6Wt6eesfx0A0PomKNQlAHNAuA2gWU/edit';archive.target='_blank';archive.rel='noopener';box.append(archive);}else box.append(e('p','Threadsアカウントは後から設定します。'));
  api.renderEditorialGuide(doc,box,key);
+ const sharedGuide=api.renderSharedDraftGuide(doc,box);
  const status=e('p','原稿を読み込んでいます…');box.append(status);doc.body.append(box);box.showModal();
  try{
  const u=new URL('https://yibtmqsbyodhsudenktm.supabase.co/functions/v1/command-center-retro-api');u.searchParams.set('resource','task-events');u.searchParams.set('taskId',girlsChannel?'girls-channel-threads-v1':skun?'skun-threads-v1':everyday?'everyday-words-v1':manga?'manga-threads-v1':kensho?'kensho-threads-v1':tanaka?'tanaka-threads-v1':lottery?'lottery-threads-v1':rakuten?'rakuten-threads-v1':savings?'otoku-threads-v1':'insurance-threads-v1');u.searchParams.set('limit','100');
  const r=await fetch(u,{headers:{Authorization:'Bearer '+(localStorage.getItem('cc_retro_token')||'')},cache:'no-store'});const data=await r.json();if(!r.ok||!data.ok)throw Error('原稿を取得できません。ログイン状態を確認してください。');
  const drafts=data.events.filter(row=>row.payload?.content_type!=='account_configuration');
+ const privateConfig=data.events.find(row=>row.payload?.content_type==='account_configuration')?.payload;
+ api.updateAffiliateGuide(sharedGuide,privateConfig);
  const commentFor=skun||girlsChannel?(await import('./lounge/notebook.js?v=20261113.10-girls-channel')).girlsChannelComment:null;
  if(kensho||manga||everyday){const config=data.events.find(row=>row.payload?.content_type==='account_configuration')?.payload;if(config?.profile_draft){const profile=details('プロフィール案',e('pre',config.profile_draft));const copy=e('button','プロフィール案をコピー');copy.onclick=async()=>{try{await navigator.clipboard.writeText(config.profile_draft);copy.textContent='コピーしました';}catch{copy.textContent='コピーできません。本文を選択してください';}};profile.append(copy);box.append(profile);}if(config?.editorial_rules)box.append(details(everyday?'日常の言葉の制作基準':manga?'漫画の投稿方針':'懸賞小ナスの投稿方針',e('pre',config.editorial_rules)));}
  status.textContent='保存原稿 '+drafts.length+'本（最新100本まで）｜'+(savings?'本文と返信を別々にコピーできます。':'本文のみコピーできます。');
@@ -288,6 +291,28 @@
   const [title,description]=editorialGuides[key],details=doc.createElement('details'),summary=doc.createElement('summary'),body=doc.createElement('p');
   summary.textContent='編集方針｜'+title;body.textContent=description;
   details.append(summary,body);container.append(details);return true;
+ }
+
+ function renderSharedDraftGuide(doc,container){
+  const box=doc.createElement('details'),summary=doc.createElement('summary'),list=doc.createElement('ol');
+  summary.textContent='全箱共通｜原稿を作る前に';
+  box.open=true;
+  const base=[
+   '本人から受け取った素材・写真をもとに写真カルーセルを組む。写真が足りない場合は素材待ち。テキストだけで投稿準備完了にしない。',
+   '最初に感情と発見の経緯。商品名・価格・割引率はその後。実際に使った、当選した、成果が出たなどの一人称の事実は確認できたものだけ。',
+   '着想元は原稿ごとに最新のものを調べ直す。出典と確認日を残し、引用メモには「土台／強く引用／中立に引用」の区分と、どこを参照したかを記す。'
+  ];
+  for(const line of base){const item=doc.createElement('li');item.textContent=line;list.append(item);}
+  const affiliate=doc.createElement('li');list.append(affiliate);box.append(summary,list);container.append(box);
+  updateAffiliateGuide(affiliate);return affiliate;
+ }
+ function updateAffiliateGuide(node,config){
+  const mode=config?.affiliate_link_policy;
+  node.textContent=mode==='no_links'
+   ?'この箱はリンクなし。本文・最初の返信ともアフィリエイトリンクを入れない。広告に当たる場合は本文にも広告と分かる表示を付ける。'
+   :mode==='first_reply'
+    ?'アフィリエイトURLは本文に入れず、自分の最初の返信に #PR と併記する。返信を開かなくても広告と分かるよう、本文にも広告表示を入れる。'
+    :'非公開の運用設定で、この箱がリンクなし対象か確認する。未確認のままリンクを入れない。リンクを使う箱では本文にURLを入れず、自分の最初の返信に #PR と併記し、本文にも広告表示を入れる。';
  }
 
  const metricLabels=[['views','閲覧数'],['likes','いいね'],['replies','返信'],['reposts','再投稿'],['quotes','引用'],['clicks','クリック']];
@@ -489,6 +514,6 @@
   const link=p.purchase_link||p.purchase_url;if(typeof link==='string'&&/^https:\/\//.test(link))result.push({label:'保存購入リンク',text:link});
   return result;
  }
- return {renderEditorialGuide,accounts,payload,matchesAccount,unique,savedCopies,savedPostingAssets,isSuppressed,historyState,savedSources,savedProductLink,savedProductLinks,savedMercariComparisons,mercariComparisonSummary,savedPriceStockCheck,metricLabels,threadsUrl,manualResult,metricNumber,isoFromLocal,localDateTime,displayTime,originalCopies};
+ return {renderEditorialGuide,renderSharedDraftGuide,updateAffiliateGuide,accounts,payload,matchesAccount,unique,savedCopies,savedPostingAssets,isSuppressed,historyState,savedSources,savedProductLink,savedProductLinks,savedMercariComparisons,mercariComparisonSummary,savedPriceStockCheck,metricLabels,threadsUrl,manualResult,metricNumber,isoFromLocal,localDateTime,displayTime,originalCopies};
 });
 
